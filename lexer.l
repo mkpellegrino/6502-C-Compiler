@@ -1,5 +1,5 @@
 %{
-#include "parser.tab.h"
+#include "y.tab.h"
  int countn=0;
 %}
 %option yylineno
