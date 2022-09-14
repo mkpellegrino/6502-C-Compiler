@@ -14,42 +14,7 @@ using namespace std;
  int variable_start=828; // 98 2 byte variables
  int code_start=49152;
 
-
- // helper functions
- string toHex( int i )
- {
-   int l=0;
-   string return_value = string("");
-   float f = (float)i;
-   while( f > 0 )
-     {
-       float tmp1=f/16;
-       float tmp2=(int) tmp1;
-       float rem=16*(tmp1-tmp2);
-       if (rem == 0) return_value = string("0") + return_value;
-       if (rem == 1) return_value = string("1") + return_value;
-       if (rem == 2) return_value = string("2") + return_value;
-       if (rem == 3) return_value = string("3") + return_value;
-       if (rem == 4) return_value = string("4") + return_value;
-       if (rem == 5) return_value = string("5") + return_value;
-       if (rem == 6) return_value = string("6") + return_value;
-       if (rem == 7) return_value = string("7") + return_value;
-       if (rem == 8) return_value = string("8") + return_value;
-       if (rem == 9) return_value = string("9") + return_value;
-       if (rem == 10) return_value = string("A") + return_value;
-       if (rem == 11) return_value = string("B") + return_value;
-       if (rem == 12) return_value = string("C") + return_value;
-       if (rem == 13) return_value = string("D") + return_value;
-       if (rem == 14) return_value = string("E") + return_value;
-       if (rem == 15) return_value = string("F") + return_value;
-       f=tmp2; l++;
-     }
-
-   if( l == 1 || l == 3) return_value = string("0") + return_value;
-   return return_value;
- }
- 
- 
+ // helper function
  string toString( int i )
  {
    return std::to_string(i);
@@ -64,7 +29,7 @@ using namespace std;
        address=variable_start;
        variable_start+=2;
      }
-   string getAddress(){ return toHex(address); };
+   string getAddress(){ return toString(address); };
    string getName(){ return name; };
  private:
    int address; // somewhere between 0 and 65535
@@ -220,6 +185,12 @@ using namespace std;
     struct node *right; 
     char *token; 
   };
+
+  //  void addAsm()
+  // {
+  //  addAsm(icg[ic_idx-1], false);
+  //  return;
+  //}
       
   %}
 
@@ -297,11 +268,7 @@ body: FOR { add('K'); is_for = 1; } '(' statement ';' condition ';' statement ')
 }
 
 
-| IF { add('K'); is_for = 0; } '(' condition ')' { sprintf(icg[ic_idx++], "***LABEL %s:", $4.if_body); addAsm(icg[ic_idx-1], true); } '{' body '}'
-{
-  sprintf(icg[ic_idx++], "****LABEL %s:", $4.else_body);
-  addAsm(icg[ic_idx-1], true);
-}
+| IF { add('K'); is_for = 0; } '(' condition ')' { sprintf(icg[ic_idx++], "***LABEL %s:", $4.if_body); addAsm(icg[ic_idx-1], true); } '{' body '}' { sprintf(icg[ic_idx++], "****LABEL %s:", $4.else_body); addAsm(icg[ic_idx-1], true);}
  else
    { 
      struct node *iff = mknode($4.nd, $8.nd, $1.name); 
@@ -373,16 +340,14 @@ condition: value relop value
       
       sprintf(icg[ic_idx++], "// if NOT (%s %s %s) jmp to L%d:", $1.name, $2.name, $3.name, label);
       addAsm(icg[ic_idx-1], false );
-      //sprintf(icg[ic_idx++], "CPX #%s", toString(atoi($3.name)) );
+      sprintf(icg[ic_idx++], "CPX %s", $3.name );
+      addAsm(icg[ic_idx-1], false );
+      sprintf(icg[ic_idx++], "BCS L%d", label );
+      addAsm(icg[ic_idx-1], false);
 
-      addAsm( string("CPX #") + toHex( atoi($3.name)), false);
-      //addAsm(icg[ic_idx-1], false );
-      //sprintf(icg[ic_idx++], "BEQ L%d", label );
+      
+      //sprintf(icg[ic_idx++], "DEX", "" );
       //addAsm(icg[ic_idx-1], false);
-
-      // the labels will be numbered in hexadecimal
-      // this might not jive with what's below
-      addAsm( string("BEQ L") + toHex( label ), false);
       
       sprintf($$.else_body, "L%d", label++);
       labels[label] = 1;
@@ -390,7 +355,6 @@ condition: value relop value
   else
     {
       sprintf(icg[ic_idx++], "if (%s %s %s) GOTO L%d else GOTO L%d // (while)", $1.name, $2.name, $3.name, label, label+1);
-      addAsm( string( "// if( " ) + string( $1.name ) + string( $2.name ) + string( $3.name ) + " jump to L" + toHex(label) +  string( " else L" ) + toHex( label+1) ); 
       addAsm(icg[ic_idx-1], false);
       sprintf($$.if_body, "L%d", label++);
       sprintf($$.else_body, "L%d", label++);
@@ -446,8 +410,8 @@ statement: datatype ID { add('V'); } init
 
   asm_variables.push_back( v ); // add the variable to the list of variables
 
-  addAsm( string("LDA #") + string($4.name) );
-  addAsm( string("STA &") + getAddressOf( getIndexOf( $2.name )) + string( " // line 444"));
+  addAsm( string("LDA ") + string($4.name ) );
+  addAsm( string("STA &") + getAddressOf( getIndexOf( $2.name )) + string( " // line 412"));
 }
 
 | ID { check_declaration($1.name); } '=' expression {
@@ -501,7 +465,7 @@ statement: datatype ID { add('V'); } init
   $3.nd = mknode(NULL, NULL, $3.name); 
   $$.nd = mknode($1.nd, $3.nd, "ITERATOR");  
   if(!strcmp($3.name, "++")) {
-    sprintf(buff, "t%d = %s + 1\n%s = t%d\n// 503", temp_var, $1.name, $1.name, temp_var++);
+    sprintf(buff, "t%d = %s + 1\n%s = t%d\n// 466", temp_var, $1.name, $1.name, temp_var++);
   }
   else {
     sprintf(buff, "t%d = %s + 1\n%s = t%d\n// 469", temp_var, $1.name, $1.name, temp_var++);
@@ -523,7 +487,7 @@ statement: datatype ID { add('V'); } init
 ;
 
 init: '=' value { $$.nd = $2.nd; sprintf($$.type, $2.type); strcpy($$.name, $2.name); }
-| { sprintf($$.type, "null"); $$.nd = mknode(NULL, NULL, "0"); strcpy($$.name, "0"); }
+| { sprintf($$.type, "null"); $$.nd = mknode(NULL, NULL, "NULL"); strcpy($$.name, "NULL"); }
 ;
 
 expression: expression arithmetic expression
@@ -589,7 +553,7 @@ expression: expression arithmetic expression
   
   addAsm( string("LDA &") + getAddressOf(string($1.name )));
 
-  addAsm( string("ADC #") + toHex(atoi($3.name )) );
+  addAsm( string("ADC ") + string($3.name ) );
   
   addAsm( string("STA &") + getAddressOf($1.name) );
   
