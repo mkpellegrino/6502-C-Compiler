@@ -1,6 +1,8 @@
 #CC=/usr/bin/gcc
-CC=/usr/local/gcc-10.1.0-true/bin/g++-10.1-true
+#CC=/usr/local/gcc-10.1.0-true/bin/g++-10.1-true
+CC=/usr/local/gfortran/bin/g++
 LEX=/usr/bin/lex
+#LEX=/usr/local/bin/flex
 YACC=/usr/local/bin/yacc
 #YACC=/usr/bin/yacc
 #YACC=/usr/local/bin/bison
