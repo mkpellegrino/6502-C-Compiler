@@ -6,11 +6,10 @@
 
 alpha [a-zA-Z]
 digit [0-9]
-frmt  [{\t}|{\n}]
 unary "++"|"--"
 
 %%
-"poke"                    { strcpy(yylval.nd_obj.name,(yytext)); return tPOKE; }
+
 "printf"                    { strcpy(yylval.nd_obj.name,(yytext)); return PRINTFF; }
 "scanf"                     { strcpy(yylval.nd_obj.name,(yytext)); return SCANFF; }
 "int"                       { strcpy(yylval.nd_obj.name,(yytext)); return INT; }
@@ -40,15 +39,14 @@ unary "++"|"--"
 "-"                         { strcpy(yylval.nd_obj.name,(yytext)); return SUBTRACT; }
 "/"                         { strcpy(yylval.nd_obj.name,(yytext)); return DIVIDE; }
 "*"                         { strcpy(yylval.nd_obj.name,(yytext)); return MULTIPLY; }
-
 \/\/.*                      { ; }
 \/\*(.*\n)*.*\*\/           { ; } 
 [ \t]*                      { ; }
-[\n]                        { countn++;}
+[\n]                        { countn++; }
 .	                        { return *yytext; }
-\"([^\\\"]|\\.)*\"                    { strcpy(yylval.nd_obj.name,(yytext)); return STR; }
-
+["].*["]                    { strcpy(yylval.nd_obj.name,(yytext)); return STR; }
 ['].[']                     { strcpy(yylval.nd_obj.name,(yytext)); return CHARACTER; }
+
 %%
 
 int yywrap() {
