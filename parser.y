@@ -14,20 +14,24 @@
   /* The extra parameter is also given to yyerror */
   void yyerror(FILE* fp, const char* msg);
   
- 
+
+  // compiler internal flags
+  bool printf_is_needed = false;
+  bool scanf_is_needed = false;
   using namespace std;
 
   // command line arguments
   bool arg_memory_locations=false;
   bool arg_show_labels=true;
-  bool arg_asm_comments=false;
+  bool arg_asm_comments=true;
   
   string current_state;
 
-  int variable_start=828; // 98 2 byte variables
+  int data_start=828; // 98 2 byte variables
   int code_start=2049;
   int current_code_location=0;
   int string_number=0;
+  int  kbd_bfr_addr = 0xCFE0;
 
   // helper functions
   string itos( int i )
@@ -165,16 +169,16 @@
     asm_variable( string identifier, int t = 1)
       {
 	name=identifier;
-	address=variable_start;
+	address=data_start;
 	type=t;
 
 	switch( t )
 	  {
 	  case 8:
-	    variable_start+=4;
+	    data_start+=4;
 	    break;
 	  default:
-	    variable_start+=t;
+	    data_start+=t;
 	  }	   
 
       }
@@ -333,7 +337,8 @@
 	current_code_location+=asm_strings[i]->getLength()+1; // the +1 is for the null terminated zero
 
 	// Now find where (in the instruction vector) this string is being referenced
-	int j = asm_strings[i]->getIndex() - 1; // I think we need to go back one from here (hence the - 1)
+	int j = asm_strings[i]->getIndex() -1; 
+
 	int instruction_address = asm_instr[j]->getAddress();
 
 	asm_instr[j+1]->setString( string("LDA #$") + string(asm_strings[i]->getH()));
@@ -516,7 +521,7 @@
 //%parse-param { FILE* fp }
 
 %token VOID 
-%token <nd_obj> tPOKE NEWLINE CHARACTER PRINTFF SCANFF INT FLOAT CHAR FOR IF ELSE TRUE FALSE NUMBER FLOAT_NUM ID LE GE EQ NE GT LT AND OR STR ADD MULTIPLY DIVIDE SUBTRACT UNARY INCLUDE RETURN
+%token <nd_obj> tPOINTER tJSR tRTS tPOKE NEWLINE CHARACTER PRINTFF SCANFF INT FLOAT CHAR FOR IF ELSE TRUE FALSE NUMBER FLOAT_NUM ID LE GE EQ NE GT LT AND OR STR ADD MULTIPLY DIVIDE SUBTRACT UNARY INCLUDE RETURN
 %type <nd_obj> headers main body return datatype statement arithmetic relop program else
    %type <nd_obj2> init value expression
       %type <nd_obj3> condition
@@ -535,7 +540,10 @@ headers: headers headers { $$.nd = mknode($1.nd, $2.nd, "headers"); }
 
 
 // the beginning of the assembler program
-main: datatype ID { addAsm(".org $0801", true ); };
+main: datatype ID
+{
+  addAsm( string( ".org $" ) + toHex( code_start ), 0, true );
+};
 
 datatype: INT { insert_type(); }
 | FLOAT { insert_type(); }
@@ -544,14 +552,13 @@ datatype: INT { insert_type(); }
 ;
 
 body:
-FOR { if( arg_asm_comments == false ) addAsm( string("; top of for loop (depth ") +itos( ++is_for ) + string( ")"), 0, true ); }
-'(' statement ';' condition ';' statement ')' '{' body '}'
+FOR { /*if(arg_asm_comments) addAsm( string("; top of for loop (depth ") +itos( ++is_for ) + string( ")"), 0, true ); */ } '(' statement ';' condition ';' statement ')' '{' body '}'
 {
   addAsm( string( "JMP LABEL_") + string( $6.if_body ), 3, false );
   addAsm( string( "LABEL_" ) + $6.else_body + string(":"), 0, true );
   // end for
   {
-     if( arg_asm_comments ) addAsm( string("; pop everything back off of stack"), 0, true );
+    //if( arg_asm_comments ) addAsm( string("; pop everything back off of stack"), 0, true );
     addAsm( "CLC" );
     addAsm( "PLA" );
     addAsm( "TAY" );
@@ -559,9 +566,7 @@ FOR { if( arg_asm_comments == false ) addAsm( string("; top of for loop (depth "
     addAsm( "TAX" );
     addAsm( "PLP" );
     addAsm( "PLA" );
-    addAsm( ";", 0, true );
-    addAsm( ";", 0, true );
-     if( arg_asm_comments ) addAsm( string("; bottom of for loop (depth ") + itos( is_for ) + string( ")"), 0, false );
+    // if( arg_asm_comments ) addAsm( string("; bottom of for loop (depth ") + itos( is_for ) + string( ")"), 0, false );
     is_for--;
   }
 };
@@ -581,66 +586,54 @@ FOR { if( arg_asm_comments == false ) addAsm( string("; top of for loop (depth "
 
 | statement ';' { $$.nd = $1.nd; }
 
-| body body { $$.nd = mknode($1.nd, $2.nd, "statements"); }
+| body body { $$.nd = mknode($1.nd, $2.nd, "statements"); };
 
+/* SCANF(ish) COMMAND!!! */
+| SCANFF '(' STR ')' ';'
+{
+  scanf_is_needed=true;
+  addAsm( "JSR SCANF", 3, false );
+  
+}
 
 /* PRINTF COMMAND!!! */
 | PRINTFF '(' STR ')' ';'
 {
-  //addAsm( "; printf goes here", 0, false );
-  //addAsm( string( "; string of printf: " ) + string( $3.name ), 0, false );
-
-
-  //addString( IDENTIFIER, string_number);
-
-  // store the string in memory
-  // after stripping the peripheral quotes
-
-  // save a && x
-
-  //addAsm( "PHA" );
-  //addAsm( "TXA" );
-  //addAsm( "PHA" );
-  // x is now saved (and so is a
-  // (question for later: why not just do this with the accumulator?)
-
+  printf_is_needed=true;
   // add the string stripped of its' quotes
   addString( string("STR_LBL_") + itos( string_number++), string($3.name).substr(1,string($3.name).length()-2), asm_instr.size() );
 
-  addAsm( "NOP ; 1", 1, false);
-  addAsm( "NOP ; 2", 1, false );
-  addAsm( "NOP ; 3", 1, false );
-  addAsm( "NOP ; 4", 1, false );
-  //addAsm( "NOP ; 5", 1, false );
-  //addAsm( "NOP ; 6", 1, false );
-  // temporarily put a NOP NOP here and save the index of the instruction vector
-  // so we can go back in (during ProcessStrings) and put the correct address in there
-	  
-  // load x with high byte
-  // store x in string vector h
-  // load y with low byte
-  // store x in string vector l
+  // these will later be replaced during Process Strings
+  //if( arg_asm_comments ) addAsm( "; The next 4 instructions used to be NOP's.  If theye STILL are", 0, false );
+  //if( arg_asm_comments ) addAsm( "; then there was an error in the ProcessStrings() function", 0, false );
+  addAsm( "NOP ; PRN 1", 1, false);
+  addAsm( "NOP ; PRN 2", 1, false );
+  addAsm( "NOP ; PRN 3", 1, false );
+  addAsm( "NOP ; PRN 4", 1, false );
 
   addAsm( "JSR PRN", 3, false );
-  // call the print routine
-  // restore x && a
-  //addAsm( "PLA" );
-  //addAsm( "TAX" );
-  //addAsm( "PLA" );
-}
+};
+
+| tJSR '(' NUMBER ')' ';'
+{
+  //cerr << "function: jsr( " << $3.name << ");" << endl;
+  addAsm(string( "JSR $") + toHex( atoi( $3.name )), 3, false );
+};
+
+| tRTS '(' ')' ';'
+{
+  addAsm( "RTS" );
+};
 
 | tPOKE '(' NUMBER ',' NUMBER ')' ';'
 {
   if( arg_asm_comments ) addAsm( string("; poke goes here: ") + string( $3.name ) + "," + string( $5.name ), 0, false );
-  $$.nd = mknode(NULL, NULL, "poke");
-  if( previousAsm("PLA") )
-    {
-      deletePreviousAsm();
-    }
-  else
-    {
-      addAsm( "PHA" );
-    }
+  //$$.nd = mknode(NULL, NULL, "poke");
+
+  // this just makes sure that the previous instruction wasn't a "pop acc"
+  // if it was, then it removes it and dooesn't put a "push acc"
+  // they negate each other
+  if( previousAsm("PLA") ){deletePreviousAsm();}else{addAsm( "PHA" );}
   addAsm( string( "LDA $#" ) + toHex(atoi($5.name)) , 2, false );
   addAsm( string( "STA $" ) + toHex(atoi($3.name)) , 3, false );
   addAsm( "PLA" );
@@ -651,14 +644,7 @@ FOR { if( arg_asm_comments == false ) addAsm( string("; top of for loop (depth "
 {
    if( arg_asm_comments ) addAsm( string("; poke goes here: ") + string( $3.name ) + "," + string( $5.name ), 0, false );
   $$.nd = mknode(NULL, NULL, "poke");
-  if( previousAsm("PLA") )
-    {
-      deletePreviousAsm();
-    }
-  else
-    {
-      addAsm( "PHA" );
-    }
+  if( previousAsm("PLA") ){deletePreviousAsm();}else{addAsm( "PHA" );}
 
   int var_index = getIndexOf( $5.name );
   if( var_index == -1 )
@@ -679,25 +665,17 @@ FOR { if( arg_asm_comments == false ) addAsm( string("; top of for loop (depth "
 {
    if( arg_asm_comments ) addAsm( string("; poke goes here: ") + string( $3.name ) + "," + string( $5.name ), 0, false );
   $$.nd = mknode(NULL, NULL, "poke");
-  if( previousAsm("PLA") )
-    {
-      deletePreviousAsm();
-    }
-  else
-    {
-      addAsm( "PHA" );
-    }
-
+  if( previousAsm("PLA") ){deletePreviousAsm();}else{addAsm( "PHA" );}
   addAsm( string( "LDA $" ) + asm_variables[ getIndexOf( $5.name ) ]->getAddress(), 3, false );
   addAsm( string( "STA $" ) + asm_variables[ getIndexOf( $3.name ) ]->getAddress(), 3, false );
   addAsm( "PLA" );
-}
+};
 
 
 
  else: ELSE { add('K'); } '{' body '}' { $$.nd = mknode(NULL, $4.nd, $1.name); }
 | { $$.nd = NULL; }
-;
+
 
 
 
@@ -712,16 +690,9 @@ condition: value relop value
   if(is_for)  // this is a comparison for a for loop
     {
       for_level++;
-      if( previousAsm("PLA") )
-	{
-	  deletePreviousAsm();
-	}
-      else
-	{
-	  addAsm( "PHA" );
-	}
-
-      addAsm( "PHP" );
+      if( previousAsm("PLA") ){deletePreviousAsm();}else{addAsm( "PHA" );}
+      
+      addAsm( "PHP" ); // do we really need to save the processor info?
       addAsm( "TXA" );
       addAsm( "PHA" );
       addAsm( "TYA" );
@@ -736,12 +707,16 @@ condition: value relop value
       // this is the label at the top of the loop
       sprintf($$.if_body, "L%d", label++);
       sprintf(icg[ic_idx++], "LABEL_%s:", $$.if_body);
-      addAsm(icg[ic_idx-1], true );
+
+      addAsm( string( "LABEL_" ) + string( $$.if_body ) + ":", 0, true );
+      //addAsm(icg[ic_idx-1], true );
+
+      /* RIGHT HERE */
 
       int var_index = getIndexOf( $$.name );
       if( var_index == -1 )
 	{
-	  cerr << "// [ERROR] Variable [" << $$.name << "] not found in vvector!" << endl;
+	  cerr << "// [ERROR] Variable [" << $$.name << "] not found in vector!" << endl;
 	  addAsm( "NOP ; 7", 1, false );
 	  addAsm( "NOP ; 8", 1, false );
 	  addAsm( "NOP ; 9", 1, false );
@@ -810,7 +785,7 @@ statement: datatype ID { add('V'); } init
       $$.nd = mknode($2.nd, $4.nd, "declaration"); 
     } 
 
-  // variable initialization
+  // variable initialization (for INT type)
   addAsmVariable( $2.name, 1 );
 
   addAsm( string("LDA #$") + toHex(atoi($4.name)), 2, false);
@@ -994,6 +969,16 @@ int main(int argc, char *argv[])
       if( a == "--memory-locations" ) arg_memory_locations  = true;
       if( a == "--no-asm-comments" ) arg_asm_comments = false;
       if( a == "--no-labels" ) arg_show_labels = false;
+      if( a == "--code-segment" )
+	{
+	  code_start = atoi( argv[i+1] );
+	  i++;
+	}
+      if( a == "--data-segment" )
+	{
+	  data_start = atoi( argv[i+1] );
+	  i++;
+	}
       if( a == "-i" )
 	{
 	  // then the next value is the filename
@@ -1012,8 +997,6 @@ int main(int argc, char *argv[])
 
 
   
-
-
   //  FILE* file_pointer = fopen(input_file_name.c_str(), "a");
  
 
@@ -1031,6 +1014,9 @@ int main(int argc, char *argv[])
   addAsmVariable( "string_tmp_h", 1 );
   addAsmVariable( "string_tmp_l", 1 );
   
+  addAsmVariable( "buffer_tmp_h", 1 );
+  addAsmVariable( "buffer_tmp_l", 1 );
+
   yyparse(); 
   
 
@@ -1062,29 +1048,70 @@ int main(int argc, char *argv[])
 
   //addAsm( "RTS" );
 
-  /* a Simple printf */
-  addAsm( "PRN:", 0, true );
-  addAsm( string( "LDA $") + getAddressOf( string( "string_tmp_l" ) ), 3, false );
-  addAsm( "STA $03", 2, false );
-  addAsm( string( "LDA $") + getAddressOf( string( "string_tmp_h" ) ), 3, false );
-  addAsm( "STA $02", 2, false );
-  addAsm( "LDY #$00", 2, false);
-  addAsm( "PRN_LOOP:", 0, true );
-  addAsm( "LDA ($02),Y", 2, false);
-  addAsm( "CMP #$00", 2, false );
-  addAsm( "BEQ PRN_END", 2, false );
-  addAsm( "JSR $FFD2", 3, false );
-  addAsm( "INY" );
-  addAsm( "JMP PRN_LOOP", 3, false );
-  addAsm( "PRN_END:", 0, true );
-  addAsm( "RTS", 1, false );
+  if( printf_is_needed )
+    {
+      /* a Simple printf */
+      
+      addAsm( "PRN:", 0, true );
+      addAsm( string( "LDA $") + getAddressOf( string( "string_tmp_l" ) ), 3, false );
+      addAsm( "STA $03", 2, false );
+      addAsm( string( "LDA $") + getAddressOf( string( "string_tmp_h" ) ), 3, false );
+      addAsm( "STA $02", 2, false );
+      addAsm( "LDY #$00", 2, false);
+      addAsm( "PRN_LOOP:", 0, true );
+      addAsm( "LDA ($02),Y", 2, false);
+      addAsm( "CMP #$00", 2, false );
+      addAsm( "BEQ PRN_END", 2, false );
+      addAsm( "JSR $FFD2", 3, false );
+      addAsm( "INY" );
+      addAsm( "JMP PRN_LOOP", 3, false );
+      addAsm( "PRN_END:", 0, true );
+      addAsm( "RTS", 1, false );
+    }
+  if( scanf_is_needed )
+    {
+      /* a Simple Scanf */
+      addAsm( "SCANF:", 0, true );
+      //addAsm( "LDY #$00", 2, false );
+      addAsm( "LDX #$00", 2, false );
+      addAsm( "STX $CFDE", 3, false );
 
-  /*  set all memort locations of code (according to instruction size) */
+      addAsm( "SCANFTOP:", 0, true );
+      addAsm( "JSR $FF9F", 3, false );
+      addAsm( "JSR $FFE4", 3, false );
+
+      addAsm( "BEQ SCANFTOP", 2, false );
+      addAsm( "JSR $FFD2", 3, false );
+      addAsm( "CMP #$0D", 2, false );
+      addAsm( "BEQ SCANFEND" );
+      addAsm( "LDX $CFDE", 3, false );
+      addAsm( "STA $CFE0,X", 3, false );
+      addAsm( "INX" );
+      //addAsm( "INY" );
+      addAsm( "STX $CFDE", 3, false );
+      addAsm( "JMP SCANFTOP", 3, false );
+
+      addAsm( "SCANFEND:", 0, true );
+      addAsm( "RTS", 1, false );
+    }
+
+  // puts a keypress on the stack
+  addAsm( "GETKEY:", 0, true );
+  addAsm( "JSR $FFCF", 3, false );
+  addAsm( "CMP #$00", 2, false );
+  addAsm( "BEQ GETKEY", 2, false );
+  
+  // save the byte in zeropage $2A
+  //addAsm( "STA $2A", 2, false );
+  addAsm( "STA $CFDF", 3, false );
+  addAsm( "RTS" );
+  
+  /*  set all memory locations of code (according to instruction size) */
   /* starting at the .org address */
   
   ProcessMemoryLocationsOfCode();
   ProcessStrings();
-  current_code_location = 2049;  // reset the memory counter
+  current_code_location = code_start;  // reset the memory counter
   
   ProcessMemoryLocationsOfCode();
   ProcessStrings();
