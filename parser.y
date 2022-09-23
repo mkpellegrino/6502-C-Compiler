@@ -337,6 +337,7 @@
   
   void pushScope( string s )
   {
+    addAsm( getLabel( label++ ), 0, true );
     addComment( "New Scope " + s );
     scope_stack.push( s );
     var_scope_stack.push(".");
@@ -347,6 +348,7 @@
 
   void popScope()
   {
+    addAsm( getLabel( label++ ), 0, true );
     string return_value;
     addComment( string("Release Scope ") + string( scope_stack.top()) );
     while( var_scope_stack.top() != "." )
@@ -355,8 +357,10 @@
 	// then delete that variable's memory location
       }
     label = label_stack.top();
+    scope_stack.pop();
     label_stack.pop();
     label_major--;
+    
   }
   
 
@@ -623,7 +627,7 @@ FOR
 '{' body '}'
 {
   addComment( "---------------------" );
-  addAsm( string( "JMP " ) + getLabel( label-6, false ) + "; <<< ", 3, false );
+  addAsm( string( "JMP " ) + getLabel( (int)label-3, false ) + "; <<< ", 3, false );
   addAsm( getLabel( label++, true ), 0, true );
   // end for
   {
@@ -641,6 +645,7 @@ FOR
   if( scope_stack.top() != string("FOR") )
     {
       addComment( "ERROR: Scope out of Sync" );
+      addComment( scope_stack.top() );
     }
   else
     {
@@ -681,6 +686,7 @@ FOR
   if( scope_stack.top() != string("IF") )
     {
       addComment( "ERROR: Scope out of Sync" );
+      addComment( scope_stack.top() );
     }
   else
     {
@@ -745,7 +751,7 @@ FOR
   // this just makes sure that the previous instruction wasn't a "pop acc"
   // if it was, then it removes it and dooesn't put a "push acc"
   // they negate each other
-  if( previousAsm("PLA") ){deletePreviousAsm();}else{addAsm( "PHA" );}
+  //if( previousAsm("PLA") ){deletePreviousAsm();}else{addAsm( "PHA" );}
   addAsm( string( "LDA #$" ) + toHex(atoi($5.name)) , 2, false );
   addAsm( string( "STA $" ) + toHex(atoi($3.name)) , 3, false );
   addAsm( "PLA" );
@@ -756,7 +762,7 @@ FOR
 {
    if( arg_asm_comments ) addAsm( string("; poke goes here: ") + string( $3.name ) + "," + string( $5.name ), 0, false );
   $$.nd = mknode(NULL, NULL, "poke");
-  if( previousAsm("PLA") ){deletePreviousAsm();}else{addAsm( "PHA" );}
+  //if( previousAsm("PLA") ){deletePreviousAsm();}else{addAsm( "PHA" );}
 
   int var_index = getIndexOf( $5.name );
   if( var_index == -1 )
@@ -777,7 +783,7 @@ FOR
 {
    if( arg_asm_comments ) addAsm( string("; poke goes here: ") + string( $3.name ) + "," + string( $5.name ), 0, false );
   $$.nd = mknode(NULL, NULL, "poke");
-  if( previousAsm("PLA") ){deletePreviousAsm();}else{addAsm( "PHA" );}
+  //if( previousAsm("PLA") ){deletePreviousAsm();}else{addAsm( "PHA" );}
   addAsm( string( "LDA $" ) + asm_variables[ getIndexOf( $5.name ) ]->getAddress(), 3, false );
   addAsm( string( "STA $" ) + asm_variables[ getIndexOf( $3.name ) ]->getAddress(), 3, false );
   addAsm( "PLA" );
@@ -793,16 +799,16 @@ FOR
 
 condition: value relop value
 {
+  addComment( string("while ") + string($1.name) + string($2.name) + string($3.name) );
+
   if( scope_stack.top() == "FOR" ) addAsm( getLabel( label++, true ) + string( "\t\t\t; Top of FOR Loop"), 0, true );
   if( scope_stack.top() == "IF" ) addAsm( getLabel( label++, true ) + string( "\t\t\t; Top of IF"), 0, true );
   
-  addAsm( string( "LDA $" ) + getAddressOf( getIndexOf( $1.name )), 3, false);
-  addAsm( string( "CMP #$" ) + toHex(atoi( $3.name )), 2, false );
-  
+  addAsm( string( "LDX $" ) + getAddressOf( getIndexOf( $1.name )), 3, false);
+  addAsm( string( "CPX #$" ) + toHex(atoi( $3.name )), 2, false );
   if( scope_stack.top() == "FOR" )  // this is a comparison for a for loop
     {      
       //addAsm( string( "BCS " ) + getLabel( label, false ), 2, false );
-
       if( string( $2.name ) == string( "==" ) )
 	{
 	  // if the jump is going to be out-of-range for BNE, then use
@@ -819,31 +825,34 @@ condition: value relop value
 	}
       else if( string( $2.name ) == string( ">=" ) )
 	{
-	  addAsm( string( "BCC ") + getLabel( label, false), 2, false );
+	  addAsm( string( "BCS ") + getLabel( label, false), 2, false );
 	  addAsm( string( "BEQ ") + getLabel( label, false), 2, false );
 	  addAsm( string( "JMP ") + getLabel( label + 1, false), 3, false );
 	}
       else if( string( $2.name ) == string( "<=" ) )
 	{
-	  addAsm( string( "BCS ") + getLabel( label, false), 2, false );
+	  addAsm( string( "BCC ") + getLabel( label, false), 2, false );
 	  addAsm( string( "BEQ ") + getLabel( label, false), 2, false );
 	  addAsm( string( "JMP ") + getLabel( label + 1, false), 3, false );
 	}
       else if( string( $2.name ) == string( ">" ) )
 	{
-	  addAsm( string( "BCC ") + getLabel( label, false), 2, false );
-	  addAsm( string( "JMP ") + getLabel( label + 2, false), 3, false );
+	  addAsm( string( "BCS ") + getLabel( label, false), 2, false );
+	  addAsm( string( "JMP ") + getLabel( label + 2, false) + string("\t; exit the loop"), 3, false );
 	  addAsm( getLabel( label++ ), 0, true );
-	  addAsm( string( "BNE ") + getLabel( label, false), 2, false );
-	  addAsm( string( "JMP ") + getLabel( label + 1, false), 3, false );
+	  addAsm( string( "BEQ ") + getLabel( label, false), 2, false );
+	  addAsm( string( "JMP ") + getLabel( label + 1, false) + string("\t; exit the loop"), 3, false );
 	}
-      else
+      else //                                <
 	{
-	  addAsm( string( "BCS ") + getLabel( label , false), 2, false );
-	  addAsm( string( "JMP ") + getLabel( label + 7, false), 3, false );
-	  addAsm( getLabel( label++ ), 0, true );
-	  addAsm( string( "BNE ") + getLabel( label, false), 2, false );
-	  addAsm( string( "JMP ") + getLabel( label + 6, false), 3, false );
+	  // if i > bound jump to end	  
+	  addAsm( string( "BCC ") + getLabel( label , false), 2, false );
+	  // if i == bound jump to end
+	  addAsm( string( "JMP ") + getLabel( label+2, false) + string("\t; exit the loop"), 3, false ); 
+	  //addAsm( string( "BEQ ") + getLabel( label+1, false) + string("\t; exit the loop"), 2, false );
+	  //addAsm( getLabel( label++ ), 0, true );
+	  //addAsm( string( "BNE ") + getLabel( label, false), 2, false );
+	  //addAsm( string( "JMP ") + getLabel( label + 1, false) + string("\t; exit the loop"), 3, false );
 	}
 
       
@@ -1055,8 +1064,9 @@ expression: expression arithmetic expression
   
   
   addAsm( string("LDA $") + getAddressOf(string($1.name )), 3, false);
+  addAsm( "CLC" ); 
   if( current_state == "+" )
-    {     
+    {
       addAsm( string("ADC #$") + toHex(atoi($3.name )),2, false);
     }
   else if ( current_state == "-" )
