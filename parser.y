@@ -24,6 +24,8 @@
   bool scanf_is_needed = false;
   bool getkey_is_needed = false;
   using namespace std;
+  int label=0;
+  int label_major=0;
 
   // command line arguments
   bool arg_memory_locations=false;
@@ -42,6 +44,7 @@
   
   stack <string> scope_stack;
   stack <string> var_scope_stack;
+  stack <int> label_stack;
 
   // converts an integer into a string
   string itos( int i )
@@ -56,14 +59,14 @@
   }
   string getLabel( char* s, bool colon=true )
   {
-    string return_value = string( "LABEL_" ) + string( s );
+    string return_value = string( "LBL" ) + itos( label_major ) + "L" + string( s );
     if( colon ) return_value += string( ":" );
     return return_value;
   }
 
   string getLabel( int i, bool colon=true )
   {
-    string return_value = string( "LABEL_" ) + itos( i );
+    string return_value = string( "LBL" ) + itos( label_major ) + "L" + itos( i );
     if( colon ) return_value += string( ":" );
     return return_value;
   }
@@ -331,11 +334,15 @@
     return;
   }
 
-    void pushScope( string s )
+  
+  void pushScope( string s )
   {
     addComment( "New Scope " + s );
     scope_stack.push( s );
     var_scope_stack.push(".");
+    label_stack.push( label );
+    label = 0;
+    label_major++;
   }
 
   void popScope()
@@ -347,7 +354,9 @@
 	var_scope_stack.pop();
 	// then delete that variable's memory location
       }
-    
+    label = label_stack.top();
+    label_stack.pop();
+    label_major--;
   }
   
 
@@ -518,14 +527,8 @@
 
   int byte_counter = 0;
 
-  // this is an array that holds all of the
-  // Label #'s that are just after coming out
-  // of a for-loop.
-  //int labels[100];
 
   // this is to see how embedded we are in loops
-  int loop_level=0;
-  int for_level=0;
   int count=0;
   int q;
   char type[10];
@@ -534,8 +537,7 @@
   int sem_errors=0;
   int ic_idx=0;
   int temp_var=0;
-  int label=0;
-  int is_for=0;
+
   char buff[100];
   char errors[10][100];
   char reserved[10][10] = {"int", "float", "char", "void", "if", "else", "for", "main", "return", "include"};
