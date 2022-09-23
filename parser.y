@@ -8,9 +8,13 @@
 #include<ctype.h>
 #include<cctype>
 #include<vector>
+#include <stack>
 #include"lex.yy.c"
 
 
+  // fwd declaration
+  //  void addComment( string s );
+  
   /* The extra parameter is also given to yyerror */
   void yyerror(FILE* fp, const char* msg);
   
@@ -35,6 +39,9 @@
   int kbd_bfr_addr = 0xCFE0;
 
   // helper functions
+  
+  stack <string> scope_stack;
+  stack <string> var_scope_stack;
 
   // converts an integer into a string
   string itos( int i )
@@ -169,7 +176,7 @@
 
   ostream & operator << (ostream &out, const asm_string &a) 
     {
-      out << "; $" << a.address << endl;
+      out << "; $" << std::hex << a.address << endl;
       out << a.name << ":\n";
       for( int i = 0; i<a.text.size(); i++ )
 	{
@@ -293,17 +300,16 @@
 
   ostream & operator << (ostream &out, const asm_instruction &a) 
     {
-      if( !a.b_label)
+      if( !a.b_label )
 	{
-	  if( arg_memory_locations) out << toHex(a.memory_address);  // memory address in listing
-	  out << "\t" << a.text << "; $" << std::hex << a.memory_address << endl; // tab over the instructions
+	  out << "\t" << a.text; // the instructions
+	  if( arg_memory_locations) out << "; " << toHex(a.memory_address);
 	}
       else
-	if( arg_show_labels )
-	  {
-	    out << a.text << endl;
-	  }
-
+	{
+	  out << a.text;
+	}
+      out << endl;
       return out;
     }
   
@@ -324,6 +330,28 @@
     addAsm( string("; ") + s, 0, true );
     return;
   }
+
+    void pushScope( string s )
+  {
+    addComment( "New Scope " + s );
+    scope_stack.push( s );
+    var_scope_stack.push(".");
+  }
+
+  void popScope()
+  {
+    string return_value;
+    addComment( string("Release Scope ") + string( scope_stack.top()) );
+    while( var_scope_stack.top() != "." )
+      {
+	var_scope_stack.pop();
+	// then delete that variable's memory location
+      }
+    
+  }
+  
+
+  
   bool previousAsm( string s )
   {
     if( asm_instr[ asm_instr.size()-1 ]->getString() == s ) return true;
@@ -575,31 +603,56 @@ datatype: INT { insert_type(); }
 ;
 
 body:
-FOR {} '(' statement ';' condition ';' statement ')' '{' body '}'
+FOR
 {
-  addAsm( string( "JMP LABEL_") + string( $6.if_body ), 3, false );
-  addAsm( string( "LABEL_" ) + $6.else_body + string(":"), 0, true );
+  pushScope("FOR");
+  addComment( "=========================================================");
+  addComment( "FOR - loop setup goes here" );
+  addAsm( "PHA" );
+  addAsm( "TXA" );
+  addAsm( "PHA" );
+  addAsm( "TYA" );
+  addAsm( "PHA" );
+  addComment("---------------------");
+}
+'(' statement {addComment("---------------------");}
+';' condition {addComment("---------------------");}
+';' statement {addComment("---------------------");} ')'
+'{' body '}'
+{
+  addComment( "---------------------" );
+  addAsm( string( "JMP " ) + getLabel( label-6, false ) + "; <<< ", 3, false );
+  addAsm( getLabel( label++, true ), 0, true );
   // end for
   {
-    //if( arg_asm_comments ) addAsm( string("; pop everything back off of stack"), 0, true );
     addAsm( "CLC" );
+
     addAsm( "PLA" );
     addAsm( "TAY" );
     addAsm( "PLA" );
     addAsm( "TAX" );
-    addAsm( "PLP" );
     addAsm( "PLA" );
     // if( arg_asm_comments ) addAsm( string("; bottom of for loop (depth ") + itos( is_for ) + string( ")"), 0, false );
-    is_for--;
+
+    
   }
+  if( scope_stack.top() != string("FOR") )
+    {
+      addComment( "ERROR: Scope out of Sync" );
+    }
+  else
+    {
+      popScope();
+    }
 };
 
 | IF
 {
+  pushScope("IF");
   addComment( "=========================================================");
   addComment( "IF" );
-  addAsm( "PHA" );
   addAsm( getLabel( label++), 0, true );
+  addAsm( "PHA" );
 }
 '(' condition ')'
 {
@@ -622,14 +675,21 @@ FOR {} '(' statement ';' condition ';' statement ')' '{' body '}'
   addComment( "; post if-statement" );
   addAsm( getLabel( label++, true ), 0, true );
   addAsm( "PLA" );
-  addComment( "=========================================================");
+  
+  if( scope_stack.top() != string("IF") )
+    {
+      addComment( "ERROR: Scope out of Sync" );
+    }
+  else
+    {
+      popScope();
+    }
 
 };
 
 | statement ';'
 {
-  addAsm( "; post-statement", 0, true );
-  //$$.nd = $1.nd;
+  addComment( "=========================================================" );
 }
 
 | body body
@@ -648,6 +708,7 @@ FOR {} '(' statement ';' condition ';' statement ')' '{' body '}'
 /* PRINTF COMMAND!!! */
 | PRINTFF '(' STR ')' ';'
 {
+  addComment( string("printf(") + string($3.name) + string( ");") );
   printf_is_needed=true;
   // add the string stripped of its' quotes
   addString( string("STRLBL") + itos( string_number++), string($3.name).substr(1,string($3.name).length()-2), asm_instr.size() );
@@ -676,14 +737,14 @@ FOR {} '(' statement ';' condition ';' statement ')' '{' body '}'
 
 | tPOKE '(' NUMBER ',' NUMBER ')' ';'
 {
-  if( arg_asm_comments ) addAsm( string("; poke goes here: ") + string( $3.name ) + "," + string( $5.name ), 0, false );
+  if( arg_asm_comments ) addComment( string("poke ") + string( $3.name ) + "," + string( $5.name ));
   //$$.nd = mknode(NULL, NULL, "poke");
 
   // this just makes sure that the previous instruction wasn't a "pop acc"
   // if it was, then it removes it and dooesn't put a "push acc"
   // they negate each other
   if( previousAsm("PLA") ){deletePreviousAsm();}else{addAsm( "PHA" );}
-  addAsm( string( "LDA $#" ) + toHex(atoi($5.name)) , 2, false );
+  addAsm( string( "LDA #$" ) + toHex(atoi($5.name)) , 2, false );
   addAsm( string( "STA $" ) + toHex(atoi($3.name)) , 3, false );
   addAsm( "PLA" );
 };
@@ -729,112 +790,117 @@ FOR {} '(' statement ';' condition ';' statement ')' '{' body '}'
 
 
 condition: value relop value
-	   //value { addAsm( string( "; ") + string( $1.name ), 0, true ); } // $1.name $2.name
-	   //relop { addAsm( string( "; ") + string( $3.name ), 0, true ); } // $3.name $4.name
-	   //value { addAsm( string( "; ") + string( $5.name ), 0, true ); } // $5.name $6.name
 {
-  if(is_for)  // this is a comparison for a for loop
-    {
-      for_level++;
-      if( previousAsm("PLA") ){deletePreviousAsm();}else{addAsm( "PHA" );}
-      
-      addAsm( "PHP" ); // do we really need to save the processor info?
-      addAsm( "TXA" );
-      addAsm( "PHA" );
-      addAsm( "TYA" );
-      addAsm( "PHA" );
-      // set the variable for the loop
-      // the name is stored in $$.name
-      // look that up in the var vactor
-      // then (if found) get it's address
+  if( scope_stack.top() == "FOR" ) addAsm( getLabel( label++, true ) + string( "\t\t\t; Top of FOR Loop"), 0, true );
+  if( scope_stack.top() == "IF" ) addAsm( getLabel( label++, true ) + string( "\t\t\t; Top of IF"), 0, true );
+  
+  addAsm( string( "LDA $" ) + getAddressOf( getIndexOf( $1.name )), 3, false);
+  addAsm( string( "CMP #$" ) + toHex(atoi( $3.name )), 2, false );
+  
+  if( scope_stack.top() == "FOR" )  // this is a comparison for a for loop
+    {      
+      //addAsm( string( "BCS " ) + getLabel( label, false ), 2, false );
 
-
-      // this is setting a label to show up in the pseudocode
-      // this is the label at the top of the loop
-      sprintf($$.if_body, "L%d", label++);
-      sprintf(icg[ic_idx++], "LABEL_%s:", $$.if_body);
-
-      addAsm( string( "LABEL_" ) + string( $$.if_body ) + ":", 0, true );
-
-      /* RIGHT HERE */
-
-      int var_index = getIndexOf( $$.name );
-      if( var_index == -1 )
+      if( string( $2.name ) == string( "==" ) )
 	{
-	  cerr << "// [ERROR] Variable [" << $$.name << "] not found in vector!" << endl;
-	  addAsm( "NOP ; 7", 1, false );
-	  addAsm( "NOP ; 8", 1, false );
-	  addAsm( "NOP ; 9", 1, false );
+	  // if the jump is going to be out-of-range for BNE, then use
+	  // the method that's commented out here.
+	  //addAsm( string( "BEQ ") + getLabel( label, false), 2, false );
+	  //addAsm( string( "JMP ") + getLabel( label + 1, false), 3, false );
+	  addAsm( string( "BNE ") + getLabel( label + 1, false), 2, false );
+	}
+      else if( string( $2.name ) == string( "!=" ) )
+	{
+	  //addAsm( string( "BNE ") + getLabel( label, false), 2, false );
+	  //addAsm( string( "JMP ") + getLabel( label + 1, false), 3, false );
+	  addAsm( string( "BEQ ") + getLabel( label + 1, false), 2, false );
+	}
+      else if( string( $2.name ) == string( ">=" ) )
+	{
+	  addAsm( string( "BCC ") + getLabel( label, false), 2, false );
+	  addAsm( string( "BEQ ") + getLabel( label, false), 2, false );
+	  addAsm( string( "JMP ") + getLabel( label + 1, false), 3, false );
+	}
+      else if( string( $2.name ) == string( "<=" ) )
+	{
+	  addAsm( string( "BCS ") + getLabel( label, false), 2, false );
+	  addAsm( string( "BEQ ") + getLabel( label, false), 2, false );
+	  addAsm( string( "JMP ") + getLabel( label + 1, false), 3, false );
+	}
+      else if( string( $2.name ) == string( ">" ) )
+	{
+	  addAsm( string( "BCC ") + getLabel( label, false), 2, false );
+	  addAsm( string( "JMP ") + getLabel( label + 2, false), 3, false );
+	  addAsm( getLabel( label++ ), 0, true );
+	  addAsm( string( "BNE ") + getLabel( label, false), 2, false );
+	  addAsm( string( "JMP ") + getLabel( label + 1, false), 3, false );
 	}
       else
-	{ 
-	  addAsm( string( "LDX $" ) + asm_variables[ var_index ]->getAddress(), 3, false );
+	{
+	  addAsm( string( "BCS ") + getLabel( label , false), 2, false );
+	  addAsm( string( "JMP ") + getLabel( label + 7, false), 3, false );
+	  addAsm( getLabel( label++ ), 0, true );
+	  addAsm( string( "BNE ") + getLabel( label, false), 2, false );
+	  addAsm( string( "JMP ") + getLabel( label + 6, false), 3, false );
 	}
-            
-      addAsm( string("CPX #$") + toHex( atoi($3.name)), 2, false);
- 
-      // the labels will be numbered in hexadecimal
-      // this might not jive with what's below
 
+      
+    }
+  else if( scope_stack.top() == "IF")
+    {
+      if( string( $2.name ) == string( "==" ) )
+	{
+	  // if the jump is going to be out-of-range for BNE, then use
+	  // the method that's commented out here.
+	  //addAsm( string( "BEQ ") + getLabel( label, false), 2, false );
+	  //addAsm( string( "JMP ") + getLabel( label + 1, false), 3, false );
+	  addAsm( string( "BNE ") + getLabel( label + 1, false), 2, false );
+	}
+      else if( string( $2.name ) == string( "!=" ) )
+	{
+	  //addAsm( string( "BNE ") + getLabel( label, false), 2, false );
+	  //addAsm( string( "JMP ") + getLabel( label + 1, false), 3, false );
+	  addAsm( string( "BEQ ") + getLabel( label + 1, false), 2, false );
+	}
+      else if( string( $2.name ) == string( ">=" ) )
+	{
+	  addAsm( string( "BCC ") + getLabel( label, false), 2, false );
+	  addAsm( string( "BEQ ") + getLabel( label, false), 2, false );
+	  addAsm( string( "JMP ") + getLabel( label + 1, false), 3, false );
+	}
+      else if( string( $2.name ) == string( "<=" ) )
+	{
+	  addAsm( string( "BCS ") + getLabel( label, false), 2, false );
+	  addAsm( string( "BEQ ") + getLabel( label, false), 2, false );
+	  addAsm( string( "JMP ") + getLabel( label + 1, false), 3, false );
+	}
+      else if( string( $2.name ) == string( ">" ) )
+	{
+	  addAsm( string( "BCC ") + getLabel( label, false), 2, false );
+	  addAsm( string( "JMP ") + getLabel( label + 2, false), 3, false );
+	  addAsm( getLabel( label++ ), 0, true );
+	  addAsm( string( "BNE ") + getLabel( label, false), 2, false );
+	  addAsm( string( "JMP ") + getLabel( label + 1, false), 3, false );
+	}
+      else
+	{
+	  addAsm( string( "BCS ") + getLabel( label, false), 2, false );
+	  addAsm( string( "JMP ") + getLabel( label + 2, false), 3, false );
+	  addAsm( getLabel( label++ ), 0, true );
+	  addAsm( string( "BNE ") + getLabel( label, false), 2, false );
+	  addAsm( string( "JMP ") + getLabel( label + 1, false), 3, false );
+	}
 
-      // also - this MUST BE WITHIN 256 bytes!  Otherwise we need a different typ e of jump
-      addAsm( string("BCS LABEL_L") + toString( label ), false);
+      }
+  else if( scope_stack.top() == "WHILE" )
+    {
 
-      sprintf($$.else_body, "L%d", label++);
-      //labels[label] = 1;
     }
   else
     {
-      sprintf($$.if_body, "L%d", label++);
-      sprintf($$.else_body, "L%d", label++);
+
     }
 
-  //addComment( "Process the Condition" );
-  //addAsm( string( "; process the condition: " ) + string( $1.name ) + string( $3.name ) + string( $5.name ), 0, true );
-  addAsm( string( "LDA $" ) + getAddressOf( getIndexOf( $1.name )), 3, false);
-   addAsm( string( "CMP #$" ) + toHex(atoi( $2.name )), 2, false );
-   if( string( $2.name ) == string( "==" ) )
-     {
-       // if the jump is going to be out-of-range for BNE, then use
-       // the method that's commented out here.
-       addAsm( string( "BEQ ") + getLabel( label, false), 2, false );
-       addAsm( string( "JMP ") + getLabel( label + 1, false), 3, false );
-       //addAsm( string( "BNE ") + getLabel( label + 1, false), 2, false );
-     }
-   else if( string( $2.name ) == string( "!=" ) )
-     {
-       //addAsm( string( "BNE ") + getLabel( label, false), 2, false );
-       //addAsm( string( "JMP ") + getLabel( label + 1, false), 3, false );
-       addAsm( string( "BEQ ") + getLabel( label + 1, false), 2, false );
-     }
-   else if( string( $2.name ) == string( ">=" ) )
-     {
-       addAsm( string( "BCC ") + getLabel( label, false), 2, false );
-       addAsm( string( "BEQ ") + getLabel( label, false), 2, false );
-       addAsm( string( "JMP ") + getLabel( label + 1, false), 3, false );
-     }
-   else if( string( $2.name ) == string( "<=" ) )
-     {
-       addAsm( string( "BCS ") + getLabel( label, false), 2, false );
-       addAsm( string( "BEQ ") + getLabel( label, false), 2, false );
-       addAsm( string( "JMP ") + getLabel( label + 1, false), 3, false );
-     }
-   else if( string( $2.name ) == string( ">" ) )
-     {
-       addAsm( string( "BCC ") + getLabel( label, false), 2, false );
-       addAsm( string( "JMP ") + getLabel( label + 2, false), 3, false );
-       addAsm( getLabel( label++ ), 0, true );
-       addAsm( string( "BNE ") + getLabel( label, false), 2, false );
-       addAsm( string( "JMP ") + getLabel( label + 1, false), 3, false );
-     }
-   else
-     {
-       addAsm( string( "BCS ") + getLabel( label, false), 2, false );
-       addAsm( string( "JMP ") + getLabel( label + 2, false), 3, false );
-       addAsm( getLabel( label++ ), 0, true );
-       addAsm( string( "BNE ") + getLabel( label, false), 2, false );
-       addAsm( string( "JMP ") + getLabel( label + 1, false), 3, false );
-     }
 
    
    
@@ -846,7 +912,7 @@ condition: value relop value
 
 statement: datatype ID { add('V'); } init
 {
-   
+  addComment( string( $2.name ) + "=" + string( $4.name ) );
   $2.nd = mknode(NULL, NULL, $2.name); 
   int t = check_types($1.name, $4.type); 
   if(t>0) { 
@@ -880,9 +946,9 @@ statement: datatype ID { add('V'); } init
       $$.nd = mknode($2.nd, $4.nd, "declaration"); 
     } 
 
+  
   // variable initialization (for INT type)
   addAsmVariable( $2.name, 1 );
-
   addAsm( string("LDA #$") + toHex(atoi($4.name)), 2, false);
   addAsm( string("STA $") + getAddressOf( getIndexOf( $2.name )), 3, false );
 }
@@ -966,7 +1032,8 @@ init: '=' value { $$.nd = $2.nd; sprintf($$.type, $2.type); strcpy($$.name, $2.n
 
 expression: expression arithmetic expression
 {
-  
+  addAsm( getLabel( label++, true ), 0, true );
+  addComment( string($$.name ) + "=" + string( $1.name ) + string( $2.name ) + string( $3.name ) );
   if(!strcmp($1.type, $3.type))
     {
       // you can only compare expressions of the same TYPE
