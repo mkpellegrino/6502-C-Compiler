@@ -45,7 +45,10 @@
   stack <string> scope_stack;
   stack <string> var_scope_stack;
   stack <int> label_stack;
+  vector <int> label_vector;
 
+  
+  
   // converts an integer into a string
   string itos( int i )
   {
@@ -57,8 +60,23 @@
   {
     return std::to_string(i);
   }
+
+  string generateNewLabel(bool colon=true)
+  {
+    string return_value = ( string( "LBL" ) + itos( label_major ) + "L" + itos(label_vector[label_major]));
+    
+    if( colon )
+      {
+	return_value += string( ":" );
+	label_vector[label_major] = label_vector[label_major]+1;
+	cerr << "scope level: " << label_major << ":" << label_vector[label_major] << endl;
+      }
+    return return_value;
+  }
+			  
   string getLabel( char* s, bool colon=true )
   {
+    //if( !colon) label_vector[label_major]++;
     string return_value = string( "LBL" ) + itos( label_major ) + "L" + string( s );
     if( colon ) return_value += string( ":" );
     return return_value;
@@ -66,6 +84,7 @@
 
   string getLabel( int i, bool colon=true )
   {
+    //if( !colon) label_vector[label_major]++;    
     string return_value = string( "LBL" ) + itos( label_major ) + "L" + itos( i );
     if( colon ) return_value += string( ":" );
     return return_value;
@@ -337,30 +356,37 @@
   
   void pushScope( string s )
   {
-    addAsm( getLabel( label++ ), 0, true );
-    addComment( "New Scope " + s );
+    addComment( "=========================================================");
+    addComment( "                     New Scope " + s );
+    addComment( "=========================================================");
     scope_stack.push( s );
     var_scope_stack.push(".");
     label_stack.push( label );
-    label = 0;
+
     label_major++;
+
+    addComment( string("Label Major: ") + itos( label_major ) );
+    addComment( string("Label Minor: ") + itos( label_vector[label_major] ) );
+    //addAsm( generateNewLabel(), 0, true );
   }
 
   void popScope()
   {
-    addAsm( getLabel( label++ ), 0, true );
+    //addAsm( generateNewLabel(), 0, true );
     string return_value;
     addComment( string("Release Scope ") + string( scope_stack.top()) );
     while( var_scope_stack.top() != "." )
       {
 	var_scope_stack.pop();
-	// then delete that variable's memory location
       }
-    label = label_stack.top();
     scope_stack.pop();
     label_stack.pop();
     label_major--;
-    
+
+    addComment( string("Label Major: ") + itos( label_major ) );
+    addComment( string("Label Minor: ") + itos( label_vector[label_major] ) );
+    addComment( "=========================================================");
+    addComment( "=========================================================");
   }
   
 
@@ -613,35 +639,35 @@ FOR
 {
   pushScope("FOR");
   addComment( "=========================================================");
-  addComment( "FOR - loop setup goes here" );
+  addComment( "                        FOR LOOP" );
+  addComment( "=========================================================");
+  addAsm( generateNewLabel(), 0, true );
+  addComment( "              initialization goes here" );
   addAsm( "PHA" );
   addAsm( "TXA" );
   addAsm( "PHA" );
   addAsm( "TYA" );
   addAsm( "PHA" );
-  addComment("---------------------");
+  addComment( "---------------------------------------------------------");
 }
-'(' statement {addComment("---------------------");}
-';' condition {addComment("---------------------");}
-';' statement {addComment("---------------------");} ')'
+'(' statement {addComment("---------------------------------------------------------");}
+';' condition {addComment("---------------------------------------------------------");}
+';' statement {addComment("---------------------------------------------------------");} ')'
 '{' body '}'
 {
-  addComment( "---------------------" );
-  addAsm( string( "JMP " ) + getLabel( (int)label-3, false ) + "; <<< ", 3, false );
-  addAsm( getLabel( label++, true ), 0, true );
-  // end for
-  {
-    addAsm( "CLC" );
-
-    addAsm( "PLA" );
-    addAsm( "TAY" );
-    addAsm( "PLA" );
-    addAsm( "TAX" );
-    addAsm( "PLA" );
-    // if( arg_asm_comments ) addAsm( string("; bottom of for loop (depth ") + itos( is_for ) + string( ")"), 0, false );
-
-    
-  }
+  addComment( "---------------------------------------------------------" );
+  addComment( itos( label_vector[label_major] ));
+  addAsm( string( "JMP " ) + getLabel( ((int)label_vector[label_major]-2), false ) + "; <<< ", 3, false );
+  
+  addAsm( generateNewLabel(), 0, true );
+  addAsm( "PLA" );
+  addAsm( "TAY" );
+  addAsm( "PLA" );
+  addAsm( "TAX" );
+  addAsm( "PLA" );
+  // if( arg_asm_comments ) addAsm( string("; bottom of for loop (depth ") + itos( is_for ) + string( ")"), 0, false );
+  
+  addComment( "---------------------------------------------------------" );
   if( scope_stack.top() != string("FOR") )
     {
       addComment( "ERROR: Scope out of Sync" );
@@ -657,31 +683,36 @@ FOR
 {
   pushScope("IF");
   addComment( "=========================================================");
-  addComment( "IF" );
-  addAsm( getLabel( label++), 0, true );
-  addAsm( "PHA" );
+  addComment( "                        IF STATEMENT" );
+  addComment( "=========================================================");  
+  addAsm( generateNewLabel(), 0, true );
+  //addAsm( "PHA" );
 }
 '(' condition ')'
 {
-  addComment( "THEN:" );
-  addAsm( getLabel( label++), 0, true );
+  addComment( "---------------------------------------------------------" );
+  addComment( "                      THEN:" );
+  addAsm( generateNewLabel(), 0, true );
 }
 '{' body '}'
 {
-  addAsm( string("JMP ") + getLabel( label+1, false), 3, false );
-  addComment( "ELSE:" );
-  addAsm( getLabel( label++, true ), 0, true );
+  addComment( "---------------------------------------------------------" );
+  addComment( "                      ELSE:" );
+  addAsm( string("JMP ") + getLabel( label_vector[label_major]+1, false), 3, false);
+  addAsm( generateNewLabel(), 0, true );
+
 }
  else
    {
-     addComment( "; process the ELSE body too" );
-     addAsm( getLabel( label++, true ), 0, true );
+     addComment( "---------------------------------------------------------" );
+     addComment( "process the ELSE body too" );
+     addAsm( generateNewLabel(), 0, true );
    }
 {
-
-  addComment( "; post if-statement" );
-  addAsm( getLabel( label++, true ), 0, true );
-  addAsm( "PLA" );
+  addComment( "---------------------------------------------------------" );
+  addComment( "             post if-statement" );
+  addAsm( generateNewLabel(), 0, true );
+  //addAsm( "PLA" );
   
   if( scope_stack.top() != string("IF") )
     {
@@ -697,7 +728,7 @@ FOR
 
 | statement ';'
 {
-  addComment( "=========================================================" );
+  addComment( "=========================================================");    
 }
 
 | body body
@@ -708,6 +739,9 @@ FOR
 /* SCANF(ish) COMMAND!!! */
 | SCANFF '(' STR ')' ';'
 {
+  addComment( "=========================================================");  
+  addComment( "                     scanf");
+  addComment( "=========================================================");  
   getkey_is_needed=true;
   scanf_is_needed=true;
   addAsm( "JSR SCANF", 3, false );  
@@ -716,8 +750,10 @@ FOR
 /* PRINTF COMMAND!!! */
 | PRINTFF '(' STR ')' ';'
 {
-  addComment( string("printf(") + string($3.name) + string( ");") );
-  printf_is_needed=true;
+    addComment( "=========================================================");      
+    addComment( string("printf(") + string($3.name) + string( ");") );
+    addComment( "=========================================================");  
+ printf_is_needed=true;
   // add the string stripped of its' quotes
   addString( string("STRLBL") + itos( string_number++), string($3.name).substr(1,string($3.name).length()-2), asm_instr.size() );
 
@@ -734,33 +770,39 @@ FOR
 
 | tJSR '(' NUMBER ')' ';'
 {
-  //cerr << "function: jsr( " << $3.name << ");" << endl;
+  addComment( "=========================================================");  
+  addComment( "                 jsr");
+  addComment( "=========================================================");  
   addAsm(string( "JSR $") + toHex( atoi( $3.name )), 3, false );
 };
 
 | tRTS '(' ')' ';'
 {
+  addComment( "=========================================================");
+  addComment( "                 rts");
+  addComment( "=========================================================");  
+
   addAsm( "RTS" );
 };
 
 | tPOKE '(' NUMBER ',' NUMBER ')' ';'
 {
-  if( arg_asm_comments ) addComment( string("poke ") + string( $3.name ) + "," + string( $5.name ));
-  //$$.nd = mknode(NULL, NULL, "poke");
+    addComment( "=========================================================");  
+    addComment( "                     poke");
+    addComment( "=========================================================");  
 
-  // this just makes sure that the previous instruction wasn't a "pop acc"
-  // if it was, then it removes it and dooesn't put a "push acc"
-  // they negate each other
-  //if( previousAsm("PLA") ){deletePreviousAsm();}else{addAsm( "PHA" );}
+  if( arg_asm_comments ) addComment( string("poke ") + string( $3.name ) + "," + string( $5.name ));
   addAsm( string( "LDA #$" ) + toHex(atoi($5.name)) , 2, false );
   addAsm( string( "STA $" ) + toHex(atoi($3.name)) , 3, false );
-  addAsm( "PLA" );
+  // ??? why was this here?addAsm( "PLA" );
 };
 
 
 | tPOKE '(' NUMBER ',' ID ')' ';'
 {
-   if( arg_asm_comments ) addAsm( string("; poke goes here: ") + string( $3.name ) + "," + string( $5.name ), 0, false );
+    addComment( "=========================================================");  
+    addComment( "                     poke");
+    addComment( "=========================================================");  
   $$.nd = mknode(NULL, NULL, "poke");
   //if( previousAsm("PLA") ){deletePreviousAsm();}else{addAsm( "PHA" );}
 
@@ -775,13 +817,15 @@ FOR
     }
 
   addAsm( string( "STA $" ) + toHex( atoi( $3.name )), 3, false );
-  addAsm( "PLA" );
+  //addAsm( "PLA" );
 };
 
 
 | tPOKE '(' ID ',' ID ')' ';'
 {
-   if( arg_asm_comments ) addAsm( string("; poke goes here: ") + string( $3.name ) + "," + string( $5.name ), 0, false );
+    addComment( "=========================================================");  
+    addComment( "                     poke");
+    addComment( "=========================================================");  
   $$.nd = mknode(NULL, NULL, "poke");
   //if( previousAsm("PLA") ){deletePreviousAsm();}else{addAsm( "PHA" );}
   addAsm( string( "LDA $" ) + asm_variables[ getIndexOf( $5.name ) ]->getAddress(), 3, false );
@@ -799,10 +843,14 @@ FOR
 
 condition: value relop value
 {
+  addComment( "=========================================================");
+  addComment( string( "            condition in ") + string( scope_stack.top() ));
   addComment( string("while ") + string($1.name) + string($2.name) + string($3.name) );
+  addComment( "=========================================================");
 
-  if( scope_stack.top() == "FOR" ) addAsm( getLabel( label++, true ) + string( "\t\t\t; Top of FOR Loop"), 0, true );
-  if( scope_stack.top() == "IF" ) addAsm( getLabel( label++, true ) + string( "\t\t\t; Top of IF"), 0, true );
+  if( scope_stack.top() == "FOR" ) addAsm( generateNewLabel(true) + string( "\t\t\t; Top of FOR Loop"), 0, true );  
+  if( scope_stack.top() == "IF" ) addAsm( generateNewLabel(true) + string( "\t\t\t; Top of IF Statement"), 0, true );
+  
   
   addAsm( string( "LDX $" ) + getAddressOf( getIndexOf( $1.name )), 3, false);
   addAsm( string( "CPX #$" ) + toHex(atoi( $3.name )), 2, false );
@@ -814,43 +862,42 @@ condition: value relop value
 	  // if the jump is going to be out-of-range for BNE, then use
 	  // the method that's commented out here.
 	  //addAsm( string( "BEQ ") + getLabel( label, false), 2, false );
-	  //addAsm( string( "JMP ") + getLabel( label + 1, false), 3, false );
-	  addAsm( string( "BNE ") + getLabel( label + 1, false), 2, false );
+	  //addAsm( string( "JMP ") + getLabel( label + 2, false), 3, false );
+	  addAsm( string( "BNE ") + getLabel( label_vector[label_major] + 1, false), 2, false );
 	}
       else if( string( $2.name ) == string( "!=" ) )
 	{
 	  //addAsm( string( "BNE ") + getLabel( label, false), 2, false );
 	  //addAsm( string( "JMP ") + getLabel( label + 1, false), 3, false );
-	  addAsm( string( "BEQ ") + getLabel( label + 1, false), 2, false );
+	  addAsm( string( "BEQ ") + getLabel( label_vector[label_major] + 1, false), 2, false );
 	}
       else if( string( $2.name ) == string( ">=" ) )
 	{
-	  addAsm( string( "BCS ") + getLabel( label, false), 2, false );
-	  addAsm( string( "BEQ ") + getLabel( label, false), 2, false );
-	  addAsm( string( "JMP ") + getLabel( label + 1, false), 3, false );
+	  addAsm( string( "BCS ") + getLabel( label_vector[label_major], false), 2, false );
+	  addAsm( string( "BEQ ") + getLabel( label_vector[label_major], false), 2, false );
+	  addAsm( string( "JMP ") + getLabel( label_vector[label_major] + 1, false), 3, false );
 	}
       else if( string( $2.name ) == string( "<=" ) )
 	{
-	  addAsm( string( "BCC ") + getLabel( label, false), 2, false );
-	  addAsm( string( "BEQ ") + getLabel( label, false), 2, false );
-	  addAsm( string( "JMP ") + getLabel( label + 1, false), 3, false );
+	  addAsm( string( "BCC ") + getLabel( label_vector[label_major], false), 2, false );
+	  addAsm( string( "BEQ ") + getLabel( label_vector[label_major], false), 2, false );
+	  addAsm( string( "JMP ") + getLabel( label_vector[label_major] + 1, false), 3, false );
 	}
       else if( string( $2.name ) == string( ">" ) )
 	{
-	  addAsm( string( "BCS ") + getLabel( label, false), 2, false );
-	  addAsm( string( "JMP ") + getLabel( label + 2, false) + string("\t; exit the loop"), 3, false );
-	  addAsm( getLabel( label++ ), 0, true );
-	  addAsm( string( "BEQ ") + getLabel( label, false), 2, false );
-	  addAsm( string( "JMP ") + getLabel( label + 1, false) + string("\t; exit the loop"), 3, false );
+	  addAsm( string( "BCS ") + getLabel( label_vector[label_major], false), 2, false );
+	  addAsm( string( "JMP ") + getLabel( label_vector[label_major] + 1, false) + string("\t; exit the loop"), 3, false );
+	  addAsm( generateNewLabel(), 0, true );
+	  addAsm( string( "BEQ ") + getLabel( label_vector[label_major], false), 2, false );
+	  addAsm( string( "JMP ") + getLabel( label_vector[label_major] + 1, false) + string("\t; exit the loop"), 3, false );
 	}
       else //                                <
 	{
 	  // if i > bound jump to end	  
-	  addAsm( string( "BCC ") + getLabel( label , false), 2, false );
+	  addAsm( string( "BCC ") + getLabel( label_vector[label_major] , false), 2, false );
 	  // if i == bound jump to end
-	  addAsm( string( "JMP ") + getLabel( label+2, false) + string("\t; exit the loop"), 3, false ); 
+	  addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + string("\t; exit the loop"), 3, false ); 
 	  //addAsm( string( "BEQ ") + getLabel( label+1, false) + string("\t; exit the loop"), 2, false );
-	  //addAsm( getLabel( label++ ), 0, true );
 	  //addAsm( string( "BNE ") + getLabel( label, false), 2, false );
 	  //addAsm( string( "JMP ") + getLabel( label + 1, false) + string("\t; exit the loop"), 3, false );
 	}
@@ -865,41 +912,41 @@ condition: value relop value
 	  // the method that's commented out here.
 	  //addAsm( string( "BEQ ") + getLabel( label, false), 2, false );
 	  //addAsm( string( "JMP ") + getLabel( label + 1, false), 3, false );
-	  addAsm( string( "BNE ") + getLabel( label + 1, false), 2, false );
+	  addAsm( string( "BNE ") + getLabel( label_vector[label_major] + 1, false), 2, false );
 	}
       else if( string( $2.name ) == string( "!=" ) )
 	{
 	  //addAsm( string( "BNE ") + getLabel( label, false), 2, false );
 	  //addAsm( string( "JMP ") + getLabel( label + 1, false), 3, false );
-	  addAsm( string( "BEQ ") + getLabel( label + 1, false), 2, false );
+	  addAsm( string( "BEQ ") + getLabel( label_vector[label_major] + 1, false), 2, false );
 	}
       else if( string( $2.name ) == string( ">=" ) )
 	{
-	  addAsm( string( "BCC ") + getLabel( label, false), 2, false );
-	  addAsm( string( "BEQ ") + getLabel( label, false), 2, false );
-	  addAsm( string( "JMP ") + getLabel( label + 1, false), 3, false );
+	  addAsm( string( "BCC ") + getLabel( label_vector[label_major], false), 2, false );
+	  addAsm( string( "BEQ ") + getLabel( label_vector[label_major], false), 2, false );
+	  addAsm( string( "JMP ") + getLabel( label_vector[label_major] + 1, false), 3, false );
 	}
       else if( string( $2.name ) == string( "<=" ) )
 	{
-	  addAsm( string( "BCS ") + getLabel( label, false), 2, false );
-	  addAsm( string( "BEQ ") + getLabel( label, false), 2, false );
-	  addAsm( string( "JMP ") + getLabel( label + 1, false), 3, false );
+	  addAsm( string( "BCS ") + getLabel( label_vector[label_major], false), 2, false );
+	  addAsm( string( "BEQ ") + getLabel( label_vector[label_major], false), 2, false );
+	  addAsm( string( "JMP ") + getLabel( label_vector[label_major] + 1, false), 3, false );
 	}
       else if( string( $2.name ) == string( ">" ) )
 	{
-	  addAsm( string( "BCC ") + getLabel( label, false), 2, false );
-	  addAsm( string( "JMP ") + getLabel( label + 2, false), 3, false );
-	  addAsm( getLabel( label++ ), 0, true );
-	  addAsm( string( "BNE ") + getLabel( label, false), 2, false );
-	  addAsm( string( "JMP ") + getLabel( label + 1, false), 3, false );
+	  addAsm( string( "BCC ") + getLabel( label_vector[label_major], false), 2, false );
+	  addAsm( string( "JMP ") + getLabel( label_vector[label_major] + 2, false), 3, false );
+	  addAsm( generateNewLabel(), 0, true );
+	  addAsm( string( "BNE ") + getLabel( label_vector[label_major], false), 2, false );
+	  addAsm( string( "JMP ") + getLabel( label_vector[label_major] + 1, false), 3, false );
 	}
       else
 	{
-	  addAsm( string( "BCS ") + getLabel( label, false), 2, false );
-	  addAsm( string( "JMP ") + getLabel( label + 2, false), 3, false );
-	  addAsm( getLabel( label++ ), 0, true );
-	  addAsm( string( "BNE ") + getLabel( label, false), 2, false );
-	  addAsm( string( "JMP ") + getLabel( label + 1, false), 3, false );
+	  addAsm( string( "BCS ") + getLabel( label_vector[label_major], false), 2, false );
+	  addAsm( string( "JMP ") + getLabel( label_vector[label_major] + 2, false), 3, false );
+	  addAsm( generateNewLabel(), 0, true );
+	  addAsm( string( "BNE ") + getLabel( label_vector[label_major], false), 2, false );
+	  addAsm( string( "JMP ") + getLabel( label_vector[label_major] + 1, false), 3, false );
 	}
 
       }
@@ -912,6 +959,7 @@ condition: value relop value
 
     }
 
+  addComment( "=========================================================");  
 
    
    
@@ -1043,7 +1091,7 @@ init: '=' value { $$.nd = $2.nd; sprintf($$.type, $2.type); strcpy($$.name, $2.n
 
 expression: expression arithmetic expression
 {
-  addAsm( getLabel( label++, true ), 0, true );
+  addAsm( generateNewLabel(), 0, true );
   addComment( string($$.name ) + "=" + string( $1.name ) + string( $2.name ) + string( $3.name ) );
   if(!strcmp($1.type, $3.type))
     {
@@ -1120,7 +1168,12 @@ return: RETURN {}  value ';'
 
 int main(int argc, char *argv[])
 {
-
+  label_major=0;
+  //pushScope("MAIN");
+  label_vector.push_back(0);
+  label_vector.push_back(0);
+  label_vector.push_back(0);
+  label_vector.push_back(0);
   int dbg_count=1;
   
   string input_file_name;
