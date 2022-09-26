@@ -349,7 +349,7 @@
 
   void addComment( string s )
   {
-    addAsm( string("; ") + s, 0, true );
+    if( arg_asm_comments ) addAsm( string("; ") + s, 0, true );
     return;
   }
 
@@ -644,21 +644,20 @@ FOR
   addAsm( generateNewLabel(), 0, true );
   addComment( "              initialization goes here" );
   addAsm( "PHA" );
-  addAsm( "TXA" );
-  addAsm( "PHA" );
-  addAsm( "TYA" );
-  addAsm( "PHA" );
+  //addAsm( "TXA" );
+  //addAsm( "PHA" );
+  //addAsm( "TYA" );
+  //addAsm( "PHA" );
   addComment( "---------------------------------------------------------");
 }
 '(' statement {addComment("---------------------------------------------------------");}
 ';' condition {addComment("---------------------------------------------------------");}
 {
-  addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + string( "; jump to ELSE" ), 3, false );
+  addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + string( "; jump out of FOR" ), 3, false );
 }
-
 ';' statement
 {
-  addAsm( string( "JMP ") + getLabel( label_vector[label_major]-2, false) + string( "; jump to ELSE" ), 3, false );
+  addAsm( string( "JMP ") + getLabel( label_vector[label_major]-2, false) + string( "; jump to top of FOR" ), 3, false );
   addComment("---------------------------------------------------------");
 } ')'
 {  addAsm( generateNewLabel(), 0, true ); }
@@ -674,13 +673,11 @@ FOR
   addAsm( string( "JMP " ) + getLabel( ((int)label_vector[label_major]-2), false ) + "; <<< ", 3, false );
   
   addAsm( generateNewLabel(), 0, true );
-  addAsm( "PLA" );
-  addAsm( "TAY" );
-  addAsm( "PLA" );
-  addAsm( "TAX" );
-  addAsm( "PLA" );
-  // if( arg_asm_comments ) addAsm( string("; bottom of for loop (depth ") + itos( is_for ) + string( ")"), 0, false );
-  
+  //addAsm( "PLA" );
+  //addAsm( "TAY" );
+  //addAsm( "PLA" );
+  //addAsm( "TAX" );
+  addAsm( "PLA" );  
   addComment( "---------------------------------------------------------" );
   if( scope_stack.top() != string("FOR") )
     {
@@ -772,12 +769,10 @@ FOR
   addString( string("STRLBL") + itos( string_number++), string($3.name).substr(1,string($3.name).length()-2), asm_instr.size() );
 
   // these will later be replaced during Process Strings
-  //if( arg_asm_comments ) addAsm( "; The next 4 instructions used to be NOP's.  If theye STILL are", 0, false );
-  //if( arg_asm_comments ) addAsm( "; then there was an error in the ProcessStrings() function", 0, false );
-  addAsm( "NOP ; PRN 1", 1, false);
-  addAsm( "NOP ; PRN 2", 1, false );
-  addAsm( "NOP ; PRN 3", 1, false );
-  addAsm( "NOP ; PRN 4", 1, false );
+  addAsm( "NOP ; tpo be replaced", 1, false);
+  addAsm( "NOP ; tpo be replaced", 1, false);
+  addAsm( "NOP ; tpo be replaced", 1, false);
+  addAsm( "NOP ; tpo be replaced", 1, false);
 
   addAsm( "JSR PRN", 3, false );
 };
@@ -805,7 +800,7 @@ FOR
     addComment( "                     poke");
     addComment( "=========================================================");  
 
-  if( arg_asm_comments ) addComment( string("poke ") + string( $3.name ) + "," + string( $5.name ));
+  addComment( string("poke ") + string( $3.name ) + "," + string( $5.name ));
   addAsm( string( "LDA #$" ) + toHex(atoi($5.name)) , 2, false );
   addAsm( string( "STA $" ) + toHex(atoi($3.name)) , 3, false );
   // ??? why was this here?addAsm( "PLA" );
@@ -823,7 +818,7 @@ FOR
   int var_index = getIndexOf( $5.name );
   if( var_index == -1 )
     {
-      if( arg_asm_comments ) addAsm( string( "; [ERROR] Variable [") +  string($5.name) + string("] not found in vector!"), 0, true );
+      addAsm( string( "; [ERROR] Variable [") +  string($5.name) + string("] not found in vector!"), 0, true );
     }
   else
     { 
@@ -873,28 +868,25 @@ condition: value relop value
     {      
       if( string( $2.name ) == string( "<=" ) )
 	{
-	  /* THIS IS WORKING FOR IF STATEMENTS... DO NOT TOUCH */
 	  addAsm( string( "BCC ") + getLabel( label_vector[label_major], false) + string( "; if c==0 jump to THEN" ), 2, false );
 	  addAsm( string( "BEQ ") + getLabel( label_vector[label_major], false) + string( "; if z==1 jump to THEN" ), 2, false );
-	  addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + string( "; jump to ELSE" ), 3, false );
-	  /* THIS IS WORKING FOR IF STATEMENTS... DO NOT TOUCH */
+	  addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + string( "; jump to ELSE/out of FOR" ), 3, false );
 	}
       else if( string( $2.name ) == string( "==" ) )
 	{
-	  addAsm( string( "BNE ") + getLabel( label_vector[label_major]+1, false) + string( "; if z==0 jump to ELSE" ), 2, false );
-	  addAsm( string( "BCC ") + getLabel( label_vector[label_major]+1, false) + string( "; if c==0 jump to ELSE" ), 2, false );
-	  //addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + string( "; jump to ELSE" ), 3, false );
+	  addAsm( string( "BNE ") + getLabel( label_vector[label_major]+1, false) + string( "; if z==0 jump to ELSE/out of FOR" ), 2, false );
+	  addAsm( string( "BCC ") + getLabel( label_vector[label_major]+1, false) + string( "; if c==0 jump to ELSE/out of FOR" ), 2, false );
 	}
       else if( string( $2.name ) == string( ">" ) )
 	{
-	  addAsm( string( "BCC ") + getLabel( label_vector[label_major]+1, false) + string( "; if c==0 jump to ELSE" ), 2, false );
-	  addAsm( string( "BEQ ") + getLabel( label_vector[label_major]+1, false) + string( "; if z==1 jump to ELSE" ), 2, false );
+	  addAsm( string( "BCC ") + getLabel( label_vector[label_major]+2, false) + string( "; if c==0 jump to ELSE/out of FOR" ), 2, false );
+	  addAsm( string( "BEQ ") + getLabel( label_vector[label_major]+2, false) + string( "; if z==1 jump to ELSE/out of FOR" ), 2, false );
 	}
       else if( string( $2.name ) == string( "<" ) )
 	{
 	  if( scope_stack.top() == "FOR" )
 	    {
-	      addAsm( string( "BCS ") + getLabel( label_vector[label_major]+2, false) + string( "; if c==1 jump to ELSE" ), 2, false );
+	      addAsm( string( "BCS ") + getLabel( label_vector[label_major]+2, false) + string( "; if c==1 jump OUT of FOR" ), 2, false );
 	    }
 	  else
 	    {
@@ -903,12 +895,13 @@ condition: value relop value
 	}
       else if( string( $2.name ) == string( ">=" ) )
 	{
-	  addAsm( string( "BCS ") + getLabel( label_vector[label_major], false) + string( "; if c==1 jump to THEN" ), 2, false );
-	  addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + string( "; jump to ELSE" ), 3, false );
+	  addAsm( string( "BCC ") + getLabel( label_vector[label_major]+2, false) + string( "; if c==0 jump to ELSE/out of FOR" ), 2, false );
+	  //addAsm( string( "BCS ") + getLabel( label_vector[label_major], false) + string( "; if c==1 jump to THEN" ), 2, false );
+	  //addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + string( "; jump to ELSE/out of FOR" ), 3, false );
 	}
       else /* != ... NOT EQUAL TO */
 	{
-	  addAsm( string( "BEQ ") + getLabel( label_vector[label_major]+1, false) + string( "; if z==1 jump to ELSE" ), 2, false );
+	  addAsm( string( "BEQ ") + getLabel( label_vector[label_major]+1, false) + string( "; if z==1 jump to ELSE/out of FOR" ), 2, false );
 	}
     }
   else addComment( "           Unknown Conditional" );
@@ -957,95 +950,119 @@ statement: datatype ID { add('V'); } init
     { 
       $$.nd = mknode($2.nd, $4.nd, "declaration"); 
     } 
-
-  
   // variable initialization (for INT type)
   addAsmVariable( $2.name, 1 );
   addAsm( string("LDA #$") + toHex(atoi($4.name)), 2, false);
   addAsm( string("STA $") + getAddressOf( getIndexOf( $2.name )), 3, false );
 }
-
-
-| ID { check_declaration($1.name); } '=' expression {
+| ID { check_declaration($1.name); } '=' expression
+{
+  addComment( "LINE: 960 in parser.y" );
   $1.nd = mknode(NULL, NULL, $1.name); 
   char *id_type = get_type($1.name); 
-  if(strcmp(id_type, $4.type)) {
-    if(!strcmp(id_type, "int")) {
-      if(!strcmp($4.type, "float")){
-	struct node *temp = mknode(NULL, $4.nd, "floattoint");
-	$$.nd = mknode($1.nd, temp, "="); 
-      }
-      else{
-	struct node *temp = mknode(NULL, $4.nd, "chartoint");
-	$$.nd = mknode($1.nd, temp, "="); 
-      }
-			
+  if(strcmp(id_type, $4.type))
+    {
+      if(!strcmp(id_type, "int"))
+	{
+	  if(!strcmp($4.type, "float"))
+	    {
+	      struct node *temp = mknode(NULL, $4.nd, "floattoint");
+	      $$.nd = mknode($1.nd, temp, "="); 
+	    }
+	  else
+	    {
+	      struct node *temp = mknode(NULL, $4.nd, "chartoint");
+	      $$.nd = mknode($1.nd, temp, "="); 
+	    }
+	  
+	}
+      else if(!strcmp(id_type, "float"))
+	{
+	  if(!strcmp($4.type, "int"))
+	    {
+	      struct node *temp = mknode(NULL, $4.nd, "inttofloat");
+	      $$.nd = mknode($1.nd, temp, "="); 
+	    }
+	  else
+	    {
+	      struct node *temp = mknode(NULL, $4.nd, "chartofloat");
+	      $$.nd = mknode($1.nd, temp, "="); 
+	    }
+	  
+	}
+      else
+	{
+	  if(!strcmp($4.type, "int"))
+	    {
+	      struct node *temp = mknode(NULL, $4.nd, "inttochar");
+	      $$.nd = mknode($1.nd, temp, "="); 
+	    }
+	  else
+	    {
+	      struct node *temp = mknode(NULL, $4.nd, "floattochar");
+	      $$.nd = mknode($1.nd, temp, "="); 
+	    }
+	}
     }
-    else if(!strcmp(id_type, "float")) {
-      if(!strcmp($4.type, "int")){
-	struct node *temp = mknode(NULL, $4.nd, "inttofloat");
-	$$.nd = mknode($1.nd, temp, "="); 
-      }
-      else{
-	struct node *temp = mknode(NULL, $4.nd, "chartofloat");
-	$$.nd = mknode($1.nd, temp, "="); 
-      }
-			
+  else
+    {
+      
+      $$.nd = mknode($1.nd, $4.nd, "="); 
     }
-    else{
-      if(!strcmp($4.type, "int")){
-	struct node *temp = mknode(NULL, $4.nd, "inttochar");
-	$$.nd = mknode($1.nd, temp, "="); 
-      }
-      else{
-	struct node *temp = mknode(NULL, $4.nd, "floattochar");
-	$$.nd = mknode($1.nd, temp, "="); 
-      }
-    }
-  }
-  else {
-    $$.nd = mknode($1.nd, $4.nd, "="); 
-  }
-
+  
   // This is where a variable is given the value of a different variable
   //sprintf(icg[ic_idx++], "%s = %s <<==", $1.name, $4.name);
   //addAsm(icg[ic_idx-1], false );
 				     }
-| ID { check_declaration($1.name); } relop expression { $1.nd = mknode(NULL, NULL, $1.name); $$.nd = mknode($1.nd, $4.nd, $3.name); }
-| ID { check_declaration($1.name); } UNARY { 
+| ID {  addComment( "LINE: 1005" ); check_declaration($1.name); } relop expression { $1.nd = mknode(NULL, NULL, $1.name); $$.nd = mknode($1.nd, $4.nd, $3.name); }
+| ID {  addComment( "LINE: 1006" ); check_declaration($1.name); } UNARY { 
   $1.nd = mknode(NULL, NULL, $1.name); 
   $3.nd = mknode(NULL, NULL, $3.name); 
   $$.nd = mknode($1.nd, $3.nd, "ITERATOR");  
-  if(!strcmp($3.name, "++")) {
-    sprintf(buff, "t%d = %s + 1\n%s = t%d\n// 503", temp_var, $1.name, $1.name, temp_var++);
-  }
-  else {
-    sprintf(buff, "t%d = %s + 1\n%s = t%d\n// 469", temp_var, $1.name, $1.name, temp_var++);
-  }
+  if(!strcmp($3.name, "++"))
+    {
+      sprintf(buff, "t%d = %s + 1\n%s = t%d\n// 503", temp_var, $1.name, $1.name, temp_var++);
+    }
+  else
+    {
+      sprintf(buff, "t%d = %s + 1\n%s = t%d\n// 469", temp_var, $1.name, $1.name, temp_var++);
+    }
 				     }
-| UNARY ID { 
+| UNARY ID {
+  addComment( "LINE: 1018" );
   check_declaration($2.name); 
   $1.nd = mknode(NULL, NULL, $1.name); 
   $2.nd = mknode(NULL, NULL, $2.name); 
   $$.nd = mknode($1.nd, $2.nd, "ITERATOR"); 
-  if(!strcmp($1.name, "++")) {
-    sprintf(buff, "t%d = %s + 1\n%s = t%d\n// 479", temp_var, $2.name, $2.name, temp_var++);
-  }
-  else {
-    sprintf(buff, "t%d = %s - 1\n%s = t%d\n// 482", temp_var, $2.name, $2.name, temp_var++);
-
-  }
+  if(!strcmp($1.name, "++"))
+    {
+      sprintf(buff, "t%d = %s + 1\n%s = t%d\n// 479", temp_var, $2.name, $2.name, temp_var++);
+    }
+  else
+    {
+      sprintf(buff, "t%d = %s - 1\n%s = t%d\n// 482", temp_var, $2.name, $2.name, temp_var++);
+    }
 				     }
 ;
 
-init: '=' value { $$.nd = $2.nd; sprintf($$.type, $2.type); strcpy($$.name, $2.name); }
-| { sprintf($$.type, "null"); $$.nd = mknode(NULL, NULL, "0"); strcpy($$.name, "0"); }
+init: '=' value
+{
+  $$.nd = $2.nd; 
+  sprintf($$.type, $2.type);
+  strcpy($$.name, $2.name);
+}
+|
+{
+  sprintf($$.type, "null");
+  $$.nd = mknode(NULL, NULL, "0");
+  strcpy($$.name, "0");
+}
 ;
 
 expression: expression arithmetic expression
 {
   addAsm( generateNewLabel(), 0, true );
-  addComment( string($$.name ) + "=" + string( $1.name ) + string( $2.name ) + string( $3.name ) );
+  //addComment( string($$.name ) + "=" + string( $1.name ) + string( $2.name ) + string( $3.name ) );
   if(!strcmp($1.type, $3.type))
     {
       // you can only compare expressions of the same TYPE
@@ -1055,7 +1072,7 @@ expression: expression arithmetic expression
     }
   else
     {
-      addAsm( "%% *** TYPE MISMATCH ERROR ***", false );
+      addComment( "*** TYPE MISMATCH ERROR ***" );
     }
   
 
@@ -1065,31 +1082,32 @@ expression: expression arithmetic expression
   
   
   addAsm( string("LDA $") + getAddressOf(string($1.name )), 3, false);
-  addAsm( "CLC" ); 
-  if( current_state == "+" )
+  //addAsm( "CLC" ); 
+  if( string($2.name) == "+" )
     {
       addAsm( string("ADC #$") + toHex(atoi($3.name )),2, false);
     }
-  else if ( current_state == "-" )
+  else if ( string($2.name) == "-" )
   {
     addAsm( string("SBC #$") + toHex(atoi($3.name )),2, false);
   }
   else
     {
-      addAsm( "unknown state" );
+      addComment( "unknown state" );
     }
   addAsm( string("STA $") + getAddressOf($1.name), 3, false);
-  
+  //addAsm( "CLC" );
 }
 
-
-| value {  }
+//| ID '=' ID arithmetic NUMBER { addComment( "line 1091" ); }
+//| value arithmetic value { cerr << "line 1093" << $1.name << endl; addComment( string( $1.name ) + string( $2.name ) + string( $3.name ) ); }
+| value { }
 ;
 
-arithmetic: ADD { current_state = string("+"); }
-| SUBTRACT { current_state = string("-"); }
-| MULTIPLY { current_state = string("*"); }
-| DIVIDE { current_state = string("/"); }
+arithmetic: ADD { addComment( "addition" ); current_state = string("+"); }
+| SUBTRACT { addComment( "subtraction" ); current_state = string("-"); }
+| MULTIPLY { addComment( "multiplication" );current_state = string("*"); }
+| DIVIDE { addComment( "division" );current_state = string("/"); }
 ;
 
 relop: LT { current_state = string( "LT" ); }
@@ -1100,7 +1118,7 @@ relop: LT { current_state = string( "LT" ); }
 | NE { current_state = string( "NE" ); }
 ;
 
-value: NUMBER { strcpy($$.name, $1.name); sprintf($$.type, "int"); add('C'); $$.nd = mknode(NULL, NULL, $1.name); }
+value: NUMBER { /* addAsm( string("; ") + string($1.name), 1, false ); */ strcpy($$.name, $1.name); sprintf($$.type, "int"); add('C'); $$.nd = mknode(NULL, NULL, $1.name); }
 | FLOAT_NUM { strcpy($$.name, $1.name); sprintf($$.type, "float"); add('C'); $$.nd = mknode(NULL, NULL, $1.name); }
 | CHARACTER { strcpy($$.name, $1.name); sprintf($$.type, "char"); add('C'); $$.nd = mknode(NULL, NULL, $1.name); }
 | ID { strcpy($$.name, $1.name); char *id_type = get_type($1.name); sprintf($$.type, id_type); check_declaration($1.name); $$.nd = mknode(NULL, NULL, $1.name); }
