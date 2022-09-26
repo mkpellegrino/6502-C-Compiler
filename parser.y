@@ -705,8 +705,8 @@ FOR
  else
    {
      addComment( "---------------------------------------------------------" );
-     addComment( "process the ELSE body too" );
-     addAsm( generateNewLabel(), 0, true );
+     addComment( "post-process the ELSE" );
+     //addAsm( generateNewLabel(), 0, true );
    }
 {
   addComment( "---------------------------------------------------------" );
@@ -845,120 +845,52 @@ condition: value relop value
 {
   addComment( "=========================================================");
   addComment( string( "            condition in ") + string( scope_stack.top() ));
-  addComment( string("while ") + string($1.name) + string($2.name) + string($3.name) );
+  addComment( scope_stack.top() + string(" ")  + string($1.name) + string($2.name) + string($3.name) );
   addComment( "=========================================================");
-
+  //pushScope("COND");
+  
   if( scope_stack.top() == "FOR" ) addAsm( generateNewLabel(true) + string( "\t\t\t; Top of FOR Loop"), 0, true );  
   if( scope_stack.top() == "IF" ) addAsm( generateNewLabel(true) + string( "\t\t\t; Top of IF Statement"), 0, true );
   
   
   addAsm( string( "LDX $" ) + getAddressOf( getIndexOf( $1.name )), 3, false);
   addAsm( string( "CPX #$" ) + toHex(atoi( $3.name )), 2, false );
-  if( scope_stack.top() == "FOR" )  // this is a comparison for a for loop
+  if( scope_stack.top() == "FOR" || scope_stack.top() == "IF" || scope_stack.top() == "WHILE") 
     {      
-      //addAsm( string( "BCS " ) + getLabel( label, false ), 2, false );
-      if( string( $2.name ) == string( "==" ) )
+      if( string( $2.name ) == string( "<=" ) )
 	{
-	  // if the jump is going to be out-of-range for BNE, then use
-	  // the method that's commented out here.
-	  //addAsm( string( "BEQ ") + getLabel( label, false), 2, false );
-	  //addAsm( string( "JMP ") + getLabel( label + 2, false), 3, false );
-	  addAsm( string( "BNE ") + getLabel( label_vector[label_major] + 1, false), 2, false );
+	  /* THIS IS WORKING FOR IF STATEMENTS... DO NOT TOUCH */
+	  addAsm( string( "BCC ") + getLabel( label_vector[label_major], false) + string( "; if c==0 jump to THEN" ), 2, false );
+	  addAsm( string( "BEQ ") + getLabel( label_vector[label_major], false) + string( "; if z==1 jump to THEN" ), 2, false );
+	  addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + string( "; jump to ELSE" ), 3, false );
+	  /* THIS IS WORKING FOR IF STATEMENTS... DO NOT TOUCH */
 	}
-      else if( string( $2.name ) == string( "!=" ) )
+      else if( string( $2.name ) == string( "==" ) )
 	{
-	  //addAsm( string( "BNE ") + getLabel( label, false), 2, false );
-	  //addAsm( string( "JMP ") + getLabel( label + 1, false), 3, false );
-	  addAsm( string( "BEQ ") + getLabel( label_vector[label_major] + 1, false), 2, false );
-	}
-      else if( string( $2.name ) == string( ">=" ) )
-	{
-	  addAsm( string( "BCS ") + getLabel( label_vector[label_major], false), 2, false );
-	  addAsm( string( "BEQ ") + getLabel( label_vector[label_major], false), 2, false );
-	  addAsm( string( "JMP ") + getLabel( label_vector[label_major] + 1, false), 3, false );
-	}
-      else if( string( $2.name ) == string( "<=" ) )
-	{
-	  addAsm( string( "BCC ") + getLabel( label_vector[label_major], false), 2, false );
-	  addAsm( string( "BEQ ") + getLabel( label_vector[label_major], false), 2, false );
-	  addAsm( string( "JMP ") + getLabel( label_vector[label_major] + 1, false), 3, false );
+	  addAsm( string( "BNE ") + getLabel( label_vector[label_major]+1, false) + string( "; if z==0 jump to ELSE" ), 2, false );
+	  addAsm( string( "BCC ") + getLabel( label_vector[label_major]+1, false) + string( "; if c==0 jump to ELSE" ), 2, false );
+	  //addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + string( "; jump to ELSE" ), 3, false );
 	}
       else if( string( $2.name ) == string( ">" ) )
 	{
-	  addAsm( string( "BCS ") + getLabel( label_vector[label_major], false), 2, false );
-	  addAsm( string( "JMP ") + getLabel( label_vector[label_major] + 1, false) + string("\t; exit the loop"), 3, false );
-	  addAsm( generateNewLabel(), 0, true );
-	  addAsm( string( "BEQ ") + getLabel( label_vector[label_major], false), 2, false );
-	  addAsm( string( "JMP ") + getLabel( label_vector[label_major] + 1, false) + string("\t; exit the loop"), 3, false );
+	  addAsm( string( "BCC ") + getLabel( label_vector[label_major]+1, false) + string( "; if c==0 jump to ELSE" ), 2, false );
+	  addAsm( string( "BEQ ") + getLabel( label_vector[label_major]+1, false) + string( "; if z==1 jump to ELSE" ), 2, false );
 	}
-      else //                                <
+      else if( string( $2.name ) == string( "<" ) )
 	{
-	  // if i > bound jump to end	  
-	  addAsm( string( "BCC ") + getLabel( label_vector[label_major] , false), 2, false );
-	  // if i == bound jump to end
-	  addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + string("\t; exit the loop"), 3, false ); 
-	  //addAsm( string( "BEQ ") + getLabel( label+1, false) + string("\t; exit the loop"), 2, false );
-	  //addAsm( string( "BNE ") + getLabel( label, false), 2, false );
-	  //addAsm( string( "JMP ") + getLabel( label + 1, false) + string("\t; exit the loop"), 3, false );
-	}
-
-      
-    }
-  else if( scope_stack.top() == "IF")
-    {
-      if( string( $2.name ) == string( "==" ) )
-	{
-	  // if the jump is going to be out-of-range for BNE, then use
-	  // the method that's commented out here.
-	  //addAsm( string( "BEQ ") + getLabel( label, false), 2, false );
-	  //addAsm( string( "JMP ") + getLabel( label + 1, false), 3, false );
-	  addAsm( string( "BNE ") + getLabel( label_vector[label_major] + 1, false), 2, false );
-	}
-      else if( string( $2.name ) == string( "!=" ) )
-	{
-	  //addAsm( string( "BNE ") + getLabel( label, false), 2, false );
-	  //addAsm( string( "JMP ") + getLabel( label + 1, false), 3, false );
-	  addAsm( string( "BEQ ") + getLabel( label_vector[label_major] + 1, false), 2, false );
+	  addAsm( string( "BCS ") + getLabel( label_vector[label_major]+1, false) + string( "; if c==1 jump to ELSE" ), 2, false );
 	}
       else if( string( $2.name ) == string( ">=" ) )
 	{
-	  addAsm( string( "BCC ") + getLabel( label_vector[label_major], false), 2, false );
-	  addAsm( string( "BEQ ") + getLabel( label_vector[label_major], false), 2, false );
-	  addAsm( string( "JMP ") + getLabel( label_vector[label_major] + 1, false), 3, false );
+	  addAsm( string( "BCS ") + getLabel( label_vector[label_major], false) + string( "; if c==1 jump to THEN" ), 2, false );
+	  addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + string( "; jump to ELSE" ), 3, false );
 	}
-      else if( string( $2.name ) == string( "<=" ) )
+      else /* != ... NOT EQUAL TO */
 	{
-	  addAsm( string( "BCS ") + getLabel( label_vector[label_major], false), 2, false );
-	  addAsm( string( "BEQ ") + getLabel( label_vector[label_major], false), 2, false );
-	  addAsm( string( "JMP ") + getLabel( label_vector[label_major] + 1, false), 3, false );
+	  addAsm( string( "BEQ ") + getLabel( label_vector[label_major]+1, false) + string( "; if z==1 jump to ELSE" ), 2, false );
 	}
-      else if( string( $2.name ) == string( ">" ) )
-	{
-	  addAsm( string( "BCC ") + getLabel( label_vector[label_major], false), 2, false );
-	  addAsm( string( "JMP ") + getLabel( label_vector[label_major] + 2, false), 3, false );
-	  addAsm( generateNewLabel(), 0, true );
-	  addAsm( string( "BNE ") + getLabel( label_vector[label_major], false), 2, false );
-	  addAsm( string( "JMP ") + getLabel( label_vector[label_major] + 1, false), 3, false );
-	}
-      else
-	{
-	  addAsm( string( "BCS ") + getLabel( label_vector[label_major], false), 2, false );
-	  addAsm( string( "JMP ") + getLabel( label_vector[label_major] + 2, false), 3, false );
-	  addAsm( generateNewLabel(), 0, true );
-	  addAsm( string( "BNE ") + getLabel( label_vector[label_major], false), 2, false );
-	  addAsm( string( "JMP ") + getLabel( label_vector[label_major] + 1, false), 3, false );
-	}
-
-      }
-  else if( scope_stack.top() == "WHILE" )
-    {
-
     }
-  else
-    {
-
-    }
-
+  else addComment( "           Unknown Conditional" );
   addComment( "=========================================================");  
 
    
