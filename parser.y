@@ -652,11 +652,25 @@ FOR
 }
 '(' statement {addComment("---------------------------------------------------------");}
 ';' condition {addComment("---------------------------------------------------------");}
-';' statement {addComment("---------------------------------------------------------");} ')'
+{
+  addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + string( "; jump to ELSE" ), 3, false );
+}
+
+';' statement
+{
+  addAsm( string( "JMP ") + getLabel( label_vector[label_major]-2, false) + string( "; jump to ELSE" ), 3, false );
+  addComment("---------------------------------------------------------");
+} ')'
+{  addAsm( generateNewLabel(), 0, true ); }
 '{' body '}'
 {
   addComment( "---------------------------------------------------------" );
-  addComment( itos( label_vector[label_major] ));
+
+
+  /* SHOULD WE PUT THE ITERATOR HERE? */
+
+
+  
   addAsm( string( "JMP " ) + getLabel( ((int)label_vector[label_major]-2), false ) + "; <<< ", 3, false );
   
   addAsm( generateNewLabel(), 0, true );
@@ -878,7 +892,14 @@ condition: value relop value
 	}
       else if( string( $2.name ) == string( "<" ) )
 	{
-	  addAsm( string( "BCS ") + getLabel( label_vector[label_major]+1, false) + string( "; if c==1 jump to ELSE" ), 2, false );
+	  if( scope_stack.top() == "FOR" )
+	    {
+	      addAsm( string( "BCS ") + getLabel( label_vector[label_major]+2, false) + string( "; if c==1 jump to ELSE" ), 2, false );
+	    }
+	  else
+	    {
+	      addAsm( string( "BCS ") + getLabel( label_vector[label_major]+1, false) + string( "; if c==1 jump to ELSE" ), 2, false );
+	    }
 	}
       else if( string( $2.name ) == string( ">=" ) )
 	{
@@ -1058,6 +1079,7 @@ expression: expression arithmetic expression
       addAsm( "unknown state" );
     }
   addAsm( string("STA $") + getAddressOf($1.name), 3, false);
+  
 }
 
 
