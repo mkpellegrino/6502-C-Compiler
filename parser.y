@@ -871,52 +871,31 @@ condition: value relop value
   
   addAsm( string( "LDA $" ) + getAddressOf( getIndexOf( $1.name )), 3, false);
   addAsm( string( "CMP #$" ) + toHex(atoi( $3.name )), 2, false );
-  if( scope_stack.top() == "FOR" || scope_stack.top() == "IF" || scope_stack.top() == "WHILE") 
+  if( scope_stack.top() == "FOR" || scope_stack.top() == "WHILE") 
     {      
       if( string( $2.name ) == string( "<=" ) )
 	{
-	  // THIS NEEDS WORK!!! - 2022 09 26 - 17:02
 	  addAsm( string( "BCC ") + getLabel( label_vector[label_major]+1, false) + string( "; if c==0 jump to THEN" ), 2, false );
 	  addAsm( string( "BEQ ") + getLabel( label_vector[label_major]+1, false) + string( "; if z==1 jump to THEN" ), 2, false );
-	  //addAsm( string( "JMP ") + getLabel( label_vector[label_major]+2, false) + string( "; jump to ELSE/out of FOR" ), 3, false );
 	}
       else if( string( $2.name ) == string( "==" ) )
 	{
 	  addAsm( string( "BEQ ") + getLabel( label_vector[label_major]+1, false) + string( "; if z==1 jump to THEN" ), 2, false );
-	  //addAsm( string( "JMP ") + getLabel( label_vector[label_major]+2, false) + string( "; jump to ELSE/out of FOR" ), 3, false );
-
-	  //addAsm( string( "BNE ") + getLabel( label_vector[label_major]+1, false) + string( "; if z==0 jump to ELSE/out of FOR" ), 2, false );
-	  //addAsm( string( "BCC ") + getLabel( label_vector[label_major]+1, false) + string( "; if c==0 jump to ELSE/out of FOR" ), 2, false );
 	}
       else if( string( $2.name ) == string( ">" ) )
 	{
 	  addAsm( string( ".BYTE #$F0 ; if z==1 SKIP THE BCS" ), 1, false );
 	  addAsm( string( ".BYTE #$02 ; 0xF0 0x02 is: BEQ +2" ), 1, false );
-	  
-	  //addAsm( string( "BEQ #$02") + string( "; if z==1 SKIP THE BCS" ), 2, false );
 	  addAsm( string( "BCS ") + getLabel( label_vector[label_major]+1, false) + string( "; if c==1 jump to THEN" ), 2, false );
-	  //addAsm( string( "JMP ") + getLabel( label_vector[label_major]+2, false) + string( "; jump out of FOR" ), 3, false );
 	}
       else if( string( $2.name ) == string( "<" ) )
 	{
-	  if( scope_stack.top() == "FOR" )
-	    {
-	      addAsm( string( "BCC ") + getLabel( label_vector[label_major]+1, false) + string( "; if c==0 jump to BODY" ), 2, false );
-	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+2, false) + string( "; jump to ELSE/out of FOR" ), 3, false );
-	    }
-	  else
-	    {
-	      addAsm( string( "BCC ") + getLabel( label_vector[label_major]+1, false) + string( "; if c==1 jump to THEN" ), 2, false );
-	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+2, false) + string( "; jump to ELSE" ), 3, false );
-	    }
+	  addAsm( string( "BCC ") + getLabel( label_vector[label_major]+1, false) + string( "; if c==0 jump to BODY" ), 2, false );
+	  addAsm( string( "JMP ") + getLabel( label_vector[label_major]+2, false) + string( "; jump to ELSE/out of FOR" ), 3, false );
 	}
       else if( string( $2.name ) == string( ">=" ) )
 	{
 	  addAsm( string( "BCS ") + getLabel( label_vector[label_major]+1, false) + string( "; if c==1 jump to THEN/BODY of FOR" ), 2, false );
-	  //addAsm( string( "JMP ") + getLabel( label_vector[label_major]+2, false) + string( "; jump to ELSE/out of FOR" ), 3, false );
-		  
-	  //addAsm( string( "BCS ") + getLabel( label_vector[label_major], false) + string( "; if c==1 jump to THEN" ), 2, false );
-	  //addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + string( "; jump to ELSE/out of FOR" ), 3, false );
 	}
       else /* != ... NOT EQUAL TO */
 	{
@@ -924,11 +903,46 @@ condition: value relop value
 	  addAsm( string( "JMP ") + getLabel( label_vector[label_major]+2, false) + string( "; jump to ELSE/out of FOR" ), 3, false );
 	}
     }
-  else addComment( "           Unknown Conditional" );
-  addComment( "=========================================================");  
+  else if( scope_stack.top() == "IF" ) /*                                                                                                               <<<<    IF           */
+    {
+      if( string( $2.name ) == string( "<=" ) )
+	{
+	  addAsm( string( "BCC ") + getLabel( label_vector[label_major], false) + string( "; if c==0 jump to THEN" ), 2, false );
+	  addAsm( string( "BEQ ") + getLabel( label_vector[label_major], false) + string( "; if z==1 jump to THEN" ), 2, false );
 
-   
-   
+	  addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + string( "; jump to ELSE" ), 3, false );
+	}   
+      else if( string( $2.name ) == string( "==" ) )
+	{
+	  addAsm( string( "BEQ ") + getLabel( label_vector[label_major], false) + string( "; if z==1 jump to THEN" ), 2, false );
+
+	  addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + string( "; jump to ELSE" ), 3, false );
+	}
+      else if( string( $2.name ) == string( ">" ) )
+	{
+	  addAsm( string( "BCC ") + getLabel( label_vector[label_major]+1, false) + string( "; if c==0 jump to ELSE" ), 2, false );
+	  addAsm( string( "BEQ ") + getLabel( label_vector[label_major]+1, false) + string( "; if z==1 jump to ELSE" ), 2, false );
+	}
+      else if( string( $2.name ) == string( "<" ) )
+	{
+	  addAsm( string( "BCC ") + getLabel( label_vector[label_major], false) + string( "; if c==0 jump to THEN" ), 2, false );
+	  addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + string( "; jump to ELSE" ), 3, false );
+	}
+      else if( string( $2.name ) == string( ">=" ) )
+	{
+	  addAsm( string( "BCC ") + getLabel( label_vector[label_major]+1, false) + string( "; if c==1 jump to ELSE" ), 2, false );
+	}
+      else /* != ... NOT EQUAL TO */
+	{
+	  addAsm( string( "BEQ ") + getLabel( label_vector[label_major]+1, false) + string( "; if z==1 jump to ELSE" ), 2, false );
+	}
+    }
+  else
+    {
+      addComment( "           Unknown Conditional" );
+    }
+  addComment( "=========================================================");  
+      
 };
 | TRUE { add('K'); $$.nd = NULL; }
 | FALSE { add('K'); $$.nd = NULL; }
