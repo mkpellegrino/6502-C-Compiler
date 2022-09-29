@@ -17,7 +17,6 @@ unary "++"|"--"
 "scanf"                     { strcpy(yylval.nd_obj.name,(yytext)); return SCANFF; }
 "int"                       { strcpy(yylval.nd_obj.name,(yytext)); return INT; }
 "float"                     { strcpy(yylval.nd_obj.name,(yytext)); return FLOAT; }
-"pointer"                     { strcpy(yylval.nd_obj.name,(yytext)); return tPOINTER; }
 "char"                      { strcpy(yylval.nd_obj.name,(yytext)); return CHAR; }
 "void"                      { strcpy(yylval.nd_obj.name,(yytext)); return VOID; }
 "return"                    { strcpy(yylval.nd_obj.name,(yytext)); return RETURN; }
@@ -43,11 +42,11 @@ unary "++"|"--"
 "-"                         { strcpy(yylval.nd_obj.name,(yytext)); return SUBTRACT; }
 "/"                         { strcpy(yylval.nd_obj.name,(yytext)); return DIVIDE; }
 "*"                         { strcpy(yylval.nd_obj.name,(yytext)); return MULTIPLY; }
-
 \/\/.*                      { ; }
 \/\*(.*\n)*.*\*\/           { ; } 
 [ \t]*                      { ; }
 [\n]                        { countn++;}
+
 .	                        { return *yytext; }
 \"([^\\\"]|\\.)*\"                    { strcpy(yylval.nd_obj.name,(yytext)); return STR; }
 

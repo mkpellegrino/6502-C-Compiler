@@ -19,6 +19,9 @@ lexer:	lexer.l
 compiler: y.tab.c
 	$(CC) $(LIBRARIES) -w y.tab.c -o compiler
 
+tests:
+	./compiler --code-segment 49152 --data-segment 828 < ./iftests.c > iftests.asm
+	./compiler --code-segment 49152 --data-segment 828 < ./vartests.c > vartests.asm
 clean:
 #	mv -f parser.tab.c parser.tab.c.prev
 #	mv -f parser.tab.h parser.tab.h.prev

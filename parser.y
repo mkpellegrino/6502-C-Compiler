@@ -69,7 +69,7 @@
       {
 	return_value += string( ":" );
 	label_vector[label_major] = label_vector[label_major]+1;
-	cerr << "scope level: " << label_major << ":" << label_vector[label_major] << endl;
+	//cerr << "scope level: " << label_major << ":" << label_vector[label_major] << endl;
       }
     return return_value;
   }
@@ -211,7 +211,7 @@
 	{
 	  out << "\t.BYTE #$" << toHex((int)a.text[i]) << endl;
 	}
-      out << "\t.BYTE #$0D" << endl;
+      //out << "\t.BYTE #$0D" << endl;
       out << "\t.BYTE #$00" << endl;
       return out;
     }
@@ -431,7 +431,7 @@
       {
 	// this puts the strings all after the code segemnt and other builtin functions like the printf function.
 	asm_strings[i]->setAddress( current_code_location );
-	current_code_location+=asm_strings[i]->getLength()+2; // the +1 is for the carriage return and the null terminated zero
+	current_code_location+=asm_strings[i]->getLength()+1; // the +1 is for the carriage return and the null terminated zero
 
 	// Now find where (in the instruction vector) this string is being referenced
 	int j = asm_strings[i]->getIndex() -1; 
@@ -612,14 +612,14 @@
 
 %token VOID 
 %token <nd_obj> tPOINTER tJSR tRTS tPOKE NEWLINE CHARACTER PRINTFF SCANFF INT FLOAT CHAR FOR IF ELSE TRUE FALSE NUMBER FLOAT_NUM ID LE GE EQ NE GT LT AND OR STR ADD MULTIPLY DIVIDE SUBTRACT UNARY INCLUDE RETURN
-%type <nd_obj> headers main body return datatype statement arithmetic relop program else
+%type <nd_obj> headers main body return function datatype statement arithmetic relop program else
    %type <nd_obj2> init value expression
       %type <nd_obj3> condition
 
 %%
 
 
-program: headers main '(' ')' '{' body return '}' { $2.nd = mknode($6.nd, $7.nd, "main"); $$.nd = mknode($1.nd, $2.nd, "program"); 
+program: headers main '(' ')' '{' body return '}' function { $2.nd = mknode($6.nd, $7.nd, "main"); $$.nd = mknode($1.nd, $2.nd, "program"); 
      head = $$.nd;
    } 
 ;
@@ -628,12 +628,31 @@ headers: headers headers { $$.nd = mknode($1.nd, $2.nd, "headers"); }
 | INCLUDE { add('H'); } { $$.nd = mknode(NULL, NULL, $1.name); }
 ;
 
-
 // the beginning of the assembler program
 main: datatype ID
 {
   addAsm( string( ".org $" ) + toHex( code_start ), 0, true );
 };
+
+function: function function
+| datatype ID '(' ')' '{' {addAsm( generateNewLabel(), 0, true ); } body return '}'
+  {
+    // add this to the list of functions and their addresses
+    // any time we come across the function with this ID
+    // we can JSR to it
+    
+    addComment( "my function" );
+    addAsm( "RTS" );
+
+  };
+/* | datatype ID '(' ')' '{' {addAsm( generateNewLabel(), 0, true ); } body '}'
+  {
+    addAsm( "RTS" );
+    addComment( "my function" );
+
+  }
+  ;*/
+
 
 datatype: INT { insert_type(); }
 | FLOAT { insert_type(); }
@@ -672,18 +691,10 @@ FOR
 {
   addComment( "---------------------------------------------------------" );
 
-
-  /* SHOULD WE PUT THE ITERATOR HERE? */
-
-
   
-  addAsm( string( "JMP " ) + getLabel( ((int)label_vector[label_major]-2), false ) + "; <<< ", 3, false );
+  addAsm( string( "JMP " ) + getLabel( ((int)label_vector[label_major]-2), false ) + "; jump to iterator ", 3, false );
   
   addAsm( generateNewLabel(), 0, true );
-  //addAsm( "PLA" );
-  //addAsm( "TAY" );
-  //addAsm( "PLA" );
-  //addAsm( "TAX" );
   addAsm( "PLA" );  
   addComment( "---------------------------------------------------------" );
   if( scope_stack.top() != string("FOR") )
@@ -696,7 +707,6 @@ FOR
       popScope();
     }
 };
-
 | IF
 {
   pushScope("IF");
@@ -704,7 +714,6 @@ FOR
   addComment( "                        IF STATEMENT" );
   addComment( "=========================================================");  
   addAsm( generateNewLabel(), 0, true );
-  //addAsm( "PHA" );
 }
 '(' condition ')'
 {
@@ -718,20 +727,17 @@ FOR
   addComment( "                      ELSE:" );
   addAsm( string("JMP ") + getLabel( label_vector[label_major]+1, false), 3, false);
   addAsm( generateNewLabel(), 0, true );
-
 }
  else
    {
      addComment( "---------------------------------------------------------" );
      addComment( "post-process the ELSE" );
-     //addAsm( generateNewLabel(), 0, true );
-   }
+     }
 {
   addComment( "---------------------------------------------------------" );
   addComment( "             post if-statement" );
   addAsm( generateNewLabel(), 0, true );
-  //addAsm( "PLA" );
-  
+    
   if( scope_stack.top() != string("IF") )
     {
       addComment( "ERROR: Scope out of Sync" );
@@ -741,19 +747,15 @@ FOR
     {
       popScope();
     }
-
 };
-
 | statement ';'
 {
   addComment( "=========================================================");    
 }
-
 | body body
 {
   $$.nd = mknode($1.nd, $2.nd, "statements");
 };
-
 /* SCANF(ish) COMMAND!!! */
 | SCANFF '(' STR ')' ';'
 {
@@ -764,7 +766,6 @@ FOR
   scanf_is_needed=true;
   addAsm( "JSR SCANF", 3, false );  
 }
-
 /* PRINTF COMMAND!!! */
 | PRINTFF '(' STR ')' ';'
 {
@@ -774,16 +775,13 @@ FOR
  printf_is_needed=true;
   // add the string stripped of its' quotes
   addString( string("STRLBL") + itos( string_number++), string($3.name).substr(1,string($3.name).length()-2), asm_instr.size() );
-
   // these will later be replaced during Process Strings
   addAsm( "NOP ; tpo be replaced", 1, false);
   addAsm( "NOP ; tpo be replaced", 1, false);
   addAsm( "NOP ; tpo be replaced", 1, false);
   addAsm( "NOP ; tpo be replaced", 1, false);
-
   addAsm( "JSR PRN", 3, false );
 };
-
 | tJSR '(' NUMBER ')' ';'
 {
   addComment( "=========================================================");  
@@ -791,29 +789,23 @@ FOR
   addComment( "=========================================================");  
   addAsm(string( "JSR $") + toHex( atoi( $3.name )), 3, false );
 };
-
 | tRTS '(' ')' ';'
 {
   addComment( "=========================================================");
   addComment( "                 rts");
   addComment( "=========================================================");  
-
   addAsm( "RTS" );
 };
-
 | tPOKE '(' NUMBER ',' NUMBER ')' ';'
 {
     addComment( "=========================================================");  
     addComment( "                     poke");
     addComment( "=========================================================");  
-
   addComment( string("poke ") + string( $3.name ) + "," + string( $5.name ));
   addAsm( string( "LDA #$" ) + toHex(atoi($5.name)) , 2, false );
   addAsm( string( "STA $" ) + toHex(atoi($3.name)) , 3, false );
   // ??? why was this here?addAsm( "PLA" );
 };
-
-
 | tPOKE '(' NUMBER ',' ID ')' ';'
 {
     addComment( "=========================================================");  
@@ -821,7 +813,6 @@ FOR
     addComment( "=========================================================");  
   $$.nd = mknode(NULL, NULL, "poke");
   //if( previousAsm("PLA") ){deletePreviousAsm();}else{addAsm( "PHA" );}
-
   int var_index = getIndexOf( $5.name );
   if( var_index == -1 )
     {
@@ -831,12 +822,9 @@ FOR
     { 
       addAsm( string( "LDA $" ) + asm_variables[ var_index ]->getAddress(), 3, false );
     }
-
   addAsm( string( "STA $" ) + toHex( atoi( $3.name )), 3, false );
   //addAsm( "PLA" );
 };
-
-
 | tPOKE '(' ID ',' ID ')' ';'
 {
     addComment( "=========================================================");  
@@ -848,15 +836,8 @@ FOR
   addAsm( string( "STA $" ) + asm_variables[ getIndexOf( $3.name ) ]->getAddress(), 3, false );
   addAsm( "PLA" );
 };
-
-
-
  else: ELSE { add('K'); } '{' body '}' { $$.nd = mknode(NULL, $4.nd, $1.name); }
 | { $$.nd = NULL; }
-
-
-
-
 condition: value relop value
 {
   addComment( "=========================================================");
@@ -909,13 +890,11 @@ condition: value relop value
 	{
 	  addAsm( string( "BCC ") + getLabel( label_vector[label_major], false) + string( "; if c==0 jump to THEN" ), 2, false );
 	  addAsm( string( "BEQ ") + getLabel( label_vector[label_major], false) + string( "; if z==1 jump to THEN" ), 2, false );
-
 	  addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + string( "; jump to ELSE" ), 3, false );
 	}   
       else if( string( $2.name ) == string( "==" ) )
 	{
 	  addAsm( string( "BEQ ") + getLabel( label_vector[label_major], false) + string( "; if z==1 jump to THEN" ), 2, false );
-
 	  addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + string( "; jump to ELSE" ), 3, false );
 	}
       else if( string( $2.name ) == string( ">" ) )
@@ -948,7 +927,6 @@ condition: value relop value
 | FALSE { add('K'); $$.nd = NULL; }
 | { $$.nd = NULL; }
 ;
-
 statement: datatype ID { add('V'); } init
 {
   addComment( string( $2.name ) + "=" + string( $4.name ) );
