@@ -164,7 +164,7 @@
 	name=identifier;
 	label = l;
 	address=0000;
-	cerr << "created a function label: " << name << " " << label << endl; 
+	//cerr << "created a function label: " << name << " " << label << endl; 
       }
     string getIdentifier(){ return name; };
     int getAddressInt(){ return address; };
@@ -255,7 +255,19 @@
       return toHex( (address & 0x00FF) );
     };
     friend ostream &operator << (ostream &out, const asm_string &a); 
-    int getLength(){ return text.size(); };
+    int getLength()
+    {
+      int return_value=0;
+      for( int i=0; i<text.size(); i++ )
+	{
+	  if( text[i] == '\\' && text[i+1] == 'n' )
+	    {
+	      i++;
+	    }
+	  return_value++;
+	}
+      return return_value;
+    };
     int getIndex(){ return index; };
     void setIndex( int i){ index=i; };
   private:
@@ -281,7 +293,15 @@
       out << a.name << ":\n";
       for( int i = 0; i<a.text.size(); i++ )
 	{
-	  out << "\t.BYTE #$" << toHex((int)a.text[i]) << endl;
+	  if( a.text[i] == '\\' && a.text[i+1] == 'n')
+	    {
+	      out << "\t.BYTE #$0D" << endl;
+	      i++;
+	    }
+	  else
+	    {
+	      out << "\t.BYTE #$" << toHex((int)a.text[i]) << endl;
+	    }
 	}
       //out << "\t.BYTE #$0D" << endl;
       out << "\t.BYTE #$00" << endl;
@@ -503,14 +523,9 @@
 	    std::size_t found = current_LOC.find(string( "###" ) + current_function);
 
 	    // if it IS found
-	    //if (found!=std::string::npos)
 	    if( current_LOC == string( "###" ) + current_function )
 	      {
-		
-		//cerr << "INSIDE: " << current_function << endl;
-		
 		current_LOC.replace( current_LOC.find(string("###")+current_function), (string( "###" ) + current_function).length(), string( "JSR ") + current_label + "; call " + current_function );
-
 		asm_instr[i]->setString( current_LOC );
 	      }
 	  }
@@ -539,7 +554,7 @@
       {
 	// this puts the strings all after the code segemnt and other builtin functions like the printf function.
 	asm_strings[i]->setAddress( current_code_location );
-	current_code_location+=asm_strings[i]->getLength()+1; // the +1 is for the carriage return and the null terminated zero
+	current_code_location+=asm_strings[i]->getLength()+1; // the +1 is for the null terminated zero
 
 	// Now find where (in the instruction vector) this string is being referenced
 	int j = asm_strings[i]->getIndex() -1; 
@@ -624,7 +639,7 @@
   	    string addr_of_instr = toHex(asm_instr[i]->getAddress());
 	    string string_of_instr = asm_instr[i]->getString().substr( 0, asm_instr[i]->getString().length()-1);
 	    
-	    cerr << "checking " << string_of_instr << " at " << addr_of_instr << endl;
+	    //cerr << "checking " << string_of_instr << " at " << addr_of_instr << endl;
   	    for( int j = 0; j < asm_instr.size(); j++ )
   	      {
 		// now look through all of the instructions and replace the "label" with the address in hex
@@ -746,7 +761,7 @@ main: datatype ID
 function: function function
 | datatype ID '(' ')' '{' { addComment( string("======================== ") + string($2.name) + string(" ========================")); addAsm( generateNewLabel(), 0, true );    addFunction( string($2.name), getLabel( label_vector[label_major]-1 )); addComment( string(getLabel( label_vector[label_major]-1))); } body return '}'
   {
-    cerr << getLabel( label_vector[label_major]-1 ) << endl;
+    //cerr << getLabel( label_vector[label_major]-1 ) << endl;
     // add this label to the list of functions and their addresses
     // any time we come across the function with this ID
     // we can JSR to it
@@ -884,6 +899,7 @@ FOR
     addComment( "=========================================================");  
  printf_is_needed=true;
   // add the string stripped of its' quotes
+		
   addString( string("STRLBL") + itos( string_number++), string($3.name).substr(1,string($3.name).length()-2), asm_instr.size() );
   // these will later be replaced during Process Strings
   addAsm( "NOP ; tpo be replaced", 1, false);
