@@ -46,7 +46,7 @@
   stack <string> var_scope_stack;
   stack <int> label_stack;
   vector <int> label_vector;
-
+  
   
   
   // converts an integer into a string
@@ -155,7 +155,79 @@
     return;
 
   }
- 
+
+  class asm_function
+  {
+  public:
+    asm_function( string identifier, string l )
+      {
+	name=identifier;
+	label = l;
+	address=0000;
+	cerr << "created a function label: " << name << " " << label << endl; 
+      }
+    string getIdentifier(){ return name; };
+    int getAddressInt(){ return address; };
+    string getAddress(){ return toHex( address ); };
+    void setAddress( int i ){ address=i; };
+    string getLabel(){ return label; };
+  private:
+    int address;
+    string name;
+    string label;
+  };
+  
+  vector<asm_function*> asm_functions;
+
+
+  asm_function * getAsmFunction( string s )
+  {
+    for( int i=0; i<asm_functions.size(); i++ )
+      {
+	if( asm_functions[i]->getIdentifier() == s )
+	  {
+	    return asm_functions[i];
+	  }
+      }
+    return NULL;
+  }
+  
+  string getLabelOfFunction( int i )
+  {
+    return asm_functions[i]->getLabel();
+  }
+
+  string getLabelOfFunction( string s )
+  {
+    for( int i=0; i<asm_functions.size(); i++ )
+      {
+	if( asm_functions[i]->getIdentifier() == s )
+	  {
+	    //cout << ":" << asm_functions[i]->getLabel() << ":" << endl;
+	    return asm_functions[i]->getLabel();
+	  }
+      }
+    return NULL;
+
+  }
+  int getAddressOfFunction( string s )
+  {
+    for( int i=0; i<asm_functions.size(); i++ )
+      {
+	if( asm_functions[i]->getIdentifier() == s )
+	  {
+	    return asm_functions[i]->getAddressInt();
+	  }
+      }
+    return 0;
+  }
+
+  void addFunction( string s, string l )
+  {
+    asm_function * ptr_function = new asm_function( s, l );
+    asm_functions.push_back( ptr_function );
+  }
+  
   class asm_string
   {
   public:
@@ -409,6 +481,42 @@
     asm_instr.erase( asm_instr.end()-1 );
     return;
   }
+
+  void ProcessFunctions()
+  {
+    for( int j=0; j<asm_functions.size(); j++ )
+      {
+	string current_function = asm_functions[j]->getIdentifier();
+	string current_label = asm_functions[j]->getLabel();
+
+	// remove the colon from the end of each label
+	current_label.erase( current_label.length()-1, 1 );
+
+	//cerr << "TOP: " << current_function << endl;
+	
+	for( int i=0; i<asm_instr.size(); i++ )
+	  {
+	    // Line of Code
+	    string current_LOC = asm_instr[i]->getString();
+
+	    // find the string that is to be replaces
+	    std::size_t found = current_LOC.find(string( "###" ) + current_function);
+
+	    // if it IS found
+	    //if (found!=std::string::npos)
+	    if( current_LOC == string( "###" ) + current_function )
+	      {
+		
+		//cerr << "INSIDE: " << current_function << endl;
+		
+		current_LOC.replace( current_LOC.find(string("###")+current_function), (string( "###" ) + current_function).length(), string( "JSR ") + current_label + "; call " + current_function );
+
+		asm_instr[i]->setString( current_LOC );
+	      }
+	  }
+
+      }
+  }
   
   void ProcessMemoryLocationsOfCode()
   {
@@ -632,26 +740,28 @@ headers: headers headers { $$.nd = mknode($1.nd, $2.nd, "headers"); }
 main: datatype ID
 {
   addAsm( string( ".org $" ) + toHex( code_start ), 0, true );
+  addComment( "======================== main() =========================" );
 };
 
 function: function function
-| datatype ID '(' ')' '{' {addAsm( generateNewLabel(), 0, true ); } body return '}'
+| datatype ID '(' ')' '{' { addComment( string("======================== ") + string($2.name) + string(" ========================")); addAsm( generateNewLabel(), 0, true );    addFunction( string($2.name), getLabel( label_vector[label_major]-1 )); addComment( string(getLabel( label_vector[label_major]-1))); } body return '}'
   {
-    // add this to the list of functions and their addresses
+    cerr << getLabel( label_vector[label_major]-1 ) << endl;
+    // add this label to the list of functions and their addresses
     // any time we come across the function with this ID
     // we can JSR to it
-    
-    addComment( "my function" );
-    addAsm( "RTS" );
-
+    if( !previousAsm("RTS") ){addAsm("RTS");}
   };
-/* | datatype ID '(' ')' '{' {addAsm( generateNewLabel(), 0, true ); } body '}'
-  {
-    addAsm( "RTS" );
-    addComment( "my function" );
 
-  }
-  ;*/
+| datatype ID '(' ')' '{' { addComment( string("======================== ") + string($2.name) + string(" ========================")); addAsm( generateNewLabel(), 0, true );     addFunction( string($2.name), getLabel( label_vector[label_major] )); } body '}'
+  {
+    // add this lavel to the list of functions and their addresses
+    // any time we come across the function with this ID
+    // we can JSR to it
+    if( !previousAsm("RTS") ){addAsm("RTS");}
+  };
+|
+;
 
 
 datatype: INT { insert_type(); }
@@ -967,6 +1077,16 @@ statement: datatype ID { add('V'); } init
   addAsm( string("LDA #$") + toHex(atoi($4.name)), 2, false);
   addAsm( string("STA $") + getAddressOf( getIndexOf( $2.name )), 3, false );
 }
+| ID '(' ')' 
+{
+  //addComment( "Trying to call a function." );
+  //addComment( $1.name );
+  addAsm( string( "###" ) + string( $1.name ), 3, false); 
+  // lookup $1.name and get it's address ... then jump to it
+  //string l = getLabelOfFunction( string($1.name) );
+  //addComment( l );
+};
+
 | ID { check_declaration($1.name); } '=' expression
 {
   $1.nd = mknode(NULL, NULL, $1.name); 
@@ -1115,6 +1235,7 @@ expression: expression arithmetic expression
 //| ID '=' ID arithmetic NUMBER { addComment( "line 1091" ); }
 //| value arithmetic value { cerr << "line 1093" << $1.name << endl; addComment( string( $1.name ) + string( $2.name ) + string( $3.name ) ); }
 | value { }
+|
 ;
 
 arithmetic: ADD { addComment( "addition" ); current_state = string("+"); }
@@ -1346,7 +1467,8 @@ int main(int argc, char *argv[])
   
   /*  set all memory locations of code (according to instruction size) */
   /* starting at the .org address */
-  
+
+  ProcessFunctions();
   ProcessMemoryLocationsOfCode();
   ProcessStrings();
   current_code_location = code_start;  // reset the memory counter
