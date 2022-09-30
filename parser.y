@@ -565,14 +565,15 @@
 	asm_instr[j+1]->setString( string("LDA #$") + string(asm_strings[i]->getH()));
 	asm_instr[j+1]->setSize( 2  );
 
-	asm_instr[j+2]->setString( string( "STA $") + getAddressOf( string( "string_tmp_l" )   ));
-	asm_instr[j+2]->setSize( 3  );
+	asm_instr[j+2]->setString( string( "STA $03") );
+	//asm_instr[j+2]->setString( string( "STA $") + getAddressOf( string( "string_tmp_l" )   ));
+	asm_instr[j+2]->setSize( 2  );
 	
 	asm_instr[j+3]->setString( string("LDA #$") + string(asm_strings[i]->getL()));
 	asm_instr[j+3]->setSize( 2  );
-
-	asm_instr[j+4]->setString( string( "STA $") + getAddressOf( string( "string_tmp_h" )   ));
-	asm_instr[j+4]->setSize( 3  );
+	asm_instr[j+4]->setString( string( "STA $02"));
+	//asm_instr[j+4]->setString( string( "STA $") + getAddressOf( string( "string_tmp_h" )   ));
+	asm_instr[j+4]->setSize( 2  );
       }
   }
 
@@ -779,10 +780,14 @@ function: function function
 ;
 
 
-datatype: INT { insert_type(); }
-| FLOAT { insert_type(); }
-| CHAR { insert_type(); }
-| VOID { insert_type(); }
+datatype:
+INT { addComment( string( "RULE: datatype: ") + string( $$.name )); insert_type();}
+|
+FLOAT { addComment( string( "RULE: datatype: ") + string( $$.name )); insert_type();}
+|
+CHAR { addComment( string( "RULE: datatype: ") + string( $$.name )); insert_type();}
+|
+VOID { addComment( string( "RULE: datatype: ") + string( $$.name )); insert_type();}
 ;
 
 body:
@@ -908,10 +913,10 @@ FOR
 		
   addString( string("STRLBL") + itos( string_number++), string($3.name).substr(1,string($3.name).length()-2), asm_instr.size() );
   // these will later be replaced during Process Strings
-  addAsm( "NOP ; tpo be replaced", 1, false);
-  addAsm( "NOP ; tpo be replaced", 1, false);
-  addAsm( "NOP ; tpo be replaced", 1, false);
-  addAsm( "NOP ; tpo be replaced", 1, false);
+  addAsm( "NOP ; to be replaced", 1, false);
+  addAsm( "NOP ; to be replaced", 1, false);
+  addAsm( "NOP ; to be replaced", 1, false);
+  addAsm( "NOP ; to be replaced", 1, false);
   addAsm( "JSR PRN", 3, false );
 };
 | tJSR '(' NUMBER ')' ';'
@@ -1079,10 +1084,10 @@ condition: value relop value
 
 
 
-statement: datatype ID {addComment( $2.name );} { add('V'); } init
+statement: datatype ID { /*addComment( $2.name ); */} { add('V'); } init
 {
   //addComment( string( $2.name ) + " = " + string( $1.name ) );
-  $2.nd = mknode(NULL, NULL, $2.name); 
+  //$2.nd = mknode(NULL, NULL, $2.name); 
   /*
   int t = check_types($1.name, $4.type); 
   if(t>0) { 
@@ -1117,7 +1122,7 @@ statement: datatype ID {addComment( $2.name );} { add('V'); } init
       } */
   // variable initialization (for INT type)
   addAsmVariable( $2.name, 1 );
-  addAsm( string("LDA #$") + toHex(atoi($4.name)), 2, false);
+  //addAsm( string("LDA #$") + toHex(atoi($4.name)), 2, false);
   addAsm( string("STA $") + getAddressOf( getIndexOf( $2.name )), 3, false );
 }
 | ID '(' ')' 
@@ -1131,16 +1136,10 @@ statement: datatype ID {addComment( $2.name );} { add('V'); } init
 };
 | ID { check_declaration($1.name); } '=' expression
 {
-  addComment( "| ID { check_declaration($1.name); } '=' expression" );
+  addComment( "RULE: ID {}  '=' expression" );
   
 
-  //addAsm( string( "LDA $" ) + string( $4.name ), 2, false );
   addAsm( string( "STA $" ) + string( getAddressOf( string( $1.name ))), 3, false );
-  //addComment( $$.name );
-  //addComment( $1.name );
-  //addComment( $2.name );
-  //addComment( $3.name );
-  //addComment( $4.name );
   $1.nd = mknode(NULL, NULL, $1.name); 
   char *id_type = get_type($1.name); 
   if(strcmp(id_type, $4.type))
@@ -1197,8 +1196,9 @@ statement: datatype ID {addComment( $2.name );} { add('V'); } init
   //sprintf(icg[ic_idx++], "%s = %s <<==", $1.name, $4.name);
   //addAsm(icg[ic_idx-1], false );
 				     }
-| ID {  addComment( "LINE: 1005" ); check_declaration($1.name); } relop expression { $1.nd = mknode(NULL, NULL, $1.name); $$.nd = mknode($1.nd, $4.nd, $3.name); }
-| ID {  addComment( "LINE: 1006" ); check_declaration($1.name); } UNARY { 
+| ID {  addComment( "RULE: ID {} relop expression" ); check_declaration($1.name); } relop expression { $1.nd = mknode(NULL, NULL, $1.name); $$.nd = mknode($1.nd, $4.nd, $3.name); }
+| ID
+{  addComment( "RULE: ID {} UNARY" ); check_declaration($1.name); } UNARY { 
   $1.nd = mknode(NULL, NULL, $1.name); 
   $3.nd = mknode(NULL, NULL, $3.name); 
   $$.nd = mknode($1.nd, $3.nd, "ITERATOR");  
@@ -1210,7 +1210,7 @@ statement: datatype ID {addComment( $2.name );} { add('V'); } init
     {
       sprintf(buff, "t%d = %s + 1\n%s = t%d\n// 469", temp_var, $1.name, $1.name, temp_var++);
     }
-				     }
+								   }
 | UNARY ID {
   check_declaration($2.name); 
   $1.nd = mknode(NULL, NULL, $1.name); 
@@ -1228,23 +1228,25 @@ statement: datatype ID {addComment( $2.name );} { add('V'); } init
 
 init: '=' expression
 {
-  addComment( "-----" );
-  addComment( $2.name );
+  //addComment( "init: '=' expression" );
+  //addAsm( string( "LDA #$" ) + string($2.name), 2, false  );
 }
 |
 '=' value
 {
-  addComment( "'=' value" );
+  //addComment( "'=' value" );
   $$.nd = $2.nd; 
   sprintf($$.type, $2.type);
   strcpy($$.name, $2.name);
+  addAsm( string( "LDA #$" ) + toHex(atoi($2.name)), 2, false  );
 }
 |
 {
-  addComment( "NULL initialisation" );
+  //addComment( "NULL initialisation" );
   sprintf($$.type, "null");
   $$.nd = mknode(NULL, NULL, "0");
   strcpy($$.name, "0");
+  addAsm( string( "LDA #$00" ), 2, false  );
 }
 ;
 
@@ -1255,16 +1257,15 @@ expression: expression arithmetic expression
   // variable ($$.name) is already in use (in _this_ scope).
   // .. but we don't yet
 
-  string op1;
+  addAsm( generateNewLabel(), 0, true );
 
   
-  /* if they're BOTH values */
+  /* if they're BOTH IMM's */
   if( getAddressOf( string( $1.name )) == "IMM" && getAddressOf( string( $3.name )) == "IMM")
     {
+      addComment( "IMM + IMM" );
       /* then this is a compile-time arithetic operation */
       strcpy( $$.name, toHex( atoi($1.name) + atoi($3.name)).c_str());
-
-
       if( string( $2.name ) == "+" ) addAsm( string("LDA $#") + toHex(atoi( $1.name) + atoi( $3.name )), 2, false);
       if( string( $2.name ) == "-" ) addAsm( string("LDA $#") + toHex(atoi( $1.name) - atoi( $3.name )), 2, false);
       if( string( $2.name ) == "*" ) addAsm( string("LDA $#") + toHex(atoi( $1.name) * atoi( $3.name )), 2, false);
@@ -1272,6 +1273,8 @@ expression: expression arithmetic expression
     }
   else if( getAddressOf( string( $1.name )) == "IMM" )
     {
+      addComment( "IMM + ID" );
+
       addAsm( string("LDA $") + getAddressOf(string($3.name )), 3, false);
       if( string($2.name) == "+" )
 	{
@@ -1287,12 +1290,11 @@ expression: expression arithmetic expression
 	{
 	  addComment( "unknown state" );
 	}
-      //addAsm( string("STA $") + getAddressOf($3.name), 3, false);
-      
-
     }
-    else if( getAddressOf( string( $2.name )) == "IMM" )
+    else if( getAddressOf( string( $3.name )) == "IMM" )
     {
+      addComment( "ID + IMM" );
+
       addAsm( string("LDA $") + getAddressOf(string($$.name )), 3, false);
       if( string($2.name) == "+" )
 	{
@@ -1308,13 +1310,12 @@ expression: expression arithmetic expression
 	{
 	  addComment( "unknown state" );
 	}
-      //addAsm( string("STA $") + getAddressOf($1.name), 3, false);
-      
-
     }
   else
     {
-      addAsm( generateNewLabel(), 0, true );
+      addComment( "ID + ID" );
+
+      //addAsm( generateNewLabel(), 0, true );
 
       addAsm( string("LDA $") + getAddressOf(string($1.name )), 3, false);
       if( string($2.name) == "+" )
@@ -1514,10 +1515,10 @@ int main(int argc, char *argv[])
       /* a Simple printf */
       
       addAsm( "PRN:", 0, true );
-      addAsm( string( "LDA $") + getAddressOf( string( "string_tmp_l" ) ), 3, false );
-      addAsm( "STA $03", 2, false );
-      addAsm( string( "LDA $") + getAddressOf( string( "string_tmp_h" ) ), 3, false );
-      addAsm( "STA $02", 2, false );
+      //addAsm( string( "LDA $") + getAddressOf( string( "string_tmp_l" ) ), 3, false );
+      //addAsm( "STA $03", 2, false );
+      //addAsm( string( "LDA $") + getAddressOf( string( "string_tmp_h" ) ), 3, false );
+      //addAsm( "STA $02", 2, false );
       addAsm( "LDY #$00", 2, false);
       addAsm( "PRN_LOOP:", 0, true );
       addAsm( "LDA ($02),Y", 2, false);
