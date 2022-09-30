@@ -23,6 +23,7 @@
   bool printf_is_needed = false;
   bool scanf_is_needed = false;
   bool getkey_is_needed = false;
+  bool hex2petscii_is_needed = false;
   using namespace std;
   int label=0;
   int label_major=0;
@@ -368,7 +369,7 @@
     int i=getIndexOf( s );
     if( i == -1 )
       {
-	return string( "[ERROR] - Variable not found in vector" );
+	return string( "IMM");
       }
     else
       {
@@ -701,7 +702,6 @@
   char buff[100];
   char errors[10][100];
   char reserved[10][10] = {"int", "float", "char", "void", "if", "else", "for", "main", "return", "include"};
-  char icg[50][100];
 
   struct node { 
     struct node *left; 
@@ -890,8 +890,14 @@ FOR
   getkey_is_needed=true;
   scanf_is_needed=true;
   addAsm( "JSR SCANF", 3, false );  
-}
+};
 /* PRINTF COMMAND!!! */
+| PRINTFF '(' NUMBER ')' ';'
+{
+  addComment( "=========================================================");      
+  addComment( string("printf(") + string($3.name) + string( ");") );
+  addComment( "=========================================================");  
+};
 | PRINTFF '(' STR ')' ';'
 {
     addComment( "=========================================================");      
@@ -962,8 +968,23 @@ FOR
   addAsm( string( "STA $" ) + asm_variables[ getIndexOf( $3.name ) ]->getAddress(), 3, false );
   addAsm( "PLA" );
 };
- else: ELSE { add('K'); } '{' body '}' { $$.nd = mknode(NULL, $4.nd, $1.name); }
+
+
+
+
+ else: ELSE
+	 {
+	   add('K');
+	 }
+'{' body '}'
+{
+  $$.nd = mknode(NULL, $4.nd, $1.name);
+}
 | { $$.nd = NULL; }
+
+
+
+
 condition: value relop value
 {
   addComment( "=========================================================");
@@ -1053,10 +1074,16 @@ condition: value relop value
 | FALSE { add('K'); $$.nd = NULL; }
 | { $$.nd = NULL; }
 ;
-statement: datatype ID { add('V'); } init
+
+
+
+
+
+statement: datatype ID {addComment( $2.name );} { add('V'); } init
 {
-  addComment( string( $2.name ) + "=" + string( $4.name ) );
+  //addComment( string( $2.name ) + " = " + string( $1.name ) );
   $2.nd = mknode(NULL, NULL, $2.name); 
+  /*
   int t = check_types($1.name, $4.type); 
   if(t>0) { 
     if(t == 1) {
@@ -1087,7 +1114,7 @@ statement: datatype ID { add('V'); } init
   else
     { 
       $$.nd = mknode($2.nd, $4.nd, "declaration"); 
-    } 
+      } */
   // variable initialization (for INT type)
   addAsmVariable( $2.name, 1 );
   addAsm( string("LDA #$") + toHex(atoi($4.name)), 2, false);
@@ -1102,9 +1129,18 @@ statement: datatype ID { add('V'); } init
   //string l = getLabelOfFunction( string($1.name) );
   //addComment( l );
 };
-
 | ID { check_declaration($1.name); } '=' expression
 {
+  addComment( "| ID { check_declaration($1.name); } '=' expression" );
+  
+
+  //addAsm( string( "LDA $" ) + string( $4.name ), 2, false );
+  addAsm( string( "STA $" ) + string( getAddressOf( string( $1.name ))), 3, false );
+  //addComment( $$.name );
+  //addComment( $1.name );
+  //addComment( $2.name );
+  //addComment( $3.name );
+  //addComment( $4.name );
   $1.nd = mknode(NULL, NULL, $1.name); 
   char *id_type = get_type($1.name); 
   if(strcmp(id_type, $4.type))
@@ -1176,7 +1212,6 @@ statement: datatype ID { add('V'); } init
     }
 				     }
 | UNARY ID {
-  addComment( "LINE: 1018" );
   check_declaration($2.name); 
   $1.nd = mknode(NULL, NULL, $1.name); 
   $2.nd = mknode(NULL, NULL, $2.name); 
@@ -1188,18 +1223,25 @@ statement: datatype ID { add('V'); } init
   else
     {
       sprintf(buff, "t%d = %s - 1\n%s = t%d\n// 482", temp_var, $2.name, $2.name, temp_var++);
-    }
-				     }
+    }				     }
 ;
 
-init: '=' value
+init: '=' expression
 {
+  addComment( "-----" );
+  addComment( $2.name );
+}
+|
+'=' value
+{
+  addComment( "'=' value" );
   $$.nd = $2.nd; 
   sprintf($$.type, $2.type);
   strcpy($$.name, $2.name);
 }
 |
 {
+  addComment( "NULL initialisation" );
   sprintf($$.type, "null");
   $$.nd = mknode(NULL, NULL, "0");
   strcpy($$.name, "0");
@@ -1208,56 +1250,101 @@ init: '=' value
 
 expression: expression arithmetic expression
 {
-  addAsm( generateNewLabel(), 0, true );
-  //addComment( string($$.name ) + "=" + string( $1.name ) + string( $2.name ) + string( $3.name ) );
-  if(!strcmp($1.type, $3.type))
-    {
-      // you can only compare expressions of the same TYPE
-      //sprintf($$.type, $1.type);
-      //$$.nd = mknode($1.nd, $3.nd, $2.name);
-      // addAsm( string($1.type) + " " + string( $3.type ) , true );
-    }
-  else
-    {
-      addComment( "*** TYPE MISMATCH ERROR ***" );
-    }
-  
-
+  addComment( string( $1.name ) + string( $2.name ) + string( $3.name ) );  
   // here is where we should check to see if the
   // variable ($$.name) is already in use (in _this_ scope).
   // .. but we don't yet
+
+  string op1;
+
   
-  
-  addAsm( string("LDA $") + getAddressOf(string($1.name )), 3, false);
-  //addAsm( "CLC" ); 
-  if( string($2.name) == "+" )
+  /* if they're BOTH values */
+  if( getAddressOf( string( $1.name )) == "IMM" && getAddressOf( string( $3.name )) == "IMM")
     {
-      addAsm( "CLC" );
-      addAsm( string("ADC #$") + toHex(atoi($3.name )),2, false);
+      /* then this is a compile-time arithetic operation */
+      strcpy( $$.name, toHex( atoi($1.name) + atoi($3.name)).c_str());
+
+
+      if( string( $2.name ) == "+" ) addAsm( string("LDA $#") + toHex(atoi( $1.name) + atoi( $3.name )), 2, false);
+      if( string( $2.name ) == "-" ) addAsm( string("LDA $#") + toHex(atoi( $1.name) - atoi( $3.name )), 2, false);
+      if( string( $2.name ) == "*" ) addAsm( string("LDA $#") + toHex(atoi( $1.name) * atoi( $3.name )), 2, false);
+      if( string( $2.name ) == "/" ) addAsm( string("LDA $#") + toHex(atoi( $1.name) / atoi( $3.name )), 2, false);
     }
-  else if ( string($2.name) == "-" )
-  {
-    addAsm( "SEC" );
-    addAsm( string("SBC #$") + toHex(atoi($3.name )),2, false);
-  }
+  else if( getAddressOf( string( $1.name )) == "IMM" )
+    {
+      addAsm( string("LDA $") + getAddressOf(string($3.name )), 3, false);
+      if( string($2.name) == "+" )
+	{
+	  addAsm( "CLC" );
+	  addAsm( string("ADC #$") + toHex(atoi($1.name )),2, false);
+	}
+      else if ( string($2.name) == "-" )
+	{
+	  addAsm( "SEC" );
+	  addAsm( string("SBC #$") + toHex(atoi($1.name )),2, false);
+	}
+      else
+	{
+	  addComment( "unknown state" );
+	}
+      //addAsm( string("STA $") + getAddressOf($3.name), 3, false);
+      
+
+    }
+    else if( getAddressOf( string( $2.name )) == "IMM" )
+    {
+      addAsm( string("LDA $") + getAddressOf(string($$.name )), 3, false);
+      if( string($2.name) == "+" )
+	{
+	  addAsm( "CLC" );
+	  addAsm( string("ADC #$") + toHex(atoi($3.name )),2, false);
+	}
+      else if ( string($2.name) == "-" )
+	{
+	  addAsm( "SEC" );
+	  addAsm( string("SBC #$") + toHex(atoi($3.name )),2, false);
+	}
+      else
+	{
+	  addComment( "unknown state" );
+	}
+      //addAsm( string("STA $") + getAddressOf($1.name), 3, false);
+      
+
+    }
   else
     {
-      addComment( "unknown state" );
-    }
-  addAsm( string("STA $") + getAddressOf($1.name), 3, false);
-  //addAsm( "CLC" );
-}
+      addAsm( generateNewLabel(), 0, true );
 
-//| ID '=' ID arithmetic NUMBER { addComment( "line 1091" ); }
-//| value arithmetic value { cerr << "line 1093" << $1.name << endl; addComment( string( $1.name ) + string( $2.name ) + string( $3.name ) ); }
-| value { }
+      addAsm( string("LDA $") + getAddressOf(string($1.name )), 3, false);
+      if( string($2.name) == "+" )
+	{
+	  addAsm( "CLC" );
+	  addAsm( string("ADC $") + getAddressOf(string($3.name )),3, false);
+	}
+      else if ( string($2.name) == "-" )
+	{
+	  addAsm( "SEC" );
+	  addAsm( string("SBC #$") + toHex(atoi($3.name )),2, false);
+	}
+      else
+	{
+	  addComment( "unknown state" );
+	}
+      //addAsm( string("STA $") + getAddressOf($1.name), 3, false);
+      //addAsm( "CLC" );
+    }
+};
+| value { /* addComment( "value" ); addComment( $$.name ); */ }
+| INT { /* addComment( string( "INT: " ) + string( $1.name ) ); */  strcpy( $$.name, $1.name ); }
+| ID {  strcpy( $$.name, $1.name );  }
 |
 ;
 
-arithmetic: ADD { addComment( "addition" ); current_state = string("+"); }
-| SUBTRACT { addComment( "subtraction" ); current_state = string("-"); }
-| MULTIPLY { addComment( "multiplication" );current_state = string("*"); }
-| DIVIDE { addComment( "division" );current_state = string("/"); }
+arithmetic: ADD { /* addComment( "addition" ); */ current_state = string("+"); }
+| SUBTRACT { /* addComment( "subtraction" ); */ current_state = string("-"); }
+| MULTIPLY { /* addComment( "multiplication" ); */ current_state = string("*"); }
+| DIVIDE { /* addComment( "division" ); */current_state = string("/"); }
 ;
 
 relop: LT { current_state = string( "LT" ); }
@@ -1268,10 +1355,27 @@ relop: LT { current_state = string( "LT" ); }
 | NE { current_state = string( "NE" ); }
 ;
 
-value: NUMBER { /* addAsm( string("; ") + string($1.name), 1, false ); */ strcpy($$.name, $1.name); sprintf($$.type, "int"); add('C'); $$.nd = mknode(NULL, NULL, $1.name); }
+value:
+NUMBER
+{
+  //addComment( string( "Number: ") + string( $1.name ) );
+  strcpy($$.name, $1.name);
+  sprintf($$.type, "int");
+  add('C');
+  $$.nd = mknode(NULL, NULL, $1.name);
+}
 | FLOAT_NUM { strcpy($$.name, $1.name); sprintf($$.type, "float"); add('C'); $$.nd = mknode(NULL, NULL, $1.name); }
 | CHARACTER { strcpy($$.name, $1.name); sprintf($$.type, "char"); add('C'); $$.nd = mknode(NULL, NULL, $1.name); }
-| ID { strcpy($$.name, $1.name); char *id_type = get_type($1.name); sprintf($$.type, id_type); check_declaration($1.name); $$.nd = mknode(NULL, NULL, $1.name); }
+| ID
+{
+  strcpy($$.name, $1.name);
+  char *id_type = get_type($1.name);
+  sprintf($$.type, id_type);
+  check_declaration($1.name);
+  $$.nd = mknode(NULL, NULL, $1.name);
+  /* addComment( "return value here" ); */
+  // copy value at address 1 to address 2
+}
 ;
 
 return: RETURN {}  value ';'
@@ -1357,46 +1461,54 @@ int main(int argc, char *argv[])
   current_code_location = code_start;
   
   // temp storage for the printf routine
-  addAsmVariable( "print_tmp_h", 1 );
   addAsmVariable( "print_tmp_l", 1 );
+  addAsmVariable( "print_tmp_h", 1 );
 
-  addAsmVariable( "string_tmp_h", 1 );
   addAsmVariable( "string_tmp_l", 1 );
+  addAsmVariable( "string_tmp_h", 1 );
   
-  addAsmVariable( "buffer_tmp_h", 1 );
   addAsmVariable( "buffer_tmp_l", 1 );
+  addAsmVariable( "buffer_tmp_h", 1 );
 
+  addAsmVariable( "hex2petscii_tmp_l", 1 );
+  addAsmVariable( "hex2petscii_tmp_h", 1 );
+  
   yyparse(); 
   
 
-  //printf("\n\n");
-  //printf("\t\t\t\t\t\t\t\t PHASE 1: LEXICAL ANALYSIS \n\n");
-  //printf("\nSYMBOL   DATATYPE   TYPE   LINE NUMBER \n");
-  //printf("_______________________________________\n\n");
   int i=0;
-  //for(i=0; i<count; i++) {printf("%s\t%s\t%s\t%d\t\n", symbol_table[i].id_name, symbol_table[i].data_type, symbol_table[i].type, symbol_table[i].line_no);}
   for(i=0;i<count;i++){free(symbol_table[i].id_name);free(symbol_table[i].type);}
-  //printf("\n\n");
-  //printf("\t\t\t\t\t\t\t\t PHASE 2: SYNTAX ANALYSIS \n\n");
+
+
   //print_tree(head); 
-  //printf("\n\n\n\n");
-  //printf("\t\t\t\t\t\t\t\t PHASE 3: SEMANTIC ANALYSIS \n\n");
   
-  if(sem_errors>0) {
-    printf("Semantic analysis completed with %d errors\n", sem_errors);
-    for(int i=0; i<sem_errors; i++){
-      printf("\t - %s", errors[i]);
-    }
-  } else {
+  if(sem_errors>0)
+    {
+      printf("; *** Semantic analysis completed with %d errors\n", sem_errors);
+      for(int i=0; i<sem_errors; i++)
+	{
+	  printf("\t - %s", errors[i]);
+	}
+  }
+  else {
     //printf("Semantic analysis completed with no errors");
   }
-  //printf("\n\n");
-  //printf("\t\t\t\t\t\t\t   PHASE 4: INTERMEDIATE CODE GENERATION \n\n");
 
-  // dump all the asm instructions that were added to the vector
+  // a built-in-function that will convert an integer into a null-terminated
+  // buffer of PETSCII displayable characters.
+  if( hex2petscii_is_needed )
+    {
+      addAsm( "HEX2PETSCII:", 0, true );
+      addAsm( string( "LDA $") + getAddressOf( string( "hex2petscii_tmp_l" ) ), 3, false );
+      addAsm( "AND #$0F", 2, false );
+      addAsm( "CMP #$0A", 2, false );
+      addAsm( ".BYTE B0", 1, false ); // skip the adding of 0x41
+      addAsm( ".BYTE 03", 1, false );
+      addAsm( "ADD #$0B", 2, false );
+      addAsm( "ADD #$30", 2, false );
+      addAsm( "RTS" );
 
-  //addAsm( "RTS" );
-
+    }
   if( printf_is_needed )
     {
       /* a Simple printf */
@@ -1458,7 +1570,7 @@ int main(int argc, char *argv[])
       addAsm( "DEX" );
       addAsm( "STX $CFDF", 3, false );
 
-      /* TODO: probably need to read the cursor position, */
+      /* TODO: we probably need to read the cursor position, */
       /* move it to the left one, and then clear that spot */
       
       addAsm( "JMP SCANFTOP", 3, false );
