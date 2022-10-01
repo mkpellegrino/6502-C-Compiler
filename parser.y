@@ -32,6 +32,7 @@
   bool arg_memory_locations=false;
   bool arg_show_labels=true;
   bool arg_asm_comments=true;
+  bool arg_parser_comments=false;
   
   string current_state;
 
@@ -290,7 +291,7 @@
 
   ostream & operator << (ostream &out, const asm_string &a) 
     {
-      out << "; $" << std::hex << a.address << endl;
+      out << "; $" << std::hex << a.address << "\t\t\t\"" << a.text << "\"" << endl;
       out << a.name << ":\n";
       for( int i = 0; i<a.text.size(); i++ )
 	{
@@ -447,6 +448,12 @@
     return;
   }
 
+  void addParserComment( string s )
+  {
+    if( arg_parser_comments ) addAsm( string("; ") + s, 0, true );
+    return;
+  }
+  
   void addComment( string s )
   {
     if( arg_asm_comments ) addAsm( string("; ") + s, 0, true );
@@ -456,17 +463,17 @@
   
   void pushScope( string s )
   {
-    addComment( "=========================================================");
-    addComment( "                     New Scope " + s );
-    addComment( "=========================================================");
+    addParserComment( "=========================================================");
+    addParserComment( "                     New Scope " + s );
+    addParserComment( "=========================================================");
     scope_stack.push( s );
     var_scope_stack.push(".");
     label_stack.push( label );
 
     label_major++;
 
-    addComment( string("Label Major: ") + itos( label_major ) );
-    addComment( string("Label Minor: ") + itos( label_vector[label_major] ) );
+    addParserComment( string("Label Major: ") + itos( label_major ) );
+    addParserComment( string("Label Minor: ") + itos( label_vector[label_major] ) );
     //addAsm( generateNewLabel(), 0, true );
   }
 
@@ -474,7 +481,7 @@
   {
     //addAsm( generateNewLabel(), 0, true );
     string return_value;
-    addComment( string("Release Scope ") + string( scope_stack.top()) );
+    addParserComment( string("Release Scope ") + string( scope_stack.top()) );
     while( var_scope_stack.top() != "." )
       {
 	var_scope_stack.pop();
@@ -483,10 +490,9 @@
     label_stack.pop();
     label_major--;
 
-    addComment( string("Label Major: ") + itos( label_major ) );
-    addComment( string("Label Minor: ") + itos( label_vector[label_major] ) );
-    addComment( "=========================================================");
-    addComment( "=========================================================");
+    addParserComment( string("Label Major: ") + itos( label_major ) );
+    addParserComment( string("Label Minor: ") + itos( label_vector[label_major] ) );
+    addParserComment( "=========================================================");
   }
   
 
@@ -781,13 +787,13 @@ function: function function
 
 
 datatype:
-INT { addComment( string( "RULE: datatype: ") + string( $$.name )); insert_type();}
+INT { addParserComment( string( "RULE: datatype: ") + string( $$.name )); insert_type();}
 |
-FLOAT { addComment( string( "RULE: datatype: ") + string( $$.name )); insert_type();}
+FLOAT { addParserComment( string( "RULE: datatype: ") + string( $$.name )); insert_type();}
 |
-CHAR { addComment( string( "RULE: datatype: ") + string( $$.name )); insert_type();}
+CHAR { addParserComment( string( "RULE: datatype: ") + string( $$.name )); insert_type();}
 |
-VOID { addComment( string( "RULE: datatype: ") + string( $$.name )); insert_type();}
+VOID { addParserComment( string( "RULE: datatype: ") + string( $$.name )); insert_type();}
 ;
 
 body:
@@ -798,7 +804,7 @@ FOR
   addComment( "                        FOR LOOP" );
   addComment( "=========================================================");
   addAsm( generateNewLabel(), 0, true );
-  addComment( "              initialization goes here" );
+  addParserComment( "              initialization goes here" );
   addAsm( "PHA" );
   //addAsm( "TXA" );
   //addAsm( "PHA" );
@@ -861,11 +867,11 @@ FOR
  else
    {
      addComment( "---------------------------------------------------------" );
-     addComment( "post-process the ELSE" );
+     addParserComment( "post-process the ELSE" );
      }
 {
   addComment( "---------------------------------------------------------" );
-  addComment( "             post if-statement" );
+  addParserComment( "             post if-statement" );
   addAsm( generateNewLabel(), 0, true );
     
   if( scope_stack.top() != string("IF") )
@@ -1086,6 +1092,7 @@ condition: value relop value
 
 statement: datatype ID { /*addComment( $2.name ); */} { add('V'); } init
 {
+  addParserComment( "RULE: statement: datatype ID {} {} init" );
   //addComment( string( $2.name ) + " = " + string( $1.name ) );
   //$2.nd = mknode(NULL, NULL, $2.name); 
   /*
@@ -1127,16 +1134,17 @@ statement: datatype ID { /*addComment( $2.name ); */} { add('V'); } init
 }
 | ID '(' ')' 
 {
+  addParserComment( "RULE: statement: ID '(' ')'" );
   //addComment( "Trying to call a function." );
   //addComment( $1.name );
-  addAsm( string( "###" ) + string( $1.name ), 3, false); 
+  addParserComment( string( "###" ) + string( $1.name )); 
   // lookup $1.name and get it's address ... then jump to it
   //string l = getLabelOfFunction( string($1.name) );
   //addComment( l );
 };
 | ID { check_declaration($1.name); } '=' expression
 {
-  addComment( "RULE: ID {}  '=' expression" );
+  addParserComment( "RULE:statement ID {}  '=' expression" );
   
 
   addAsm( string( "STA $" ) + string( getAddressOf( string( $1.name ))), 3, false );
@@ -1196,9 +1204,9 @@ statement: datatype ID { /*addComment( $2.name ); */} { add('V'); } init
   //sprintf(icg[ic_idx++], "%s = %s <<==", $1.name, $4.name);
   //addAsm(icg[ic_idx-1], false );
 				     }
-| ID {  addComment( "RULE: ID {} relop expression" ); check_declaration($1.name); } relop expression { $1.nd = mknode(NULL, NULL, $1.name); $$.nd = mknode($1.nd, $4.nd, $3.name); }
+| ID {  addParserComment( "RULE: statement: ID {} relop expression" ); check_declaration($1.name); } relop expression { $1.nd = mknode(NULL, NULL, $1.name); $$.nd = mknode($1.nd, $4.nd, $3.name); }
 | ID
-{  addComment( "RULE: ID {} UNARY" ); check_declaration($1.name); } UNARY { 
+{  addParserComment( "RULE: statement: ID {} UNARY" ); check_declaration($1.name); } UNARY { 
   $1.nd = mknode(NULL, NULL, $1.name); 
   $3.nd = mknode(NULL, NULL, $3.name); 
   $$.nd = mknode($1.nd, $3.nd, "ITERATOR");  
@@ -1228,13 +1236,13 @@ statement: datatype ID { /*addComment( $2.name ); */} { add('V'); } init
 
 init: '=' expression
 {
-  //addComment( "init: '=' expression" );
+  addParserComment( "RULE: init: '=' expression" );
   //addAsm( string( "LDA #$" ) + string($2.name), 2, false  );
 }
 |
 '=' value
 {
-  //addComment( "'=' value" );
+  addParserComment( "RULE: init: '=' value" );
   $$.nd = $2.nd; 
   sprintf($$.type, $2.type);
   strcpy($$.name, $2.name);
@@ -1242,7 +1250,7 @@ init: '=' expression
 }
 |
 {
-  //addComment( "NULL initialisation" );
+  addParserComment( "RULE: init:" );
   sprintf($$.type, "null");
   $$.nd = mknode(NULL, NULL, "0");
   strcpy($$.name, "0");
@@ -1252,7 +1260,8 @@ init: '=' expression
 
 expression: expression arithmetic expression
 {
-  addComment( string( $1.name ) + string( $2.name ) + string( $3.name ) );  
+  addParserComment( "RULE: expression: expression arithmetic expression" );
+  addParserComment( string( $1.name ) + string( $2.name ) + string( $3.name ) );  
   // here is where we should check to see if the
   // variable ($$.name) is already in use (in _this_ scope).
   // .. but we don't yet
@@ -1263,7 +1272,7 @@ expression: expression arithmetic expression
   /* if they're BOTH IMM's */
   if( getAddressOf( string( $1.name )) == "IMM" && getAddressOf( string( $3.name )) == "IMM")
     {
-      addComment( "IMM + IMM" );
+      addParserComment( "IMM + IMM" );
       /* then this is a compile-time arithetic operation */
       strcpy( $$.name, toHex( atoi($1.name) + atoi($3.name)).c_str());
       if( string( $2.name ) == "+" ) addAsm( string("LDA $#") + toHex(atoi( $1.name) + atoi( $3.name )), 2, false);
@@ -1273,7 +1282,7 @@ expression: expression arithmetic expression
     }
   else if( getAddressOf( string( $1.name )) == "IMM" )
     {
-      addComment( "IMM + ID" );
+      addParserComment( "IMM + ID" );
 
       addAsm( string("LDA $") + getAddressOf(string($3.name )), 3, false);
       if( string($2.name) == "+" )
@@ -1293,7 +1302,7 @@ expression: expression arithmetic expression
     }
     else if( getAddressOf( string( $3.name )) == "IMM" )
     {
-      addComment( "ID + IMM" );
+      addParserComment( "ID + IMM" );
 
       addAsm( string("LDA $") + getAddressOf(string($$.name )), 3, false);
       if( string($2.name) == "+" )
@@ -1313,7 +1322,7 @@ expression: expression arithmetic expression
     }
   else
     {
-      addComment( "ID + ID" );
+      addParserComment( "ID + ID" );
 
       //addAsm( generateNewLabel(), 0, true );
 
@@ -1336,16 +1345,16 @@ expression: expression arithmetic expression
       //addAsm( "CLC" );
     }
 };
-| value { /* addComment( "value" ); addComment( $$.name ); */ }
-| INT { /* addComment( string( "INT: " ) + string( $1.name ) ); */  strcpy( $$.name, $1.name ); }
-| ID {  strcpy( $$.name, $1.name );  }
+| value { addParserComment( "RULE: expression: value" );   }
+| INT { addParserComment("RULE: expression: INT");  strcpy( $$.name, $1.name ); }
+| ID { addParserComment("RULE: expression ID");  strcpy( $$.name, $1.name );  }
 |
 ;
 
-arithmetic: ADD { /* addComment( "addition" ); */ current_state = string("+"); }
-| SUBTRACT { /* addComment( "subtraction" ); */ current_state = string("-"); }
-| MULTIPLY { /* addComment( "multiplication" ); */ current_state = string("*"); }
-| DIVIDE { /* addComment( "division" ); */current_state = string("/"); }
+arithmetic: ADD { addParserComment( "RULE: arithmetic ADD" );  current_state = string("+"); }
+| SUBTRACT {  addParserComment( "RULE: arithmetic SUBTRACT" );  current_state = string("-"); }
+| MULTIPLY {  addParserComment( "RULE: arithmetic MULTIPLY" ); current_state = string("*"); }
+| DIVIDE {  addParserComment( "RULE: arithmetic DIVIDE" ); current_state = string("/"); }
 ;
 
 relop: LT { current_state = string( "LT" ); }
@@ -1359,16 +1368,31 @@ relop: LT { current_state = string( "LT" ); }
 value:
 NUMBER
 {
-  //addComment( string( "Number: ") + string( $1.name ) );
+  addParserComment( "RULE: value: NUMBER" );
   strcpy($$.name, $1.name);
   sprintf($$.type, "int");
   add('C');
   $$.nd = mknode(NULL, NULL, $1.name);
 }
-| FLOAT_NUM { strcpy($$.name, $1.name); sprintf($$.type, "float"); add('C'); $$.nd = mknode(NULL, NULL, $1.name); }
-| CHARACTER { strcpy($$.name, $1.name); sprintf($$.type, "char"); add('C'); $$.nd = mknode(NULL, NULL, $1.name); }
+| FLOAT_NUM
+{
+  addParserComment( "RULE: value: FLOAT_NUM" );
+  strcpy($$.name, $1.name);
+  sprintf($$.type, "float");
+  add('C');
+  $$.nd = mknode(NULL, NULL, $1.name);
+}
+| CHARACTER
+{
+  addParserComment( "RULE: value: CHARACTER" );
+  strcpy($$.name, $1.name);
+  sprintf($$.type, "char");
+  add('C');
+  $$.nd = mknode(NULL, NULL, $1.name); }
 | ID
 {
+    addParserComment( "RULE: value: ID" );
+
   strcpy($$.name, $1.name);
   char *id_type = get_type($1.name);
   sprintf($$.type, id_type);
@@ -1381,13 +1405,23 @@ NUMBER
 
 return: RETURN {}  value ';'
   {
+    addParserComment( "RULE: return: RETURN {} value ';'" );
+
     addAsm("RTS");
     check_return_type($3.name);
     $1.nd = mknode(NULL, NULL, "return");
     $$.nd = mknode($1.nd, $3.nd, "RETURN");
   }
-| RETURN {} ';' { addAsm( "RTS" ); }
- | { $$.nd = NULL; }
+| RETURN {} ';'
+{
+    addParserComment( "RULE: return: RETURN {} ';'" );
+    addAsm( "RTS" );
+}
+ |
+{
+  addParserComment( "RULE: return:" );
+  $$.nd = NULL;
+}
  ;
 
 %%
@@ -1422,6 +1456,7 @@ int main(int argc, char *argv[])
 #endif
       if( a == "--memory-locations" ) arg_memory_locations  = true;
       if( a == "--no-asm-comments" ) arg_asm_comments = false;
+      if( a == "--parser-comments" ) arg_parser_comments = true;
       if( a == "--no-labels" ) arg_show_labels = false;
       if( a == "--code-segment" )
 	{
@@ -1442,9 +1477,13 @@ int main(int argc, char *argv[])
 	}
       if( a == "--help" )
 	{
-	  cerr << "usage:" << endl << argv[0] << " --memory-locations inputfile.c outputfile.asm" << endl;
-	  cerr << "\t--memory-locations will show the memory addresses of the assembler instructions" << endl;
-	  cerr << "\t--no-labels will supress the labels (and turn them into memory addresses)" << endl;
+	  cerr << "\n\nusage:" << endl << argv[0] << " --memory-locations inputfile.c outputfile.asm\n\n"
+	       << "\t--memory-locations\twill show the memory addresses of the assembler instructions\n" 
+	       << "\t--no-labels\t\twill supress the labels (and turn them into memory addresses)\n" 
+	       << "\t--no-asm-comments\twill supress most comments pertaining to flow of control\n" 
+	       << "\t--parser-comments\twill show the comments intended to help debug the parser\n" 
+	       << "\t--code-segment address\tsets the start of code segment to a memory addres (default is 49152)\n"
+	       << "\t--data-segment address\tsets the start of data segment to a memory addres (default is 828)\n\n" << endl;
 	  exit(-1);
 	}
     }
@@ -1462,11 +1501,11 @@ int main(int argc, char *argv[])
   current_code_location = code_start;
   
   // temp storage for the printf routine
-  addAsmVariable( "print_tmp_l", 1 );
-  addAsmVariable( "print_tmp_h", 1 );
+  //addAsmVariable( "print_tmp_l", 1 );
+  //addAsmVariable( "print_tmp_h", 1 );
 
-  addAsmVariable( "string_tmp_l", 1 );
-  addAsmVariable( "string_tmp_h", 1 );
+  //addAsmVariable( "string_tmp_l", 1 );
+  //addAsmVariable( "string_tmp_h", 1 );
   
   addAsmVariable( "buffer_tmp_l", 1 );
   addAsmVariable( "buffer_tmp_h", 1 );
@@ -1491,9 +1530,10 @@ int main(int argc, char *argv[])
 	  printf("\t - %s", errors[i]);
 	}
   }
-  else {
-    //printf("Semantic analysis completed with no errors");
-  }
+  else
+    {
+      //printf("Semantic analysis completed with no errors");
+    }
 
   // a built-in-function that will convert an integer into a null-terminated
   // buffer of PETSCII displayable characters.
