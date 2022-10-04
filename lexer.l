@@ -11,12 +11,18 @@ unary "++"|"--"
 
 %%
 "jsr"                    { strcpy(yylval.nd_obj.name,(yytext)); return tJSR; }
+"twos"                   { strcpy(yylval.nd_obj.name,(yytext)); return tTWOS; }
+"chrout"                   { strcpy(yylval.nd_obj.name,(yytext)); return tBYTE2HEX; }
 "rts"                    { strcpy(yylval.nd_obj.name,(yytext)); return tRTS; }
 "poke"                    { strcpy(yylval.nd_obj.name,(yytext)); return tPOKE; }
 "printf"                    { strcpy(yylval.nd_obj.name,(yytext)); return PRINTFF; }
 "scanf"                     { strcpy(yylval.nd_obj.name,(yytext)); return SCANFF; }
 "int"                       { strcpy(yylval.nd_obj.name,(yytext)); return INT; }
 "float"                     { strcpy(yylval.nd_obj.name,(yytext)); return FLOAT; }
+"double"                    { strcpy(yylval.nd_obj.name,(yytext)); return tDOUBLE; }
+"word"                    { strcpy(yylval.nd_obj.name,(yytext)); return tWORD; }
+"byte"                    { strcpy(yylval.nd_obj.name,(yytext)); return tBYTE; }
+"uint"                    { strcpy(yylval.nd_obj.name,(yytext)); return tUINT; }
 "char"                      { strcpy(yylval.nd_obj.name,(yytext)); return CHAR; }
 "void"                      { strcpy(yylval.nd_obj.name,(yytext)); return VOID; }
 "return"                    { strcpy(yylval.nd_obj.name,(yytext)); return RETURN; }

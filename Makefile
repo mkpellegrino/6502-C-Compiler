@@ -21,7 +21,15 @@ compiler: y.tab.c
 
 tests:
 	./compiler --code-segment 49152 --data-segment 828 < ./iftests.c > iftests.asm
-	./compiler --code-segment 49152 --data-segment 828 < ./vartests.c > vartests.asm
+	./compiler --code-segment 49152 --data-segment 828 --no-asm-comments < ./vartests.c > vartests.asm
+#	./compiler --code-segment 49152 --data-segment 828 --no-asm-comments < ./vartests.c > vartests.asm
+#	./compiler --code-segment 49152 --data-segment 828  < ./vartests.c > vartests.asm
+
+	./compiler --code-segment 49152 --data-segment 828 --no-asm-comments < ./looptests.c > looptests.asm
+
+debug:
+	./compiler --code-segment 49152 --data-segment 828 --parser-comments --memory-locations < ./vartests.c > vartests.asm
+	./compiler --code-segment 49152 --data-segment 828 --parser-comments < ./looptests.c > looptests.asm
 clean:
 #	mv -f parser.tab.c parser.tab.c.prev
 #	mv -f parser.tab.h parser.tab.h.prev

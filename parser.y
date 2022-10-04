@@ -20,6 +20,9 @@
   
 
   // compiler internal flags
+  bool twos_complement_is_needed = false;
+  bool pbin_is_needed = false;
+  bool chrout_is_needed = false;
   bool printf_is_needed = false;
   bool scanf_is_needed = false;
   bool getkey_is_needed = false;
@@ -310,42 +313,56 @@
       return out;
     }
  
- 
+
+  /* ASM VARIABLE TYPES & SIZES */
+  /* 0 - unsigned int - 1 bytes */
+  /* 1 - signed int - 2 bytes */
+  /* 2 - word - 3 bytes */
+  /* 4 - double - 5 bytes */
   class asm_variable
   {
   public:
-    asm_variable( string identifier, int t = 1)
+    asm_variable( string identifier, int t = 0)
       {
+	
 	name=identifier;
 	address=data_start;
 	type=t;
 
 	switch( t )
 	  {
-	  case 8:
-	    data_start+=4;
+	  case 0:
+	    data_start += 1;
+	    break;
+	  case 1:
+	    data_start += 2;
+	    break;
+	  case 2:
+	    data_start += 3;
+	    break;
+	  case 4:
+	    data_start += 5;
 	    break;
 	  default:
-	    data_start+=t;
+	    data_start += 2;
+	    
 	  }	   
 
       }
     string getAddress(){ return toHex(address); };
+    int getAddressAsInt() { return address; };
     string getName(){ return name; };
-   
+    void setData( string s ){ data = s; };
+    
   private:
+    string data;
     int address; // somewhere between 0 and 65535
     string name;
-    int type;  // 1: int (8 bits)  2: double (16 bits)  4: float  8: string address (null termed) 
+    int type;  // 0: uint (8 buts) 1: int (8 bits)  2: double (16 bits)  4: float  8: string address (null termed) 
   };
 
   vector<asm_variable*> asm_variables;
 
-  bool addAsmVariable( string id, int type )
-  {
-    asm_variable * new_asm_variable = new asm_variable( id, type );
-    asm_variables.push_back( new_asm_variable ); // add the variable to the list of variables
-  }
 
   int getIndexOf( string s )
   {
@@ -365,7 +382,11 @@
     return asm_variables[i]->getAddress();
   }
 
-  string getAddressOf( string s )
+  int getAddressAsInt( int i )
+  {
+    return asm_variables[i]->getAddressAsInt();
+  }
+ string getAddressOf( string s )
   {
     int i=getIndexOf( s );
     if( i == -1 )
@@ -460,7 +481,22 @@
     return;
   }
 
-  
+  bool addAsmVariable( string id, int type )
+  {
+    string s;
+    switch( type )
+      {
+      case 0:
+	s = string( "BYTE" );
+
+      default:
+	break;
+      }
+    addParserComment( string( "Adding: " ) + string(id) + string(" of type: ")  );
+    asm_variable * new_asm_variable = new asm_variable( id, type );
+    asm_variables.push_back( new_asm_variable ); // add the variable to the list of variables
+  }
+
   void pushScope( string s )
   {
     addParserComment( "=========================================================");
@@ -589,7 +625,7 @@
     my_asm->setLabel(l);
     my_asm->setSize(0);
     if(
-       (s == "ASL A") ||
+       (s == "ASL") ||
        (s == "BRK" ) ||
        (s == "CLC" ) ||
        (s == "CLD" ) ||
@@ -599,14 +635,14 @@
        (s == "DEY" ) ||
        (s == "INX" ) ||
        (s == "INY" ) ||
-       (s == "LSR A" ) ||
+       (s == "LSR" ) ||
        (s == "NOP" ) ||
        (s == "PHA" ) ||
        (s == "PHP" ) ||
        (s == "PLA" ) ||
        (s == "PLP" ) ||
-       (s == "ROL A" ) ||
-       (s == "ROR A" ) ||
+       (s == "ROL" ) ||
+       (s == "ROR" ) ||
        (s == "RTI" ) ||
        (s == "RTS" ) ||
        (s == "SEC" ) ||
@@ -741,7 +777,7 @@
 //%parse-param { FILE* fp }
 
 %token VOID 
-%token <nd_obj> tPOINTER tJSR tRTS tPOKE NEWLINE CHARACTER PRINTFF SCANFF INT FLOAT CHAR FOR IF ELSE TRUE FALSE NUMBER FLOAT_NUM ID LE GE EQ NE GT LT AND OR STR ADD MULTIPLY DIVIDE SUBTRACT UNARY INCLUDE RETURN
+%token <nd_obj> tWORD tBYTE tDOUBLE tUINT tPOINTER tJSR tBYTE2HEX tTWOS tRTS tPOKE NEWLINE CHARACTER PRINTFF SCANFF INT FLOAT CHAR FOR IF ELSE TRUE FALSE NUMBER FLOAT_NUM ID LE GE EQ NE GT LT AND OR STR ADD MULTIPLY DIVIDE SUBTRACT UNARY INCLUDE RETURN
 %type <nd_obj> headers main body return function datatype statement arithmetic relop program else
    %type <nd_obj2> init value expression
       %type <nd_obj3> condition
@@ -787,7 +823,15 @@ function: function function
 
 
 datatype:
-INT { addParserComment( string( "RULE: datatype: ") + string( $$.name )); insert_type();}
+INT { addParserComment( string( "RULE: datatype: ") + string( $$.name )); /* insert_type();*/}
+|
+tBYTE { addParserComment( string( "RULE: datatype: ") + string( $$.name )); /* insert_type();*/}
+|
+tWORD { addParserComment( string( "RULE: datatype: ") + string( $$.name )); /* insert_type();*/}
+|
+tDOUBLE { addParserComment( string( "RULE: datatype: ") + string( $$.name )); /* insert_type();*/}
+|
+tUINT { addParserComment( string( "RULE: datatype: ") + string( $$.name )); /* insert_type();*/}
 |
 FLOAT { addParserComment( string( "RULE: datatype: ") + string( $$.name )); insert_type();}
 |
@@ -806,33 +850,30 @@ FOR
   addAsm( generateNewLabel(), 0, true );
   addParserComment( "              initialization goes here" );
   addAsm( "PHA" );
-  //addAsm( "TXA" );
-  //addAsm( "PHA" );
-  //addAsm( "TYA" );
-  //addAsm( "PHA" );
-  addComment( "---------------------------------------------------------");
+  addComment( "1 VAR INIT---------------------------------------------------------");
 }
-'(' statement {addComment("---------------------------------------------------------");}
-';' condition {addComment("---------------------------------------------------------");}
+'(' statement {addComment("2 COND---------------------------------------------------------");}
+';' condition {addComment("3 ITER---------------------------------------------------------");}
 {
-  addAsm( string( "JMP ") + getLabel( label_vector[label_major]+2, false) + string( "; jump out of FOR" ), 3, false );
+  // addAsm( string( "JMP ") + getLabel( label_vector[label_major]+2, false) + string( "; jump out of FOR" ), 3, false );
+  addAsm( generateNewLabel(), 0, true );
 }
 ';' statement
 {
   addAsm( string( "JMP ") + getLabel( label_vector[label_major]-2, false) + string( "; jump to top of FOR" ), 3, false );
-  addComment("---------------------------------------------------------");
+  addComment("4 BODY---------------------------------------------------------");
 } ')'
 {  addAsm( generateNewLabel(), 0, true ); }
 '{' body '}'
 {
-  addComment( "---------------------------------------------------------" );
+  addComment( "5---------------------------------------------------------" );
 
   
   addAsm( string( "JMP " ) + getLabel( ((int)label_vector[label_major]-2), false ) + "; jump to iterator ", 3, false );
   
   addAsm( generateNewLabel(), 0, true );
   addAsm( "PLA" );  
-  addComment( "---------------------------------------------------------" );
+  addComment( "6---------------------------------------------------------" );
   if( scope_stack.top() != string("FOR") )
     {
       addComment( "ERROR: Scope out of Sync" );
@@ -925,6 +966,49 @@ FOR
   addAsm( "NOP ; to be replaced", 1, false);
   addAsm( "JSR PRN", 3, false );
 };
+| tBYTE2HEX '(' ID ')' ';'
+{
+  chrout_is_needed = true;
+  addComment( "=========================================================");  
+  addComment( string("                 chrout(") + string( $3.name ) + string(")"));
+  addComment( "=========================================================");
+  //addAsm( string("LDA $") + getAddressOf( string( $3.name )), 3, false );
+  addAsm( string("LDA $") + toHex(1+getAddressAsInt( getIndexOf( $3.name ))), 3, false );
+  addAsm( "PHA" );
+  addAsm( "JSR BYTE2HEX", 3, false );
+}
+| tBYTE2HEX '(' NUMBER ')' ';'
+{
+  chrout_is_needed=true;
+  addComment( "=========================================================");  
+  addComment( string("                 chrout(") + string( $3.name ) + string(")"));
+  addComment( "=========================================================");
+  addAsm( string("LDA #$") + toHex(atoi( $3.name )), 3, false );
+  addAsm( "PHA" );
+  addAsm( "JSR BYTE2HEX", 3, false );
+}
+| tTWOS '(' ID ')' ';'
+{
+  addComment( "=========================================================");  
+  addComment( string("                 twos(") + string( $3.name ) + string(")"));
+  addComment( "=========================================================");
+
+  addAsm( string("LDA $") + getAddressOf( string( $3.name )), 3, false );
+  addAsm( "PHA" );
+  addAsm( "JSR TWOS", 3, false );
+  addAsm( "PLA" );
+  addAsm( string("STA $") + getAddressOf( string( $3.name )), 3, false );
+}
+| tTWOS '(' NUMBER ')' ';'
+{
+  addComment( "=========================================================");  
+  addComment( string("                 twos(") + string( $3.name ) + string(")"));
+  addComment( "=========================================================");
+  addAsm( string("LDA $") + toHex(atoi( $3.name )), 3, false );
+  addAsm( "PHA" );
+  addAsm( "JSR TWOS", 3, false );
+  addAsm( "PLA" );
+}
 | tJSR '(' NUMBER ')' ';'
 {
   addComment( "=========================================================");  
@@ -1005,41 +1089,46 @@ condition: value relop value
   //pushScope("COND");
   
   if( scope_stack.top() == "FOR" ) addAsm( generateNewLabel(true) + string( "\t\t\t; Top of FOR Loop"), 0, true );  
-  if( scope_stack.top() == "IF" ) addAsm( generateNewLabel(true) + string( "\t\t\t; Top of IF Statement"), 0, true );
+  //if( scope_stack.top() == "IF" ) addAsm( generateNewLabel(true) + string( "\t\t\t; Top of IF Statement"), 0, true );
   
-  
-  addAsm( string( "LDA $" ) + getAddressOf( getIndexOf( $1.name )), 3, false);
+ 
+  //addAsm( string( "LDA $" ) + getAddressOf( getIndexOf( $1.name )), 3, false);
+  addAsm( string( "LDA $" ) + toHex(1+getAddressAsInt( getIndexOf( $1.name ))), 3, false);
   addAsm( string( "CMP #$" ) + toHex(atoi( $3.name )), 2, false );
   if( scope_stack.top() == "FOR" || scope_stack.top() == "WHILE") 
     {      
       if( string( $2.name ) == string( "<=" ) )
 	{
-	  addAsm( string( "BCC ") + getLabel( label_vector[label_major]+1, false) + string( "; if c==0 jump to THEN" ), 2, false );
-	  addAsm( string( "BEQ ") + getLabel( label_vector[label_major]+1, false) + string( "; if z==1 jump to THEN" ), 2, false );
+	  addAsm( string( "BCC ") + getLabel( label_vector[label_major]+1, false) + string( "; if c==0 jump to BODY" ), 2, false );
+	  addAsm( string( "BEQ ") + getLabel( label_vector[label_major]+1, false) + string( "; if z==1 jump to BODY" ), 2, false );
+	  addAsm( string( "JMP ") + getLabel( label_vector[label_major]+2, false) + string( "; jump out of FOR" ), 3, false );
+	  
 	}
       else if( string( $2.name ) == string( "==" ) )
 	{
-	  addAsm( string( "BEQ ") + getLabel( label_vector[label_major]+1, false) + string( "; if z==1 jump to THEN" ), 2, false );
+	  addAsm( string( "BEQ ") + getLabel( label_vector[label_major]+1, false) + string( "; if z==1 jump to BODY" ), 2, false );
+	  addAsm( string( "JMP ") + getLabel( label_vector[label_major]+2, false) + string( "; jump out of FOR" ), 3, false );
 	}
       else if( string( $2.name ) == string( ">" ) )
 	{
-	  addAsm( string( ".BYTE #$F0 ; if z==1 SKIP THE BCS" ), 1, false );
-	  addAsm( string( ".BYTE #$02 ; 0xF0 0x02 is: BEQ +2" ), 1, false );
-	  addAsm( string( "BCS ") + getLabel( label_vector[label_major]+1, false) + string( "; if c==1 jump to THEN" ), 2, false );
+	  addAsm( string( "BEQ ") + getLabel( label_vector[label_major]+2, false) + string( "; if z==1 jump out of FOR" ), 2, false );
+	  addAsm( string( "BCC ") + getLabel( label_vector[label_major]+2, false) + string( "; if c==0 jump out of FOR" ), 2, false );
+	  addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + string( "; jump to body of FOR" ), 3, false );
 	}
       else if( string( $2.name ) == string( "<" ) )
 	{
 	  addAsm( string( "BCC ") + getLabel( label_vector[label_major]+1, false) + string( "; if c==0 jump to BODY" ), 2, false );
-	  addAsm( string( "JMP ") + getLabel( label_vector[label_major]+2, false) + string( "; jump to ELSE/out of FOR" ), 3, false );
+	  addAsm( string( "JMP ") + getLabel( label_vector[label_major]+2, false) + string( "; jump out of FOR" ), 3, false );
 	}
       else if( string( $2.name ) == string( ">=" ) )
 	{
-	  addAsm( string( "BCS ") + getLabel( label_vector[label_major]+1, false) + string( "; if c==1 jump to THEN/BODY of FOR" ), 2, false );
+	  addAsm( string( "BCS ") + getLabel( label_vector[label_major]+1, false) + string( "; if c==1 jump to BODY" ), 2, false );
+	  addAsm( string( "JMP ") + getLabel( label_vector[label_major]+2, false) + string( "; jump out of FOR" ), 3, false );
 	}
       else /* != ... NOT EQUAL TO */
 	{
-	  addAsm( string( "BNE ") + getLabel( label_vector[label_major]+1, false) + string( "; if z==0 jump to THEN/BODY of FOR" ), 2, false );
-	  addAsm( string( "JMP ") + getLabel( label_vector[label_major]+2, false) + string( "; jump to ELSE/out of FOR" ), 3, false );
+	  addAsm( string( "BNE ") + getLabel( label_vector[label_major]+1, false) + string( "; if z==0 jump to BODY" ), 2, false );
+	  addAsm( string( "JMP ") + getLabel( label_vector[label_major]+2, false) + string( "; jump out of FOR" ), 3, false );
 	}
     }
   else if( scope_stack.top() == "IF" ) /*                                                                                                               <<<<    IF           */
@@ -1093,6 +1182,7 @@ condition: value relop value
 statement: datatype ID { /*addComment( $2.name ); */} { add('V'); } init
 {
   addParserComment( "RULE: statement: datatype ID {} {} init" );
+  addParserComment( string( "\t[" ) + string( $1.name ) + string( "] [" ) + string( $2.name ) + string( "] [" ) + string( $5.name ) + string("]" ) );
   //addComment( string( $2.name ) + " = " + string( $1.name ) );
   //$2.nd = mknode(NULL, NULL, $2.name); 
   /*
@@ -1128,26 +1218,44 @@ statement: datatype ID { /*addComment( $2.name ); */} { add('V'); } init
       $$.nd = mknode($2.nd, $4.nd, "declaration"); 
       } */
   // variable initialization (for INT type)
-  addAsmVariable( $2.name, 1 );
-  //addAsm( string("LDA #$") + toHex(atoi($4.name)), 2, false);
-  addAsm( string("STA $") + getAddressOf( getIndexOf( $2.name )), 3, false );
+  if( string($1.name) == "int" )
+    {
+      // 2022 10 03
+      addAsmVariable( $2.name, 1 );
+      int base_address = getAddressAsInt( getIndexOf( $2.name ));
+      addAsm( string("STA $") + toHex( base_address + 1), 3, false );
+      addComment( "Variable is of type 'int' (type 1)" );
+      addAsm( "LDA #$01", 2, false );
+      addAsm( string("STA $") + toHex( base_address ), 3 ); //
+    }
+  else if( string($1.name) == "uint" )
+    {
+      addAsmVariable( $2.name, 0 );
+      addAsm( string("STA $") + getAddressOf( getIndexOf( $2.name )), 3, false );
+    }
+  else if( $1.name == "float" )
+    {
+      addAsmVariable( $2.name, 1 );
+    }
 }
 | ID '(' ')' 
 {
   addParserComment( "RULE: statement: ID '(' ')'" );
   //addComment( "Trying to call a function." );
   //addComment( $1.name );
-  addParserComment( string( "###" ) + string( $1.name )); 
+  addParserComment( string( $1.name ) + string( "()" )); 
   // lookup $1.name and get it's address ... then jump to it
   //string l = getLabelOfFunction( string($1.name) );
   //addComment( l );
 };
 | ID { check_declaration($1.name); } '=' expression
 {
-  addParserComment( "RULE:statement ID {}  '=' expression" );
+  addParserComment( "RULE: statement ID {}  '=' expression" );
   
 
-  addAsm( string( "STA $" ) + string( getAddressOf( string( $1.name ))), 3, false );
+  //addAsm( string( "STA $" ) + string( getAddressOf( string( $1.name ))), 3, false );
+  addAsm( string( "STA $" ) + toHex(1+getAddressAsInt(getIndexOf(string($1.name)))), 3, false );
+  //toHex(1+getAddressAsInt(getIndexOf(string($$.name)))
   $1.nd = mknode(NULL, NULL, $1.name); 
   char *id_type = get_type($1.name); 
   if(strcmp(id_type, $4.type))
@@ -1216,6 +1324,7 @@ statement: datatype ID { /*addComment( $2.name ); */} { add('V'); } init
     }
   else
     {
+
       sprintf(buff, "t%d = %s + 1\n%s = t%d\n// 469", temp_var, $1.name, $1.name, temp_var++);
     }
 								   }
@@ -1237,7 +1346,6 @@ statement: datatype ID { /*addComment( $2.name ); */} { add('V'); } init
 init: '=' expression
 {
   addParserComment( "RULE: init: '=' expression" );
-  //addAsm( string( "LDA #$" ) + string($2.name), 2, false  );
 }
 |
 '=' value
@@ -1246,6 +1354,7 @@ init: '=' expression
   $$.nd = $2.nd; 
   sprintf($$.type, $2.type);
   strcpy($$.name, $2.name);
+  // this may have to move because it's only for uint/byte types.
   addAsm( string( "LDA #$" ) + toHex(atoi($2.name)), 2, false  );
 }
 |
@@ -1261,12 +1370,17 @@ init: '=' expression
 expression: expression arithmetic expression
 {
   addParserComment( "RULE: expression: expression arithmetic expression" );
-  addParserComment( string( $1.name ) + string( $2.name ) + string( $3.name ) );  
+  addParserComment( string( $1.name ) + string( $2.name ) + string( $3.name ) );
+  
   // here is where we should check to see if the
   // variable ($$.name) is already in use (in _this_ scope).
   // .. but we don't yet
 
-  addAsm( generateNewLabel(), 0, true );
+
+  // I'm not sure why this label was here, so I commented it out.
+  // it was messing up the if statements.  If this NEEDS to be here
+  // then the compiler should dive down one level of scope.
+  // addAsm( generateNewLabel(), 0, true );
 
   
   /* if they're BOTH IMM's */
@@ -1275,10 +1389,10 @@ expression: expression arithmetic expression
       addParserComment( "IMM + IMM" );
       /* then this is a compile-time arithetic operation */
       strcpy( $$.name, toHex( atoi($1.name) + atoi($3.name)).c_str());
-      if( string( $2.name ) == "+" ) addAsm( string("LDA $#") + toHex(atoi( $1.name) + atoi( $3.name )), 2, false);
-      if( string( $2.name ) == "-" ) addAsm( string("LDA $#") + toHex(atoi( $1.name) - atoi( $3.name )), 2, false);
-      if( string( $2.name ) == "*" ) addAsm( string("LDA $#") + toHex(atoi( $1.name) * atoi( $3.name )), 2, false);
-      if( string( $2.name ) == "/" ) addAsm( string("LDA $#") + toHex(atoi( $1.name) / atoi( $3.name )), 2, false);
+      if( string( $2.name ) == "+" ) addAsm( string("LDA #$") + toHex(atoi( $1.name) + atoi( $3.name )), 2, false);
+      if( string( $2.name ) == "-" ) addAsm( string("LDA #$") + toHex(atoi( $1.name) - atoi( $3.name )), 2, false);
+      if( string( $2.name ) == "*" ) addAsm( string("LDA #$") + toHex(atoi( $1.name) * atoi( $3.name )), 2, false);
+      if( string( $2.name ) == "/" ) addAsm( string("LDA #$") + toHex(atoi( $1.name) / atoi( $3.name )), 2, false);
     }
   else if( getAddressOf( string( $1.name )) == "IMM" )
     {
@@ -1302,9 +1416,31 @@ expression: expression arithmetic expression
     }
     else if( getAddressOf( string( $3.name )) == "IMM" )
     {
+      pushScope( "RETRVAR" );
       addParserComment( "ID + IMM" );
+      
+      addAsm( string("LDA $") + getAddressOf(string($$.name )), 3, false); 
+      // A is now the TYPE
+      addAsm( "CMP #$01", 2, false );
+      //addAsm( "BNE #$??", 2, false );
 
-      addAsm( string("LDA $") + getAddressOf(string($$.name )), 3, false);
+      addAsm( string("LDA $") + toHex(1+getAddressAsInt(getIndexOf(string($$.name)))), 3, false); 
+      //addAsm( "PHA" );
+      //  addAsm( "JSR PBIN", 3, false );
+      //addAsm( "PLA" );
+      
+
+
+      
+      //addAsm( "CMP #$02", 2, false );
+      //addAsm( "BEQ #$??", 2, false );
+      //addAsm( "CMP #$04", 2, false );
+      //addAsm( "BEQ #$??", 2, false );
+      //addAsm( "CMP #$08", 2, false );
+      //addAsm( "BEQ #$??", 2, false );
+      //addAsm( "CMP #$00", 2, false );
+      //addAsm( "BEQ #$??", 2, false );
+      popScope();
       if( string($2.name) == "+" )
 	{
 	  addAsm( "CLC" );
@@ -1346,8 +1482,8 @@ expression: expression arithmetic expression
     }
 };
 | value { addParserComment( "RULE: expression: value" );   }
-| INT { addParserComment("RULE: expression: INT");  strcpy( $$.name, $1.name ); }
-| ID { addParserComment("RULE: expression ID");  strcpy( $$.name, $1.name );  }
+| INT { addParserComment(string("RULE: expression: INT :") +  string($1.name ));  strcpy( $$.name, $1.name ); }
+| ID { addParserComment(string( "RULE: expression ID :") + string($1.name )); strcpy( $$.name, $1.name );  }
 |
 ;
 
@@ -1501,7 +1637,7 @@ int main(int argc, char *argv[])
   current_code_location = code_start;
   
   // temp storage for the printf routine
-  //addAsmVariable( "print_tmp_l", 1 );
+  //addAsmVariable( "twos_tmp1_tmp_l", 1 );
   //addAsmVariable( "print_tmp_h", 1 );
 
   //addAsmVariable( "string_tmp_l", 1 );
@@ -1512,6 +1648,21 @@ int main(int argc, char *argv[])
 
   addAsmVariable( "hex2petscii_tmp_l", 1 );
   addAsmVariable( "hex2petscii_tmp_h", 1 );
+  
+  addAsmVariable( "hex2petscii_tmp_byte", 1 );
+
+  //addAsmVariable( "twos_tmp1", 1 );
+  //addAsmVariable( "twos_tmp2", 1 );
+
+
+  addAsmVariable( "twos_tmp_1", 2 );
+  addAsmVariable( "twos_tmp_2", 2 );
+  addAsmVariable( "twos_tmp_3", 2 );
+
+  addAsmVariable( "return_address_1", 2 );
+  addAsmVariable( "return_address_2", 2 );
+  // technically, this is the processor status register value
+  addAsmVariable( "return_address_3", 2 );
   
   yyparse(); 
   
@@ -1537,16 +1688,146 @@ int main(int argc, char *argv[])
 
   // a built-in-function that will convert an integer into a null-terminated
   // buffer of PETSCII displayable characters.
-  if( hex2petscii_is_needed )
+ 
+  //if( hex2petscii_is_needed )
+  if( false )
     {
-      addAsm( "HEX2PETSCII:", 0, true );
-      addAsm( string( "LDA $") + getAddressOf( string( "hex2petscii_tmp_l" ) ), 3, false );
+      // function for just one digit
+      addAsm( "H2PDIGIT:", 0, true );
+      
+      addAsm( string( "LDA $") + getAddressOf( string( "hex2petscii_tmp_byte" ) ), 3, false );
+      
       addAsm( "AND #$0F", 2, false );
-      addAsm( "CMP #$0A", 2, false );
-      addAsm( ".BYTE B0", 1, false ); // skip the adding of 0x41
-      addAsm( ".BYTE 03", 1, false );
-      addAsm( "ADD #$0B", 2, false );
-      addAsm( "ADD #$30", 2, false );
+      addAsm( "CLC", 1, false );
+      addAsm( "ADC #$1E", 2, false );
+      addAsm( "CMP #$28", 2, false );
+      addAsm( ".BYTE #$90", 1, false );
+      addAsm( ".BYTE #$03", 1, false );
+      addAsm( "CLC", 1, false );
+      addAsm( "ADC #$19", 2, false );
+      addAsm( "JSR $FFD2", 3, false );
+      addAsm( "RTS", 1, false );
+
+
+      // function for values > than 1 digit
+      addAsm( "H2PMANY:", 0, true );
+      addAsm( "LDX #$00", 2, false );
+      addAsm( "H2PMANY1:\t\t;top of H2PMANY loop #1", 0, true );
+      addAsm( string( "LDA $") + getAddressOf( string( "hex2petscii_tmp_l" ) ) + string( ",X"), 3, false );
+
+      addAsm( "AND #$0F", 2, false );
+      addAsm( "PHA", 1, false );
+      addAsm( string( "LDA $") + getAddressOf( string( "hex2petscii_tmp_l" ) ) + string( ",X"), 3, false );
+      addAsm( "AND #$F0", 2, false );
+      addAsm( "LSR", 1, false );
+      addAsm( "LSR", 1, false );
+      addAsm( "LSR", 1, false );
+      addAsm( "LSR", 1, false );
+      addAsm( "PHA", 1, false );
+      addAsm( "CPX #$01", 2, false );
+      addAsm( ".BYTE #$F0", 1, false );
+      addAsm( ".BYTE #$04", 1, false );
+      addAsm( "INX", 1, false );
+      addAsm( "JMP H2PMANY1", 3, false );
+	      
+      addAsm( "LDX #$04", 2, false );
+      addAsm( "H2PMANY2:\t\t;top of H2PMANY loop #2", 0, true );
+      addAsm( "PLA" );
+      addAsm( string( "STA $" ) + getAddressOf( string( "hex2petscii_tmp_byte" ) ), 3, false );
+      addAsm( "JSR H2PDIGIT", 3, false );
+      addAsm( "CPX #$00", 2, false );
+      addAsm( ".BYTE #$90", 1, false );
+      addAsm( ".BYTE #$03", 1, false );
+      addAsm( "JMP H2PMANY2", 3, false );
+      addAsm( "RTS", 1, false );
+    }
+  if( chrout_is_needed )
+    { 
+      addAsm( "BYTE2HEX:\t\t;Display a Hexadecimal Byte", 0, true );
+      addAsm( "PLA" );
+      addAsm( string( "STA $" ) + getAddressOf( string( "return_address_1" ) ), 3, false );
+      addAsm( "PLA" );
+      addAsm( string( "STA $" ) + getAddressOf( string( "return_address_2" ) ), 3, false );
+      // =================================================================================
+      addAsm( "PLA" );
+      addAsm( "TAX" );
+      addAsm( "AND #$F0", 2, false );
+      addAsm( "LSR" );
+      addAsm( "LSR" );
+      addAsm( "LSR" );
+      addAsm( "LSR" );
+      addAsm( "CMP #$0A", 2, false);
+      addAsm( ".BYTE #$90", 1, false);
+      addAsm( ".BYTE #$03", 1, false);
+      addAsm( "CLC" );
+      addAsm( "ADC #$07", 2, false);
+      addAsm( "ADC #$30", 2, false);
+      addAsm( "JSR $FFD2", 3, false );
+      addAsm( "TXA" );
+      addAsm( "AND #$0F", 2, false);
+      addAsm( "CMP #$0A", 2, false);
+      addAsm( ".BYTE #$90", 1, false);
+      addAsm( ".BYTE #$03", 1, false);
+      addAsm( "CLC" );
+      addAsm( "ADC #$07", 2, false);
+      addAsm( "ADC #$30", 2, false);
+      addAsm( "JSR $FFD2", 3, false );
+
+      // =================================================================================
+      addAsm( string( "LDA $" ) + getAddressOf( string( "return_address_2" ) ), 3, false );
+      addAsm( "PHA" );
+      addAsm( string( "LDA $" ) + getAddressOf( string( "return_address_1" ) ), 3, false );
+      addAsm( "PHA" );
+      addAsm( "RTS" );
+      
+    }
+  if( pbin_is_needed )
+    {
+      addAsm( "PBIN:\t\t;Display a binary Number", 0, true );
+
+      // save return address from the stack
+      addAsm( "PLA" );
+      addAsm( string( "STA $" ) + getAddressOf( string( "return_address_1" ) ), 3, false );
+      addAsm( "PLA" );
+      addAsm( string( "STA $" ) + getAddressOf( string( "return_address_2" ) ), 3, false );
+
+      
+      
+      
+      // put the return address back onto the stack
+      addAsm( string( "LDA $" ) + getAddressOf( string( "return_address_2" ) ), 3, false );
+      addAsm( "PHA" );
+      addAsm( string( "LDA $" ) + getAddressOf( string( "return_address_1" ) ), 3, false );
+      addAsm( "PHA" );
+  
+      addAsm( "RTS" );
+
+      
+    }
+  if( twos_complement_is_needed )
+    {
+
+      addAsm( "TWOS:\t\t;Two's Complement Function", 0, true );
+      
+      // get the return address and status flag from the stack
+      // save return address
+      addAsm( "PLA" );
+      addAsm( string( "STA $" ) + getAddressOf( string( "return_address_1" ) ), 3, false );
+      addAsm( "PLA" );
+      addAsm( string( "STA $" ) + getAddressOf( string( "return_address_2" ) ), 3, false );
+      
+      addAsm( "CLC" );
+      addAsm( "EOR #$FF", 2, false );
+      addAsm( "ADC #$01", 2, false );
+
+      addComment( "The return value is put on the stack here" );
+      addAsm( "PHA" );
+      
+      addAsm( string( "LDA $" ) + getAddressOf( string( "return_address_2" ) ), 3, false );
+      addAsm( "PHA" );
+      addAsm( string( "LDA $" ) + getAddressOf( string( "return_address_1" ) ), 3, false );
+      addAsm( "PHA" );
+  
       addAsm( "RTS" );
 
     }
