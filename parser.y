@@ -22,7 +22,7 @@
   // compiler internal flags
   bool twos_complement_is_needed = false;
   bool pbin_is_needed = false;
-  bool chrout_is_needed = false;
+  bool byte2hex_is_needed = false;
   bool printf_is_needed = false;
   bool scanf_is_needed = false;
   bool getkey_is_needed = false;
@@ -968,9 +968,9 @@ FOR
 };
 | tBYTE2HEX '(' ID ')' ';'
 {
-  chrout_is_needed = true;
+  byte2hex_is_needed = true;
   addComment( "=========================================================");  
-  addComment( string("                 chrout(") + string( $3.name ) + string(")"));
+  addComment( string("                 byte2hex(") + string( $3.name ) + string(")"));
   addComment( "=========================================================");
   //addAsm( string("LDA $") + getAddressOf( string( $3.name )), 3, false );
   addAsm( string("LDA $") + toHex(1+getAddressAsInt( getIndexOf( $3.name ))), 3, false );
@@ -979,9 +979,9 @@ FOR
 }
 | tBYTE2HEX '(' NUMBER ')' ';'
 {
-  chrout_is_needed=true;
+  byte2hex_is_needed=true;
   addComment( "=========================================================");  
-  addComment( string("                 chrout(") + string( $3.name ) + string(")"));
+  addComment( string("                 byte2hex(") + string( $3.name ) + string(")"));
   addComment( "=========================================================");
   addAsm( string("LDA #$") + toHex(atoi( $3.name )), 3, false );
   addAsm( "PHA" );
@@ -1397,8 +1397,9 @@ expression: expression arithmetic expression
   else if( getAddressOf( string( $1.name )) == "IMM" )
     {
       addParserComment( "IMM + ID" );
-
-      addAsm( string("LDA $") + getAddressOf(string($3.name )), 3, false);
+     
+      addAsm( string("LDA $") + toHex(1+getAddressAsInt(getIndexOf(string($3.name)))), 3, false);
+      //addAsm( string("LDA $") + getAddressOf(string($3.name )), 3, false);
       if( string($2.name) == "+" )
 	{
 	  addAsm( "CLC" );
@@ -1461,17 +1462,24 @@ expression: expression arithmetic expression
       addParserComment( "ID + ID" );
 
       //addAsm( generateNewLabel(), 0, true );
+      addAsm( string("LDA $") + getAddressOf(string($1.name )) + string( ";\t <-- type" ), 3, false); 
+      // A is now the TYPE
+      addAsm( "CMP #$01", 2, false );
+      //addAsm( "BNE #$??", 2, false );
 
-      addAsm( string("LDA $") + getAddressOf(string($1.name )), 3, false);
+      addAsm( string("LDA $") + toHex(1+getAddressAsInt(getIndexOf(string($1.name)))), 3, false); 
+
+      // addAsm( string("LDA $") + getAddressOf(string($1.name )), 3, false);
       if( string($2.name) == "+" )
 	{
 	  addAsm( "CLC" );
-	  addAsm( string("ADC $") + getAddressOf(string($3.name )),3, false);
+	  addAsm( string("ADC $") + toHex(1+getAddressAsInt(getIndexOf(string($3.name)))),3, false);
+	  //addAsm( string("ADC $") + getAddressOf(string($3.name )),3, false);
 	}
       else if ( string($2.name) == "-" )
 	{
 	  addAsm( "SEC" );
-	  addAsm( string("SBC #$") + toHex(atoi($3.name )),2, false);
+	  addAsm( string("SBC $") + toHex(1+getAddressAsInt(getIndexOf(string($3.name)))) ,3, false);
 	}
       else
 	{
@@ -1741,7 +1749,7 @@ int main(int argc, char *argv[])
       addAsm( "JMP H2PMANY2", 3, false );
       addAsm( "RTS", 1, false );
     }
-  if( chrout_is_needed )
+  if( byte2hex_is_needed )
     { 
       addAsm( "BYTE2HEX:\t\t;Display a Hexadecimal Byte", 0, true );
       addAsm( "PLA" );
