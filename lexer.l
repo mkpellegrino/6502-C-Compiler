@@ -12,8 +12,9 @@ unary "++"|"--"
 %%
 "jsr"                    { strcpy(yylval.nd_obj.name,(yytext)); return tJSR; }
 "twos"                   { strcpy(yylval.nd_obj.name,(yytext)); return tTWOS; }
-"chrout"                   { strcpy(yylval.nd_obj.name,(yytext)); return tBYTE2HEX; }
+"byte2hex"                   { strcpy(yylval.nd_obj.name,(yytext)); return tBYTE2HEX; }
 "rts"                    { strcpy(yylval.nd_obj.name,(yytext)); return tRTS; }
+"peek"                    { strcpy(yylval.nd_obj.name,(yytext)); return tPOKE; }
 "poke"                    { strcpy(yylval.nd_obj.name,(yytext)); return tPOKE; }
 "printf"                    { strcpy(yylval.nd_obj.name,(yytext)); return PRINTFF; }
 "scanf"                     { strcpy(yylval.nd_obj.name,(yytext)); return SCANFF; }

@@ -52,7 +52,13 @@
   stack <int> label_stack;
   vector <int> label_vector;
   
-  
+
+  int twos_complement( int x )
+  {
+    // for an 8 bit byte
+    return ( abs( x ) ^ 255 ) + 1;
+  }
+    
   
   // converts an integer into a string
   string itos( int i )
@@ -777,7 +783,7 @@
 //%parse-param { FILE* fp }
 
 %token VOID 
-%token <nd_obj> tWORD tBYTE tDOUBLE tUINT tPOINTER tJSR tBYTE2HEX tTWOS tRTS tPOKE NEWLINE CHARACTER PRINTFF SCANFF INT FLOAT CHAR FOR IF ELSE TRUE FALSE NUMBER FLOAT_NUM ID LE GE EQ NE GT LT AND OR STR ADD MULTIPLY DIVIDE SUBTRACT UNARY INCLUDE RETURN
+%token <nd_obj> tWORD tBYTE tDOUBLE tUINT tPOINTER tJSR tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER PRINTFF SCANFF INT FLOAT CHAR FOR IF ELSE TRUE FALSE NUMBER FLOAT_NUM ID LE GE EQ NE GT LT AND OR STR ADD MULTIPLY DIVIDE SUBTRACT UNARY INCLUDE RETURN
 %type <nd_obj> headers main body return function datatype statement arithmetic relop program else
    %type <nd_obj2> init value expression
       %type <nd_obj3> condition
@@ -1090,11 +1096,21 @@ condition: value relop value
   
   if( scope_stack.top() == "FOR" ) addAsm( generateNewLabel(true) + string( "\t\t\t; Top of FOR Loop"), 0, true );  
   //if( scope_stack.top() == "IF" ) addAsm( generateNewLabel(true) + string( "\t\t\t; Top of IF Statement"), 0, true );
+  /* When comparing Negatives and Positives, please take special care! */
   
- 
   //addAsm( string( "LDA $" ) + getAddressOf( getIndexOf( $1.name )), 3, false);
   addAsm( string( "LDA $" ) + toHex(1+getAddressAsInt( getIndexOf( $1.name ))), 3, false);
-  addAsm( string( "CMP #$" ) + toHex(atoi( $3.name )), 2, false );
+  // check bit 7 of A
+  if( getAddressOf( string( $3.name )) == "IMM"  )
+    {
+      addAsm( string( "CMP #$" ) + toHex(atoi( $3.name )), 2, false );
+    }
+  else
+    {
+      addAsm( string( "CMP $" ) + toHex(1+getAddressAsInt( getIndexOf( $3.name ))), 3, false );
+    }
+  
+  //addAsm( string( "CMP #$" ) + toHex(atoi( $3.name )), 2, false );
   if( scope_stack.top() == "FOR" || scope_stack.top() == "WHILE") 
     {      
       if( string( $2.name ) == string( "<=" ) )
@@ -1133,6 +1149,8 @@ condition: value relop value
     }
   else if( scope_stack.top() == "IF" ) /*                                                                                                               <<<<    IF           */
     {
+      
+      
       if( string( $2.name ) == string( "<=" ) )
 	{
 	  addAsm( string( "BCC ") + getLabel( label_vector[label_major], false) + string( "; if c==0 jump to THEN" ), 2, false );
@@ -1250,9 +1268,8 @@ statement: datatype ID { /*addComment( $2.name ); */} { add('V'); } init
 };
 | ID { check_declaration($1.name); } '=' expression
 {
-  addParserComment( "RULE: statement ID {}  '=' expression" );
+  addParserComment( "RULE: statement ID {} '=' expression" );
   
-
   //addAsm( string( "STA $" ) + string( getAddressOf( string( $1.name ))), 3, false );
   addAsm( string( "STA $" ) + toHex(1+getAddressAsInt(getIndexOf(string($1.name)))), 3, false );
   //toHex(1+getAddressAsInt(getIndexOf(string($$.name)))
@@ -1312,7 +1329,7 @@ statement: datatype ID { /*addComment( $2.name ); */} { add('V'); } init
   //sprintf(icg[ic_idx++], "%s = %s <<==", $1.name, $4.name);
   //addAsm(icg[ic_idx-1], false );
 				     }
-| ID {  addParserComment( "RULE: statement: ID {} relop expression" ); check_declaration($1.name); } relop expression { $1.nd = mknode(NULL, NULL, $1.name); $$.nd = mknode($1.nd, $4.nd, $3.name); }
+| ID { addParserComment( "RULE: statement: ID {} relop expression" ); check_declaration($1.name); } relop expression { $1.nd = mknode(NULL, NULL, $1.name); $$.nd = mknode($1.nd, $4.nd, $3.name); }
 | ID
 {  addParserComment( "RULE: statement: ID {} UNARY" ); check_declaration($1.name); } UNARY { 
   $1.nd = mknode(NULL, NULL, $1.name); 
@@ -1351,11 +1368,21 @@ init: '=' expression
 '=' value
 {
   addParserComment( "RULE: init: '=' value" );
+  addComment( string( $2.name ));
   $$.nd = $2.nd; 
   sprintf($$.type, $2.type);
   strcpy($$.name, $2.name);
-  // this may have to move because it's only for uint/byte types.
-  addAsm( string( "LDA #$" ) + toHex(atoi($2.name)), 2, false  );
+  int v = atoi( $2.name );
+  // this may have to change because it's only for uint/byte types.
+  //if( string( $2.name )[0] == '-' )
+  if( v < 0 )
+  {
+      addComment( "Two's Complement" );
+      //v=twos_complement( atoi( $2.name));
+      v=twos_complement(v);
+    }
+  //addAsm( string( "LDA #$" ) + toHex(atoi($2.name)), 2, false  );
+  addAsm( string( "LDA #$" ) + toHex(v), 2, false  );
 }
 |
 {
@@ -1490,8 +1517,29 @@ expression: expression arithmetic expression
     }
 };
 | value { addParserComment( "RULE: expression: value" );   }
+| NUMBER
+{
+  addParserComment(string("RULE: expression: NUMBER :") +  string($1.name ));
+
+
+  int v = atoi( $1.name );
+  if( v < 0 )
+  {
+      addComment( "Two's Complement" );
+      v=twos_complement(v);
+    }
+  //addAsm( string( "LDA #$" ) + toHex(atoi($2.name)), 2, false  );
+  addAsm( string( "LDA #$" ) + toHex(v), 2, false  );
+
+  
+  strcpy( $$.name, $1.name );
+}
 | INT { addParserComment(string("RULE: expression: INT :") +  string($1.name ));  strcpy( $$.name, $1.name ); }
-| ID { addParserComment(string( "RULE: expression ID :") + string($1.name )); strcpy( $$.name, $1.name );  }
+| ID
+{
+  addParserComment(string( "RULE: expression ID : ** ") + string($1.name ));
+  strcpy( $$.name, $1.name );
+}
 |
 ;
 
