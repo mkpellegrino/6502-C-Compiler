@@ -176,7 +176,6 @@
 	name=identifier;
 	label = l;
 	address=0000;
-	//cerr << "created a function label: " << name << " " << label << endl; 
       }
     string getIdentifier(){ return name; };
     int getAddressInt(){ return address; };
@@ -809,7 +808,7 @@ main: datatype ID
 };
 
 function: function function
-| datatype ID '(' ')' '{' { addComment( string("======================== ") + string($2.name) + string(" ========================")); addAsm( generateNewLabel(), 0, true );    addFunction( string($2.name), getLabel( label_vector[label_major]-1 )); addComment( string(getLabel( label_vector[label_major]-1))); } body return '}'
+| datatype ID '(' ')' '{' { addComment( string("======================== ") + string($2.name) + string(" ========================")); addAsm( generateNewLabel(), 0, true );    addFunction( string($2.name), getLabel( label_vector[label_major]-1 ));  } body return '}'
   {
     //cerr << getLabel( label_vector[label_major]-1 ) << endl;
     // add this label to the list of functions and their addresses
@@ -1053,7 +1052,7 @@ FOR
     }
   addAsm( string( "STA $" ) + toHex( atoi( $3.name )), 3, false );
   //addAsm( "PLA" );
-};
+}
 | tPOKE '(' ID ',' ID ')' ';'
 {
     addComment( "=========================================================");  
@@ -1064,7 +1063,13 @@ FOR
   addAsm( string( "LDA $" ) + asm_variables[ getIndexOf( $5.name ) ]->getAddress(), 3, false );
   addAsm( string( "STA $" ) + asm_variables[ getIndexOf( $3.name ) ]->getAddress(), 3, false );
   addAsm( "PLA" );
+}
+| ID '(' expression ')' ';'
+{
+  addAsm( string( "###") + string($1.name), 3, false);
 };
+
+
 
 
 
@@ -1160,8 +1165,6 @@ condition: value relop value
     }
   else if( scope_stack.top() == "IF" ) /*                                                                                                               <<<<    IF           */
     {
-      
-      
       if( string( $2.name ) == string( "<=" ) )
 	{
 	  addAsm( string( "BCC ") + getLabel( label_vector[label_major], false) + string( "; if c==0 jump to THEN" ), 2, false );
@@ -1212,40 +1215,6 @@ statement: datatype ID { /*addComment( $2.name ); */} { add('V'); } init
 {
   addParserComment( "RULE: statement: datatype ID {} {} init" );
   addParserComment( string( "\t[" ) + string( $1.name ) + string( "] [" ) + string( $2.name ) + string( "] [" ) + string( $5.name ) + string("]" ) );
-  //addComment( string( $2.name ) + " = " + string( $1.name ) );
-  //$2.nd = mknode(NULL, NULL, $2.name); 
-  /*
-  int t = check_types($1.name, $4.type); 
-  if(t>0) { 
-    if(t == 1) {
-      struct node *temp = mknode(NULL, $4.nd, "floattoint"); 
-      $$.nd = mknode($2.nd, temp, "declaration"); 
-    } 
-    else if(t == 2) { 
-      struct node *temp = mknode(NULL, $4.nd, "inttofloat"); 
-      $$.nd = mknode($2.nd, temp, "declaration"); 
-    } 
-    else if(t == 3) { 
-      struct node *temp = mknode(NULL, $4.nd, "chartoint"); 
-      $$.nd = mknode($2.nd, temp, "declaration"); 
-    } 
-    else if(t == 4) { 
-      struct node *temp = mknode(NULL, $4.nd, "inttochar"); 
-      $$.nd = mknode($2.nd, temp, "declaration"); 
-    } 
-    else if(t == 5) { 
-      struct node *temp = mknode(NULL, $4.nd, "chartofloat"); 
-      $$.nd = mknode($2.nd, temp, "declaration"); 
-    } 
-    else{
-      struct node *temp = mknode(NULL, $4.nd, "floattochar"); 
-      $$.nd = mknode($2.nd, temp, "declaration"); 
-    }
-  } 
-  else
-    { 
-      $$.nd = mknode($2.nd, $4.nd, "declaration"); 
-      } */
   // variable initialization (for INT type)
   if( string($1.name) == "int" )
     {
@@ -1267,26 +1236,6 @@ statement: datatype ID { /*addComment( $2.name ); */} { add('V'); } init
       addAsmVariable( $2.name, 1 );
     }
 }
-| ID '(' ')' 
-{
-  addParserComment( "RULE: statement: ID '(' ')'" );
-  //addComment( "Trying to call a function." );
-  //addComment( $1.name );
-  addParserComment( string( $1.name ) + string( "()" )); 
-  // lookup $1.name and get it's address ... then jump to it
-  string l = getLabelOfFunction( string($1.name) );
-  addComment( l );
-};
-| ID '(' ')' ';'
-{
-  addParserComment( "RULE: statement: ID '(' ')'" );
-  //addComment( "Trying to call a function." );
-  //addComment( $1.name );
-  addParserComment( string( $1.name ) + string( "()" )); 
-  // lookup $1.name and get it's address ... then jump to it
-  string l = getLabelOfFunction( string($1.name) );
-  addComment( l );
-};
 | ID { check_declaration($1.name); } '=' expression
 {
   addParserComment( "RULE: statement ID {} '=' expression" );
@@ -1422,7 +1371,6 @@ expression: expression arithmetic expression
 {
   addParserComment( "RULE: expression: expression arithmetic expression" );
   addParserComment( string( $1.name ) + string(" ") + string( $2.name ) + string( " " ) + string( $3.name ) );
-  //addAsm( "CLD" );
   
   // here is where we should check to see if the
   // variable ($$.name) is already in use (in _this_ scope).
