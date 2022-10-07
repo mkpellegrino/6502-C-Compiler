@@ -19,17 +19,27 @@ lexer:	lexer.l
 compiler: y.tab.c
 	$(CC) $(LIBRARIES) -w y.tab.c -o compiler
 
-tests:
-	./compiler --code-segment 49152 --data-segment 828 < ./iftests.c > iftests.asm
-	./compiler --code-segment 49152 --data-segment 828 --no-asm-comments < ./vartests.c > vartests.asm
-#	./compiler --code-segment 49152 --data-segment 828 --no-asm-comments < ./vartests.c > vartests.asm
-#	./compiler --code-segment 49152 --data-segment 828  < ./vartests.c > vartests.asm
+tests: 
+	./compiler --code-segment 49152 --data-segment 828 --no-asm-comments --symbol-table < ./cond-tests.c > cond-tests.asm
 
-	./compiler --code-segment 49152 --data-segment 828 --no-asm-comments < ./looptests.c > looptests.asm
+
+typetest:
+	./compiler --code-segment 49152 --data-segment 828 --no-asm-comments --parser-comments --memory-locations --symbol-table < ./typetest.c > typetest.asm
+
+forloop:
+	./compiler --code-segment 49152 --data-segment 828 < ./forloop.c > forloop.asm
+
+vartests:
+	./compiler --code-segment 49152 --data-segment 828 --no-asm-comments --memory-locations < ./vartests.c > vartests.asm
 
 debug:
+	./compiler --code-segment 49152 --data-segment 828 --parser-comments --memory-locations < ./cond-tests.c > cond-tests.asm
+	./compiler --code-segment 49152 --data-segment 828 --parser-comments --memory-locations < ./typetest.c > typetest.asm
+	./compiler --code-segment 49152 --data-segment 828 --parser-comments --memory-locations < ./forloop.c > forloop.asm
 	./compiler --code-segment 49152 --data-segment 828 --parser-comments --memory-locations < ./vartests.c > vartests.asm
-	./compiler --code-segment 49152 --data-segment 828 --parser-comments < ./looptests.c > looptests.asm
+	./compiler --code-segment 49152 --data-segment 828 --parser-comments --memory-locations < ./looptests.c > looptests.asm
+	./compiler --code-segment 49152 --data-segment 828 --parser-comments --memory-locations < ./iftests.c > iftests.asm
+
 clean:
 #	mv -f parser.tab.c parser.tab.c.prev
 #	mv -f parser.tab.h parser.tab.h.prev
@@ -37,3 +47,4 @@ clean:
 #	mv -f compiler compiler.prev
 	rm -fR *.*~
 	rm -fR Makefile~
+	rm -fR ~/Downloads/*.prg
