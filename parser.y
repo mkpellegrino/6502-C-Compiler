@@ -46,6 +46,9 @@
   int current_code_location=0;
   int string_number=0;
   int kbd_bfr_addr = 0xCFE0;
+  int current_variable_type=-1;
+  int current_variable_base_address=-1;
+
 
   // helper functions
   
@@ -53,7 +56,56 @@
   stack <string> var_scope_stack;
   stack <int> label_stack;
   vector <int> label_vector;
+  void addCompilerMessage(string msg, int level = 0)
+  {
+    /* level 0 - info */
+    /* level 1 - warning */
+    /* level 2 - error */
+    /* level 3 - critical */
+    switch( level )
+      {
+      case 0:
+	cerr << "*** message *** line: " << countn+1 << " *** " << msg << " ***" << endl;
+	break;
+      case 1:
+	cerr << "*** warning *** line: " << countn+1 << " *** " << msg << " ***" << endl;
+	break;
+      case 2:
+	cerr << "*** ERROR *** line: " << countn+1 << " *** " << msg << " ***" << endl;
+	break;
+      case 3:
+	cerr << "***  C R I T I C A L   E R R O R  *** line: " << countn+1 << " *** " << msg << " ***" << endl;
+	exit(-1);
+	break;
+      }
+    return;
+  }
+
+
+  int get_word_H(int x )
+  {
+    int return_value = 0;
+    if( x > 65535 )
+      {
+	addCompilerMessage( "value too large for type", 2 );
+	return (-1);
+      }
+    return_value = ( x & 0xFF00 )/0x100;
+    return return_value;
+  }
   
+  int get_word_L(int x )
+  {
+    int return_value = 0;
+    if( x > 65535 )
+      {
+	addCompilerMessage( "value too large for type", 2 );
+	return (-1);
+      }
+    return_value = ( x & 0x00FF );
+    return return_value;
+  }
+
 
   int twos_complement( int x )
   {
@@ -253,17 +305,11 @@
     void setAddress( int a ){ address = a; };
     string getH()
     {
-#ifdef DEBUG
-      cerr << "[ ADDRESS (H): " << address << " => " << toHex( (address & 0xFF00)/0x100 ) << endl;
-#endif
       return toHex( (address & 0xFF00)/0x100 );
     };
     
     string getL()
     {
-#ifdef DEBUG
-      cerr << "[ ADDRESS (L): " << address << " => " << toHex( (address & 0xFF) ) << endl;
-#endif
       return toHex( (address & 0x00FF) );
     };
     friend ostream &operator << (ostream &out, const asm_string &a); 
@@ -324,9 +370,10 @@
 
   /* ASM VARIABLE TYPES & SIZES */
   /* 0 - unsigned int - 1 bytes */
-  /* 1 - signed int - 2 bytes */
-  /* 2 - word - 3 bytes */
-  /* 4 - double - 5 bytes */
+  /* 1 - signed int - 1 bytes */
+  /* 2 - word - 2 bytes */
+  /* 4 - double - 2 bytes */
+  /* 8 - float - 4 bytes */
   class asm_variable
   {
   public:
@@ -340,20 +387,27 @@
 	switch( t )
 	  {
 	  case 0:
+	    // uint
 	    data_start += 1;
 	    break;
 	  case 1:
-	    data_start += 2;
+	    // signed int
+	    data_start += 1;
 	    break;
 	  case 2:
-	    data_start += 3;
+	    // word
+	    data_start += 2;
 	    break;
 	  case 4:
-	    data_start += 5;
+	    // double
+	    data_start += 2;
+	    break;
+	  case 8:
+	    // float
+	    data_start += 4;
 	    break;
 	  default:
-	    data_start += 2;
-	    
+	    data_start += 1;
 	  }	   
 
       }
@@ -383,7 +437,7 @@
     string data;
     int address; // somewhere between 0 and 65535
     string name;
-    int type;  // 0: uint (8 buts) 1: int (8 bits)  2: double (16 bits)  4: float  8: string address (null termed) 
+    int type;  // 0: uint (8 bits) 1: int (8 bits)  2: double (16 bits)  4: float  8: string address (null termed) 
   };
 
   vector<asm_variable*> asm_variables;
@@ -402,29 +456,45 @@
     return return_value;
   }
 
-  string getAddressOf( int i )
+  string getNameOf( int a )
   {
-    return asm_variables[i]->getAddress();
+    string return_variable = string( "" );
+    
+    for( int i = 0; i<asm_variables.size(); i++ )
+      {
+	if( asm_variables[i]->getAddressAsInt() == a )
+	  {
+	    return asm_variables[i]->getIdentifier();
+	  }
+      }
+    return string( "" );
   }
 
-  int getAddressAsInt( int i )
-  {
-    return asm_variables[i]->getAddressAsInt();
-  }
- string getAddressOf( string s )
+int getAddressOf( string s )
   {
     int i=getIndexOf( s );
     if( i == -1 )
       {
-	return string( "IMM");
+	return -1;
       }
     else
       {
-	return asm_variables[i]->getAddress();
+	return asm_variables[i]->getAddressAsInt();
       }
-
   }
 
+int getTypeOf( string s )
+  {
+    int i=getIndexOf( s );
+    if( i == -1 )
+      {
+	return -1;
+      }
+    else
+      {
+	return asm_variables[i]->getType();
+      }
+  }
 
   // I really should add opcodes to these instructions
   class asm_instruction
@@ -496,6 +566,7 @@
 
   void addParserComment( string s )
   {
+    cerr << s << endl;
     if( arg_parser_comments ) addAsm( string("; ") + s, 0, true );
     return;
   }
@@ -506,19 +577,33 @@
     return;
   }
 
-  bool addAsmVariable( string id, int type )
+  bool addAsmVariable( string id, int t )
   {
     string s;
-    switch( type )
+
+    switch( t )
       {
       case 0:
-	s = string( "BYTE" );
-
-      default:
+	s = string( "uint" );
 	break;
-      }
-    addParserComment( string( "Adding: " ) + string(id) + string(" of type: ")  );
-    asm_variable * new_asm_variable = new asm_variable( id, type );
+      case 1:
+	s = string( "signed int" );
+	break;
+      case 2:
+	s = string( "word" );
+	break;
+      case 4:
+	s = string( "double" );
+	break;
+      case 8:
+	s = string( "float" );
+	break;
+      default:
+	s = string( "unknown_type" );	    
+      }	   
+
+    addParserComment( string( "Adding: " ) + string(id) + string(" of type: ") + s  );
+    asm_variable * new_asm_variable = new asm_variable( id, t );
     asm_variables.push_back( new_asm_variable ); // add the variable to the list of variables
   }
 
@@ -824,7 +909,7 @@
 //%parse-param { FILE* fp }
 
 %token VOID 
-%token <nd_obj> tWORD tBYTE tDOUBLE tUINT tPOINTER tJSR tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER PRINTFF SCANFF INT FLOAT CHAR FOR IF ELSE TRUE FALSE NUMBER FLOAT_NUM ID LE GE EQ NE GT LT AND OR STR ADD MULTIPLY DIVIDE SUBTRACT UNARY INCLUDE RETURN
+%token <nd_obj> tWORD tBYTE tDOUBLE tUINT tPOINTER tJSR tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER PRINTFF SCANFF INT FLOAT CHAR FOR IF ELSE TRUE FALSE NUMBER FLOAT_NUM ID LE GE EQ NE GT LT AND OR STR ADD SUBTRACT MULTIPLY DIVIDE  UNARY INCLUDE RETURN
 %type <nd_obj> headers main body return function datatype statement arithmetic relop program else
    %type <nd_obj2> init value expression
       %type <nd_obj3> condition
@@ -871,22 +956,24 @@ function: function function
 
 
 datatype:
-INT { addParserComment( string( "RULE: datatype: ") + string( $$.name )); /* insert_type();*/}
+INT { addParserComment( string( "RULE: datatype: ") + string( $$.name )); current_variable_type=1; /* insert_type();*/}
 |
-tBYTE { addParserComment( string( "RULE: datatype: ") + string( $$.name )); /* insert_type();*/}
+tBYTE { addParserComment( string( "RULE: datatype: ") + string( $$.name )); current_variable_type=1; /* insert_type();*/}
 |
-tWORD { addParserComment( string( "RULE: datatype: ") + string( $$.name )); /* insert_type();*/}
+tWORD { addParserComment( string( "RULE: datatype: ") + string( $$.name )); current_variable_type=2; /* insert_type();*/}
 |
-tDOUBLE { addParserComment( string( "RULE: datatype: ") + string( $$.name )); /* insert_type();*/}
+tDOUBLE { addParserComment( string( "RULE: datatype: ") + string( $$.name )); current_variable_type=2; /* insert_type();*/}
 |
-tUINT { addParserComment( string( "RULE: datatype: ") + string( $$.name )); /* insert_type();*/}
+tUINT { addParserComment( string( "RULE: datatype: ") + string( $$.name ));current_variable_type=0; /* insert_type();*/}
 |
-FLOAT { addParserComment( string( "RULE: datatype: ") + string( $$.name )); insert_type();}
+FLOAT  { addParserComment( string( "RULE: datatype: ") + string( $$.name )); current_variable_type=8; /* insert_type(); */}
 |
-CHAR { addParserComment( string( "RULE: datatype: ") + string( $$.name )); insert_type();}
+CHAR { addParserComment( string( "RULE: datatype: ") + string( $$.name )); current_variable_type=0; /* insert_type();*/}
 |
-VOID { addParserComment( string( "RULE: datatype: ") + string( $$.name )); insert_type();}
+VOID { addParserComment( string( "RULE: datatype: ") + string( $$.name )); current_variable_type=16; /*insert_type();*/}
 ;
+
+
 
 body:
 FOR
@@ -934,6 +1021,7 @@ FOR
 };
 | IF
 {
+
   pushScope("IF");
   addComment( "=========================================================");
   addComment( "                        IF STATEMENT" );
@@ -942,12 +1030,14 @@ FOR
 }
 '(' condition ')'
 {
+
   addComment( "---------------------------------------------------------" );
   addComment( "                      THEN:" );
   addAsm( generateNewLabel(), 0, true );
 }
 '{' body '}'
 {
+
   addComment( "---------------------------------------------------------" );
   addComment( "                      ELSE:" );
   addAsm( string("JMP ") + getLabel( label_vector[label_major]+1, false), 3, false);
@@ -1019,10 +1109,19 @@ FOR
 {
   addParserComment( "RULE: body: tBYTE2HEX '(' expression ')' ';'" );
   byte2hex_is_needed = true;
+
   addComment( "=========================================================");  
   addComment( string("                 byte2hex(") + string( $3.name ) + string(")"));
   addComment( "=========================================================");
-  addAsm( string("LDA $") + toHex(getAddressAsInt( getIndexOf( "return_value" ))), 3, false );
+  if( $3.name[0] == '#' )
+    {
+      addAsm( string("LDA ") + string($3.name), 2, false );
+    }
+  else
+    {
+      addAsm( string("LDA ") + string($3.name), 3, false );
+    }
+  
   addComment("Push the argument onto the stack before function call" );
   addAsm( "PHA" );
   addAsm( "JSR BYTE2HEX", 3, false );
@@ -1034,11 +1133,11 @@ FOR
   addComment( string("                 twos(") + string( $3.name ) + string(")"));
   addComment( "=========================================================");
 
-  addAsm( string("LDA $") + getAddressOf( string( $3.name )), 3, false );
+  addAsm( string("LDA $") + toHex(getAddressOf( string( $3.name ))), 3, false );
   addAsm( "PHA" );
   addAsm( "JSR TWOS", 3, false );
   addAsm( "PLA" );
-  addAsm( string("STA $") + getAddressOf( string( $3.name )), 3, false );
+  addAsm( string("STA $") + toHex(getAddressOf( string( $3.name ))), 3, false );
 }
 | tTWOS '(' NUMBER ')' ';'
 {
@@ -1073,7 +1172,6 @@ FOR
   addComment( string("poke ") + string( $3.name ) + "," + string( $5.name ));
   addAsm( string( "LDA #$" ) + toHex(atoi($5.name)) , 2, false );
   addAsm( string( "STA $" ) + toHex(atoi($3.name)) , 3, false );
-  // ??? why was this here?addAsm( "PLA" );
 };
 | tPOKE '(' NUMBER ',' ID ')' ';'
 {
@@ -1081,7 +1179,6 @@ FOR
     addComment( "                     poke");
     addComment( "=========================================================");  
   $$.nd = mknode(NULL, NULL, "poke");
-  //if( previousAsm("PLA") ){deletePreviousAsm();}else{addAsm( "PHA" );}
   int var_index = getIndexOf( $5.name );
   if( var_index == -1 )
     {
@@ -1092,7 +1189,6 @@ FOR
       addAsm( string( "LDA $" ) + asm_variables[ var_index ]->getAddress(), 3, false );
     }
   addAsm( string( "STA $" ) + toHex( atoi( $3.name )), 3, false );
-  //addAsm( "PLA" );
 }
 | tPOKE '(' ID ',' ID ')' ';'
 {
@@ -1100,7 +1196,6 @@ FOR
     addComment( "                     poke");
     addComment( "=========================================================");  
   $$.nd = mknode(NULL, NULL, "poke");
-  //if( previousAsm("PLA") ){deletePreviousAsm();}else{addAsm( "PHA" );}
   addAsm( string( "LDA $" ) + asm_variables[ getIndexOf( $5.name ) ]->getAddress(), 3, false );
   addAsm( string( "STA $" ) + asm_variables[ getIndexOf( $3.name ) ]->getAddress(), 3, false );
   addAsm( "PLA" );
@@ -1137,38 +1232,30 @@ condition: value relop value
   
   if( scope_stack.top() == "FOR" ) addAsm( generateNewLabel(true) + string( "\t\t\t; Top of FOR Loop"), 0, true );  
 
-  addAsm( string( "LDA $" ) + toHex(getAddressAsInt( getIndexOf( $1.name ))), 3, false);
+  addAsm( string( "LDA $" ) + toHex(getAddressOf( $1.name )), 3, false);
   addAsm( "PHA" );
   
   /* When comparing Negatives and Positives, please take special care! */
   /* check bit 7 of A and B... if they are the same then continue, otherwise */
   /* undo two's complement in the one where 7 is set */
+  
 
-  
-  
-   if( getAddressOf( string( $3.name )) == "IMM"  )
+  // if it's ID < IMM
+  if( $3.name[0] == '#'  )
     {
-      if( atoi($3.name) < 0 )
-	{
-	  twos_complement_is_needed=true;
 
-	  addAsm( string( "LDA #$" ) + toHex(twos_complement(atoi( $3.name ))), 2, false );
-	}
-      else
-	{
-	  addAsm( string( "LDA #$" ) + toHex(atoi( $3.name )), 2, false );
-	}
+      addAsm( string( "LDA " ) + string( $3.name ), 2, false );
     }
+  // otherwise
    else
      {
-       //cerr << $3.name << " is at " << getIndexOf( string( $3.name ) ) << " in the vector." << endl;
-       if( asm_variables[ getIndexOf( string( $1.name ) ) ]->getType() != asm_variables[ getIndexOf( string( $3.name ) ) ]->getType())
+
+       if( getTypeOf( $1.name )  !=  getTypeOf( $3.name ) )
 	 {
 	   cerr << "type mismatch error line: " << countn+1 << endl;
-	   cerr << $1.name << " is a(n) " << asm_variables[ getIndexOf( string( $1.name ) ) ]->getPrintableType() << " and " << $3.name << " is a(n) " << asm_variables[ getIndexOf( string( $3.name ) ) ]->getPrintableType() << endl;
 	   exit(-1);
 	 }
-       addAsm( string( "LDA $" ) + toHex(getAddressAsInt( getIndexOf( $3.name ))), 3, false );
+       addAsm( string( "LDA $" ) + toHex(getAddressOf( $3.name )), 3, false );
      }
    addAsm( "PHA" );
    addAsm( "JSR SIGNEDCMP", 3, false );
@@ -1177,7 +1264,7 @@ condition: value relop value
 
 
   if( scope_stack.top() == "FOR" || scope_stack.top() == "WHILE") 
-    {      
+    {
       if( string( $2.name ) == string( "<=" ) )
 	{
 	  addAsm( string( "BCC ") + getLabel( label_vector[label_major]+1, false) + string( "; if c==0 jump to BODY" ), 2, false );
@@ -1211,6 +1298,8 @@ condition: value relop value
 	  addAsm( string( "BNE ") + getLabel( label_vector[label_major]+1, false) + string( "; if z==0 jump to BODY" ), 2, false );
 	  addAsm( string( "JMP ") + getLabel( label_vector[label_major]+2, false) + string( "; jump out of FOR" ), 3, false );
 	}
+      
+      
     }
   else if( scope_stack.top() == "IF" ) /*                                                                                                               <<<<    IF           */
     {
@@ -1260,93 +1349,52 @@ condition: value relop value
 
 
 
-statement: datatype ID { /*addComment( $2.name ); */} { add('V'); } init
+statement: datatype ID {} {} init
 {
   addParserComment( "RULE: statement: datatype ID {} {} init" );
-  addParserComment( string( "\t[" ) + string( $1.name ) + string( "] [" ) + string( $2.name ) + string( "] [" ) + string( $5.name ) + string("]" ) );
 
-  if( string($1.name) == "int" )
-    {
-      // variable initialization (for INT type)
-      addAsmVariable( $2.name, 1 );
-      int base_address = getAddressAsInt( getIndexOf( $2.name ));
-      addAsm( string("STA $") + toHex( base_address), 3, false );
-      addComment( "Variable is of type 'int' (type 1)" );
-    }
+  addAsmVariable( $2.name, current_variable_type );
+  current_variable_base_address = getAddressOf( $2.name );
+
+  if( current_variable_type == 1 )
+  {
+      addAsm( string("STA $") + toHex( current_variable_base_address), 3, false );
+  }
   else if( string($1.name) == "uint" )
     {
-      addAsmVariable( $2.name, 0 );
-      addAsm( string("STA $") + getAddressOf( getIndexOf( $2.name )), 3, false );
+      addAsm( string("STA $") + toHex( current_variable_base_address), 3, false );
     }
-  else if( $1.name == "float" )
+  else if( current_variable_type == 2 )
     {
-      addAsmVariable( $2.name, 1 );
+      addAsm( string("STA $") + toHex( current_variable_base_address), 3, false );
+      addAsm( string("STX $") + toHex( current_variable_base_address+1), 3, false );
     }
+  //current_variable_type = -1;
+  //current_variable_base_address=-1;
+
+  
 }
-| ID { check_declaration($1.name); } '=' expression
+| ID { } '=' expression
 {
   addParserComment( "RULE: statement ID {} '=' expression" );
+  addAsm( string( "STA $" ) + toHex(getAddressOf($1.name)), 3, false );
   
-  addAsm( string( "STA $" ) + toHex(getAddressAsInt(getIndexOf(string($1.name)))), 3, false );
-  $1.nd = mknode(NULL, NULL, $1.name); 
-  char *id_type = get_type($1.name); 
-  if(strcmp(id_type, $4.type))
-    {
-      if(!strcmp(id_type, "int"))
-	{
-	  if(!strcmp($4.type, "float"))
-	    {
-	      struct node *temp = mknode(NULL, $4.nd, "floattoint");
-	      $$.nd = mknode($1.nd, temp, "="); 
-	    }
-	  else
-	    {
-	      struct node *temp = mknode(NULL, $4.nd, "chartoint");
-	      $$.nd = mknode($1.nd, temp, "="); 
-	    }
-	  
-	}
-      else if(!strcmp(id_type, "float"))
-	{
-	  if(!strcmp($4.type, "int"))
-	    {
-	      struct node *temp = mknode(NULL, $4.nd, "inttofloat");
-	      $$.nd = mknode($1.nd, temp, "="); 
-	    }
-	  else
-	    {
-	      struct node *temp = mknode(NULL, $4.nd, "chartofloat");
-	      $$.nd = mknode($1.nd, temp, "="); 
-	    }
-	  
-	}
-      else
-	{
-	  if(!strcmp($4.type, "int"))
-	    {
-	      struct node *temp = mknode(NULL, $4.nd, "inttochar");
-	      $$.nd = mknode($1.nd, temp, "="); 
-	    }
-	  else
-	    {
-	      struct node *temp = mknode(NULL, $4.nd, "floattochar");
-	      $$.nd = mknode($1.nd, temp, "="); 
-	    }
-	}
-    }
-  else
-    {
-      
-      $$.nd = mknode($1.nd, $4.nd, "="); 
-    }
+
   
   // This is where a variable is given the value of a different variable
   //sprintf(icg[ic_idx++], "%s = %s <<==", $1.name, $4.name);
   //addAsm(icg[ic_idx-1], false );
-				     }
-| ID { addParserComment( "RULE: statement: ID {} relop expression" ); check_declaration($1.name); } relop expression { $1.nd = mknode(NULL, NULL, $1.name); $$.nd = mknode($1.nd, $4.nd, $3.name); }
+ 
+}
+| ID { addParserComment( "RULE: statement: ID {} relop expression" ); } relop expression
+{
+  $1.nd = mknode(NULL, NULL, $1.name); $$.nd = mknode($1.nd, $4.nd, $3.name);
+
+}
+
 | ID
-{  addParserComment( "RULE: statement: ID {} UNARY" ); check_declaration($1.name); } UNARY { 
+{
+  addParserComment( "RULE: statement: ID {} UNARY" ); check_declaration($1.name); } UNARY { 
   $1.nd = mknode(NULL, NULL, $1.name); 
   $3.nd = mknode(NULL, NULL, $3.name); 
   $$.nd = mknode($1.nd, $3.nd, "ITERATOR");  
@@ -1359,6 +1407,7 @@ statement: datatype ID { /*addComment( $2.name ); */} { add('V'); } init
 
       sprintf(buff, "t%d = %s + 1\n%s = t%d\n// 469", temp_var, $1.name, $1.name, temp_var++);
     }
+  strcpy( $$.name, "testing" );
 								   }
 | UNARY ID {
   check_declaration($2.name); 
@@ -1378,28 +1427,17 @@ statement: datatype ID { /*addComment( $2.name ); */} { add('V'); } init
 init: '=' expression
 {
   addParserComment( "RULE: init: '=' expression" );
-  addParserComment( $$.name );
-}
-|
-'=' value
-{
-  addParserComment( "RULE: init: '=' value" );
-  addComment( string( $2.name ));
-  $$.nd = $2.nd; 
-  sprintf($$.type, $2.type);
-  strcpy($$.name, $2.name);
+  addParserComment( $2.name );
   int v = atoi( $2.name );
-  // this may have to change because it's only for uint/byte types.
-  //if( string( $2.name )[0] == '-' )
+  
   if( v < 0 )
   {
       addComment( "Two's Complement" );
-      //v=twos_complement( atoi( $2.name));
       v=twos_complement(v);
     }
-  //addAsm( string( "LDA #$" ) + toHex(atoi($2.name)), 2, false  );
   addAsm( string( "LDA #$" ) + toHex(v), 2, false  );
-  addAsm( string( "STA $" ) + toHex(getAddressAsInt(getIndexOf("return_value"))), 3, false );}
+  strcpy( $$.name, $2.name );
+}
 |
 {
   addParserComment( "RULE: init:" );
@@ -1413,23 +1451,16 @@ init: '=' expression
 expression: expression arithmetic expression
 {
   addParserComment( "RULE: expression: expression arithmetic expression" );
-  addParserComment( string( $1.name ) + string(" ") + string( $2.name ) + string( " " ) + string( $3.name ) );
   
   // here is where we should check to see if the
   // variable ($$.name) is already in use (in _this_ scope).
   // .. but we don't yet
 
-
-  // I'm not sure why this label was here, so I commented it out.
-  // it was messing up the if statements.  If this NEEDS to be here
-  // then the compiler should dive down one level of scope.
-  // addAsm( generateNewLabel(), 0, true );
-
-  
   /* if they're BOTH IMM's */
-  if( getAddressOf( string( $1.name )) == "IMM" && getAddressOf( string( $3.name )) == "IMM")
+  if( $1.name[0] == '#' && $1.name[3] == '#')
     {
       addParserComment( "IMM + IMM" );
+      addParserComment( string( $1.name ) + string( $2.name ) + string( $3.name ) );
       /* then this is a compile-time arithetic operation */
       strcpy( $$.name, toHex( atoi($1.name) + atoi($3.name)).c_str());
       if( string( $2.name ) == "+" ) addAsm( string("LDA #$") + toHex(atoi( $1.name) + atoi( $3.name )), 2, false);
@@ -1437,39 +1468,39 @@ expression: expression arithmetic expression
       if( string( $2.name ) == "*" ) addAsm( string("LDA #$") + toHex(atoi( $1.name) * atoi( $3.name )), 2, false);
       if( string( $2.name ) == "/" ) addAsm( string("LDA #$") + toHex(atoi( $1.name) / atoi( $3.name )), 2, false);
     }
-  else if( getAddressOf( string( $1.name )) == "IMM" )
+  else if( $1.name[0] == '#' )
     {
       addParserComment( "IMM + ID" );
      
-      addAsm( string("LDA $") + toHex(getAddressAsInt(getIndexOf(string($3.name)))), 3, false);
+      addAsm( string("LDA ") + string( $3.name ), 3, false);
       if( string($2.name) == "+" )
 	{
 	  addAsm( "CLC" );
-	  addAsm( string("ADC #$") + toHex(atoi($1.name )),2, false);
+	  addAsm( string("ADC ") + string( $1.name ),2, false);
 	}
       else if ( string($2.name) == "-" )
 	{
 	  addAsm( "SEC" );
-	  addAsm( string("SBC #$") + toHex(atoi($1.name )),2, false);
+	  addAsm( string("SBC ") + string( $1.name ),2, false);
 	}
       else
 	{
 	  addComment( "unknown state" );
 	}
     }
-    else if( getAddressOf( string( $3.name )) == "IMM" )
+    else if( $3.name[0] == '#'  )
     {
       addParserComment( "ID + IMM" );
-      addAsm( string("LDA $") + toHex(getAddressAsInt(getIndexOf(string($1.name)))), 3, false); 
+      addAsm( string("LDA ") + string( $1.name ), 3, false); 
       if( string($2.name) == "+" )
 	{
 	  addAsm( "CLC" );
-	  addAsm( string("ADC #$") + toHex(atoi($3.name )),2, false);
+	  addAsm( string("ADC ") + string( $3.name ),2, false);
 	}
       else if ( string($2.name) == "-" )
 	{
 	  addAsm( "SEC" );
-	  addAsm( string("SBC #$") + toHex(atoi($3.name )),2, false);
+	  addAsm( string("SBC #$") + string( $3.name ),2, false);
 	}
       else
 	{
@@ -1478,24 +1509,25 @@ expression: expression arithmetic expression
     }
   else
     {
-      if( asm_variables[ getIndexOf( string( $1.name ) ) ]->getType() != asm_variables[ getIndexOf( string( $3.name ) ) ]->getType())
+      // don't forget -- $1.name and $3.name still have the $ in front of them
+      // you gotta get rid of that!
+      //if( getTypeOf( getNameOf( $1.name) )  !=   getTypeOf( getNameOf($3.name) ) )
 	 {
-	   cerr << "type mismatch error line: " << countn+1 << endl;
-	   cerr << $1.name << " is a(n) " << asm_variables[ getIndexOf( string( $1.name ) ) ]->getPrintableType() << " and " << $3.name << " is a(n) " << asm_variables[ getIndexOf( string( $3.name ) ) ]->getPrintableType() << endl;
-	   exit(-1);
+	   //   addCompilerMessage( "type mismatch", 3);
+	   // exit(-1);
 	 }
       addParserComment( "ID + ID" );
-      addAsm( string("LDA $") + toHex(getAddressAsInt(getIndexOf(string($1.name)))), 3, false); 
+      addAsm( string("LDA $") + toHex(getAddressOf($1.name)), 3, false); 
 
       if( string($2.name) == "+" )
 	{
 	  addAsm( "CLC" );
-	  addAsm( string("ADC $") + toHex(getAddressAsInt(getIndexOf(string($3.name)))),3, false);
+	  addAsm( string("ADC $") + toHex(getAddressOf($3.name)),3, false);
 	}
       else if ( string($2.name) == "-" )
 	{
 	  addAsm( "SEC" );
-	  addAsm( string("SBC $") + toHex(getAddressAsInt(getIndexOf(string($3.name)))) ,3, false);
+	  addAsm( string("SBC $") + toHex(getAddressOf($3.name)),3, false);
 	}
       else
 	{
@@ -1504,35 +1536,84 @@ expression: expression arithmetic expression
     }
   // store the result in the "return_value" variable
   // or - maybe in the future push it onto the stach
-  addAsm( string( "STA $" ) + toHex(getAddressAsInt(getIndexOf("return_value"))), 3, false );
+  addAsm( string( "STA $" ) + toHex(getAddressOf("function_return_value")), 3, false );
 
 };
-| value { addParserComment( "RULE: expression: value" );   }
+| value { addParserComment( "RULE: expression: valsue" );   }
 | NUMBER
 {
+  /* ASM VARIABLE TYPES & SIZES */
+  /* 0 - unsigned int - 1 bytes */
+  /* 1 - signed int - 1 bytes */
+  /* 2 - word - 2 bytes */
+  /* 4 - double - 2 bytes */
+  /* 8 - float - 4 bytes */
+
   addParserComment(string("RULE: expression: NUMBER :") +  string($1.name ));
 
-
   int v = atoi( $1.name );
-  if( v < 0 )
-  {
-      addComment( "Two's Complement" );
-      v=twos_complement(v);
-    }
-  //addAsm( string( "LDA #$" ) + toHex(atoi($2.name)), 2, false  );
-  addAsm( string( "LDA #$" ) + toHex(v), 2, false  );
 
+  switch( current_variable_type )
+    {
+    case -1:
+      addCompilerMessage("no type for value", 2 );
+      /* ERROR  - NO TYPE */
+      break;
+    case 0:
+      addComment( "unsigned int" );
+      if( v > 255 )
+	{
+	  addCompilerMessage("type overflow", 2 );
+	}
+      
+      break;
+      
+    case 1:
+      addComment( "signed int" );
+      if( v > 127 )
+	{
+	  addCompilerMessage("type overflow", 2 );
+	}
+      else if( v < -128 )
+	{
+	  addCompilerMessage("type underflow", 2 );
+	}
+      else if( v < 0 )
+	{
+	  addComment( "Two's Complement" );
+	  v=twos_complement(v);
+	}
+      //addAsm( string( "LDA #$" ) + toHex(v), 2, false  );
+      break;
+    case 2:
+      if( v > 65535 )
+	{
+	  addCompilerMessage("type overflow", 2 );
+	}
+      //addAsm( string( "LDA #$" ) + toHex(get_word_L(v)), 2, false  );
+      //addAsm( string( "LDX #$" ) + toHex(get_word_H(v)), 2, false  );
+      
+      break;
+    case 4:
+      break;
+    case 8:
+      break;
+    default:
+      break;
+    }
   
-  strcpy( $$.name, $1.name );
+  strcpy( $$.name, ( string( "#$" ) + toHex( v )).c_str()  );
+
+  //strcpy( $$.name, $1.name );
 }
 | INT { addParserComment(string("RULE: expression: INT :") +  string($1.name ));  strcpy( $$.name, $1.name ); }
 | ID
 {
+  // send up the address of the ID
   addParserComment(string( "RULE: expression ID : ") + string($1.name ));
-  //strcpy( $$.name, $1.name );
-  
-  addAsm( string( "LDA $" ) + toHex(getAddressAsInt(getIndexOf( $1.name ))), 3, false);
-  addAsm( string( "STA $" ) + toHex(getAddressAsInt(getIndexOf("return_value"))), 3, false );
+  int base_address = getAddressOf($1.name);
+  int t = getTypeOf( $1.name );
+  strcpy( $$.name, (string( "$" ) + toHex(getAddressOf($1.name ))).c_str() );
 }
 |
 ;
@@ -1542,22 +1623,17 @@ ADD
 {
   addParserComment( "RULE: arithmetic ADD" );
   current_state = string("+");
-  // LDA return_value and store it in OP1 (operand 1)
-  addAsm( string( "LDA $" ) + toHex(getAddressAsInt(getIndexOf("return_value"))), 3, false );
-  addAsm( string( "STA $" ) + toHex(getAddressAsInt(getIndexOf("op1"))), 3, false );
 }
 | SUBTRACT
 {
   addParserComment( "RULE: arithmetic SUBTRACT" );
   current_state = string("-");
-  addAsm( string( "LDA $" ) + toHex(getAddressAsInt(getIndexOf("return_value"))), 3, false );
-  addAsm( string( "STA $" ) + toHex(getAddressAsInt(getIndexOf("op1"))), 3, false );
 }
 | MULTIPLY {  addParserComment( "RULE: arithmetic MULTIPLY" ); current_state = string("*"); }
 | DIVIDE {  addParserComment( "RULE: arithmetic DIVIDE" ); current_state = string("/"); }
 ;
 
-relop: LT { current_state = string( "LT" ); }
+relop: LT { current_state = string( "LT" );  }
 | GT { current_state = string( "GT" ); }
 | LE { current_state = string( "LE" ); }
 | GE { current_state = string( "GE" ); }
@@ -1569,10 +1645,12 @@ value:
 NUMBER
 {
   addParserComment( "RULE: value: NUMBER" );
-  strcpy($$.name, $1.name);
-  sprintf($$.type, "int");
-  add('C');
-  $$.nd = mknode(NULL, NULL, $1.name);
+
+  strcpy( $$.name, ( string( "#$" ) + toHex( atoi($1.name) )).c_str() );
+  //strcpy($$.name, $1.name);
+  //sprintf($$.type, "int");
+  //add('C');
+  //$$.nd = mknode(NULL, NULL, $1.name);
 }
 | FLOAT_NUM
 {
@@ -1586,48 +1664,47 @@ NUMBER
 {
   addParserComment( "RULE: value: CHARACTER" );
   strcpy($$.name, $1.name);
-  sprintf($$.type, "char");
-  add('C');
-  $$.nd = mknode(NULL, NULL, $1.name); }
+  //sprintf($$.type, "char");
+  //add('C');
+  $$.nd = mknode(NULL, NULL, $1.name);
+}
 | ID
 {
     addParserComment( "RULE: value: ID" );
 
+    
   strcpy($$.name, $1.name);
-  char *id_type = get_type($1.name);
-  sprintf($$.type, id_type);
-  check_declaration($1.name);
+  //char *id_type = get_type($1.name);
+  //sprintf($$.type, id_type);
+  //check_declaration($1.name);
   $$.nd = mknode(NULL, NULL, $1.name);
   /* addComment( "return value here" ); */
   // copy value at address 1 to address 2
 }
 ;
 
-return: RETURN {} expression ';'
-  {
-    addParserComment( "RULE: return: RETURN {} expression ';'" );
-
-    addAsm( string( "STA $" ) + toHex(getAddressAsInt(getIndexOf("return_value"))), 3, false );
-    addAsm("RTS");
-  }
-
-
-| RETURN {}  value ';'
-  {
-    addParserComment( "RULE: return: RETURN {} value ';'" );
-
-    //cerr << "return: " << $3.name << endl;
-    addComment( "Whatever value is in Accumulator when return is called is stored in 'return_value'" );
-    addAsm( string( "STA $" ) + toHex(getAddressAsInt(getIndexOf("return_value"))), 3, false );
-
-    addAsm("RTS");
-  }
-| RETURN {} ';'
+return: RETURN ';'
 {
     addParserComment( "RULE: return: RETURN {} ';'" );
     addComment( "Returning 'void' ... 'return_value' is unchanged." );
     addAsm( "RTS" );
 }
+| RETURN {} expression ';'
+  {
+    addParserComment( "RULE: return: RETURN {} expression ';'" );
+    addAsm( string( "STA $" ) + toHex(getAddressOf("function_return_value")), 3, false );
+    addAsm("RTS");
+  }
+| RETURN {} value ';'
+  {
+    addParserComment( "RULE: return: RETURN {} value ';'" );
+
+    //cerr << "return: " << $3.name << endl;
+    addComment( "Whatever value is in Accumulator when return is called is stored in 'return_value'" );
+    addAsm( string( "STA $" ) + toHex(getAddressOf("function_return_value")), 3, false );
+
+    addAsm("RTS");
+  }
  |
 {
   addParserComment( "RULE: return:" );
@@ -1713,7 +1790,7 @@ int main(int argc, char *argv[])
   current_code_location = code_start;
   
   // temp storage for return values from expressions
-  addAsmVariable( "return_value", 1 );
+  addAsmVariable( "function_return_value", 1 );
   addAsmVariable( "op1", 1 );
 
   
@@ -1721,9 +1798,12 @@ int main(int argc, char *argv[])
 
   //addAsmVariable( "string_tmp_l", 1 );
   //addAsmVariable( "string_tmp_h", 1 );
-  
-  addAsmVariable( "buffer_tmp_l", 1 );
-  addAsmVariable( "buffer_tmp_h", 1 );
+
+  if( scanf_is_needed)
+    {
+      addAsmVariable( "buffer_tmp_l", 1 );
+      addAsmVariable( "buffer_tmp_h", 1 );
+    }
 
   addAsmVariable( "hex2petscii_tmp_l", 1 );
   addAsmVariable( "hex2petscii_tmp_h", 1 );
@@ -1767,7 +1847,7 @@ int main(int argc, char *argv[])
       // function for just one digit
       addAsm( "H2PDIGIT:", 0, true );
       
-      addAsm( string( "LDA $") + getAddressOf( string( "hex2petscii_tmp_byte" ) ), 3, false );
+      addAsm( string( "LDA $") + toHex(getAddressOf( "hex2petscii_tmp_byte" ) ), 3, false );
       
       addAsm( "AND #$0F", 2, false );
       addAsm( "CLC", 1, false );
@@ -1785,11 +1865,11 @@ int main(int argc, char *argv[])
       addAsm( "H2PMANY:", 0, true );
       addAsm( "LDX #$00", 2, false );
       addAsm( "H2PMANY1:\t\t;top of H2PMANY loop #1", 0, true );
-      addAsm( string( "LDA $") + getAddressOf( string( "hex2petscii_tmp_l" ) ) + string( ",X"), 3, false );
+      addAsm( string( "LDA $") + toHex( getAddressOf( "hex2petscii_tmp_l" ) ) + string( ",X"), 3, false );
 
       addAsm( "AND #$0F", 2, false );
       addAsm( "PHA", 1, false );
-      addAsm( string( "LDA $") + getAddressOf( string( "hex2petscii_tmp_l" ) ) + string( ",X"), 3, false );
+      addAsm( string( "LDA $") + toHex(getAddressOf( "hex2petscii_tmp_l" ) )+ string( ",X"), 3, false );
       addAsm( "AND #$F0", 2, false );
       addAsm( "LSR", 1, false );
       addAsm( "LSR", 1, false );
@@ -1805,7 +1885,7 @@ int main(int argc, char *argv[])
       addAsm( "LDX #$04", 2, false );
       addAsm( "H2PMANY2:\t\t;top of H2PMANY loop #2", 0, true );
       addAsm( "PLA" );
-      addAsm( string( "STA $" ) + getAddressOf( string( "hex2petscii_tmp_byte" ) ), 3, false );
+      addAsm( string( "STA $" ) + toHex(getAddressOf( "hex2petscii_tmp_byte" )), 3, false );
       addAsm( "JSR H2PDIGIT", 3, false );
       addAsm( "CPX #$00", 2, false );
       addAsm( ".BYTE #$90", 1, false );
@@ -1819,9 +1899,9 @@ int main(int argc, char *argv[])
       addAsm( ".BYTE #$00;\tMore temporary storage for comparison", 1, false );
       addAsm( "SIGNEDCMP:\t\t;Signed Comparison", 0, true );
       addAsm( "PLA" );
-      addAsm( string( "STA $" ) + getAddressOf( string( "return_address_1" ) ), 3, false );
+      addAsm( string( "STA $" ) + toHex(getAddressOf( "return_address_1" )), 3, false );
       addAsm( "PLA" );
-      addAsm( string( "STA $" ) + getAddressOf( string( "return_address_2" ) ), 3, false );
+      addAsm( string( "STA $" ) + toHex(getAddressOf( "return_address_2" )), 3, false );
       // ==================================================================================
       addAsm( "PLA" );
       addAsm( "STA $02", 2, false ); 
@@ -1841,9 +1921,9 @@ int main(int argc, char *argv[])
       addAsm( "CMP $03", 2, false );
       addAsm( "PHP" );// push the status register to the stack with the correct values after cmp
       // ==================================================================================
-      addAsm( string( "LDA $" ) + getAddressOf( string( "return_address_2" ) ), 3, false );
+      addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_2" ) ), 3, false );
       addAsm( "PHA" );
-      addAsm( string( "LDA $" ) + getAddressOf( string( "return_address_1" ) ), 3, false );
+      addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_1" ) ), 3, false );
       addAsm( "PHA" );
       addAsm( "RTS" );
     }
@@ -1851,9 +1931,9 @@ int main(int argc, char *argv[])
     { 
       addAsm( "BYTE2HEX:\t\t;Display a Hexadecimal Byte", 0, true );
       addAsm( "PLA" );
-      addAsm( string( "STA $" ) + getAddressOf( string( "return_address_1" ) ), 3, false );
+      addAsm( string( "STA $" ) + toHex(getAddressOf( "return_address_1" ) ), 3, false );
       addAsm( "PLA" );
-      addAsm( string( "STA $" ) + getAddressOf( string( "return_address_2" ) ), 3, false );
+      addAsm( string( "STA $" ) + toHex(getAddressOf( "return_address_2" ) ), 3, false );
       // =================================================================================
       addAsm( "CLD" );
       addAsm( "PLA" );
@@ -1881,9 +1961,9 @@ int main(int argc, char *argv[])
       addAsm( "JSR $FFD2", 3, false );
 
       // =================================================================================
-      addAsm( string( "LDA $" ) + getAddressOf( string( "return_address_2" ) ), 3, false );
+      addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_2" ) ), 3, false );
       addAsm( "PHA" );
-      addAsm( string( "LDA $" ) + getAddressOf( string( "return_address_1" ) ), 3, false );
+      addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_1" ) ), 3, false );
       addAsm( "PHA" );
       addAsm( "RTS" );
       
@@ -1894,17 +1974,17 @@ int main(int argc, char *argv[])
 
       // save return address from the stack
       addAsm( "PLA" );
-      addAsm( string( "STA $" ) + getAddressOf( string( "return_address_1" ) ), 3, false );
+      addAsm( string( "STA $" ) + toHex(getAddressOf(  "return_address_1" ) ), 3, false );
       addAsm( "PLA" );
-      addAsm( string( "STA $" ) + getAddressOf( string( "return_address_2" ) ), 3, false );
+      addAsm( string( "STA $" ) + toHex(getAddressOf(  "return_address_2" ) ), 3, false );
 
       
       
       
       // put the return address back onto the stack
-      addAsm( string( "LDA $" ) + getAddressOf( string( "return_address_2" ) ), 3, false );
+      addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_2" )), 3, false );
       addAsm( "PHA" );
-      addAsm( string( "LDA $" ) + getAddressOf( string( "return_address_1" ) ), 3, false );
+      addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_1" )) , 3, false );
       addAsm( "PHA" );
   
       addAsm( "RTS" );
@@ -1919,9 +1999,9 @@ int main(int argc, char *argv[])
       // get the return address and status flag from the stack
       // save return address
       addAsm( "PLA" );
-      addAsm( string( "STA $" ) + getAddressOf( string( "return_address_1" ) ), 3, false );
+      addAsm( string( "STA $" ) + toHex(getAddressOf( "return_address_1" )) , 3, false );
       addAsm( "PLA" );
-      addAsm( string( "STA $" ) + getAddressOf( string( "return_address_2" ) ), 3, false );
+      addAsm( string( "STA $" ) + toHex(getAddressOf( "return_address_2" )), 3, false );
 
       addComment( "The argument is pulled off of the stack here" );
       addAsm( "PLA" );
@@ -1932,9 +2012,9 @@ int main(int argc, char *argv[])
       addComment( "The return value is put on the stack here" );
       addAsm( "PHA" );
       
-      addAsm( string( "LDA $" ) + getAddressOf( string( "return_address_2" ) ), 3, false );
+      addAsm( string( "LDA $" ) + toHex(getAddressOf( string( "return_address_2" ) )), 3, false );
       addAsm( "PHA" );
-      addAsm( string( "LDA $" ) + getAddressOf( string( "return_address_1" ) ), 3, false );
+      addAsm( string( "LDA $" ) + toHex(getAddressOf( string( "return_address_1" ) )), 3, false );
       addAsm( "PHA" );
   
       addAsm( "RTS" );
