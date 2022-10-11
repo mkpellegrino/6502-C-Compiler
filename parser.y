@@ -21,7 +21,7 @@
   
 
   // compiler internal flags
-  bool signed_comparision_is_needed=true;
+  bool signed_comparison_is_needed=false;
   bool twos_complement_is_needed = false;
   bool pbin_is_needed = false;
   bool byte2hex_is_needed = false;
@@ -601,7 +601,7 @@ int getTypeOf( string s )
 
   void addParserComment( string s )
   {
-    cerr << s << endl;
+    //cerr << s << endl;
     if( arg_parser_comments ) addAsm( string("; ") + s, 0, true );
     return;
   }
@@ -637,6 +637,14 @@ int getTypeOf( string s )
 	s = string( "unknown_type" );	    
       }	   
 
+    // first, make sure that it isn't alread in there.
+    for( int i=0; i<asm_variables.size(); i++ )
+      {
+	if( asm_variables[i]->getIdentifier() == id )
+	  {
+	    addCompilerMessage( "you cannot redeclare variables", 3 );
+	  }
+      }
     addParserComment( string( "Adding: " ) + string(id) + string(" of type: ") + s  );
     asm_variable * new_asm_variable = new asm_variable( id, t );
     asm_variables.push_back( new_asm_variable ); // add the variable to the list of variables
@@ -1286,7 +1294,6 @@ condition: expression relop expression
   else 
     {
       addCompilerMessage( "error in for loop initialization", 2 );
-      //addAsm( string( "LDA $" ) + toHex(getAddressOf( $1.name )), 3, false);
     }
   addAsm( "PHA" );
   
@@ -1312,20 +1319,18 @@ condition: expression relop expression
     }
   else   // otherwise
      {
+       addCompilerMessage( "error in for loop initialization", 2 );
 
        if( getTypeOf( $1.name )  !=  getTypeOf( $3.name ) )
 	 {
 	   addCompilerMessage( "type mismatch", 2 );
 	 }
-       //addParserComment( $3.name );
        addAsm( string( "LDA $" ) + toHex(getAddressOf( $3.name )), 3, false );
-       //addAsm( string( "LDA $" ) + toHex(getAddressOf( $3.name )), 3, false );
      }
    addAsm( "PHA" );
+   signed_comparison_is_needed = true;
    addAsm( "JSR SIGNEDCMP", 3, false );
    addAsm( "PLP" );
-
-
 
   if( scope_stack.top() == "FOR" || scope_stack.top() == "WHILE") 
     {
@@ -1427,7 +1432,7 @@ statement: datatype ID init
   
   
   current_variable_base_address = getAddressOf( $2.name );
-  addParserComment( toString(current_variable_base_address) );
+  //addParserComment( toString(current_variable_base_address) );
   if( isAddress($3.name)) 
     {
       // then it's an address
@@ -1436,11 +1441,13 @@ statement: datatype ID init
   else if( isByte($3.name) )
     {
       // then it's a byte
-      string tmp_string = string( $3.name).substr( 2, 2 );
+      //string tmp_string = string( $3.name).substr( 2, 2 );
 
       
-      addParserComment( tmp_string );
-      addAsm( string("LDA #$") + toHex(atoi(tmp_string.c_str())), 2, false );
+      addParserComment( $3.name );
+      
+      //addAsm( string("LDA #$") + toHex(atoi(tmp_string.c_str())), 2, false );
+      addAsm( string("LDA ") + string($3.name) , 2, false );
     }
   else if( isInteger($3.name) )
     {
@@ -1469,10 +1476,6 @@ statement: datatype ID init
       addAsm( string("STA $") + toHex( current_variable_base_address), 3, false );
       addAsm( string("STX $") + toHex( current_variable_base_address+1), 3, false );
     }
-  //current_variable_type = -1;
-  //current_variable_base_address=-1;
-  
-  
 }
 | ID '=' expression
 {
@@ -1569,16 +1572,31 @@ statement: datatype ID init
 init: '=' expression
 {
   addParserComment( string( "RULE: init: '=' expression [" ) + string( $2.name ) + string( " -> itself" ));
-  int v = atoi( $2.name );
-  
-  if( v < 0 )
-  {
-      addComment( "Two's Complement" );
-      v=twos_complement(v);
+
+  if( isAddress( $2.name ) || isByte( $2.name ))
+    {
+      strcpy( $$.name, $2.name );
+
     }
-  //addAsm( string( "LDA #$" ) + toHex(v), 2, false  );
-  //strcpy( $$.name, $2.name );
-  strcpy( $$.name, toString( v ).c_str() );
+  else if( isInteger( $2.name ) )
+    {
+      int v = atoi( $2.name );
+      
+      if( v < 0 )
+	{
+	  addComment( "Two's Complement" );
+	  v=twos_complement(v);
+	}
+
+      strcpy( $$.name, toString( v ).c_str() );
+
+    }
+  else
+    {
+      addCompilerMessage( "Unknown Number type", 2 );
+
+    }
+  
 }
 |
 {
@@ -1852,10 +1870,9 @@ expression: expression arithmetic expression
   addParserComment(string( "RULE: expression ID : ") + string($1.name ));
   int base_address = getAddressOf($1.name);
   int t = getTypeOf( $1.name );
-  
-  //addParserComment( string( "Type: " ) + string( toHex( t ) ) + string(" ") +  string( $1.name)  + string( " " ) + toHex(getAddressOf($1.name )) ); 
+
+  addParserComment( toHex(getAddressOf($1.name) ) );
   strcpy( $$.name, (string( "$" ) + toHex(getAddressOf($1.name ))).c_str() );
-  //strcpy( $$.name, (string( "$" ) + string($1.name )).c_str() );
 }
 |
 ;
@@ -2188,7 +2205,7 @@ int main(int argc, char *argv[])
       addAsm( "JMP H2PMANY2", 3, false );
       addAsm( "RTS", 1, false );
     }
-  if( signed_comparision_is_needed )
+  if( signed_comparison_is_needed )
     {
       addAsm( ".BYTE #$00;\tTemporary storage for comparison", 1, false );
       addAsm( ".BYTE #$00;\tMore temporary storage for comparison", 1, false );
