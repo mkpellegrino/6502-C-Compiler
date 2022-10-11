@@ -9,6 +9,7 @@
 #include<cctype>
 #include<vector>
 #include <stack>
+#include <sstream>
 #include"lex.yy.c"
 
 
@@ -56,6 +57,40 @@
   stack <string> var_scope_stack;
   stack <int> label_stack;
   vector <int> label_vector;
+
+  int hexToDecimal( string s )
+  {
+    if( s[0] == '$' ) s[0] = ' ';
+    if( s[0] == '#' ) s[0] = ' ';
+    if( s[1] == '$' ) s[1] = ' ';
+    int return_value = 0;
+    std::stringstream ss;
+    ss << std::hex <<  s;
+    ss >> return_value;
+    return return_value;
+  }
+  
+  bool isAddress( string s )
+  {
+    bool return_value = false;
+    if( s[0] == '$' ) return_value = true;
+    return return_value;
+  }
+
+  bool isByte( string s )
+  {
+    bool return_value = false;
+    if( s[0] == '#' && s[1] == '$' ) return_value = true;
+    return return_value;
+  }
+
+  bool isInteger( string s )
+  {
+    bool return_value = false;
+    if( s[0] != '#' && s[0] != '$' ) return_value = true;
+    return return_value;
+  }
+  
   void addCompilerMessage(string msg, int level = 0)
   {
     /* level 0 - info */
@@ -1361,7 +1396,7 @@ condition: expression relop expression
 statement: datatype ID init
 {
   addParserComment( "RULE: statement: datatype ID init" );
-  addParserComment( string($1.name) + " " + string( $2.name ) + " " + string($3.name) );
+  addParserComment( string($1.name) + " " + string( $2.name ) + "=" + string($3.name) );
 
   string my_type = string($1.name);
 
@@ -1376,15 +1411,32 @@ statement: datatype ID init
   
   current_variable_base_address = getAddressOf( $2.name );
   addParserComment( toString(current_variable_base_address) );
-  if( $3.name[0] == '$' )
+  if( isAddress($3.name)) 
     {
       // then it's an address
       addAsm( string("LDA ") + string($3.name), 3, false );
     }
-  else
+  else if( isByte($3.name) )
     {
       // then it's a byte
-      addAsm( string("LDA ") + string($3.name), 2, false );
+      string tmp_string = string( $3.name).substr( 2, 2 );
+
+      
+      addParserComment( tmp_string );
+      addAsm( string("LDA #$") + toHex(atoi(tmp_string.c_str())), 2, false );
+    }
+  else if( isInteger($3.name) )
+    {
+      // this must be a literal
+
+      addAsm( "; \t\t\t\tHUH?" , 0, false );
+      addAsm( string( "LDA #$" ) + toHex( atoi($3.name) ), 2, false);
+      //addAsm( "LDA #$00", 2, false );
+      
+    }
+  else
+    {
+      addAsm( "; \t\t\t\tUnknown Value in Source Code" , 0, false );
     }
   
   if( current_variable_type == 1 )
@@ -1412,7 +1464,7 @@ statement: datatype ID init
   
   current_variable_base_address = getAddressOf( $1.name );
   addParserComment( toString(current_variable_base_address) );
-  if( $3.name[0] == '$' )
+  if( isAddress($3.name))
     {
       // then it's an address
       //addAsm( string("LDA ") + string($3.name), 3, false );
@@ -1420,7 +1472,7 @@ statement: datatype ID init
   else
     {
       // then it's a byte
-      addAsm( string("LDA ") + string($3.name), 2, false );
+      addAsm( string("LDA #$") + toHex(atoi($3.name)) + string("; Line 1431"), 2, false );
     }
   
   if( current_variable_type == 1 )
@@ -1467,8 +1519,7 @@ statement: datatype ID init
 }
 | ID
 {
-  addParserComment( "RULE: statement: ID {} UNARY" );
-  check_declaration($1.name); } UNARY { 
+  addParserComment( "RULE: statement: ID {} UNARY" ); check_declaration($1.name); } UNARY { 
   $1.nd = mknode(NULL, NULL, $1.name); 
   $3.nd = mknode(NULL, NULL, $3.name); 
   $$.nd = mknode($1.nd, $3.nd, "ITERATOR");  
@@ -1500,7 +1551,7 @@ statement: datatype ID init
 
 init: '=' expression
 {
-  addParserComment( "RULE: init: '=' expression" );
+  addParserComment( string( "RULE: init: '=' expression [" ) + string( $2.name ) + string( " -> itself" ));
   int v = atoi( $2.name );
   
   if( v < 0 )
@@ -1509,7 +1560,8 @@ init: '=' expression
       v=twos_complement(v);
     }
   //addAsm( string( "LDA #$" ) + toHex(v), 2, false  );
-  strcpy( $$.name, $2.name );
+  //strcpy( $$.name, $2.name );
+  strcpy( $$.name, toString( v ).c_str() );
 }
 |
 {
@@ -1524,28 +1576,116 @@ init: '=' expression
 expression: expression arithmetic expression
 {
   addParserComment( "RULE: expression: expression arithmetic expression" );
+  addParserComment( string( $1.name ) + string( " " ) + string( $2.name ) + string( " " ) + string( $3.name ) );
   
   // here is where we should check to see if the
   // variable ($$.name) is already in use (in _this_ scope).
   // .. but we don't yet
 
   /* if they're BOTH IMM's */
-  if( $1.name[0] == '#' && $1.name[3] == '#')
+  if( isInteger( $1.name ) && isInteger( $3.name ))
     {
       addParserComment( "IMM + IMM" );
-      addParserComment( string( $1.name ) + string( $2.name ) + string( $3.name ) );
+      int tmp_int1 = atoi( $1.name );
+      int tmp_int2 = atoi( $3.name );
+
       /* then this is a compile-time arithetic operation */
-      strcpy( $$.name, toHex( atoi($1.name) + atoi($3.name)).c_str());
-      if( string( $2.name ) == "+" ) addAsm( string("LDA #$") + toHex(atoi( $1.name) + atoi( $3.name )), 2, false);
-      if( string( $2.name ) == "-" ) addAsm( string("LDA #$") + toHex(atoi( $1.name) - atoi( $3.name )), 2, false);
-      if( string( $2.name ) == "*" ) addAsm( string("LDA #$") + toHex(atoi( $1.name) * atoi( $3.name )), 2, false);
-      if( string( $2.name ) == "/" ) addAsm( string("LDA #$") + toHex(atoi( $1.name) / atoi( $3.name )), 2, false);
+      if( string( $2.name ) == "+"  )
+        {
+	  strcpy( $$.name, toString( tmp_int1 + tmp_int2 ).c_str() );
+	}
+      else if( string( $2.name ) == "-" )
+	{
+	  strcpy( $$.name, toString( tmp_int1 - tmp_int2 ).c_str() );
+	}
+      else if( string( $2.name ) == "*" )
+	{
+	  strcpy( $$.name, toString( tmp_int1 * tmp_int2 ).c_str() );
+	}
+      else if( string( $2.name ) == "/" )
+	{
+	  strcpy( $$.name, toString( tmp_int1 / tmp_int2 ).c_str() );
+	}
+      else
+	{
+
+	  addParserComment( string( "I am unable to recognize [") + string($2.name) + string("]" ));
+	  strcpy( $$.name, string("unknown").c_str() );
+	}
+
+
     }
-  else if( $1.name[0] == '#' )
+  else if( isByte( $1.name ) && isByte( $3.name ) )
+    {
+      addParserComment( "IMM + IMM" );
+      int tmp_int1;
+      int tmp_int2;
+
+      std::stringstream ss;
+      ss << std::hex <<  string($1.name).substr( 2, 2 );
+      ss >> tmp_int1;
+      ss << std::hex <<  string($3.name).substr( 2, 2 );
+      ss >> tmp_int2;
+      
+      /* then this is a compile-time arithetic operation */
+      if( string( $2.name ) == "+"  )
+        {
+	  strcpy( $$.name, toString( tmp_int1 + tmp_int2 ).c_str() );
+	}
+      else if( string( $2.name ) == "-" )
+	{
+	  strcpy( $$.name, toString( tmp_int1 - tmp_int2 ).c_str() );
+	}
+      else if( string( $2.name ) == "*" )
+	{
+	  strcpy( $$.name, toString( tmp_int1 * tmp_int2 ).c_str() );
+	}
+      else if( string( $2.name ) == "/" )
+	{
+	  strcpy( $$.name, toString( tmp_int1 / tmp_int2 ).c_str() );
+	}
+      else
+	{
+
+	  addParserComment( string( "I am unable to recognize [") + string($2.name) + string("]" ));
+	  strcpy( $$.name, string("unknown").c_str() );
+	}
+
+
+    }
+  else if( isByte( $1.name ) && isAddress( $3.name ))
     {
       addParserComment( "IMM + ID" );
      
-      addAsm( string("LDA ") + string( $3.name ), 3, false);
+      int tmp_int1;
+      
+      std::stringstream ss;
+      ss << std::hex <<  string($1.name).substr( 2, 2 );
+      ss >> tmp_int1;
+
+      int tmp_size = 2;
+      if( isAddress( $3.name ) )
+	{
+	  tmp_size = 3;
+	  addAsm( string("LDA ") + string( $3.name ), tmp_size, false);
+	}
+      else if( isByte( $3.name ) )
+	{
+	  tmp_size = 2;
+	  addAsm( string("LDA ") + string( $3.name ), tmp_size, false);
+	}
+      else if( isInteger( $3.name ) )
+	{
+	  // then it's an integer
+	  tmp_size = 2;
+	  addAsm( string("LDA #$") + toHex( atoi($3.name) ), tmp_size, false);
+
+	}
+      else
+	{
+	  addAsm( "\t\t\t; Unknown numeric type!", 0, false );
+	}
+      
       if( string($2.name) == "+" )
 	{
 	  addAsm( "CLC" );
@@ -1561,10 +1701,25 @@ expression: expression arithmetic expression
 	  addComment( "unknown state" );
 	}
     }
-    else if( $3.name[0] == '#'  )
+  else if( isByte( $3.name ) )
     {
       addParserComment( "ID + IMM" );
-      addAsm( string("LDA ") + string( $1.name ), 3, false); 
+
+      int tmp_size = 2;
+      string tmp_string;
+      if( $1.name[0] == '$' )
+	{
+	  tmp_size = 3;
+	  //tmp_string = string($1.name).substr( 2, 4 );
+	  tmp_string = string($1.name);
+	}
+      else if( $1.name[0] == '#' && $1.name[1] == '$' )
+	{
+	  tmp_size = 2;
+	  tmp_string = string($1.name).substr( 2, 4 );
+	}
+      addAsm( string("LDA ") + tmp_string, tmp_size, false);
+
       if( string($2.name) == "+" )
 	{
 	  addAsm( "CLC" );
@@ -1582,43 +1737,97 @@ expression: expression arithmetic expression
     }
   else
     {
-      // don't forget -- $1.name and $3.name still have the $ in front of them
-      // you gotta get rid of that!
-      //if( getTypeOf( getNameOf( $1.name) )  !=   getTypeOf( getNameOf($3.name) ) )
-	 {
-	   //   addCompilerMessage( "type mismatch", 3);
-	   // exit(-1);
-	 }
       addParserComment( "ID + ID" );
-      //addAsm( string("LDA $") + toHex(getAddressOf($1.name)), 3, false); 
-      addAsm( string("LDA ") + string($1.name), 3, false); 
+      if( string( $2.name ) == "+" )
+	{
+	  if( isByte( $1.name ) && isAddress( $3.name ))
+	    {
+	      addAsm( string( "LDA " ) + string( $3.name ), 3, false );
+	      addAsm( "CLC" );
+	      addAsm( string("ADC ") + string($1.name),2, false);
+	    }
+	  else if( isInteger( $1.name ) && isAddress( $3.name ))
+	    {
+	      addAsm( string( "LDA " ) + string( $3.name ), 3, false );
+	      addAsm( "CLC" );
+	      addAsm( string("ADC #$") + toHex(atoi($1.name)),2, false);
+	    }
+	  else if(  isAddress( $1.name ) && isByte( $3.name ))
+	    {
+	      addAsm( string( "LDA " ) + string( $1.name ), 3, false );
+	      addAsm( "CLC" );
+	      addAsm( string("ADC ") + string($3.name),2, false);
+	    }
+	  else if(  isAddress( $1.name ) && isInteger( $3.name ))
+	    {
+	      addAsm( string( "LDA " ) + string( $1.name ), 3, false );
+	      addAsm( "CLC" );
+	      addAsm( string("ADC #$") + toHex(atoi($3.name)),2, false);
+	    }
+	  else if( isAddress( $1.name ) && isAddress( $3.name ) )
+	    {
+	      addAsm( string( "LDA " ) + string( $1.name ), 3, false );
+	      addAsm( "CLC" );
+	      addAsm( string("ADC ") + string($3.name),3, false);
+	    }
+	  else
+	    {
+	      addCompilerMessage( "math error", 3);
+	    }
+	}
+      else if( string( $2.name ) == "-" )
+	{
 
-      if( string($2.name) == "+" )
-	{
-	  addAsm( "CLC" );
-	  addAsm( string("ADC ") + string($3.name),3, false);
+	  if( isByte( $1.name ) && isAddress( $3.name ))
+	    {
+	      addAsm( string( "LDA " ) + string( $3.name ), 3, false );
+	      addAsm( "SEC" );
+	      addAsm( string("SBC ") + string($1.name),3, false);
+	    }
+	  else if( isInteger( $1.name ) && isAddress( $3.name ))
+	    {
+	      addAsm( string( "LDA " ) + string( $3.name ), 3, false );
+	      addAsm( "SEC" );
+	      addAsm( string("SBC #$") + toHex(atoi($1.name)),2, false);
+	    }
+	  else if(  isAddress( $1.name ) && isByte( $3.name ))
+	    {
+	      addAsm( string( "LDA " ) + string( $1.name ), 3, false );
+	      addAsm( "SEC" );
+	      addAsm( string("SBC ") + string($3.name),2, false);
+	    }
+	  else if(  isAddress( $1.name ) && isInteger( $3.name ))
+	    {
+	      addAsm( string( "LDA " ) + string( $1.name ), 3, false );
+	      addAsm( "SEC" );
+	      addAsm( string("SBC #$") + toHex(atoi($3.name)),2, false);
+	    }
+	  else if( isAddress( $1.name ) && isAddress( $3.name ) )
+	    {
+	      addAsm( string( "LDA " ) + string( $1.name ), 3, false );
+	      addAsm( "SEC" );
+	      addAsm( string("SBC ") + string($3.name),3, false);
+	    }
+
+	  else
+	    {
+	      addCompilerMessage( "math error", 3);
+	    }
+
 	}
-      else if ( string($2.name) == "-" )
-	{
-	  addAsm( "SEC" );
-	  addAsm( string("SBC ") + string($3.name),3, false);
-	}
-      else
-	{
-	  addComment( string( "*** arithmetic operation [" ) + string( $2.name ) + string(" has not been implemented ... yet ***") );
-	}
+      
     }
   // store the result in the "return_value" variable
   // or - maybe in the future push it onto the stach
   //addAsm( string( "STA $" ) + toHex(getAddressOf("function_return_value")), 3, false );
   //strcpy( $$.name, string( "x" ).c_str() );
-
+  
 }
 | value
 {
   addParserComment( "RULE: expression: value" );
   addParserComment( string( $1.name ) );
-  strcpy( $$.name, $1.name );
+  strcpy( $$.name, $1.name);
 }
 | ID
 {
@@ -1639,14 +1848,16 @@ ADD
 {
   addParserComment( "RULE: arithmetic ADD" );
   current_state = string("+");
+  strcpy( $$.name, "+" );  
 }
 | SUBTRACT
 {
   addParserComment( "RULE: arithmetic SUBTRACT" );
   current_state = string("-");
+  strcpy( $$.name, "-" );
 }
-| MULTIPLY {  addParserComment( "RULE: arithmetic MULTIPLY" ); current_state = string("*"); }
-| DIVIDE {  addParserComment( "RULE: arithmetic DIVIDE" ); current_state = string("/"); }
+| MULTIPLY {  addParserComment( "RULE: arithmetic MULTIPLY" ); current_state = string("*"); strcpy( $$.name, "*" );}
+| DIVIDE {  addParserComment( "RULE: arithmetic DIVIDE" ); current_state = string("/"); strcpy( $$.name, "/" );}
 ;
 
 relop: LT { current_state = string( "LT" );  }
@@ -1674,6 +1885,7 @@ NUMBER
   switch( current_variable_type )
     {
     case -1:
+      addParserComment("no type for value");
       addCompilerMessage("no type for value", 2 );
       /* ERROR  - NO TYPE */
       break;
@@ -1720,7 +1932,7 @@ NUMBER
       break;
     }
   
-  strcpy( $$.name, ( string( "#$" ) + toHex( v )).c_str()  );
+  strcpy( $$.name, (toString( v )).c_str()  );
   //strcpy( $$.name, ( string( "#$" ) + toHex( v )).c_str()  );
   //strcpy( $$.name, ( string( "#$" ) + toHex( v )).c_str()  );
   //strcpy( $$.name, $1.name );
