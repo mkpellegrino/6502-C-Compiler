@@ -1270,15 +1270,23 @@ condition: expression relop expression
 
   // at this point, we need to look at the type of the variable that is located
   // at the $1.name address, so we know how to compare it with another number
-  if( $1.name[0] == '$' )
+  if( isAddress($1.name)) 
     {
       // then it's already an address
       addAsm( string( "LDA " ) + string($1.name), 3, false);
     }
-  else
+  else if( isByte( $1.name ))
     {
-      addAsm( string( "LDA $" ) + toHex(getAddressOf( $1.name )), 3, false);
-
+      addAsm( string( "LDA " ) + string($1.name), 2, false);
+    }
+  else if( isInteger( $1.name))
+    {
+      addAsm( string( "LDA #$" ) + toHex(atoi($1.name)), 2, false);
+    }
+  else 
+    {
+      addCompilerMessage( "error in for loop initialization", 2 );
+      //addAsm( string( "LDA $" ) + toHex(getAddressOf( $1.name )), 3, false);
     }
   addAsm( "PHA" );
   
@@ -1288,21 +1296,30 @@ condition: expression relop expression
   
 
   // if it's ID < IMM
-  if( $3.name[0] == '#'  )
+  if( isByte( $3.name)) 
     {
-
+      
       addAsm( string( "LDA " ) + string( $3.name ), 2, false );
     }
-  // otherwise
-   else
+  else if( isInteger( $3.name ))
+    {
+      addAsm( string( "LDA #$" ) + toHex( atoi($3.name) ), 2, false );
+    }
+  else if( isAddress( $3.name ))
+    {
+      addAsm( string( "LDA " ) + $3.name, 3, false );
+
+    }
+  else   // otherwise
      {
 
        if( getTypeOf( $1.name )  !=  getTypeOf( $3.name ) )
 	 {
-	   cerr << "type mismatch error line: " << countn+1 << endl;
-	   exit(-1);
+	   addCompilerMessage( "type mismatch", 2 );
 	 }
+       //addParserComment( $3.name );
        addAsm( string( "LDA $" ) + toHex(getAddressOf( $3.name )), 3, false );
+       //addAsm( string( "LDA $" ) + toHex(getAddressOf( $3.name )), 3, false );
      }
    addAsm( "PHA" );
    addAsm( "JSR SIGNEDCMP", 3, false );
