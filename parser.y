@@ -1150,16 +1150,23 @@ FOR
 {
   addParserComment( "RULE: body: tBYTE2HEX '(' expression ')' ';'" );
   byte2hex_is_needed = true;
-
-  int t = getTypeOf( $3.name );
-
-  addParserComment( toHex(getAddressOf($3.name) ) );
-  //strcpy( $$.name, (string( "$" ) + toHex(getAddressOf($1.name ))).c_str() );
+  int t;
+  if( string($3.name) == "A" )
+    {
+      addAsm( "PHA" );
+      addAsm( "JSR BYTE2HEX", 3, false );
+      t = -1;
+    }
+  else
+    {
+      t = getTypeOf( $3.name );
+    }
 
   addComment( "=========================================================");  
   addComment( string("                 byte2hex(") + string( $3.name ) + string(")"));
   addComment( "=========================================================");
 
+  
   if( t == 0 || t == 1 )
     {
       // uint and int
@@ -1196,15 +1203,12 @@ FOR
       addAsm( "JSR BYTE2HEX", 3, false );
       addAsm( "JSR BYTE2HEX", 3, false );
     }
-  else
+    else if( string( $3.name) != "A" )
     {
-      addParserComment( "t == ???" );
-      
-      //addAsm( $3.name, 0, true );
-      addAsm( string("LDA ") + string($3.name), 3, false );
-      addComment("Push the argument onto the stack before function call" );
-      addAsm( "PHA" );
-      addAsm( "JSR BYTE2HEX", 3, false );
+     addAsm( string("LDA ") + string($3.name), 3, false );
+     addComment("Push the argument onto the stack before function call" );
+     addAsm( "PHA" );
+     addAsm( "JSR BYTE2HEX", 3, false );
     }
 }
 | tTWOS '(' ID ')' ';'
@@ -1245,20 +1249,27 @@ FOR
   addComment( "=========================================================");  
   addAsm( "RTS" );
 };
-| tPOKE '(' NUMBER ',' NUMBER ')' ';'
+| tPOKE '(' expression ',' expression ')' ';'
 {
   addComment( "=========================================================");  
-  addComment( "                     poke");
+  addComment( string("                   *  poke ") + string($3.name) + string( ", ") + string( $5.name)  );
   addComment( "=========================================================");  
-  addComment( string("poke ") + string( $3.name ) + "," + string( $5.name ));
+  addAsm( string( "LDA #$" ) + toHex(atoi($5.name)) , 2, false );
+  addAsm( string( "STA $" ) + toHex(atoi($3.name)) , 3, false );
+}
+| tPOKE '(' NUMBER ',' NUMBER ')' ';'
+{
+  addComment( "=========================================================");
+  addComment( string("               poke ") + string($3.name) + string( ", ") + string( $5.name)  );
+  addComment( "=========================================================");
   addAsm( string( "LDA #$" ) + toHex(atoi($5.name)) , 2, false );
   addAsm( string( "STA $" ) + toHex(atoi($3.name)) , 3, false );
 };
 | tPOKE '(' NUMBER ',' ID ')' ';'
 {
-  addComment( "=========================================================");  
-  addComment( "                     poke");
-  addComment( "=========================================================");  
+  addComment( "=========================================================");
+  addComment( string("               poke ") + string($3.name) + string( ", ") + string( $5.name)  );
+  addComment( "=========================================================");
   $$.nd = mknode(NULL, NULL, "poke");
   int var_index = getIndexOf( $5.name );
   if( var_index == -1 )
@@ -1266,16 +1277,16 @@ FOR
       addAsm( string( "; [ERROR] Variable [") +  string($5.name) + string("] not found in vector!"), 0, true );
     }
   else
-    { 
+    {
       addAsm( string( "LDA $" ) + asm_variables[ var_index ]->getAddress(), 3, false );
     }
   addAsm( string( "STA $" ) + toHex( atoi( $3.name )), 3, false );
 }
 | tPOKE '(' ID ',' ID ')' ';'
 {
-  addComment( "=========================================================");  
-  addComment( "                     poke");
-  addComment( "=========================================================");  
+  addComment( "=========================================================");
+  addComment( string("               poke ") + string($3.name) + string( ", ") + string( $5.name)  );
+  addComment( "=========================================================");
   $$.nd = mknode(NULL, NULL, "poke");
   addAsm( string( "LDA $" ) + asm_variables[ getIndexOf( $5.name ) ]->getAddress(), 3, false );
   addAsm( string( "STA $" ) + asm_variables[ getIndexOf( $3.name ) ]->getAddress(), 3, false );
@@ -1317,8 +1328,11 @@ condition: expression relop expression
   // at this point, we need to look at the type of the variable that is located
   // at the $1.name address, so we know how to compare it with another number
   //toHex(getAddressOf( $1.name ));
-  
-  if( getAddressOf($1.name) != -1 )
+  if( string($1.name) == "A" )
+    {
+      // do nothing - the value is already in A
+    }
+  else if( getAddressOf($1.name) != -1 )
     {
       addAsm( string( "LDA $" ) + toHex( getAddressOf($1.name)), 3, false);
     }
@@ -1348,7 +1362,11 @@ condition: expression relop expression
   
 
   // if it's ID < IMM
-  if( isByte( $3.name)) 
+  if( string($3.name) == "A" )
+    {
+      // do nothing - the value is already in A
+    }
+  else if( isByte( $3.name)) 
     {
       
       addAsm( string( "LDA " ) + string( $3.name ), 2, false );
@@ -1470,7 +1488,12 @@ statement: datatype ID init
   addAsmVariable( $2.name, current_variable_type );
   
   current_variable_base_address = getAddressOf( $2.name );
-  if( isAddress($3.name)) 
+  if( string( $3.name ) == "A" )
+    {
+      // the the result is in A
+      // addAsm( "; ***** ", 0, false );
+    }
+  else if( isAddress($3.name)) 
     {
       // then it's an address
       addAsm( string("LDA ") + string($3.name), 3, false );
@@ -1536,7 +1559,12 @@ statement: datatype ID init
   current_variable_type=getTypeOf($1.name);
   current_variable_base_address = getAddressOf( $1.name );
 
-  if( isAddress( $2.name ))
+  if( string( $2.name ) == "A" )
+    {
+      //addAsm( string( "STA $" ) + toHex(current_variable_base_address), 3, false);
+      // result of expression is stored in A
+    }
+  else if( isAddress( $2.name ))
     {
       //addAsm( string("LDA ") + string( $2.name ), 3, false );
     }
@@ -1574,85 +1602,6 @@ statement: datatype ID init
       break;
     }
 }
-//| ID '=' expression
-//{
-//  current_variable_type=getTypeOf($1.name);
-//  current_variable_base_address = getAddressOf( $1.name );
-  
-//  addParserComment( "RULE: statement: ID '=' expression" );
-
-//  if( getAddressOf($2.name) != -1 )
-//    {
-      //addAsm( string( "LDA $" ) + toHex( getAddressOf($1.name)), 3, false);
-//    }
-//  else if( isAddress($2.name))
-//    {
-      // then it's an address
-      //addParserComment( $3.name );
-      //addAsm( string("LDA ") + string($3.name), 3, false );
-//    }
-//  else if( isInteger($2.name))
-//    {
-      // then it's an integer
-      //addParserComment( $3.name );
-      //addAsm( string("LDA #$") + toHex(atoi($3.name)) + string("; Line 1553"), 2, false );
-      //strcpy( $$.name, $3.name );
-//  }
-//  else if( isByte($2.name))
-//    {
-      //addParserComment( $3.name );
-
-//    }
-//  else
-//   {
-      //addParserComment( $3.name );
-
-//  }
-  /* switch( current_variable_type ) */
-  /*   { */
-  /*   case 0: */
-  /*   case 1: */
-  /*     /\* 0 - unsigned int - 1 bytes *\/ */
-  /*     /\* 1 - signed int - 1 bytes *\/ */
-  /*     //addParserComment( "uint or int" ); */
-  /*     //addAsm( string("LDA #$") + toHex(atoi($3.name)) + string("; Line 1553"), 2, false ); */
-  /*     addAsm( string("STA $") + toHex( current_variable_base_address), 3, false ); */
-  /*     break; */
-  /*   case 2: */
-  /*   case 4: */
-  /*     addParserComment( "word or double" ); */
-  /*     /\* 2 - word - 2 bytes *\/ */
-  /*     /\* 4 - double - 2 bytes *\/ */
-  /*     addAsm( string("STA $") + toHex( current_variable_base_address), 3, false ); */
-  /*     addAsm( string("STX $") + toHex( current_variable_base_address+1), 3, false ); */
-  /*     break; */
-  /*   case 8: */
-  /*     /\* 8 - float - 4 bytes *\/ */
-  /*     /\* TBD *\/ */
-  /*     break; */
-  /*   default: */
-  /*     /\* unknown type *\/ */
-  /*     break; */
-  /*   } */
-  //current_variable_type = -1;
-  //current_variable_base_address=-1;
-
-
-  //addParserComment( string($1.name) + string(" = ") + string($3.name) );
-
-  //if( $3.name[0] == '#' )
-  //  {     
-  //    addAsm( string( "LDA " ) + string( $3.name ), 2, false );
-  //  }
-  //else if( $3.name[0] == '$' )
-  //  {
-  //    addAsm( string( "LDA " ) + string( $3.name ), 3, false );
-  //  }
-  
-  //addAsm( string( "STA " ) + toHex(getAddressOf($1.name)), 3, false );
-
- 
-//}
 | ID { addParserComment( "RULE: statement: ID {} relop expression" ); } relop expression
 {
   $1.nd = mknode(NULL, NULL, $1.name);
@@ -1694,9 +1643,15 @@ statement: datatype ID init
 init: '=' expression
 {
   addParserComment( string( "RULE: init: '=' expression" ) );
-  addParserComment( string( "Current Variable Type: " ) + toString( current_variable_type ));
+  //addParserComment( string( "Current Variable Type: " ) + toString( current_variable_type ));
 
-  if( isAddress( $2.name ) || isByte( $2.name ))
+  if( string( $2.name ) == "A" )
+    {
+      // then it's the result
+      // of the expression is stored in A
+      strcpy( $$.name, "A" );
+    }
+  else if( isAddress( $2.name ) || isByte( $2.name ))
     {
       strcpy( $$.name, $2.name );
     }
@@ -1719,7 +1674,7 @@ init: '=' expression
     }
   else
     {
-      addCompilerMessage( "Unknown Number type", 2 );
+      addCompilerMessage( "Unknown Number type", 3 );
 
     }
   
@@ -1972,35 +1927,10 @@ expression: expression arithmetic expression
 	    }
 
 	}
-
-      /*
-      if( isByte( $1.name ) && isAddress( $3.name ) )
-	{
-	  addAsm( string( "STA " ) + string( $3.name ), 3, false );
-	}
-      else if( isInteger( $1.name ) && isAddress( $3.name ))
-	{
-	  addAsm( string( "STA " ) + string( $3.name ), 3, false );
-	}
-      else if(  isAddress( $1.name ) && isByte( $3.name ))
-	{
-	  addAsm( string( "STA " ) + string( $1.name ), 3, false );
-	}
-      else if(  isAddress( $1.name ) && isInteger( $3.name ))
-	{
-	  addAsm( string( "STA " ) + string( $1.name ), 3, false );
-	}
-      else if( isAddress( $1.name ) && isAddress( $3.name ) )
-	{
-	  addAsm( string( "STA " ) + string( $1.name ), 3, false );
-	}
-      else
-	{
-	  addCompilerMessage( "math error", 3);
-	}
-      */
       
     }
+  // the result of this expression is in A
+  strcpy( $$.name, "A" );
 }
 | value
 {
@@ -2010,17 +1940,21 @@ expression: expression arithmetic expression
 }
 | ID
 {
-  // send up the address of the ID
   addParserComment(string( "RULE: expression: ID : ") + string($1.name ));
   int base_address = getAddressOf($1.name);
   int t = getTypeOf( $1.name );
-
-  //addParserComment( toHex(getAddressOf($1.name) ) );
   strcpy( $$.name, (string( "$" ) + toHex(getAddressOf($1.name ))).c_str() );
-  //strcpy( $$.name, (string( "$" ) + string($1.name)).c_str() );
+}
+| tPEEK '(' NUMBER ')'
+{
+  if( atoi( $3.name ) > 65535 ) addCompilerMessage( "memory location out of range", 2 );
+  if( atoi( $3.name ) < 0 ) addCompilerMessage( "memory location out of range", 2 );
+  addAsm( string("LDA $") + toHex(atoi( $3.name )), 3, false );
+  strcpy( $$.name, "A" );
 }
 |
 ;
+
 
 arithmetic:
 ADD
@@ -2035,8 +1969,19 @@ ADD
   current_state = string("-");
   strcpy( $$.name, "-" );
 }
-| MULTIPLY {  addParserComment( "RULE: arithmetic MULTIPLY" ); current_state = string("*"); strcpy( $$.name, "*" );}
-| DIVIDE {  addParserComment( "RULE: arithmetic DIVIDE" ); current_state = string("/"); strcpy( $$.name, "/" );}
+| MULTIPLY
+{
+  addParserComment( "RULE: arithmetic MULTIPLY" );
+  current_state = string("*");
+  strcpy( $$.name, "*" );
+}
+|
+DIVIDE
+{
+  addParserComment( "RULE: arithmetic DIVIDE" );
+  current_state = string("/");
+  strcpy( $$.name, "/" );
+}
 ;
 
 relop: LT { current_state = string( "LT" );  }
@@ -2063,8 +2008,7 @@ NUMBER
   switch( current_variable_type )
     {
     case -1:
-      addParserComment("no type for value");
-      addCompilerMessage("no type for value", 2 );
+      addCompilerMessage("no type for value", 3 );
       if( v < 0 )
 	{
 	  v=twos_complement(v);
@@ -2077,7 +2021,11 @@ NUMBER
       addComment( "unsigned int" );
       if( v > 255 )
 	{
-	  addCompilerMessage("type overflow", 2 );
+	  addCompilerMessage("type overflow", 3 );
+	}
+      else if( v < 0 )
+	{
+	  addCompilerMessage("type mismatch: uint cannot have sign", 3 );
 	}
       
       break;
@@ -2086,11 +2034,11 @@ NUMBER
       addComment( "signed int" );
       if( v > 127 )
 	{
-	  addCompilerMessage("type overflow", 2 );
+	  addCompilerMessage("type overflow", 3 );
 	}
       else if( v < -128 )
 	{
-	  addCompilerMessage("type underflow", 2 );
+	  addCompilerMessage("type underflow", 3 );
 	}
       else if( v < 0 )
 	{
@@ -2098,15 +2046,12 @@ NUMBER
 	  v=twos_complement(v);
 	}
       strcpy( $$.name, (toString( v )).c_str()  );
-      //addAsm( string( "LDA #$" ) + toHex(v), 2, false  );
       break;
     case 2:
       if( v > 65535 )
 	{
 	  addCompilerMessage("type overflow", 2 );
 	}
-      //addAsm( string( "LDA #$" ) + toHex(get_word_L(v)), 2, false  );
-      //addAsm( string( "LDX #$" ) + toHex(get_word_H(v)), 2, false  );
       strcpy( $$.name, string( string( "w" ) + string( $1.name)).c_str()); 
       break;
     case 4:
