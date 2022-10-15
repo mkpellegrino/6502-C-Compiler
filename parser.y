@@ -284,11 +284,12 @@
       }
     return binary_value;
   }
-
 	    
   string toBinaryFloat( double value )
   {
-   
+
+    // special case
+    if( value == 0 ) return string( "0000000000" );
     string sign;
     string exponent;
 
@@ -311,9 +312,7 @@
     // that are read in are only correct if they are >1
     // if they are <1, they seem to be shifted right 1 bit (divided by 2)
     
-    int l2 = floor(log2( value )); //  1023 is the bias for 64 bit fp numbers
-    if( l2>0 ) l2+=1;
-    cerr << "l2: " << l2 << "\tvalue: " << value << "\t";
+    int l2 = 1+floor(log2( value )); //  1023 is the bias for 64 bit fp numbers
     int exp = 128 + l2;      // on C64 FP's the bias is 63
     
     exponent = integerToBinary( exp );
