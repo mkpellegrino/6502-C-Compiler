@@ -9,6 +9,7 @@
 #include<vector>
 #include <stack>
 #include <sstream>
+#include <cmath>
 #include"lex.yy.c"
 
 
@@ -20,6 +21,7 @@
   
 
   // compiler internal flags
+  bool add16_is_needed=true;
   bool signed_comparison_is_needed=false;
   bool twos_complement_is_needed = false;
   bool pbin_is_needed = false;
@@ -66,6 +68,13 @@
     std::stringstream ss;
     ss << std::hex <<  s;
     ss >> return_value;
+    return return_value;
+  }
+
+  bool isFloat( string s )
+  {
+    bool return_value = false;
+    if( s[0] == 'f' ) return_value = true;
     return return_value;
   }
 
@@ -200,7 +209,153 @@
     if( colon ) return_value += string( ":" );
     return return_value;
   }
-  
+
+  string binaryToHex( string s )
+  {
+    string return_value;
+
+    string b;
+    for( int i = 0; i < s.length(); i+=4 )
+      {
+	b = s.substr( i, 4 );
+	if( b == "0000" ) return_value+="0";
+	if( b == "0001" ) return_value+="1";
+	if( b == "0010" ) return_value+="2";
+	if( b == "0011" ) return_value+="3";
+	if( b == "0100" ) return_value+="4";
+	if( b == "0101" ) return_value+="5";
+	if( b == "0110" ) return_value+="6";
+	if( b == "0111" ) return_value+="7";
+	if( b == "1000" ) return_value+="8";
+	if( b == "1001" ) return_value+="9";
+	if( b == "1010" ) return_value+="A";
+	if( b == "1011" ) return_value+="B";
+	if( b == "1100" ) return_value+="C";
+	if( b == "1101" ) return_value+="D";
+	if( b == "1110" ) return_value+="E";
+	if( b == "1111" ) return_value+="F";
+      }
+    
+    return return_value;
+  }
+
+ string fractionalToBinary( double value )
+  {
+    string binary_value;
+    int count=0;
+    while( count < 31  )
+      {
+	value*=2;
+	if( value >= 1 ) 
+	  {
+	    binary_value = binary_value + string("1");
+	    value = value - 1;
+	  }
+	else
+	  {
+	    binary_value = binary_value + string("0");
+	  }
+	count++;
+      }
+   
+    return binary_value;
+  }
+
+ string integerToBinary( int value, int s = 8)
+  {
+    value = abs(value);
+    string binary_value;
+    while( value > 0 )
+      {
+	if( (value % 2) == 1 ) 
+	  {
+	    binary_value = string("1")+ binary_value;
+	  }
+	else
+	  {
+	    binary_value = string("0")+ binary_value;
+	  }
+	
+	value /= 2;
+      }
+    while( binary_value.length() < s )
+      {
+	binary_value = string("0")+ binary_value;
+      }
+    return binary_value;
+  }
+
+	    
+  string toBinaryFloat( double value )
+  {
+   
+    string sign;
+    string exponent;
+
+    string return_value;
+
+    if( value < 0 )
+      {
+	sign="1";
+      }
+    else
+      {
+	sign="0";
+      }
+    value = abs(value);
+    double integral_part = floor(value);
+    double fractional_part = value - integral_part;
+
+
+    // as of right now (10/14/2022) floating point (excess-128) numbers
+    // that are read in are only correct if they are >1
+    // if they are <1, they seem to be shifted right 1 bit (divided by 2)
+    
+    int l2 = floor(log2( value )); //  1023 is the bias for 64 bit fp numbers
+    if( l2>0 ) l2+=1;
+    cerr << "l2: " << l2 << "\tvalue: " << value << "\t";
+    int exp = 128 + l2;      // on C64 FP's the bias is 63
+    
+    exponent = integerToBinary( exp );
+
+    
+    // find first binary 1 starting from left most bit in integer portion.
+    // if there are no 1's move on to fractional part
+
+    string nmb = integerToBinary(integral_part) + fractionalToBinary(fractional_part);
+
+    int first_one = nmb.length();
+    
+    for( int i = 0; i < nmb.length(); i++ )
+      {
+	if( nmb[i] == '1' )
+	  {
+	    first_one = i;
+	    break;
+	  }
+      }
+
+    first_one++;
+    
+    nmb = nmb.substr( first_one, nmb.length() );
+    
+
+    nmb = exponent + sign + nmb;
+     while( nmb.length() < 40 )
+      {
+	nmb+="0";
+      }
+     while( nmb.length() > 40 )
+      {
+	nmb = nmb.substr(0, nmb.length()-1);
+      }
+
+     cerr << nmb << endl;  
+
+     return_value = binaryToHex( nmb );
+    return return_value;
+  }
+
   // converts an integer into a string (in Hexadecimal)
   // (the hard way)
   string toHex( int i )
@@ -289,16 +444,16 @@
   vector<asm_function*> asm_functions;
 
   asm_function * getAsmFunction( string s )
-    {
-      for( int i=0; i<asm_functions.size(); i++ )
-	{
-	  if( asm_functions[i]->getIdentifier() == s )
-	    {
-	      return asm_functions[i];
-	    }
-	}
-      return NULL;
-    }
+  {
+    for( int i=0; i<asm_functions.size(); i++ )
+      {
+	if( asm_functions[i]->getIdentifier() == s )
+	  {
+	    return asm_functions[i];
+	  }
+      }
+    return NULL;
+  }
   
   string getLabelOfFunction( int i )
   {
@@ -446,7 +601,7 @@
 	    break;
 	  case 8:
 	    // float
-	    data_start += 4;
+	    data_start += 5;
 	    break;
 	  default:
 	    data_start += 1;
@@ -488,11 +643,27 @@
   int getIndexOf( string s )
   {
     int return_value=-1;
-    for( int i=0; i<asm_variables.size(); i++ )
+    string addr_string;
+    if( s[0] == '$' )
       {
-	if( asm_variables[i]->getIdentifier() == s )
+	addr_string=s.substr(1,s.length()-1);
+	//cerr << "[" << search_string << "]" << endl;
+	for( int i=0; i<asm_variables.size(); i++ )
 	  {
-	    return i;
+	    if( asm_variables[i]->getAddress() == addr_string )
+	      {
+		return i;
+	      }
+	  }
+      }
+    else
+      {
+	for( int i=0; i<asm_variables.size(); i++ )
+	  {
+	    if( asm_variables[i]->getIdentifier() == s )
+	      {
+		return i;
+	      }
 	  }
       }
     return return_value;
@@ -1123,12 +1294,20 @@ FOR
   addAsm( "JSR SCANF", 3, false );  
 };
 /* PRINTF COMMAND!!! */
-| PRINTFF '(' NUMBER ')' ';'
+| PRINTFF '(' expression ')' ';'
 {
   addComment( "=========================================================");      
   addComment( string("printf(") + string($3.name) + string( ");") );
   addComment( "=========================================================");  
+  addParserComment( string("TBD: printf(") + string($3.name) + string( ");") );
+  
+  
+
 };
+
+
+
+
 | PRINTFF '(' STR ')' ';'
 {
   addComment( "=========================================================");      
@@ -1166,13 +1345,13 @@ FOR
   addComment( string("                 byte2hex(") + string( $3.name ) + string(")"));
   addComment( "=========================================================");
 
-  
+
+  addParserComment( $3.name  );
   if( t == 0 || t == 1 )
     {
       // uint and int
       addParserComment( "t == 0 || t == 1" );
       addAsm( string("LDA $") + toHex(getAddressOf($3.name )).c_str(), 3, false );
-      addComment("Push the argument onto the stack before function call" );
       addAsm( "PHA" );
       addAsm( "JSR BYTE2HEX", 3, false );
     }
@@ -1203,12 +1382,13 @@ FOR
       addAsm( "JSR BYTE2HEX", 3, false );
       addAsm( "JSR BYTE2HEX", 3, false );
     }
-    else if( string( $3.name) != "A" )
+  else if( string( $3.name) != "A" )
     {
-     addAsm( string("LDA ") + string($3.name), 3, false );
-     addComment("Push the argument onto the stack before function call" );
-     addAsm( "PHA" );
-     addAsm( "JSR BYTE2HEX", 3, false );
+      addParserComment( "Straight from A register" );
+      addAsm( string("LDA ") + string($3.name), 3, false );
+      addComment("Push the argument onto the stack before function call" );
+      addAsm( "PHA" );
+      addAsm( "JSR BYTE2HEX", 3, false );
     }
 }
 | tTWOS '(' ID ')' ';'
@@ -1488,7 +1668,37 @@ statement: datatype ID init
   addAsmVariable( $2.name, current_variable_type );
   
   current_variable_base_address = getAddressOf( $2.name );
-  if( string( $3.name ) == "A" )
+  if( isFloat( $3.name ) )
+    {
+      // FP Operations
+      string tmp_string = string( $3.name );
+      
+      string sign;
+      
+      addParserComment( string("convert to a float in RAM here: ") + toHex(current_variable_base_address)  );
+      // strip the "f" from it
+      tmp_string = tmp_string.substr( 1, tmp_string.length() - 1 );
+      strcpy( $3.name, tmp_string.c_str() );
+
+
+      string fp_in_hex = toBinaryFloat( atof( $3.name ) );
+
+      if( atof( $3.name ) == 0 ) fp_in_hex=string("0000000000");
+      addParserComment( string( "store: " ) + fp_in_hex );
+
+      int v=0;
+      for( int i=0; i<5; i++ )
+	{
+	  addAsm( string( "LDA #$" ) + fp_in_hex[v] + fp_in_hex[v+1], 2, false );
+	  addAsm( string( "STA $" ) + toHex( current_variable_base_address+i ), 3, false );
+	  v+=2;
+	}
+      addAsm( string("LDA #$") + toHex( get_word_L( current_variable_base_address )), 2, false );
+      addAsm( string("LDY #$") + toHex( get_word_H( current_variable_base_address )), 2, false );
+      addAsm( "JSR $BBA2", 3, false );
+      addAsm( "JSR $AABC", 3, false );
+    }
+  else if( string( $3.name ) == "A" )
     {
       // the the result is in A
       // addAsm( "; ***** ", 0, false );
@@ -1527,25 +1737,33 @@ statement: datatype ID init
     case 0:
       /* 0 - unsigned int - 1 bytes */
       addAsm( string("STA $") + toHex( current_variable_base_address), 3, false );
+      addParserComment( "case 0:" );
+
       break;
     case 1:
       /* 1 - signed int - 1 bytes */
+      addParserComment( "case 1:" );
+
       addAsm( string("STA $") + toHex( current_variable_base_address), 3, false );
       break;
 
     case 2:
       /* 2 - word - 2 bytes */
+      addParserComment( "case 2:" );
+	    
       addAsm( string("STA $") + toHex( current_variable_base_address), 3, false );
       addAsm( string("STX $") + toHex( current_variable_base_address+1), 3, false );
       break;
     case 4:
       /* 4 - double - 2 bytes */
+      addParserComment( "case 4:" );
       addAsm( string("STA $") + toHex( current_variable_base_address), 3, false );
       addAsm( string("STX $") + toHex( current_variable_base_address+1), 3, false );      
       break;
     case 8:
       /* 8 - float - 4 bytes */
       /* TBD */
+      addParserComment( "case 8:" );
       break;
     default:
       /* unknown type */
@@ -1577,6 +1795,7 @@ statement: datatype ID init
     {
     case 0:
     case 1:
+      addParserComment( "case 0 or 1:" );
       /* 0 - unsigned int - 1 bytes */
       /* 1 - signed int - 1 bytes */
      
@@ -1585,16 +1804,22 @@ statement: datatype ID init
 
     case 2:
       /* 2 - word - 2 bytes */
+      addParserComment( "case 2:" );
+
       addAsm( string("STA $") + toHex( current_variable_base_address), 3, false );
       addAsm( string("STX $") + toHex( current_variable_base_address+1), 3, false );
       break;
     case 4:
+      addParserComment( "case 4:" );
+
       /* 4 - double - 2 bytes */
       addAsm( string("STA $") + toHex( current_variable_base_address), 3, false );
       addAsm( string("STX $") + toHex( current_variable_base_address+1), 3, false );      
       break;
     case 8:
-      /* 8 - float - 4 bytes */
+      /* 8 - float - 5 bytes */
+      addParserComment( "*case 8:" );
+
       /* TBD */
       break;
     default:
@@ -1651,6 +1876,10 @@ init: '=' expression
       // of the expression is stored in A
       strcpy( $$.name, "A" );
     }
+  else if( isFloat( $2.name ) )
+    {
+      strcpy( $$.name, $2.name );
+    }
   else if( isAddress( $2.name ) || isByte( $2.name ))
     {
       strcpy( $$.name, $2.name );
@@ -1662,7 +1891,8 @@ init: '=' expression
   else if( isInteger( $2.name ) )
     {
       int v = atoi( $2.name );
-      
+
+      // if it's negative then put it into 2's complement
       if( v < 0 )
 	{
 	  addComment( "Two's Complement" );
@@ -1698,6 +1928,7 @@ expression: expression arithmetic expression
   // variable ($$.name) is already in use (in _this_ scope).
   // .. but we don't yet
 
+  
   /* if they're BOTH IMM's */
   if( isInteger( $1.name ) && isInteger( $3.name ))
     {
@@ -1758,7 +1989,7 @@ expression: expression arithmetic expression
 	}
       else if( string( $2.name ) == "-" )
 	{
-	  	  addAsm( string("LDA #$") + toHex( tmp_int1 - tmp_int2 ), 2, false ); 
+	  addAsm( string("LDA #$") + toHex( tmp_int1 - tmp_int2 ), 2, false ); 
 
 	  strcpy( $$.name, toString( tmp_int1 - tmp_int2 ).c_str() );
 	}
@@ -1794,8 +2025,8 @@ expression: expression arithmetic expression
       ss >> tmp_int1;
 
       int tmp_size = 2;
-	  tmp_size = 3;
-	  addAsm( string("LDA ") + string( $3.name ), tmp_size, false);
+      tmp_size = 3;
+      addAsm( string("LDA ") + string( $3.name ), tmp_size, false);
       
       if( string($2.name) == "+" )
 	{
@@ -2002,7 +2233,7 @@ NUMBER
   /* 4 - double - 2 bytes */
   /* 8 - float - 4 bytes */
 
-  addParserComment(string("RULE: expression: NUMBER :") +  string($1.name ));
+  addParserComment(string("RULE: value: NUMBER :") +  string($1.name ));
   int v = atoi( $1.name );
 
   switch( current_variable_type )
@@ -2048,6 +2279,7 @@ NUMBER
       strcpy( $$.name, (toString( v )).c_str()  );
       break;
     case 2:
+      addComment( "signed int" );
       if( v > 65535 )
 	{
 	  addCompilerMessage("type overflow", 2 );
@@ -2055,6 +2287,7 @@ NUMBER
       strcpy( $$.name, string( string( "w" ) + string( $1.name)).c_str()); 
       break;
     case 4:
+      addComment( "signed int" );
       if( v > 65535 )
 	{
 	  addCompilerMessage("type overflow", 2 );
@@ -2064,7 +2297,9 @@ NUMBER
       strcpy( $$.name, string( string( "w" ) + string( $1.name)).c_str()); 
       break;
     case 8:
-      
+      addComment( "floating point number" );
+      // store the number (after converting it to a null terminated string)
+      // somewhere in memory
       strcpy( $$.name, string( string( "f" ) + string( $1.name)).c_str()); 
       break;
     default:
@@ -2078,17 +2313,18 @@ NUMBER
 }
 | INT
 {
-  addParserComment(string("RULE: expression: INT :") +  string($1.name ));
+  addParserComment(string("RULE: value: INT :") +  string($1.name ));
   strcpy( $$.name, $1.name );
 }
 |
 FLOAT_NUM
 {
   addParserComment( "RULE: value: FLOAT_NUM" );
-  strcpy($$.name, $1.name);
-  sprintf($$.type, "float");
-  add('C');
-  $$.nd = mknode(NULL, NULL, $1.name);
+  addParserComment( string( $1.name ) );
+  strcpy($$.name, string( string("f") + string($1.name)).c_str());
+  //sprintf($$.type, "float");
+  //add('C');
+  //$$.nd = mknode(NULL, NULL, $1.name);
 }
 | CHARACTER
 {
@@ -2116,7 +2352,6 @@ return: RETURN ';'
 {
   addParserComment( "RULE: return: RETURN {} value ';'" );
 
-  //cerr << "return: " << $3.name << endl;
   addComment( "Whatever value is in Accumulator when return is called is stored in 'return_value'" );
   addAsm( string( "STA $" ) + toHex(getAddressOf("function_return_value")), 3, false );
 
@@ -2135,7 +2370,6 @@ return: RETURN ';'
 int main(int argc, char *argv[])
 {
   label_major=0;
-  //pushScope("MAIN");
   label_vector.push_back(0);
   label_vector.push_back(0);
   label_vector.push_back(0);
@@ -2337,6 +2571,66 @@ int main(int argc, char *argv[])
       addAsm( "LDA $02", 2, false );
       addAsm( "CMP $03", 2, false );
       addAsm( "PHP" );// push the status register to the stack with the correct values after cmp
+      // ==================================================================================
+      addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_2" ) ), 3, false );
+      addAsm( "PHA" );
+      addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_1" ) ), 3, false );
+      addAsm( "PHA" );
+      addAsm( "RTS" );
+    }
+  if( false /*add16_is_needed*/ )
+    {
+      addAsm( "ADD16:\t\t;Add 2 16 bit numbers", 0, true );
+      addAsm( "PLA" );
+      addAsm( string( "STA $" ) + toHex(getAddressOf( "return_address_1" ) ), 3, false );
+      addAsm( "PLA" );
+      addAsm( string( "STA $" ) + toHex(getAddressOf( "return_address_2" ) ), 3, false );
+      // ==================================================================================
+      
+
+
+      // ==================================================================================
+      addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_2" ) ), 3, false );
+      addAsm( "PHA" );
+      addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_1" ) ), 3, false );
+      addAsm( "PHA" );
+      addAsm( "RTS" );
+
+    }
+  if( true )
+    {
+      // FMULT: multiply a FPOINT from memory (LB=A, HB=Y) and FAC ($7A&$7B)
+      addAsm( "FMULT:", 0, true );
+      addAsm( "PLA" );
+      addAsm( string( "STA $" ) + toHex(getAddressOf( "return_address_1" ) ), 3, false );
+      addAsm( "PLA" );
+      addAsm( string( "STA $" ) + toHex(getAddressOf( "return_address_2" ) ), 3, false );
+      // ==================================================================================
+
+      // TBD
+      
+      // ==================================================================================
+      addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_2" ) ), 3, false );
+      addAsm( "PHA" );
+      addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_1" ) ), 3, false );
+      addAsm( "PHA" );
+      addAsm( "RTS" );
+    }
+  if( true )
+    {
+      // FIN: floating point to memory
+      addAsm( "FIN:", 0, true );
+      addAsm( "PLA" );
+      addAsm( string( "STA $" ) + toHex(getAddressOf( "return_address_1" ) ), 3, false );
+      addAsm( "PLA" );
+      addAsm( string( "STA $" ) + toHex(getAddressOf( "return_address_2" ) ), 3, false );
+      // =================================================================================
+      addAsm( "PLA" );
+      addAsm( "STA $7A", 2, false ); // Low Byte
+      addAsm( "PLA" );
+      addAsm( "STA $7B", 2, false ); // High Byte
+      addAsm( "JSR $0079", 3, false );
+      addAsm( "JSR $BCF3", 3, false );
       // ==================================================================================
       addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_2" ) ), 3, false );
       addAsm( "PHA" );
