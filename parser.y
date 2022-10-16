@@ -1637,7 +1637,7 @@ condition: expression relop expression
       
       
     }
-  else if( scope_stack.top() == "IF" ) /*                                                                                                               <<<<    IF           */
+  else if( scope_stack.top() == "IF" ) /*                                                                                                               <<<<    IF   */
     {
       if( string( $2.name ) == string( "<=" ) )
 	{
@@ -1809,8 +1809,46 @@ statement: datatype ID init
  
   current_variable_type=getTypeOf($1.name);
   current_variable_base_address = getAddressOf( $1.name );
+  
+  //cerr << current_variable_type << endl;
+  if( isFloat( $2.name) )
+    {
+      //addParserComment( "*" );
+      cerr << "a float at address: $" << current_variable_base_address << " " << $2.name << endl;
 
-  if( string( $2.name ) == "A" )
+      string tmp_string = string( $2.name );
+      string sign;
+      
+       // strip the "f" from it
+      tmp_string = tmp_string.substr( 1, tmp_string.length() - 1 );
+      strcpy( $2.name, tmp_string.c_str() );
+
+
+      string fp_in_hex = toBinaryFloat( atof( $2.name ) );
+
+      if( atof( $2.name ) == 0 ) fp_in_hex=string("0000000000");
+      addParserComment( string( "store: " ) + fp_in_hex );
+
+      int v=0;
+      for( int i=0; i<5; i++ )
+	{
+	  addAsm( string( "LDA #$" ) + fp_in_hex[v] + fp_in_hex[v+1], 2, false );
+	  addAsm( string( "STA $" ) + toHex( current_variable_base_address+i ), 3, false );
+	  v+=2;
+	}
+
+
+
+      
+      
+    }
+  else if( string( $2.name ) == string( "FAC" ) )
+    {
+      addAsm( string( "LDX #$" ) + toHex(get_word_L(current_variable_base_address) ), 2, false );
+      addAsm( string( "LDY #$" ) + toHex(get_word_H(current_variable_base_address) ), 2, false );
+      addAsm( "JSR $BBD4", 3, false );
+    }
+  else if( string( $2.name ) == "A" )
     {
       //addAsm( string( "STA $" ) + toHex(current_variable_base_address), 3, false);
       // result of expression is stored in A
@@ -1966,11 +2004,46 @@ expression: expression arithmetic expression
   // variable ($$.name) is already in use (in _this_ scope).
   // .. but we don't yet
   int FAC=0;
-  
-  if( getTypeOf( $1.name ) == 8 && getTypeOf( $3.name ) == 8 )
+  if( getTypeOf( $1.name ) == 2 && getTypeOf( $3.name ) == 8 )
     {
-      addCompilerMessage( "Jolly good then... they're both floats!", 0);
-      addParserComment( "FLOAT + FLOAT" );
+      //cerr << $1.name << endl;
+      // first, turn the word into a float
+      int base_address_op1 = hexToDecimal( $1.name );
+      
+      int base_address_op2 = hexToDecimal( $3.name );
+
+      addAsm( string("LDY #$") + toHex( get_word_L( base_address_op1 )), 2, false );
+      addAsm( string("LDA #$") + toHex( get_word_H( base_address_op1 )), 2, false );
+      addAsm( "JSR $B391", 3, false );
+
+      addAsm( string("LDA #$") + toHex(get_word_L(base_address_op1)), 2, false );
+      addAsm( string("LDY #$") + toHex(get_word_H(base_address_op1)), 2, false );
+      if( string($2.name) == string("*"))
+	{
+	  addAsm( "JSR $BA28", 3, false );
+	}
+      else if( string($2.name) == string("+"))
+	{
+	  addAsm( "JSR $B867", 3, false );
+	}
+      else if( string($2.name) == string("-"))
+	{
+	  addAsm( "JSR $B850", 3, false );
+	}
+      else if( string($2.name) == string("/"))
+	{
+	  addComment( "If Y is ZERO at this point, we'll be dividing by 0 (or at least attempting to)" );
+	  addAsm( "JSR $BB0F", 3, false );
+	}
+
+      // use this for debugging purposes... it 
+      //addAsm( "JSR $AABC", 3, false );
+      FAC=1;
+      
+    }
+  else if( getTypeOf( $1.name ) == 8 && getTypeOf( $3.name ) == 8 )
+    {
+      addParserComment( "FLOAT arithmetic FLOAT" );
 
       int base_address_op1 = hexToDecimal( $1.name );
       int base_address_op2 = hexToDecimal( $3.name );
