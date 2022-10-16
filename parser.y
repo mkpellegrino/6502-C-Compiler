@@ -349,7 +349,7 @@
 	nmb = nmb.substr(0, nmb.length()-1);
       }
 
-     cerr << nmb << endl;  
+     //cerr << nmb << endl;  
 
      return_value = binaryToHex( nmb );
     return return_value;
@@ -569,7 +569,7 @@
   /* 1 - signed int - 1 bytes */
   /* 2 - word - 2 bytes */
   /* 4 - double - 2 bytes */
-  /* 8 - float - 4 bytes */
+  /* 8 - float - 5 bytes */
   class asm_variable
   {
   public:
@@ -1298,8 +1298,29 @@ FOR
   addComment( "=========================================================");      
   addComment( string("printf(") + string($3.name) + string( ");") );
   addComment( "=========================================================");  
-  addParserComment( string("TBD: printf(") + string($3.name) + string( ");") );
-  
+  addParserComment( string("Work-in-progress: printf(") + string($3.name) + string( ");") );
+  if( getTypeOf( $3.name ) == 8)
+    {
+      current_variable_base_address = getAddressOf( $3.name );
+
+      addAsm( string("LDA #$") + toHex( get_word_L( current_variable_base_address )), 2, false );
+      addAsm( string("LDY #$") + toHex( get_word_H( current_variable_base_address )), 2, false );
+      
+      // load it into FAC
+      addAsm( "JSR $BBA2", 3, false ); // FP ->FAC
+      // call the FOUT
+      addAsm( "JSR $AABC", 3, false ); // FP --> CRT
+    }
+  else if( getTypeOf( $3.name ) == 1 )
+    {
+      current_variable_base_address = getAddressOf( $3.name );
+      
+      // this really should convert it to decimal first
+      addAsm( string("LDA $") + toHex( current_variable_base_address ), 3, false );
+      addAsm( "PHA" );
+      byte2hex_is_needed=true;
+      addAsm( "JSR BYTE2HEX", 3, false );
+    }
   
 
 };
@@ -1323,7 +1344,6 @@ FOR
   addAsm( "NOP ; to be replaced", 1, false);
   addAsm( "JSR PRN", 3, false );
 };
-// this doesn't work when the expression is expression arithmetic expression
 | tBYTE2HEX '(' expression ')' ';'
 {
   addParserComment( "RULE: body: tBYTE2HEX '(' expression ')' ';'" );
@@ -1354,7 +1374,7 @@ FOR
       addAsm( "PHA" );
       addAsm( "JSR BYTE2HEX", 3, false );
     }
-  else if( $3.name[0] == 'w' )
+  else if( isWord($3.name) /* == 'w'*/ )
     {
       addParserComment( "t == word" );
       $3.name[0] = ' ';
@@ -1380,6 +1400,11 @@ FOR
       
       addAsm( "JSR BYTE2HEX", 3, false );
       addAsm( "JSR BYTE2HEX", 3, false );
+    }
+  else if( isFloat( string($3.name ) ))
+    {
+      addCompilerMessage( "cannot byte2hex a float", 2 );
+      addComment("cannot byte2hex a float");
     }
   else if( string( $3.name) != "A" )
     {
@@ -1665,38 +1690,47 @@ statement: datatype ID init
 
 
   addAsmVariable( $2.name, current_variable_type );
-  
   current_variable_base_address = getAddressOf( $2.name );
-  if( isFloat( $3.name ) )
-    {
-      // FP Operations
-      string tmp_string = string( $3.name );
-      
-      string sign;
-      
-      addParserComment( string("convert to a float in RAM here: ") + toHex(current_variable_base_address)  );
-      // strip the "f" from it
-      tmp_string = tmp_string.substr( 1, tmp_string.length() - 1 );
-      strcpy( $3.name, tmp_string.c_str() );
 
-
-      string fp_in_hex = toBinaryFloat( atof( $3.name ) );
-
-      if( atof( $3.name ) == 0 ) fp_in_hex=string("0000000000");
-      addParserComment( string( "store: " ) + fp_in_hex );
-
-      int v=0;
-      for( int i=0; i<5; i++ )
+  
+      if( string( $3.name ) == string( "FAC" ) )
 	{
-	  addAsm( string( "LDA #$" ) + fp_in_hex[v] + fp_in_hex[v+1], 2, false );
-	  addAsm( string( "STA $" ) + toHex( current_variable_base_address+i ), 3, false );
-	  v+=2;
+	  addAsm( string( "LDX #$" ) + toHex(get_word_L(current_variable_base_address) ), 2, false );
+	  addAsm( string( "LDY #$" ) + toHex(get_word_H(current_variable_base_address) ), 2, false );
+	  addAsm( "JSR $BBD4", 3, false );
 	}
-      addAsm( string("LDA #$") + toHex( get_word_L( current_variable_base_address )), 2, false );
-      addAsm( string("LDY #$") + toHex( get_word_H( current_variable_base_address )), 2, false );
-      addAsm( "JSR $BBA2", 3, false );
-      addAsm( "JSR $AABC", 3, false );
-    }
+      else if( isFloat( $3.name ) )
+	{
+	  // FP Operations
+	  string tmp_string = string( $3.name );
+	  string sign;
+      
+	  addParserComment( string("convert to a float in RAM here: ") + toHex(current_variable_base_address)  );
+	  // strip the "f" from it
+	  tmp_string = tmp_string.substr( 1, tmp_string.length() - 1 );
+	  strcpy( $3.name, tmp_string.c_str() );
+
+
+	  string fp_in_hex = toBinaryFloat( atof( $3.name ) );
+
+	  if( atof( $3.name ) == 0 ) fp_in_hex=string("0000000000");
+	  addParserComment( string( "store: " ) + fp_in_hex );
+
+	  int v=0;
+	  for( int i=0; i<5; i++ )
+	    {
+	      addAsm( string( "LDA #$" ) + fp_in_hex[v] + fp_in_hex[v+1], 2, false );
+	      addAsm( string( "STA $" ) + toHex( current_variable_base_address+i ), 3, false );
+	      v+=2;
+	    }
+
+	  // move the FP Value into FAC and Display it
+	  //addAsm( string("LDA #$") + toHex( get_word_L( current_variable_base_address )), 2, false );
+	  //addAsm( string("LDY #$") + toHex( get_word_H( current_variable_base_address )), 2, false );
+	  //addAsm( "JSR $BBA2", 3, false ); // FP ->FAC
+	  //addAsm( "JSR $BF71", 3, false ); // sqrt
+	  //addAsm( "JSR $AABC", 3, false ); // FP --> CRT
+	}
   else if( string( $3.name ) == "A" )
     {
       // the the result is in A
@@ -1867,9 +1901,14 @@ statement: datatype ID init
 init: '=' expression
 {
   addParserComment( string( "RULE: init: '=' expression" ) );
-  //addParserComment( string( "Current Variable Type: " ) + toString( current_variable_type ));
-
-  if( string( $2.name ) == "A" )
+  addParserComment( string( $2.name ) );
+  
+  if( string( $2.name ) == "FAC" )
+    {
+      addParserComment( "FAC" );
+      strcpy( $$.name, "FAC" );
+    }  
+  else if( string( $2.name ) == "A" )
     {
       // then it's the result
       // of the expression is stored in A
@@ -1926,10 +1965,46 @@ expression: expression arithmetic expression
   // here is where we should check to see if the
   // variable ($$.name) is already in use (in _this_ scope).
   // .. but we don't yet
-
+  int FAC=0;
   
+  if( getTypeOf( $1.name ) == 8 && getTypeOf( $3.name ) == 8 )
+    {
+      addCompilerMessage( "Jolly good then... they're both floats!", 0);
+      addParserComment( "FLOAT + FLOAT" );
+
+      int base_address_op1 = hexToDecimal( $1.name );
+      int base_address_op2 = hexToDecimal( $3.name );
+
+      // put op1 into fac
+      addAsm( string("LDA #$") + toHex(get_word_L(base_address_op2)), 2, false );
+      addAsm( string("LDY #$") + toHex(get_word_H(base_address_op2)), 2, false );
+      addAsm( "JSR $BBA2", 3, false );
+      addAsm( string("LDA #$") + toHex(get_word_L(base_address_op1)), 2, false );
+      addAsm( string("LDY #$") + toHex(get_word_H(base_address_op1)), 2, false );
+      if( string($2.name) == string("*"))
+	{
+	  addAsm( "JSR $BA28", 3, false );
+	}
+      else if( string($2.name) == string("+"))
+	{
+	  addAsm( "JSR $B867", 3, false );
+	}
+      else if( string($2.name) == string("-"))
+	{
+	  addAsm( "JSR $B850", 3, false );
+	}
+      else if( string($2.name) == string("/"))
+	{
+	  addComment( "If Y is ZERO at this point, we'll be dividing by 0 (or at least attempting to)" );
+	  addAsm( "JSR $BB0F", 3, false );
+	}
+
+      // use this for debugging purposes... it 
+      //addAsm( "JSR $AABC", 3, false );
+      FAC=1;
+    }
   /* if they're BOTH IMM's */
-  if( isInteger( $1.name ) && isInteger( $3.name ))
+  else if( isInteger( $1.name ) && isInteger( $3.name ))
     {
       addParserComment( "IMM + IMM (1)" );
       int tmp_int1 = atoi( $1.name );
@@ -2160,7 +2235,15 @@ expression: expression arithmetic expression
       
     }
   // the result of this expression is in A
-  strcpy( $$.name, "A" );
+  if( FAC == 0 )
+    {
+      strcpy( $$.name, "A" );
+    }
+  else
+    {
+      strcpy( $$.name, "FAC" );
+    }
+	
 }
 | value
 {
@@ -2230,7 +2313,7 @@ NUMBER
   /* 1 - signed int - 1 bytes */
   /* 2 - word - 2 bytes */
   /* 4 - double - 2 bytes */
-  /* 8 - float - 4 bytes */
+  /* 8 - float - 5 bytes */
 
   addParserComment(string("RULE: value: NUMBER :") +  string($1.name ));
   int v = atoi( $1.name );
@@ -2278,7 +2361,7 @@ NUMBER
       strcpy( $$.name, (toString( v )).c_str()  );
       break;
     case 2:
-      addComment( "signed int" );
+      addComment( "int" );
       if( v > 65535 )
 	{
 	  addCompilerMessage("type overflow", 2 );
@@ -2286,7 +2369,7 @@ NUMBER
       strcpy( $$.name, string( string( "w" ) + string( $1.name)).c_str()); 
       break;
     case 4:
-      addComment( "signed int" );
+      addComment( "word" );
       if( v > 65535 )
 	{
 	  addCompilerMessage("type overflow", 2 );
@@ -2678,20 +2761,20 @@ int main(int argc, char *argv[])
       addAsm( "RTS" );
       
     }
-  if( pbin_is_needed )
+  if( false )
     {
-      addAsm( "PBIN:\t\t;Display a binary Number", 0, true );
+      addAsm( "FUNCTION:\t\t;Function Comment", 0, true );
 
       // save return address from the stack
       addAsm( "PLA" );
       addAsm( string( "STA $" ) + toHex(getAddressOf(  "return_address_1" ) ), 3, false );
       addAsm( "PLA" );
       addAsm( string( "STA $" ) + toHex(getAddressOf(  "return_address_2" ) ), 3, false );
-
+      //==================================================================================
       
       
       
-      // put the return address back onto the stack
+      //==================================================================================
       addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_2" )), 3, false );
       addAsm( "PHA" );
       addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_1" )) , 3, false );
