@@ -1298,7 +1298,7 @@ FOR
   addComment( "=========================================================");      
   addComment( string("printf(") + string($3.name) + string( ");") );
   addComment( "=========================================================");  
-  addParserComment( string("Work-in-progress: printf(") + string($3.name) + string( ");") );
+  addParserComment( string("(work-in-progress) printf(") + string($3.name) + string( ");") );
   if( getTypeOf( $3.name ) == 8)
     {
       current_variable_base_address = getAddressOf( $3.name );
@@ -1310,6 +1310,20 @@ FOR
       addAsm( "JSR $BBA2", 3, false ); // FP ->FAC
       // call the FOUT
       addAsm( "JSR $AABC", 3, false ); // FP --> CRT
+    }
+  else if( getTypeOf( $3.name ) == 2 )
+    {
+      current_variable_base_address = getAddressOf( $3.name );
+      int base_address_op1 = hexToDecimal( $3.name );
+
+      // store the word  as a float
+      addAsm( string("LDY $") + toHex( ( base_address_op1 )), 3, false );
+      addAsm( string("LDA $") + toHex( ( base_address_op1+1 )), 3, false );
+      addAsm( "JSR $B391", 3, false );
+
+      // print out the float in FAC
+      addAsm( "JSR $AABC", 3, false );
+
     }
   else if( getTypeOf( $3.name ) == 1 )
     {
@@ -1716,6 +1730,7 @@ statement: datatype ID init
 	  if( atof( $3.name ) == 0 ) fp_in_hex=string("0000000000");
 	  addParserComment( string( "store: " ) + fp_in_hex );
 
+	  addComment( "Floating Point Value" );
 	  int v=0;
 	  for( int i=0; i<5; i++ )
 	    {
@@ -2012,12 +2027,49 @@ expression: expression arithmetic expression
       
       int base_address_op2 = hexToDecimal( $3.name );
 
-      addAsm( string("LDY #$") + toHex( get_word_L( base_address_op1 )), 2, false );
-      addAsm( string("LDA #$") + toHex( get_word_H( base_address_op1 )), 2, false );
+      addAsm( string("LDY $") + toHex( ( base_address_op1 )), 3, false );
+      addAsm( string("LDA $") + toHex( ( base_address_op1+1 )), 3, false );
       addAsm( "JSR $B391", 3, false );
 
-      addAsm( string("LDA #$") + toHex(get_word_L(base_address_op1)), 2, false );
-      addAsm( string("LDY #$") + toHex(get_word_H(base_address_op1)), 2, false );
+      addAsm( string("LDA #$") + toHex(get_word_L(base_address_op2)), 2, false );
+      addAsm( string("LDY #$") + toHex(get_word_H(base_address_op2)), 2, false );
+      if( string($2.name) == string("*"))
+	{
+	  addAsm( "JSR $BA28", 3, false );
+	}
+      else if( string($2.name) == string("+"))
+	{
+	  addAsm( "JSR $B867", 3, false );
+	}
+      else if( string($2.name) == string("-"))
+	{
+	  addAsm( "JSR $B850", 3, false );
+	}
+      else if( string($2.name) == string("/"))
+	{
+	  addComment( "If Y is ZERO at this point, we'll be dividing by 0 (or at least attempting to)" );
+	  addAsm( "JSR $BB0F", 3, false );
+	}
+
+      // use this for debugging purposes... it 
+      //addAsm( "JSR $AABC", 3, false );
+      FAC=1;
+      
+    }
+  else if( getTypeOf( $3.name ) == 2 && getTypeOf( $1.name ) == 8 )
+    {
+      //cerr << $1.name << endl;
+      // first, turn the word into a float
+      int base_address_op2 = hexToDecimal( $1.name );
+      
+      int base_address_op1 = hexToDecimal( $3.name );
+
+      addAsm( string("LDY $") + toHex( ( base_address_op1 )), 3, false );
+      addAsm( string("LDA $") + toHex( ( base_address_op1+1 )), 3, false );
+      addAsm( "JSR $B391", 3, false );
+
+      addAsm( string("LDA #$") + toHex(get_word_L(base_address_op2)), 2, false );
+      addAsm( string("LDY #$") + toHex(get_word_H(base_address_op2)), 2, false );
       if( string($2.name) == string("*"))
 	{
 	  addAsm( "JSR $BA28", 3, false );
