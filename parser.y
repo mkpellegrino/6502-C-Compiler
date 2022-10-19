@@ -13,12 +13,19 @@
 #include"lex.yy.c"
 
 
+  using namespace std;
+
   // fwd declaration
   //  void addComment( string s );
   
   /* The extra parameter is also given to yyerror */
   void yyerror(FILE* fp, const char* msg);
-  
+
+  /* forward declarations */
+  void addAsm( string s, int instruction_size, bool l);
+  void addDebugComment( string s );
+ 
+
 
   // compiler internal flags
   bool add16_is_needed=true;
@@ -31,7 +38,11 @@
   bool getkey_is_needed = false;
   bool hex2petscii_is_needed = false;
   bool symbol_table_is_needed = false;
-  using namespace std;
+
+  
+  bool debug_comments_are_needed = true;
+
+
   int label=0;
   int label_major=0;
 
@@ -59,6 +70,11 @@
   stack <int> label_stack;
   vector <int> label_vector;
 
+  string stripFirst( string s )
+  {
+    return s.substr( 1, s.length()-1);
+  }
+  
   int hexToDecimal( string s )
   {
     if( s[0] == '$' ) s[0] = ' ';
@@ -355,6 +371,7 @@
     return return_value;
   }
 
+
   // converts an integer into a string (in Hexadecimal)
   // (the hard way)
   string toHex( int i )
@@ -390,6 +407,38 @@
     if( l == 1 || l == 3) return_value = string("0") + return_value;
     return return_value;
   }
+
+  // convert a string to an inline-float
+  void inlineFloat( string s, int addr=105)
+  {
+    addDebugComment( "=========== IMM -> FAC ==========" );
+    string sign;
+    addDebugComment( string("Base address: ") + toHex(addr)  );
+    
+    string stripped_float= stripFirst( s.c_str() );
+
+    string fp_in_hex = toBinaryFloat( atof( stripped_float.c_str() ) );
+
+    if( atof( stripped_float.c_str() ) == 0 ) fp_in_hex=string("0000000000");
+ 
+    int v=0;
+    for( int i=0; i<5; i++ )
+      {
+	addAsm( string( "LDA #$" ) + fp_in_hex[v] + fp_in_hex[v+1], 2, false );
+	addAsm( string( "STA $" ) + toHex( addr+i ), 3, false );
+	v+=2;
+      }
+
+    if( addr == 105 )
+      {
+	addAsm( "LDA #$69", 2, false );
+	addAsm( "LDY #$00", 2, false );
+	addAsm( "JSR $BBA2; RAM -> FAC", 3, false );
+      }
+    addDebugComment( "=================================" );
+    return;
+  }
+
 
   void optimizePHAPLA()
   {
@@ -783,6 +832,13 @@
     return;
   }
   
+  void addDebugComment( string s )
+  {
+    //cerr << s << endl;
+    if( debug_comments_are_needed ) addAsm( string("; ") + s, 0, true );
+    return;
+  }
+
   void addComment( string s )
   {
     if( arg_asm_comments ) addAsm( string("; ") + s, 0, true );
@@ -822,7 +878,7 @@
 	    addCompilerMessage( "you cannot re-declare variables", 3 );
 	  }
       }
-    addParserComment( string( "Adding: " ) + string(id) + string(" of type: ") + s  );
+    addDebugComment( string( "Adding: " ) + string(id) + string(" of type: ") + s  );
     asm_variable * new_asm_variable = new asm_variable( id, t );
     asm_variables.push_back( new_asm_variable ); // add the variable to the list of variables
   }
@@ -1120,7 +1176,7 @@
 //%parse-param { FILE* fp }
 
 %token VOID 
-%token <nd_obj> tWORD tBYTE tDOUBLE tUINT tPOINTER tJSR tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER PRINTFF SCANFF INT FLOAT CHAR FOR IF ELSE TRUE FALSE NUMBER FLOAT_NUM ID LE GE EQ NE GT LT AND OR STR ADD SUBTRACT MULTIPLY DIVIDE  UNARY INCLUDE RETURN
+%token <nd_obj> tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tJSR tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER PRINTFF SCANFF INT FLOAT CHAR FOR IF ELSE TRUE FALSE NUMBER FLOAT_NUM ID LE GE EQ NE GT LT AND OR STR ADD SUBTRACT MULTIPLY DIVIDE  UNARY INCLUDE RETURN
 %type <nd_obj> headers main body return function datatype statement arithmetic relop program else
    %type <nd_obj2> init value expression
       %type <nd_obj3> condition
@@ -1299,7 +1355,26 @@ FOR
   addComment( string("printf(") + string($3.name) + string( ");") );
   addComment( "=========================================================");  
   addParserComment( string("(work-in-progress) printf(") + string($3.name) + string( ");") );
-  if( getTypeOf( $3.name ) == 8)
+  if( string($3.name) == string("ARG") )
+    {
+      addAsm( "LDA #$69; ARG_L", 2, false );
+      addAsm( "LDY #$00; ARG_H", 2, false );
+      addAsm( "JSR $BBA2; RAM -> FAC", 3, false ); // FP ->FAC
+      // call the FOUT
+      addAsm( "JSR $AABC; FAC -> CRT", 3, false ); // FP --> CRT
+    }
+  else if( string($3.name) == string("FAC") )
+    {
+      //current_variable_base_address=105;
+      //addAsm( string("LDA #$") + toHex( get_word_L( current_variable_base_address )), 2, false );
+      //addAsm( string("LDY #$") + toHex( get_word_H( current_variable_base_address )), 2, false );
+      
+      // load it into FAC
+      //addAsm( "JSR $BBA2; RAM -> FAC", 3, false ); // FP ->FAC
+      // call the FOUT
+      addAsm( "JSR $AABC; FAC -> CRT", 3, false ); // FP --> CRT
+    }
+  else if( getTypeOf( $3.name ) == 8)
     {
       current_variable_base_address = getAddressOf( $3.name );
 
@@ -1307,9 +1382,9 @@ FOR
       addAsm( string("LDY #$") + toHex( get_word_H( current_variable_base_address )), 2, false );
       
       // load it into FAC
-      addAsm( "JSR $BBA2", 3, false ); // FP ->FAC
+      addAsm( "JSR $BBA2; RAM -> FAC", 3, false ); // FP ->FAC
       // call the FOUT
-      addAsm( "JSR $AABC", 3, false ); // FP --> CRT
+      addAsm( "JSR $AABC; FAC -> CRT", 3, false ); // FP --> CRT
     }
   else if( getTypeOf( $3.name ) == 2 )
     {
@@ -1322,7 +1397,7 @@ FOR
       addAsm( "JSR $B391", 3, false );
 
       // print out the float in FAC
-      addAsm( "JSR $AABC", 3, false );
+      addAsm( "JSR $AABC; FAC -> CRT", 3, false );
 
     }
   else if( getTypeOf( $3.name ) == 1 )
@@ -1350,7 +1425,7 @@ FOR
   printf_is_needed=true;
   // add the string stripped of its' quotes
 		
-  addString( string("STRLBL") + itos( string_number++), string($3.name).substr(1,string($3.name).length()-2), asm_instr.size() );
+  addString( string("STRLBL") + itos(string_number++), string($3.name).substr(1,string($3.name).length()-2), asm_instr.size() );
   // these will later be replaced during Process Strings
   addAsm( "NOP ; to be replaced", 1, false);
   addAsm( "NOP ; to be replaced", 1, false);
@@ -1535,67 +1610,139 @@ FOR
 
 condition: expression relop expression
 {
-  addComment( "=========================================================");
-  addComment( string( "            condition in ") + string( scope_stack.top() ));
-  addComment( scope_stack.top() + string(" ")  + string($1.name) + string($2.name) + string($3.name) );
-  addComment( "=========================================================");
+  addDebugComment( "=========================================================");
+  addDebugComment( string( "            condition in ") + string( scope_stack.top() ));
+  addParserComment( scope_stack.top() + string(" ")  + string($1.name) + string($2.name) + string($3.name) );
+  addDebugComment( "=========================================================");
   
-  if( scope_stack.top() == "FOR" ) addAsm( generateNewLabel(true) + string( "\t\t\t; Top of FOR Loop"), 0, true );  
+  if( scope_stack.top() == "FOR" ) addAsm( generateNewLabel() + string( "\t\t\t; Top of FOR Loop"), 0, true );  
 
   
   // at this point, we need to look at the type of the variable that is located
   // at the $1.name address, so we know how to compare it with another number
-  //toHex(getAddressOf( $1.name ));
-  if( string($1.name) == "A" )
+
+  if( getTypeOf( $1.name ) == 8 && isFloat($3.name)) // MEM vs. IMM
     {
+      addParserComment( "FLOAT v. FLOAT (imm)" );
+      // FP Operations
+      inlineFloat( $3.name );
+
+      current_variable_base_address = getAddressOf( $1.name );
+      addAsm( string("LDA #$") + toHex( get_word_L( current_variable_base_address )), 2, false );
+      addAsm( string("LDY #$") + toHex( get_word_H( current_variable_base_address )), 2, false );    
+      addAsm( "JSR $BC5B; CMP(FAC, RAM)", 3, false );
+    }
+  else if( getTypeOf( $1.name ) == 8 && getTypeOf($3.name) == 8 ) // IMM vs. MEM
+    {
+      addParserComment( "FLOAT v. FLOAT" );
+      // store the first one in FAC
+      int current_variable_base_address = getAddressOf( $1.name );
+
+      addAsm( string("LDA #$") + toHex( get_word_L( current_variable_base_address )), 2, false );
+      addAsm( string("LDY #$") + toHex( get_word_H( current_variable_base_address )), 2, false );
+      // store it in FAC
+      addAsm( "JSR $BBA2", 3, false ); // FP ->FAC
+
+
+      current_variable_base_address = getAddressOf( $3.name );
+      addAsm( string("LDA #$") + toHex( get_word_L( current_variable_base_address )), 2, false );
+      addAsm( string("LDY #$") + toHex( get_word_H( current_variable_base_address )), 2, false );    
+      addAsm( "JSR $BC5B", 3, false );
+
+      // if A == 00, they are equal
+      // if A == 01, then FAC > RAM
+      // if A == FF, then FAC < RAM
+
+      
+    }
+  else if( string($1.name) == "A" )
+    {
+      addParserComment( "A" );
+
       // do nothing - the value is already in A
     }
   else if( getAddressOf($1.name) != -1 )
     {
+      addParserComment( "Address Found" );
+
       addAsm( string( "LDA $" ) + toHex( getAddressOf($1.name)), 3, false);
     }
   else if( isAddress($1.name))
     {
+      addParserComment( "ADDR v." );
+
       // then it's already an address
       addAsm( string( "LDA " ) + string($1.name), 3, false);
     }
   else if( isByte( $1.name ))
     {
+      addParserComment( "Byte v." );
+
       addAsm( string( "LDA " ) + string($1.name), 2, false);
     }
   else if( isInteger( $1.name))
     {
-      addParserComment( $1.name );
+      addParserComment( "Integer v." );
       addAsm( string( "LDA #$" ) + toHex(atoi($1.name)), 2, false);
     }
   else 
     {
+      addParserComment( "Error" );
+
       addCompilerMessage( "error in for loop initialization", 2 );
     }
   addAsm( "PHA" );
+  addAsm( "\n", 0, false );
+  addComment( $1.name );
+  addAsm( "\n", 0, false );
   
   /* When comparing Negatives and Positives, please take special care! */
   /* check bit 7 of A and B... if they are the same then continue, otherwise */
   /* undo two's complement in the one where 7 is set */
   
-
+  // if( getTypeOf( $1.name ) == 8 && isFloat($3.name)) // MEM vs. IMM
+  if( getTypeOf( $1.name ) == 8 && isFloat($3.name)) // FPMEM vs. IMM
+    {
+      addAsm( "LDA #$00", 2, false );
+      addAsm( "PHA" );
+      signed_comparison_is_needed = true;
+      addAsm( "JSR SIGNEDCMP", 3, false );
+    }
   // if it's ID < IMM
-  if( string($3.name) == "A" )
+  else if( getTypeOf( $1.name ) == 8 && getTypeOf($3.name) == 8 )
+    {
+      addAsm( "LDA #$00", 2, false );
+      addAsm( "PHA" );
+      signed_comparison_is_needed = true;
+      addAsm( "JSR SIGNEDCMP", 3, false );      
+    }
+  else if( string($3.name) == "A" )
     {
       // do nothing - the value is already in A
     }
   else if( isByte( $3.name)) 
     {
-      
+      addDebugComment( "I think it's a byte!" );
       addAsm( string( "LDA " ) + string( $3.name ), 2, false );
+      addAsm( "PHA" );
+      signed_comparison_is_needed = true;
+      addAsm( "JSR SIGNEDCMP", 3, false );
     }
   else if( isInteger( $3.name ))
     {
+      addDebugComment( "I think it's an Integer!" );
       addAsm( string( "LDA #$" ) + toHex( atoi($3.name) ), 2, false );
+      addAsm( "PHA" );
+      signed_comparison_is_needed = true;
+      addAsm( "JSR SIGNEDCMP", 3, false );
     }
   else if( isAddress( $3.name ))
     {
+      addDebugComment( "It's an Address" );
       addAsm( string( "LDA " ) + $3.name, 3, false );
+      addAsm( "PHA" );
+      signed_comparison_is_needed = true;
+      addAsm( "JSR SIGNEDCMP", 3, false );
 
     }
   else   // otherwise
@@ -1607,11 +1754,11 @@ condition: expression relop expression
 	  addCompilerMessage( "type mismatch", 2 );
 	}
       addAsm( string( "LDA $" ) + toHex(getAddressOf( $3.name )), 3, false );
+      addAsm( "PHA" );
+      signed_comparison_is_needed = true;
+      addAsm( "JSR SIGNEDCMP", 3, false );
     }
-  addAsm( "PHA" );
-  signed_comparison_is_needed = true;
-  addAsm( "JSR SIGNEDCMP", 3, false );
-  addAsm( "PLP" );
+    addAsm( "PLP" );
 
   if( scope_stack.top() == "FOR" || scope_stack.top() == "WHILE") 
     {
@@ -1706,46 +1853,27 @@ statement: datatype ID init
   addAsmVariable( $2.name, current_variable_type );
   current_variable_base_address = getAddressOf( $2.name );
 
-  
-      if( string( $3.name ) == string( "FAC" ) )
-	{
-	  addAsm( string( "LDX #$" ) + toHex(get_word_L(current_variable_base_address) ), 2, false );
-	  addAsm( string( "LDY #$" ) + toHex(get_word_H(current_variable_base_address) ), 2, false );
-	  addAsm( "JSR $BBD4", 3, false );
-	}
-      else if( isFloat( $3.name ) )
-	{
-	  // FP Operations
-	  string tmp_string = string( $3.name );
-	  string sign;
-      
-	  addParserComment( string("convert to a float in RAM here: ") + toHex(current_variable_base_address)  );
-	  // strip the "f" from it
-	  tmp_string = tmp_string.substr( 1, tmp_string.length() - 1 );
-	  strcpy( $3.name, tmp_string.c_str() );
-
-
-	  string fp_in_hex = toBinaryFloat( atof( $3.name ) );
-
-	  if( atof( $3.name ) == 0 ) fp_in_hex=string("0000000000");
-	  addParserComment( string( "store: " ) + fp_in_hex );
-
-	  addComment( "Floating Point Value" );
-	  int v=0;
-	  for( int i=0; i<5; i++ )
-	    {
-	      addAsm( string( "LDA #$" ) + fp_in_hex[v] + fp_in_hex[v+1], 2, false );
-	      addAsm( string( "STA $" ) + toHex( current_variable_base_address+i ), 3, false );
-	      v+=2;
-	    }
-
-	  // move the FP Value into FAC and Display it
-	  //addAsm( string("LDA #$") + toHex( get_word_L( current_variable_base_address )), 2, false );
-	  //addAsm( string("LDY #$") + toHex( get_word_H( current_variable_base_address )), 2, false );
-	  //addAsm( "JSR $BBA2", 3, false ); // FP ->FAC
-	  //addAsm( "JSR $BF71", 3, false ); // sqrt
-	  //addAsm( "JSR $AABC", 3, false ); // FP --> CRT
-	}
+  if( string( $3.name ) == string( "ARG" ) )
+    {
+      addDebugComment( "datatype ID init (ARG)" );
+      addAsm( string( "LDA #$69" ), 2, false );
+      addAsm( string( "LDY #$00" ), 2, false );
+      addAsm( "JSR $BBA2; MEM -> FAC", 3, false );
+      addAsm( string( "LDX #$" ) + toHex(get_word_L(current_variable_base_address)) + string("; ADDR_L" ), 2, false );
+      addAsm( string( "LDY #$" ) + toHex(get_word_H(current_variable_base_address)) + string("; ADDR_H" ), 2, false );
+      addAsm( "JSR $BBD4; FAC -> MEM", 3, false );
+    }
+  else if( string( $3.name ) == string( "FAC" ) )
+    {
+      addDebugComment( "datatype ID init (FAC)" );
+      addAsm( string( "LDX #$" ) + toHex(get_word_L(current_variable_base_address) ), 2, false );
+      addAsm( string( "LDY #$" ) + toHex(get_word_H(current_variable_base_address) ), 2, false );
+      addAsm( "JSR $BBD4; FAC -> RAM", 3, false );
+    }
+  else if( isFloat( $3.name ) )
+    {
+      inlineFloat( $3.name, current_variable_base_address );
+    }
   else if( string( $3.name ) == "A" )
     {
       // the the result is in A
@@ -1763,13 +1891,10 @@ statement: datatype ID init
     }
   else if( isWord($3.name ))
     {
-      addAsm( string( ";" ) + string( $3.name ), 0, false );
       int v = atoi( string( $3.name ).substr( 1, 6 ).c_str());
       addAsm( string( "LDA #$" ) + toHex(get_word_L(v)), 2, false  );
       addAsm( string( "LDX #$" ) + toHex(get_word_H(v)), 2, false  );
-
     }
-	   
   else if( isInteger($3.name) )
     {
       // this must be a literal
@@ -1785,33 +1910,25 @@ statement: datatype ID init
     case 0:
       /* 0 - unsigned int - 1 bytes */
       addAsm( string("STA $") + toHex( current_variable_base_address), 3, false );
-      addParserComment( "case 0:" );
-
       break;
     case 1:
       /* 1 - signed int - 1 bytes */
-      addParserComment( "case 1:" );
-
       addAsm( string("STA $") + toHex( current_variable_base_address), 3, false );
       break;
 
     case 2:
       /* 2 - word - 2 bytes */
-      addParserComment( "case 2:" );
-	    
       addAsm( string("STA $") + toHex( current_variable_base_address), 3, false );
       addAsm( string("STX $") + toHex( current_variable_base_address+1), 3, false );
       break;
     case 4:
       /* 4 - double - 2 bytes */
-      addParserComment( "case 4:" );
       addAsm( string("STA $") + toHex( current_variable_base_address), 3, false );
       addAsm( string("STX $") + toHex( current_variable_base_address+1), 3, false );      
       break;
     case 8:
       /* 8 - float - 4 bytes */
       /* TBD */
-      addParserComment( "case 8:" );
       break;
     default:
       /* unknown type */
@@ -1822,46 +1939,23 @@ statement: datatype ID init
 {
   addParserComment( "RULE: statement: ID init" );
  
-  current_variable_type=getTypeOf($1.name);
+  current_variable_type=getTypeOf($2.name);
   current_variable_base_address = getAddressOf( $1.name );
   
   //cerr << current_variable_type << endl;
+  if( getTypeOf($2.name) == 8 && getTypeOf($1.name) == 8 )
+    {
+      addCompilerMessage( "Jolly Good Show!" );
+    }
   if( isFloat( $2.name) )
     {
-      //addParserComment( "*" );
-      cerr << "a float at address: $" << current_variable_base_address << " " << $2.name << endl;
-
-      string tmp_string = string( $2.name );
-      string sign;
-      
-       // strip the "f" from it
-      tmp_string = tmp_string.substr( 1, tmp_string.length() - 1 );
-      strcpy( $2.name, tmp_string.c_str() );
-
-
-      string fp_in_hex = toBinaryFloat( atof( $2.name ) );
-
-      if( atof( $2.name ) == 0 ) fp_in_hex=string("0000000000");
-      addParserComment( string( "store: " ) + fp_in_hex );
-
-      int v=0;
-      for( int i=0; i<5; i++ )
-	{
-	  addAsm( string( "LDA #$" ) + fp_in_hex[v] + fp_in_hex[v+1], 2, false );
-	  addAsm( string( "STA $" ) + toHex( current_variable_base_address+i ), 3, false );
-	  v+=2;
-	}
-
-
-
-      
-      
+      inlineFloat( $2.name, current_variable_base_address );
     }
   else if( string( $2.name ) == string( "FAC" ) )
     {
       addAsm( string( "LDX #$" ) + toHex(get_word_L(current_variable_base_address) ), 2, false );
       addAsm( string( "LDY #$" ) + toHex(get_word_H(current_variable_base_address) ), 2, false );
-      addAsm( "JSR $BBD4", 3, false );
+      addAsm( "JSR $BBD4;  FAC -> MEM", 3, false );
     }
   else if( string( $2.name ) == "A" )
     {
@@ -1954,9 +2048,14 @@ statement: datatype ID init
 init: '=' expression
 {
   addParserComment( string( "RULE: init: '=' expression" ) );
-  addParserComment( string( $2.name ) );
+  //addParserComment( string( $2.name ) );
   
-  if( string( $2.name ) == "FAC" )
+  if( string( $2.name ) == "ARG" )
+    {
+      addParserComment( "ARG" );
+      strcpy( $$.name, "ARG" );
+    }  
+  else if( string( $2.name ) == "FAC" )
     {
       addParserComment( "FAC" );
       strcpy( $$.name, "FAC" );
@@ -2019,78 +2118,131 @@ expression: expression arithmetic expression
   // variable ($$.name) is already in use (in _this_ scope).
   // .. but we don't yet
   int FAC=0;
-  if( getTypeOf( $1.name ) == 2 && getTypeOf( $3.name ) == 8 )
+  if( getTypeOf( $1.name ) == 8 && isFloat( $3.name ) )
     {
-      //cerr << $1.name << endl;
-      // first, turn the word into a float
-      int base_address_op1 = hexToDecimal( $1.name );
+
+      inlineFloat( $3.name );
       
-      int base_address_op2 = hexToDecimal( $3.name );
-
-      addAsm( string("LDY $") + toHex( ( base_address_op1 )), 3, false );
-      addAsm( string("LDA $") + toHex( ( base_address_op1+1 )), 3, false );
-      addAsm( "JSR $B391", 3, false );
-
-      addAsm( string("LDA #$") + toHex(get_word_L(base_address_op2)), 2, false );
-      addAsm( string("LDY #$") + toHex(get_word_H(base_address_op2)), 2, false );
+      int base_address_op1 = hexToDecimal( $1.name );
+ 
+      addAsm( string("LDA #$") + toHex(get_word_L(base_address_op1)), 2, false );
+      addAsm( string("LDY #$") + toHex(get_word_H(base_address_op1)), 2, false );
+     
       if( string($2.name) == string("*"))
 	{
-	  addAsm( "JSR $BA28", 3, false );
+	  addAsm( "JSR $BA28; RAM * FAC", 3, false );
 	}
       else if( string($2.name) == string("+"))
 	{
-	  addAsm( "JSR $B867", 3, false );
+	  addAsm( "JSR $B867; RAM + FAC", 3, false );
 	}
       else if( string($2.name) == string("-"))
 	{
-	  addAsm( "JSR $B850", 3, false );
+	  addAsm( "JSR $B850; RAM - FAC", 3, false );
 	}
       else if( string($2.name) == string("/"))
 	{
 	  addComment( "If Y is ZERO at this point, we'll be dividing by 0 (or at least attempting to)" );
-	  addAsm( "JSR $BB0F", 3, false );
+	  addAsm( "JSR $BB0F; RAM/FAC", 3, false );
 	}
-
-      // use this for debugging purposes... it 
-      //addAsm( "JSR $AABC", 3, false );
-      FAC=1;
+      FAC = 1;
+    }
+  else if( getTypeOf( $1.name ) == 2 && getTypeOf( $3.name ) == 8 )
+    {
+      int base_address_op1 = hexToDecimal( $1.name );      
+      int base_address_op2 = hexToDecimal( $3.name );
       
+      if( string($2.name) == string("*"))
+	{
+	  addAsm( string("LDY $") + toHex( ( base_address_op1 )), 3, false );
+	  addAsm( string("LDA $") + toHex( ( base_address_op1+1 )), 3, false );
+	  addAsm( "JSR $B391; INT16 -> FAC", 3, false );
+	  addAsm( string("LDA #$") + toHex(get_word_L(base_address_op2)), 2, false );
+	  addAsm( string("LDY #$") + toHex(get_word_H(base_address_op2)), 2, false );
+
+
+	  addCompilerMessage( "This can be optimized by putting the WORD after the FLOAT", 1);
+	  addAsm( "JSR $BA28; FMULT RAM * FAC", 3, false );
+	}
+      else if( string($2.name) == string("+"))
+	{
+	  addAsm( string("LDY $") + toHex( ( base_address_op1 )), 3, false );
+	  addAsm( string("LDA $") + toHex( ( base_address_op1+1 )), 3, false );
+	  addAsm( "JSR $B391; INT16 -> FAC", 3, false );
+	  addAsm( string("LDA #$") + toHex(get_word_L(base_address_op2)), 2, false );
+	  addAsm( string("LDY #$") + toHex(get_word_H(base_address_op2)), 2, false );
+	  addCompilerMessage( "This can be optimized by putting the WORD after the FLOAT", 1);
+	  addAsm( "JSR $B867; FADD RAM + FAC", 3, false );
+	}
+      else if( string($2.name) == string("-"))
+	{
+	  addAsm( string("LDY $") + toHex( ( base_address_op1 )), 3, false );
+	  addAsm( string("LDA $") + toHex( ( base_address_op1+1 )), 3, false );
+	  addAsm( "JSR $B391; INT16 -> FAC", 3, false );
+
+	  addAsm( "LDX #$69", 2, false );
+	  addAsm( "LDY #$00", 2, false );
+	  addAsm( "JSR $BBD4; FAC -> MEM", 3, false );
+
+	  addAsm( string("LDA #$") + toHex(get_word_L(base_address_op2)), 2, false );
+	  addAsm( string("LDY #$") + toHex(get_word_H(base_address_op2)), 2, false );
+	  addAsm( "JSR $BBA2; MEM -> FAC", 3, false );
+
+	  addAsm( "LDA #$69", 2, false );
+	  addAsm( "LDY #$00", 2, false );
+
+	  addAsm( "JSR $B850; FSUB RAM - FAC", 3, false );
+	}
+      else if( string($2.name) == string("/"))
+	{
+	  addAsm( string("LDY $") + toHex( ( base_address_op1 )), 3, false );
+	  addAsm( string("LDA $") + toHex( ( base_address_op1+1 )), 3, false );
+	  addAsm( "JSR $B391; INT16 -> FAC", 3, false );
+
+	  addAsm( "LDX #$69", 2, false );
+	  addAsm( "LDY #$00", 2, false );
+	  addAsm( "JSR $BBD4; FAC -> MEM", 3, false );
+
+	  addAsm( string("LDA #$") + toHex(get_word_L(base_address_op2)), 2, false );
+	  addAsm( string("LDY #$") + toHex(get_word_H(base_address_op2)), 2, false );
+	  addAsm( "JSR $BBA2; MEM -> FAC", 3, false );
+
+	  addAsm( "LDA #$69", 2, false );
+	  addAsm( "LDY #$00", 2, false );
+
+	  addAsm( "JSR $BB0F; FDIV RAM/FAC", 3, false );
+	}
+      FAC=1;      
     }
   else if( getTypeOf( $3.name ) == 2 && getTypeOf( $1.name ) == 8 )
     {
-      //cerr << $1.name << endl;
-      // first, turn the word into a float
-      int base_address_op2 = hexToDecimal( $1.name );
+      int base_address_op1 = hexToDecimal( $1.name );      
+      int base_address_op2 = hexToDecimal( $3.name );
+
+      addAsm( string("LDY $") + toHex( ( base_address_op2 )), 3, false );
+      addAsm( string("LDA $") + toHex( ( base_address_op2+1 )), 3, false );
+      addAsm( "JSR $B391; INT16 -> FAC", 3, false );
+
+      addAsm( string("LDA #$") + toHex(get_word_L(base_address_op1)), 2, false );
+      addAsm( string("LDY #$") + toHex(get_word_H(base_address_op1)), 2, false );
       
-      int base_address_op1 = hexToDecimal( $3.name );
-
-      addAsm( string("LDY $") + toHex( ( base_address_op1 )), 3, false );
-      addAsm( string("LDA $") + toHex( ( base_address_op1+1 )), 3, false );
-      addAsm( "JSR $B391", 3, false );
-
-      addAsm( string("LDA #$") + toHex(get_word_L(base_address_op2)), 2, false );
-      addAsm( string("LDY #$") + toHex(get_word_H(base_address_op2)), 2, false );
       if( string($2.name) == string("*"))
 	{
-	  addAsm( "JSR $BA28", 3, false );
+	  addAsm( "JSR $BA28; FMULT RAM * FAC", 3, false );
 	}
       else if( string($2.name) == string("+"))
 	{
-	  addAsm( "JSR $B867", 3, false );
+	  addAsm( "JSR $B867; FADD RAM + FAC", 3, false );
 	}
       else if( string($2.name) == string("-"))
 	{
-	  addAsm( "JSR $B850", 3, false );
+	  addAsm( "JSR $B850; FSUB RAM - FAC", 3, false );
 	}
       else if( string($2.name) == string("/"))
 	{
-	  addComment( "If Y is ZERO at this point, we'll be dividing by 0 (or at least attempting to)" );
-	  addAsm( "JSR $BB0F", 3, false );
+	  addAsm( "JSR $BB0F; FDIV RAM/FAC", 3, false );
 	}
-
-      // use this for debugging purposes... it 
-      //addAsm( "JSR $AABC", 3, false );
-      FAC=1;
+      FAC=1;      
       
     }
   else if( getTypeOf( $1.name ) == 8 && getTypeOf( $3.name ) == 8 )
@@ -2108,24 +2260,21 @@ expression: expression arithmetic expression
       addAsm( string("LDY #$") + toHex(get_word_H(base_address_op1)), 2, false );
       if( string($2.name) == string("*"))
 	{
-	  addAsm( "JSR $BA28", 3, false );
+	  addAsm( "JSR $BA28; FMULT", 3, false );
 	}
       else if( string($2.name) == string("+"))
 	{
-	  addAsm( "JSR $B867", 3, false );
+	  addAsm( "JSR $B867; FADD", 3, false );
 	}
       else if( string($2.name) == string("-"))
 	{
-	  addAsm( "JSR $B850", 3, false );
+	  addAsm( "JSR $B850; FSUB", 3, false );
 	}
       else if( string($2.name) == string("/"))
 	{
 	  addComment( "If Y is ZERO at this point, we'll be dividing by 0 (or at least attempting to)" );
-	  addAsm( "JSR $BB0F", 3, false );
+	  addAsm( "JSR $BB0F; FDIV", 3, false );
 	}
-
-      // use this for debugging purposes... it 
-      //addAsm( "JSR $AABC", 3, false );
       FAC=1;
     }
   /* if they're BOTH IMM's */
@@ -2251,6 +2400,7 @@ expression: expression arithmetic expression
       string tmp_string;
       if( $1.name[0] == '$' )
 	{
+	  addDebugComment( "$3 is a byte and $1 is an address" );
 	  tmp_size = 3;
 	  //tmp_string = string($1.name).substr( 2, 4 );
 	  tmp_string = string($1.name);
@@ -2280,7 +2430,11 @@ expression: expression arithmetic expression
   else
     {
       addParserComment( "ID + ID" );
-      if( string( $2.name ) == "+" )
+      if( getTypeOf($1.name) == 8 && getTypeOf($3.name) == 8 )
+	{
+	  addDebugComment( "both Identifiers point to floats" );
+	}
+      else if( string( $2.name ) == "+" )
 	{
 	  if( isByte( $1.name ) && isAddress( $3.name ))
 	    {
@@ -2370,6 +2524,86 @@ expression: expression arithmetic expression
     }
 	
 }
+| tSIN '(' expression ')'
+{
+  addComment( "=========================================================");  
+  addComment( "                 sine");
+  addComment( "=========================================================");
+  addParserComment( "RULE: expression: sin( expression );" );
+  if( isFloat( $3.name ) )
+    {
+      // IMM float
+      inlineFloat( $3.name );
+      // calculate the sine of it
+      addAsm( "JSR $E26B; SIN(FAC) -> FAC", 3, false ); 
+      // result is in FAC
+      strcpy( $$.name, "FAC");
+    }
+  else if( getTypeOf( $3.name ) == 8 )
+    {
+      // float
+      int base_address = getAddressOf($3.name);
+      addAsm( string( "LDA #$" ) + toHex(get_word_L(base_address)), 2, false  );
+      addAsm( string( "LDY #$" ) + toHex(get_word_H(base_address)), 2, false  );
+      addAsm( "JSR $BBA2; MEM -> FAC", 3, false ); // FP ->FAC
+      // calculate the sine of it
+      addAsm( "JSR $E26B; SIN(FAC) -> FAC", 3, false ); // sqrt
+      strcpy( $$.name, "FAC");
+    }
+  else if( getTypeOf( $3.name ) == 2 )
+    {
+      strcpy( $$.name, "w0344");
+    }
+  else if( getTypeOf( $3.name ) == 1 )
+    {
+      strcpy( $$.name, "A");
+    }
+  else
+    {
+      addCompilerMessage( "trying to calculate sine of unknown type" );
+      strcpy( $$.name, "A");
+    }
+};
+| tCOS '(' expression ')'
+{
+  addComment( "=========================================================");  
+  addComment( "                 cosine");
+  addComment( "=========================================================");
+  addParserComment( "RULE: expression: sin( expression );" );
+  if( isFloat( $3.name ) )
+    {
+      // IMM float
+      inlineFloat( $3.name );
+      // calculate the sine of it
+      addAsm( "JSR $E264; COS(FAC) -> FAC", 3, false ); 
+      // result is in FAC
+      strcpy( $$.name, "FAC");
+    }
+  else if( getTypeOf( $3.name ) == 8 )
+    {
+      // float
+      int base_address = getAddressOf($3.name);
+      addAsm( string( "LDA #$" ) + toHex(get_word_L(base_address)), 2, false  );
+      addAsm( string( "LDY #$" ) + toHex(get_word_H(base_address)), 2, false  );
+      addAsm( "JSR $BBA2; MEM -> FAC", 3, false ); // FP ->FAC
+      // calculate the cosine of it
+      addAsm( "JSR $E264; COS(FAC) -> FAC", 3, false ); // sqrt
+      strcpy( $$.name, "FAC");
+    }
+  else if( getTypeOf( $3.name ) == 2 )
+    {
+      strcpy( $$.name, "w0344");
+    }
+  else if( getTypeOf( $3.name ) == 1 )
+    {
+      strcpy( $$.name, "A");
+    }
+  else
+    {
+      addCompilerMessage( "trying to calculate cosine of unknown type" );
+      strcpy( $$.name, "A");
+    }
+};
 | value
 {
   addParserComment( "RULE: expression: value" );
@@ -2389,6 +2623,19 @@ expression: expression arithmetic expression
   if( atoi( $3.name ) < 0 ) addCompilerMessage( "memory location out of range", 2 );
   addAsm( string("LDA $") + toHex(atoi( $3.name )), 3, false );
   strcpy( $$.name, "A" );
+}
+| tPEEK '(' expression ')'
+{
+  
+  if( string($3.name) == string("ARG") || string($3.name) == string("FAC" ))
+    {
+      addCompilerMessage( "peek argument type conflict (value must be word)", 3 );
+    }
+  else if( getTypeOf( $3.name ) == 2)
+    {
+      addAsm( string("LDA $") + toHex(atoi( $3.name )), 3, false );
+    }
+    strcpy( $$.name, "A" );
 }
 |
 ;
@@ -2456,7 +2703,7 @@ NUMBER
       /* ERROR  - NO TYPE */
       break;
     case 0:
-      addComment( "unsigned int" );
+      //addDebugComment( "unsigned int" );
       if( v > 255 )
 	{
 	  addCompilerMessage("type overflow", 3 );
@@ -2469,7 +2716,7 @@ NUMBER
       break;
       
     case 1:
-      addComment( "signed int" );
+      //addDebugComment( "signed int" );
       if( v > 127 )
 	{
 	  addCompilerMessage("type overflow", 3 );
@@ -2486,7 +2733,7 @@ NUMBER
       strcpy( $$.name, (toString( v )).c_str()  );
       break;
     case 2:
-      addComment( "int" );
+      //addDebugComment( "int" );
       if( v > 65535 )
 	{
 	  addCompilerMessage("type overflow", 2 );
@@ -2494,7 +2741,7 @@ NUMBER
       strcpy( $$.name, string( string( "w" ) + string( $1.name)).c_str()); 
       break;
     case 4:
-      addComment( "word" );
+      //addDebugComment( "word" );
       if( v > 65535 )
 	{
 	  addCompilerMessage("type overflow", 2 );
@@ -2504,7 +2751,7 @@ NUMBER
       strcpy( $$.name, string( string( "w" ) + string( $1.name)).c_str()); 
       break;
     case 8:
-      addComment( "floating point number" );
+      //addDebugComment( "floating point number" );
       // store the number (after converting it to a null terminated string)
       // somewhere in memory
       strcpy( $$.name, string( string( "f" ) + string( $1.name)).c_str()); 
@@ -2512,11 +2759,6 @@ NUMBER
     default:
       break;
     }
-  
-  //strcpy( $$.name, (toString( v )).c_str()  );
-  //strcpy( $$.name, ( string( "#$" ) + toHex( v )).c_str()  );
-  //strcpy( $$.name, ( string( "#$" ) + toHex( v )).c_str()  );
-  //strcpy( $$.name, $1.name );
 }
 | INT
 {
@@ -2651,28 +2893,14 @@ int main(int argc, char *argv[])
   addAsmVariable( "function_return_value", 1 );
   addAsmVariable( "op1", 1 );
 
-  
-  //addAsmVariable( "print_tmp_h", 1 );
-
-  //addAsmVariable( "string_tmp_l", 1 );
-  //addAsmVariable( "string_tmp_h", 1 );
-
   if( scanf_is_needed)
     {
       addAsmVariable( "buffer_tmp_l", 1 );
       addAsmVariable( "buffer_tmp_h", 1 );
     }
 
-  addAsmVariable( "hex2petscii_tmp_l", 1 );
-  addAsmVariable( "hex2petscii_tmp_h", 1 );
-  
-  addAsmVariable( "hex2petscii_tmp_byte", 1 );
-
-
   addAsmVariable( "return_address_1", 1 );
   addAsmVariable( "return_address_2", 1 );
-  // technically, this is the processor status register value
-  addAsmVariable( "return_address_3", 1 );
   
   yyparse(); 
   
@@ -2804,7 +3032,7 @@ int main(int argc, char *argv[])
       addAsm( "RTS" );
 
     }
-  if( true )
+  if( false )
     {
       // FMULT: multiply a FPOINT from memory (LB=A, HB=Y) and FAC ($7A&$7B)
       addAsm( "FMULT:", 0, true );
@@ -2823,7 +3051,7 @@ int main(int argc, char *argv[])
       addAsm( "PHA" );
       addAsm( "RTS" );
     }
-  if( true )
+  if( false )
     {
       // FIN: floating point to memory
       addAsm( "FIN:", 0, true );
@@ -2888,6 +3116,7 @@ int main(int argc, char *argv[])
     }
   if( false )
     {
+      // this is the template to use for a built-in function
       addAsm( "FUNCTION:\t\t;Function Comment", 0, true );
 
       // save return address from the stack
