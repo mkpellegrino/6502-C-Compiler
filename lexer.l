@@ -10,6 +10,9 @@ frmt  [{\t}|{\n}]
 unary "++"|"--"
 
 %%
+"tan"                    { strcpy(yylval.nd_obj.name,(yytext)); return tTAN; }
+"sin"                    { strcpy(yylval.nd_obj.name,(yytext)); return tSIN; }
+"cos"                    { strcpy(yylval.nd_obj.name,(yytext)); return tCOS; }
 "jsr"                    { strcpy(yylval.nd_obj.name,(yytext)); return tJSR; }
 "twos"                   { strcpy(yylval.nd_obj.name,(yytext)); return tTWOS; }
 "byte2hex"                   { strcpy(yylval.nd_obj.name,(yytext)); return tBYTE2HEX; }
@@ -34,7 +37,7 @@ unary "++"|"--"
 "true"                      { strcpy(yylval.nd_obj.name,(yytext)); return TRUE; }
 "false"                     { strcpy(yylval.nd_obj.name,(yytext)); return FALSE; }
 [-]?{digit}+                { strcpy(yylval.nd_obj.name,(yytext)); return NUMBER; }
-[-]?{digit}+\.{digit}{1,6}  { strcpy(yylval.nd_obj.name,(yytext)); return FLOAT_NUM; }
+[-]?{digit}+\.{digit}+      { strcpy(yylval.nd_obj.name,(yytext)); return FLOAT_NUM; }
 {alpha}({alpha}|{digit})*   { strcpy(yylval.nd_obj.name,(yytext)); return ID; }
 {unary}                     { strcpy(yylval.nd_obj.name,(yytext)); return UNARY; }
 "<="                        { strcpy(yylval.nd_obj.name,(yytext)); return LE; }

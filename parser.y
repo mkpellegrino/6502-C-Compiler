@@ -420,12 +420,14 @@
     string fp_in_hex = toBinaryFloat( atof( stripped_float.c_str() ) );
 
     if( atof( stripped_float.c_str() ) == 0 ) fp_in_hex=string("0000000000");
- 
+
+    int size_of_instruction=3;
+    if( addr < 255 ) size_of_instruction-=1;
     int v=0;
     for( int i=0; i<5; i++ )
       {
 	addAsm( string( "LDA #$" ) + fp_in_hex[v] + fp_in_hex[v+1], 2, false );
-	addAsm( string( "STA $" ) + toHex( addr+i ), 3, false );
+	addAsm( string( "STA $" ) + toHex( addr+i ), size_of_instruction, false );
 	v+=2;
       }
 
