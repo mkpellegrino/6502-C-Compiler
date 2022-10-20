@@ -1618,15 +1618,34 @@ condition: expression relop expression
   // at this point, we need to look at the type of the variable that is located
   // at the $1.name address, so we know how to compare it with another number
 
-  if( getTypeOf( $1.name ) == 8 && isFloat($3.name)) // MEM vs. IMM
+  if( getTypeOf( $3.name ) == 8 && isFloat($1.name)) // MEM vs. IMM
     {
       addParserComment( "FLOAT v. FLOAT (imm)" );
       // FP Operations
-      inlineFloat( $3.name );
+      inlineFloat( $1.name, 105);
+
+      current_variable_base_address = getAddressOf( $3.name );
+      addAsm( string("LDA #$") + toHex( get_word_L( current_variable_base_address )), 2, false );
+      addAsm( string("LDY #$") + toHex( get_word_H( current_variable_base_address )), 2, false );
+
+      addAsm( "JSR $BBA2; RAM -> FAC", 3, false );
+      addAsm( "LDA #$69", 2, false );
+      addAsm( "LDY #$00", 2, false );
+      addAsm( "JSR $BC5B; CMP(FAC, RAM)", 3, false );
+    }
+  else if( getTypeOf( $1.name ) == 8 && isFloat($3.name)) // MEM vs. IMM
+    {
+      addParserComment( "FLOAT v. FLOAT (imm)" );
+      // FP Operations
+      inlineFloat( $3.name, 105 );
 
       current_variable_base_address = getAddressOf( $1.name );
       addAsm( string("LDA #$") + toHex( get_word_L( current_variable_base_address )), 2, false );
-      addAsm( string("LDY #$") + toHex( get_word_H( current_variable_base_address )), 2, false );    
+      addAsm( string("LDY #$") + toHex( get_word_H( current_variable_base_address )), 2, false );
+      addAsm( "JSR $BBA2; RAM -> FAC", 3, false );
+      addAsm( "LDA #$69", 2, false );
+      addAsm( "LDY #$00", 2, false );
+
       addAsm( "JSR $BC5B; CMP(FAC, RAM)", 3, false );
     }
   else if( getTypeOf( $1.name ) == 8 && getTypeOf($3.name) == 8 ) // IMM vs. MEM
@@ -2362,30 +2381,30 @@ expression: expression arithmetic expression
   /* if they're BOTH IMM's */
   else if( isInteger( $1.name ) && isInteger( $3.name ))
     {
-      addParserComment( "IMM + IMM (1)" );
-      int tmp_int1 = atoi( $1.name );
-      int tmp_int2 = atoi( $3.name );
+      addDebugComment( "IMM + IMM (1)" );
+      int tmp_int1 = atoi( stripFirst($1.name).c_str() );
+      int tmp_int2 = atoi( stripFirst($3.name).c_str() );
 
       /* then this is a compile-time arithetic operation */
       if( string( $2.name ) == "+"  )
         {
-	  addAsm( string("LDA #$") + toHex( tmp_int1 + tmp_int2 ), 2, false ); 
+	  //addAsm( string("LDA #$") + toHex( tmp_int1 + tmp_int2 ), 2, false ); 
 	  strcpy( $$.name, string( string("i") + toString( tmp_int1 + tmp_int2 )).c_str() );
 	}
       else if( string( $2.name ) == "-" )
 	{
-	  addAsm( string("LDA #$") + toHex( tmp_int1 - tmp_int2 ), 2, false ); 
+	  //addAsm( string("LDA #$") + toHex( tmp_int1 - tmp_int2 ), 2, false ); 
 	  strcpy( $$.name, toString( tmp_int1 - tmp_int2 ).c_str() );
 	}
       else if( string( $2.name ) == "*" )
 	{
-	  addAsm( string("LDA #$") + toHex( tmp_int1 * tmp_int2 ), 2, false ); 
+	  //addAsm( string("LDA #$") + toHex( tmp_int1 * tmp_int2 ), 2, false ); 
 
 	  strcpy( $$.name, toString( tmp_int1 * tmp_int2 ).c_str() );
 	}
       else if( string( $2.name ) == "/" )
 	{
-	  addAsm( string("LDA #$") + toHex( tmp_int1 / tmp_int2 ), 2, false ); 
+	  //addAsm( string("LDA #$") + toHex( tmp_int1 / tmp_int2 ), 2, false ); 
 
 	  strcpy( $$.name, toString( tmp_int1 / tmp_int2 ).c_str() );
 	}
@@ -2870,10 +2889,10 @@ FLOAT_NUM
   /*     current_variable_type = 2; */
   /*   } */
       
-   if( v < 0 ) 
-     { 
-       v=twos_complement(v);
-     } 
+  //if( v < 0 ) 
+  // { 
+  //   v=twos_complement(v);
+  // } 
 
    //strcpy( $$.name, (toString( v )).c_str()  );
    strcpy($$.name, string( string("i") + string($1.name)).c_str());
@@ -2914,7 +2933,7 @@ return: RETURN ';'
 | RETURN {} expression ';'
 {
   addParserComment( "RULE: return: RETURN {} expression ';'" );
-  addAsm( string( "STA $" ) + toHex(getAddressOf("function_return_value")), 3, false );
+  //  addAsm( string( "STA $" ) + toHex(getAddressOf("function_return_value")), 3, false );
   addAsm("RTS");
 }
 | RETURN {} value ';'
@@ -2922,7 +2941,7 @@ return: RETURN ';'
   addParserComment( "RULE: return: RETURN {} value ';'" );
 
   addComment( "Whatever value is in Accumulator when return is called is stored in 'return_value'" );
-  addAsm( string( "STA $" ) + toHex(getAddressOf("function_return_value")), 3, false );
+  //addAsm( string( "STA $" ) + toHex(getAddressOf("function_return_value")), 3, false );
 
   addAsm("RTS");
 }
@@ -3012,8 +3031,8 @@ int main(int argc, char *argv[])
   current_code_location = code_start;
   
   // temp storage for return values from expressions
-  addAsmVariable( "function_return_value", 1 );
-  addAsmVariable( "op1", 1 );
+  //addAsmVariable( "function_return_value", 1 );
+  //addAsmVariable( "op1", 1 );
 
   if( scanf_is_needed)
     {
