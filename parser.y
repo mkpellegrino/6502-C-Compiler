@@ -41,6 +41,7 @@
 
   
   bool debug_comments_are_needed = true;
+  bool debug_flag_is_on = false;
 
 
   int label=0;
@@ -174,6 +175,20 @@
     return return_value;
   }
 
+  void dumpA()
+  {
+    if( debug_flag_is_on )
+      {
+	byte2hex_is_needed = true;
+	/* DEBUG */
+	addAsm( "PHA; DEBUG", 1, false);
+	addAsm( "PHA; DEBUG", 1, false);
+	addAsm( "JSR BYTE2HEX; DEBUG", 3, false );
+	addAsm( "PLA; DEBUG", 1, false);
+	/* DEBUG */
+      }
+    return;
+  }
 
   int twos_complement( int x )
   {
@@ -1359,7 +1374,13 @@ FOR
   addComment( string("printf(") + string($3.name) + string( ");") );
   addComment( "=========================================================");  
   addParserComment( string("(work-in-progress) printf(") + string($3.name) + string( ");") );
-  if( string($3.name) == string("ARG") )
+  if( string($3.name ) == string("A") )
+    {
+      byte2hex_is_needed = true;
+      addAsm( "PHA" );
+      addAsm( "JSR BYTE2HEX", 3, false );
+    }
+  else if( string($3.name) == string("ARG") )
     {
       addAsm( "LDA #$69; ARG_L", 2, false );
       addAsm( "LDY #$00; ARG_H", 2, false );
@@ -1387,10 +1408,13 @@ FOR
     {
       current_variable_base_address = getAddressOf( $3.name );
       int base_address_op1 = hexToDecimal( $3.name );
-
+      int inst_size = 3;
+      if( base_address_op1 < 256 ) inst_size--;
       // store the word  as a float
-      addAsm( string("LDY $") + toHex( ( base_address_op1 )), 3, false );
-      addAsm( string("LDA $") + toHex( ( base_address_op1+1 )), 3, false );
+      addAsm( string("LDY $") + toHex( ( base_address_op1 )), inst_size, false );
+
+      if( base_address_op1+1 >= 256 ) inst_size++;
+      addAsm( string("LDA $") + toHex( ( base_address_op1+1 )), inst_size, false );
       addAsm( "JSR $B391", 3, false );
 
       // print out the float in FAC
@@ -1402,13 +1426,13 @@ FOR
       addDebugComment( "\t\t\t\t\t\t<<<=====" );
       current_variable_base_address = getAddressOf( $3.name );
       // this really should convert it to decimal first
-      addAsm( string("LDA $") + toHex( current_variable_base_address ), 3, false );
+      int inst_size = 3;
+      if( current_variable_base_address < 256 ) inst_size--;
+      addAsm( string("LDA $") + toHex( current_variable_base_address ), inst_size, false );
       addAsm( "PHA" );
       byte2hex_is_needed=true;
       addAsm( "JSR BYTE2HEX", 3, false );
     }
-  
-
 };
 
 
@@ -1632,6 +1656,10 @@ condition: expression relop expression
       addAsm( "LDA #$69", 2, false );
       addAsm( "LDY #$00", 2, false );
       addAsm( "JSR $BC5B; CMP(FAC, RAM)", 3, false );
+
+      /* DEBUG */
+      dumpA();
+      /* DEBUG */
     }
   else if( getTypeOf( $1.name ) == 8 && isFloat($3.name)) // MEM vs. IMM
     {
@@ -1647,6 +1675,10 @@ condition: expression relop expression
       addAsm( "LDY #$00", 2, false );
 
       addAsm( "JSR $BC5B; CMP(FAC, RAM)", 3, false );
+      /* DEBUG */
+      dumpA();
+      /* DEBUG */
+
     }
   else if( getTypeOf( $1.name ) == 8 && getTypeOf($3.name) == 8 ) // IMM vs. MEM
     {
@@ -1726,6 +1758,7 @@ condition: expression relop expression
       addAsm( "PHA" );
       signed_comparison_is_needed = true;
       addAsm( "JSR SIGNEDCMP", 3, false );
+
     }
   // if it's ID < IMM
   else if( getTypeOf( $1.name ) == 8 && getTypeOf($3.name) == 8 )
@@ -1733,7 +1766,7 @@ condition: expression relop expression
       addAsm( "LDA #$00", 2, false );
       addAsm( "PHA" );
       signed_comparison_is_needed = true;
-      addAsm( "JSR SIGNEDCMP", 3, false );      
+      addAsm( "JSR SIGNEDCMP", 3, false );
     }
   else if( string($3.name) == "A" )
     {
@@ -1746,6 +1779,7 @@ condition: expression relop expression
       addAsm( "PHA" );
       signed_comparison_is_needed = true;
       addAsm( "JSR SIGNEDCMP", 3, false );
+      
     }
   else if( isInteger( $3.name ))
     {
@@ -1761,6 +1795,7 @@ condition: expression relop expression
       addAsm( "PHA" );
       signed_comparison_is_needed = true;
       addAsm( "JSR SIGNEDCMP", 3, false );
+ 
     }
   else if( isAddress( $3.name ))
     {
@@ -1769,6 +1804,7 @@ condition: expression relop expression
       addAsm( "PHA" );
       signed_comparison_is_needed = true;
       addAsm( "JSR SIGNEDCMP", 3, false );
+ 
 
     }
   else   // otherwise
@@ -1783,6 +1819,7 @@ condition: expression relop expression
       addAsm( "PHA" );
       signed_comparison_is_needed = true;
       addAsm( "JSR SIGNEDCMP", 3, false );
+ 
     }
     addAsm( "PLP" );
 
@@ -1975,12 +2012,13 @@ statement: datatype ID init
   if( getTypeOf($2.name) == 8 && getTypeOf($1.name) == 8 )
     {
       addDebugComment( "FLOAT v. MEM FLOAT" );
-      addCompilerMessage( "Jolly Good Show!" );
     }
   if( isFloat( $2.name) )
     {
-      addDebugComment( "FLOAT v. IMM FLOAT" );
-      inlineFloat( $2.name, 105 );
+      addDebugComment( string("FLOAT v. IMM FLOAT) [") + string( $1.name ) + string(":") + string($2.name) + string( "]" ) );
+      int base_address = getAddressOf( $1.name );
+      if( base_address == -1 ) base_address = 105;
+      inlineFloat( $2.name, base_address );
     }
   else if( string( $2.name ) == string( "FAC" ) )
     {
@@ -2255,8 +2293,11 @@ expression: expression arithmetic expression
       
       if( string($2.name) == string("*"))
 	{
-	  addAsm( string("LDY $") + toHex( ( base_address_op1 )), 3, false );
-	  addAsm( string("LDA $") + toHex( ( base_address_op1+1 )), 3, false );
+	  int inst_size = 3;
+	  if( base_address_op1 < 255 ) inst_size--;
+	  addAsm( string("LDY $") + toHex( ( base_address_op1 )), inst_size, false );
+	  if( base_address_op2 >= 255 ) inst_size++;
+	  addAsm( string("LDA $") + toHex( ( base_address_op1+1 )), inst_size, false );
 	  addAsm( "JSR $B391; INT16 -> FAC", 3, false );
 	  addAsm( string("LDA #$") + toHex(get_word_L(base_address_op2)), 2, false );
 	  addAsm( string("LDY #$") + toHex(get_word_H(base_address_op2)), 2, false );
@@ -2988,6 +3029,7 @@ int main(int argc, char *argv[])
       if( a == "--parser-comments" ) arg_parser_comments = true;
       if( a == "--symbol-table" ) symbol_table_is_needed = true;
       if( a == "--no-labels" ) arg_show_labels = false;
+      if( a == "--debug" ) debug_flag_is_on = true;
       if( a == "--code-segment" )
 	{
 	  code_start = atoi( argv[i+1] );
@@ -3080,8 +3122,7 @@ int main(int argc, char *argv[])
       addAsm( "CLC", 1, false );
       addAsm( "ADC #$1E", 2, false );
       addAsm( "CMP #$28", 2, false );
-      addAsm( ".BYTE #$90", 1, false );
-      addAsm( ".BYTE #$03", 1, false );
+      addAsm( ".BYTE #$90, #$03", 2, false);
       addAsm( "CLC", 1, false );
       addAsm( "ADC #$19", 2, false );
       addAsm( "JSR $FFD2", 3, false );
@@ -3115,15 +3156,14 @@ int main(int argc, char *argv[])
       addAsm( string( "STA $" ) + toHex(getAddressOf( "hex2petscii_tmp_byte" )), 3, false );
       addAsm( "JSR H2PDIGIT", 3, false );
       addAsm( "CPX #$00", 2, false );
-      addAsm( ".BYTE #$90", 1, false );
-      addAsm( ".BYTE #$03", 1, false );
+      addAsm( ".BYTE #$90, #$03", 2, false );
       addAsm( "JMP H2PMANY2", 3, false );
       addAsm( "RTS", 1, false );
     }
   if( signed_comparison_is_needed )
     {
-      addAsm( ".BYTE #$00;\tTemporary storage for comparison", 1, false );
-      addAsm( ".BYTE #$00;\tMore temporary storage for comparison", 1, false );
+      //addAsm( ".BYTE #$00;\tTemporary storage for comparison", 1, false );
+      //addAsm( ".BYTE #$00;\tMore temporary storage for comparison", 1, false );
       addAsm( "SIGNEDCMP:\t\t;Signed Comparison", 0, true );
       addAsm( "PLA" );
       addAsm( string( "STA $" ) + toHex(getAddressOf( "return_address_1" )), 3, false );
@@ -3232,8 +3272,7 @@ int main(int argc, char *argv[])
       addAsm( "LSR" );
       addAsm( "LSR" );
       addAsm( "CMP #$0A", 2, false);
-      addAsm( ".BYTE #$90", 1, false);
-      addAsm( ".BYTE #$03", 1, false);
+      addAsm( ".BYTE #$90, #$03", 2, false);
       addAsm( "CLC" );
       addAsm( "ADC #$07", 2, false);
       addAsm( "ADC #$30", 2, false);
@@ -3241,8 +3280,7 @@ int main(int argc, char *argv[])
       addAsm( "TXA" );
       addAsm( "AND #$0F", 2, false);
       addAsm( "CMP #$0A", 2, false);
-      addAsm( ".BYTE #$90", 1, false);
-      addAsm( ".BYTE #$03", 1, false);
+      addAsm( ".BYTE #$90, #$03", 2, false);
       addAsm( "CLC" );
       addAsm( "ADC #$07", 2, false);
       addAsm( "ADC #$30", 2, false);
