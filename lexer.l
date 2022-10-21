@@ -10,6 +10,8 @@ frmt  [{\t}|{\n}]
 unary "++"|"--"
 
 %%
+"spritecolour"               { strcpy(yylval.nd_obj.name,(yytext)); return tSPRITECOLOUR; }
+"spriteon"               { strcpy(yylval.nd_obj.name,(yytext)); return tSPRITEON; }
 "tan"                    { strcpy(yylval.nd_obj.name,(yytext)); return tTAN; }
 "sin"                    { strcpy(yylval.nd_obj.name,(yytext)); return tSIN; }
 "cos"                    { strcpy(yylval.nd_obj.name,(yytext)); return tCOS; }
@@ -31,13 +33,14 @@ unary "++"|"--"
 "void"                      { strcpy(yylval.nd_obj.name,(yytext)); return VOID; }
 "return"                    { strcpy(yylval.nd_obj.name,(yytext)); return RETURN; }
 "for"	                    { strcpy(yylval.nd_obj.name,(yytext)); return FOR; }
+"while"	                    { strcpy(yylval.nd_obj.name,(yytext)); return WHILE; }
 "if"	                    { strcpy(yylval.nd_obj.name,(yytext)); return IF; }
 "else"	                    { strcpy(yylval.nd_obj.name,(yytext)); return ELSE; }
 ^"#include"[ ]*<.+\.h>      { strcpy(yylval.nd_obj.name,(yytext)); return INCLUDE; }
 "true"                      { strcpy(yylval.nd_obj.name,(yytext)); return TRUE; }
 "false"                     { strcpy(yylval.nd_obj.name,(yytext)); return FALSE; }
-[-]?{digit}+                { strcpy(yylval.nd_obj.name,(yytext)); return NUMBER; }
 [-]?{digit}+\.{digit}+      { strcpy(yylval.nd_obj.name,(yytext)); return FLOAT_NUM; }
+[-]?{digit}+                { strcpy(yylval.nd_obj.name,(yytext)); return NUMBER; }
 {alpha}({alpha}|{digit})*   { strcpy(yylval.nd_obj.name,(yytext)); return ID; }
 {unary}                     { strcpy(yylval.nd_obj.name,(yytext)); return UNARY; }
 "<="                        { strcpy(yylval.nd_obj.name,(yytext)); return LE; }

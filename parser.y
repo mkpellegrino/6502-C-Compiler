@@ -1195,7 +1195,7 @@
 
 //%parse-param { FILE* fp }
 %token VOID 
-%token <nd_obj> tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tJSR tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER PRINTFF SCANFF INT FLOAT CHAR FOR IF ELSE TRUE FALSE NUMBER FLOAT_NUM ID LE GE EQ NE GT LT AND OR STR ADD SUBTRACT MULTIPLY DIVIDE  UNARY INCLUDE RETURN
+%token <nd_obj> tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tJSR tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER PRINTFF SCANFF INT FLOAT CHAR WHILE FOR IF ELSE TRUE FALSE NUMBER FLOAT_NUM ID LE GE EQ NE GT LT AND OR STR ADD SUBTRACT MULTIPLY DIVIDE  UNARY INCLUDE RETURN
 %type <nd_obj> headers main body return function datatype statement arithmetic relop program else
    %type <nd_obj2> init value expression
       %type <nd_obj3> condition
@@ -1261,8 +1261,35 @@ VOID { addParserComment( string( "RULE: datatype: ") + string( $$.name )); curre
 
 
 
-body:
-FOR
+body: WHILE
+{
+  pushScope("WHILE");
+
+  addComment( "=========================================================");
+  addParserComment( "                        WHILE LOOP" );
+  addComment( "=========================================================");
+  addAsm( "PHA" );
+  addAsm( generateNewLabel(), 0, true );
+  addComment( "---------------------------------------------------------");
+}
+'(' condition
+{
+    addAsm( generateNewLabel(), 0, true );
+
+
+}
+')' '{' body
+{
+
+
+  addAsm( string( "JMP ") + getLabel( label_vector[label_major]-2, false) + string( "; jump to top of FOR" ), 3, false );
+  addAsm( generateNewLabel(), 0, true );
+  addAsm( "PLA" );
+  popScope();
+}
+'}'
+
+| FOR
 {
   pushScope("FOR");
   addComment( "=========================================================");
@@ -1276,7 +1303,6 @@ FOR
 '(' statement {addComment("---------------------------------------------------------");}
 ';' condition {addComment("---------------------------------------------------------");}
 {
-  // addAsm( string( "JMP ") + getLabel( label_vector[label_major]+2, false) + string( "; jump out of FOR" ), 3, false );
   addAsm( generateNewLabel(), 0, true );
 }
 ';' statement
@@ -1294,7 +1320,7 @@ FOR
   
   addAsm( generateNewLabel(), 0, true );
   addAsm( "PLA" );  
-  addComment( "6---------------------------------------------------------" );
+  addComment( "---------------------------------------------------------" );
   if( scope_stack.top() != string("FOR") )
     {
       addComment( "ERROR: Scope out of Sync" );
@@ -1356,6 +1382,46 @@ FOR
 | body body
 {
   $$.nd = mknode($1.nd, $2.nd, "statements");
+};
+| tSPRITEON '(' expression ')' ';'
+{
+  if( isInteger( $3.name ) )
+    {
+      int x = atoi( stripFirst( $3.name ).c_str() );
+      addAsm( string( "LDA #$" ) + toHex( x ), 2, false ); 
+      addAsm( "STA $D015", 3, false );
+    }
+  if( isAddress( $3.name ) )
+    {
+      int x = getAddressOf( $3.name );
+      addAsm( string( "LDA $" ) + toHex( x ), 3, false ); 
+      addAsm( "STA $D015", 3, false );      
+    }
+};
+| tSPRITECOLOUR '(' expression ',' expression ')' ';'
+{
+  /* $3.name is the sprite # */
+  /* $5.name is the colour */
+
+  int base_addr = 53248;
+  int sprite_number = 0;
+  int sprite_colour = 0;
+
+  if( isInteger( $5.name ) )
+    {
+      sprite_colour = atoi( stripFirst( $5.name ).c_str() ); // the sprite #
+      addAsm( string( "LDA #$" ) + toHex( sprite_colour ), 2, false );
+    }
+  if( isInteger( $3.name ) )
+    {
+      sprite_number = atoi( stripFirst( $3.name ).c_str() ); // the sprite #
+      addAsm( string( "STA $" + toHex( base_addr+sprite_number+39 )), 3, false );
+    }
+  if( isAddress( $3.name ) )
+    {
+      sprite_number = getAddressOf( $3.name );
+      addAsm( string( "STA $" + toHex( base_addr+sprite_number+39 )), 3, false );
+    } 
 };
 /* SCANF(ish) COMMAND!!! */
 | SCANFF '(' STR ')' ';'
@@ -1525,30 +1591,6 @@ FOR
       addAsm( "JSR BYTE2HEX", 3, false );
     }
 }
-| tTWOS '(' ID ')' ';'
-{
-  twos_complement_is_needed = true;
-  addComment( "=========================================================");  
-  addComment( string("                 twos(") + string( $3.name ) + string(")"));
-  addComment( "=========================================================");
-
-  addAsm( string("LDA $") + toHex(getAddressOf( string( $3.name ))), 3, false );
-  addAsm( "PHA" );
-  addAsm( "JSR TWOS", 3, false );
-  addAsm( "PLA" );
-  addAsm( string("STA $") + toHex(getAddressOf( string( $3.name ))), 3, false );
-}
-| tTWOS '(' NUMBER ')' ';'
-{
-  twos_complement_is_needed = true;
-  addComment( "=========================================================");  
-  addComment( string("                 twos(") + string( $3.name ) + string(")"));
-  addComment( "=========================================================");
-  addAsm( string("LDA $") + toHex(atoi( $3.name )), 3, false );
-  addAsm( "PHA" );
-  addAsm( "JSR TWOS", 3, false );
-  addAsm( "PLA" );
-}
 | tJSR '(' NUMBER ')' ';'
 {
   addComment( "=========================================================");  
@@ -1637,6 +1679,7 @@ condition: expression relop expression
   addDebugComment( "=========================================================");
   
   if( scope_stack.top() == "FOR" ) addAsm( generateNewLabel() + string( "\t\t\t; Top of FOR Loop"), 0, true );  
+  if( scope_stack.top() == "WHILE" ) addAsm( generateNewLabel() + string( "\t\t\t; Top of WHILE Loop"), 0, true );  
 
   
   // at this point, we need to look at the type of the variable that is located
@@ -1823,7 +1866,7 @@ condition: expression relop expression
     }
     addAsm( "PLP" );
 
-  if( scope_stack.top() == "FOR" || scope_stack.top() == "WHILE") 
+  if( scope_stack.top() == "FOR" ) 
     {
       if( string( $2.name ) == string( "<=" ) )
 	{
@@ -1861,7 +1904,7 @@ condition: expression relop expression
       
       
     }
-  else if( scope_stack.top() == "IF" ) /*                                                                                                               <<<<    IF   */
+  else if( scope_stack.top() == "IF" || scope_stack.top() == "WHILE" ) /*                                                                                                               <<<<    IF   */
     {
       if( string( $2.name ) == string( "<=" ) )
 	{
@@ -2130,6 +2173,11 @@ init: '=' expression
     {
       addParserComment( "FAC" );
       strcpy( $$.name, "FAC" );
+    }  
+  else if( string( $2.name ) == "MOB" )
+    {
+      addParserComment( "MOB" );
+      strcpy( $$.name, "MOB" );
     }  
   else if( string( $2.name ) == "A" )
     {
@@ -2739,6 +2787,19 @@ expression: expression arithmetic expression
     }
 	
 }
+| tTWOS '(' ID ')'
+{
+  twos_complement_is_needed = true;
+  addComment( "=========================================================");  
+  addComment( string("                 twos(") + string( $3.name ) + string(")"));
+  addComment( "=========================================================");
+
+  addAsm( string("LDA $") + toHex(getAddressOf( string( $3.name ))), 3, false );
+  addAsm( "PHA" );
+  addAsm( "JSR TWOS", 3, false );
+  addAsm( "PLA" );
+  strcpy( $$.name, "A");
+}
 | tSIN '(' expression ')'
 {
   addComment( "=========================================================");  
@@ -2785,7 +2846,7 @@ expression: expression arithmetic expression
   addComment( "=========================================================");  
   addComment( "                 cosine");
   addComment( "=========================================================");
-  addParserComment( "RULE: expression: sin( expression );" );
+  addParserComment( "RULE: expression: cos( expression );" );
   if( isFloat( $3.name ) )
     {
       // IMM float
@@ -2821,9 +2882,50 @@ expression: expression arithmetic expression
       strcpy( $$.name, "A");
     }
 };
+| tTAN '(' expression ')'
+{
+  addComment( "=========================================================");  
+  addComment( "                 tangent");
+  addComment( "=========================================================");
+  addParserComment( "RULE: expression: tan( expression );" );
+  if( isFloat( $3.name ) )
+    {
+      // IMM float
+      inlineFloat( $3.name );
+      // calculate the sine of it
+      addAsm( "JSR $E2B4; TAN(FAC) -> FAC", 3, false ); 
+      // result is in FAC
+      strcpy( $$.name, "FAC");
+    }
+  else if( getTypeOf( $3.name ) == 8 )
+    {
+      // float
+      int base_address = getAddressOf($3.name);
+      addAsm( string( "LDA #$" ) + toHex(get_word_L(base_address)), 2, false  );
+      addAsm( string( "LDY #$" ) + toHex(get_word_H(base_address)), 2, false  );
+      addAsm( "JSR $BBA2; MEM -> FAC", 3, false ); // FP ->FAC
+      // calculate the cosine of it
+      addAsm( "JSR $E2B4; TAN(FAC) -> FAC", 3, false ); // sqrt
+      strcpy( $$.name, "FAC");
+    }
+  else if( getTypeOf( $3.name ) == 2 )
+    {
+      // ?? see also sine!
+      strcpy( $$.name, "w0344");
+    }
+  else if( getTypeOf( $3.name ) == 1 )
+    {
+      strcpy( $$.name, "A");
+    }
+  else
+    {
+      addCompilerMessage( "trying to calculate tangent of unknown type" );
+      strcpy( $$.name, "A");
+    }
+};
 | value
 {
-  addParserComment( "RULE: expression: value" );
+  addParserComment( string("RULE: expression: value: [") + string( $1.name ) + string(")") );
   addParserComment( string( $1.name ) );
   strcpy( $$.name, $1.name);
 }
@@ -2897,46 +2999,13 @@ relop: LT { current_state = string( "LT" );  }
 value:
 FLOAT_NUM
 {
-  addParserComment( "RULE: value: FLOAT_NUM" );
-  addParserComment( string( $1.name ) );
+  addParserComment( string( "RULE: value: FLOAT_NUM: (") + string( $1.name ) + string(")") );
   strcpy($$.name, string( string("f") + string($1.name)).c_str());
 }
 | NUMBER
 {
-  /* ASM VARIABLE TYPES & SIZES */
-  /* 0 - unsigned int - 1 bytes */
-  /* 1 - signed int - 1 bytes */
-  /* 2 - word - 2 bytes */
-  /* 4 - double - 2 bytes */
-
-  /* handled later by a different token: */
-  /* 8 - float - 5 bytes */
-  //addParserComment(string("RULE: value: NUMBER: ") +  string($1.name ));
-  
   int v = atoi( $1.name );
-
-  /* int current_variable_type; */
-  
-  /* if( v < 256 && v > 0) */
-  /*   { */
-  /*     current_variable_type = 0; */
-  /*   } */
-  /* else if( v >= -128 && v < 128 ) */
-  /*   { */
-  /*     current_variable_type = 1; */
-  /*   } */
-  /* else if( v >= 0 && v < 65536 ) */
-  /*   { */
-  /*     current_variable_type = 2; */
-  /*   } */
-      
-  //if( v < 0 ) 
-  // { 
-  //   v=twos_complement(v);
-  // } 
-
-   //strcpy( $$.name, (toString( v )).c_str()  );
-   strcpy($$.name, string( string("i") + string($1.name)).c_str());
+  strcpy($$.name, string( string("i") + string($1.name)).c_str());
 }
 | tWORD
 {
@@ -3631,3 +3700,13 @@ void yyerror(const char* msg)
   //fprintf(stderr, "%s\n", msg);
   
 }
+
+
+/* BASIC 2.0 SPRITE ROUTINE */
+/* V = 53248  -- Base Sprite Address*/
+/* POKE V+21, 255  -- turn on all sprites */
+/* POKE 2040+SPRITE#, 192+SPRITE#  -- SPRITE# = 0-7 */
+/* SPRITE DATA is AT:   (192+SPRITE#)*64  - (192+SPRITE#)*64 + 62 */
+/* poke V+39+sprite#, colour */
+/* poke V+2*SPRITE#, X  -- x position */
+/* poke V+(2*SPRITE#)+1, Y -- y position */
