@@ -10,6 +10,7 @@ frmt  [{\t}|{\n}]
 unary "++"|"--"
 
 %%
+"spritexy"               { strcpy(yylval.nd_obj.name,(yytext)); return tSPRITEXY; }
 "spritecolour"               { strcpy(yylval.nd_obj.name,(yytext)); return tSPRITECOLOUR; }
 "spriteon"               { strcpy(yylval.nd_obj.name,(yytext)); return tSPRITEON; }
 "tan"                    { strcpy(yylval.nd_obj.name,(yytext)); return tTAN; }
