@@ -1,0 +1,618 @@
+<html>
+  <head><title>Simple Sprite Editor</title>
+    <script language="javascript">
+
+      var values=[];
+      
+      /* round a number (x) to the (10^y)th place */
+      function rn( x, y )
+      {
+	  return Math.round(x*(10**y))/(10**y);	  
+      }
+
+      function toBinary( i )
+      {
+	  var return_value = i.toString(2);
+	  while( return_value.length < 8 )
+	  {
+	      return_value = '0' + return_value;
+	  }
+	  return return_value;
+      }
+
+      function toDecimal( b )
+      {
+	  var return_value = 0;
+	  for( i = 7; i >=0; i-- )
+	  {
+	      return_value+=Number(b[7-i])*2^i;
+	  }
+	  return return_value;
+      }
+      
+      function XOR( a, b )
+      {
+	  var return_value=a;
+
+	  var digit = 7 - (Math.log(b)/Math.log(2));
+
+	  var binary_representation = toBinary(a);
+	  
+	  
+	  if( binary_representation[digit] == '1' )
+	  {
+	      return_value -= Math.pow(2, Math.log(b)/Math.log(2));
+	      
+	  }
+	  else
+	  {
+	      return_value += Math.pow(2,Math.log(b)/Math.log(2));
+	  }
+	      
+	  return return_value;
+      }
+      
+      function toggle( parameters )
+      {
+	  var p= parameters.split(',');
+	  var index=Number(p[0]);
+	  var value=Number(p[1]);
+	  var id=p[2];
+	  values[index]=XOR( values[index], value );
+
+	  
+	  /* toggle the colour of the square */
+	  var element = document.getElementById(id);
+	  if( element.getAttribute( "fill" ) == "black" )
+	  {
+	      element.setAttribute( "fill", "white" );
+	  }
+	  else
+	  {
+	      element.setAttribute( "fill", "black" );
+	  }
+
+	  form1.data.value="{ ";
+	  for( var i = 1; i<64; i++ )
+	  {
+	      form1.data.value+=values[i];
+	      if( i != 63) form1.data.value+=', ';
+	  }
+	  form1.data.value+=' }';
+      }
+
+
+      function onload()
+      {
+	  for( var i=0; i<64; i++ )
+	  {
+	      values[i] = 0;
+	  }
+	  
+      }
+
+      
+      
+      </script>
+  </head>
+  <body onload="onload();">
+    <p id="svg0">
+      <svg id='svg0' width='500' height='500'>
+
+
+<rect ID="ID0" x="2" y="0" width="18" height="18" fill="white" stroke="black" onclick="toggle('1,128,ID0');"/>
+<rect ID="ID1" x="22" y="0" width="18" height="18" fill="white" stroke="black" onclick="toggle('1,64,ID1');"/>
+<rect ID="ID2" x="42" y="0" width="18" height="18" fill="white" stroke="black" onclick="toggle('1,32,ID2');"/>
+<rect ID="ID3" x="62" y="0" width="18" height="18" fill="white" stroke="black" onclick="toggle('1,16,ID3');"/>
+<rect ID="ID4" x="82" y="0" width="18" height="18" fill="white" stroke="black" onclick="toggle('1,8,ID4');"/>
+<rect ID="ID5" x="102" y="0" width="18" height="18" fill="white" stroke="black" onclick="toggle('1,4,ID5');"/>
+<rect ID="ID6" x="122" y="0" width="18" height="18" fill="white" stroke="black" onclick="toggle('1,2,ID6');"/>
+<rect ID="ID7" x="142" y="0" width="18" height="18" fill="white" stroke="black" onclick="toggle('1,1,ID7');"/>
+<rect ID="ID8" x="162" y="0" width="18" height="18" fill="white" stroke="black" onclick="toggle('2,128,ID8');"/>
+<rect ID="ID9" x="182" y="0" width="18" height="18" fill="white" stroke="black" onclick="toggle('2,64,ID9');"/>
+<rect ID="ID10" x="202" y="0" width="18" height="18" fill="white" stroke="black" onclick="toggle('2,32,ID10');"/>
+<rect ID="ID11" x="222" y="0" width="18" height="18" fill="white" stroke="black" onclick="toggle('2,16,ID11');"/>
+<rect ID="ID12" x="242" y="0" width="18" height="18" fill="white" stroke="black" onclick="toggle('2,8,ID12');"/>
+<rect ID="ID13" x="262" y="0" width="18" height="18" fill="white" stroke="black" onclick="toggle('2,4,ID13');"/>
+<rect ID="ID14" x="282" y="0" width="18" height="18" fill="white" stroke="black" onclick="toggle('2,2,ID14');"/>
+<rect ID="ID15" x="302" y="0" width="18" height="18" fill="white" stroke="black" onclick="toggle('2,1,ID15');"/>
+<rect ID="ID16" x="322" y="0" width="18" height="18" fill="white" stroke="black" onclick="toggle('3,128,ID16');"/>
+<rect ID="ID17" x="342" y="0" width="18" height="18" fill="white" stroke="black" onclick="toggle('3,64,ID17');"/>
+<rect ID="ID18" x="362" y="0" width="18" height="18" fill="white" stroke="black" onclick="toggle('3,32,ID18');"/>
+<rect ID="ID19" x="382" y="0" width="18" height="18" fill="white" stroke="black" onclick="toggle('3,16,ID19');"/>
+<rect ID="ID20" x="402" y="0" width="18" height="18" fill="white" stroke="black" onclick="toggle('3,8,ID20');"/>
+<rect ID="ID21" x="422" y="0" width="18" height="18" fill="white" stroke="black" onclick="toggle('3,4,ID21');"/>
+<rect ID="ID22" x="442" y="0" width="18" height="18" fill="white" stroke="black" onclick="toggle('3,2,ID22');"/>
+<rect ID="ID23" x="462" y="0" width="18" height="18" fill="white" stroke="black" onclick="toggle('3,1,ID23');"/>
+<rect ID="ID24" x="2" y="20" width="18" height="18" fill="white" stroke="black" onclick="toggle('4,128,ID24');"/>
+<rect ID="ID25" x="22" y="20" width="18" height="18" fill="white" stroke="black" onclick="toggle('4,64,ID25');"/>
+<rect ID="ID26" x="42" y="20" width="18" height="18" fill="white" stroke="black" onclick="toggle('4,32,ID26');"/>
+<rect ID="ID27" x="62" y="20" width="18" height="18" fill="white" stroke="black" onclick="toggle('4,16,ID27');"/>
+<rect ID="ID28" x="82" y="20" width="18" height="18" fill="white" stroke="black" onclick="toggle('4,8,ID28');"/>
+<rect ID="ID29" x="102" y="20" width="18" height="18" fill="white" stroke="black" onclick="toggle('4,4,ID29');"/>
+<rect ID="ID30" x="122" y="20" width="18" height="18" fill="white" stroke="black" onclick="toggle('4,2,ID30');"/>
+<rect ID="ID31" x="142" y="20" width="18" height="18" fill="white" stroke="black" onclick="toggle('4,1,ID31');"/>
+<rect ID="ID32" x="162" y="20" width="18" height="18" fill="white" stroke="black" onclick="toggle('5,128,ID32');"/>
+<rect ID="ID33" x="182" y="20" width="18" height="18" fill="white" stroke="black" onclick="toggle('5,64,ID33');"/>
+<rect ID="ID34" x="202" y="20" width="18" height="18" fill="white" stroke="black" onclick="toggle('5,32,ID34');"/>
+<rect ID="ID35" x="222" y="20" width="18" height="18" fill="white" stroke="black" onclick="toggle('5,16,ID35');"/>
+<rect ID="ID36" x="242" y="20" width="18" height="18" fill="white" stroke="black" onclick="toggle('5,8,ID36');"/>
+<rect ID="ID37" x="262" y="20" width="18" height="18" fill="white" stroke="black" onclick="toggle('5,4,ID37');"/>
+<rect ID="ID38" x="282" y="20" width="18" height="18" fill="white" stroke="black" onclick="toggle('5,2,ID38');"/>
+<rect ID="ID39" x="302" y="20" width="18" height="18" fill="white" stroke="black" onclick="toggle('5,1,ID39');"/>
+<rect ID="ID40" x="322" y="20" width="18" height="18" fill="white" stroke="black" onclick="toggle('6,128,ID40');"/>
+<rect ID="ID41" x="342" y="20" width="18" height="18" fill="white" stroke="black" onclick="toggle('6,64,ID41');"/>
+<rect ID="ID42" x="362" y="20" width="18" height="18" fill="white" stroke="black" onclick="toggle('6,32,ID42');"/>
+<rect ID="ID43" x="382" y="20" width="18" height="18" fill="white" stroke="black" onclick="toggle('6,16,ID43');"/>
+<rect ID="ID44" x="402" y="20" width="18" height="18" fill="white" stroke="black" onclick="toggle('6,8,ID44');"/>
+<rect ID="ID45" x="422" y="20" width="18" height="18" fill="white" stroke="black" onclick="toggle('6,4,ID45');"/>
+<rect ID="ID46" x="442" y="20" width="18" height="18" fill="white" stroke="black" onclick="toggle('6,2,ID46');"/>
+<rect ID="ID47" x="462" y="20" width="18" height="18" fill="white" stroke="black" onclick="toggle('6,1,ID47');"/>
+<rect ID="ID48" x="2" y="40" width="18" height="18" fill="white" stroke="black" onclick="toggle('7,128,ID48');"/>
+<rect ID="ID49" x="22" y="40" width="18" height="18" fill="white" stroke="black" onclick="toggle('7,64,ID49');"/>
+<rect ID="ID50" x="42" y="40" width="18" height="18" fill="white" stroke="black" onclick="toggle('7,32,ID50');"/>
+<rect ID="ID51" x="62" y="40" width="18" height="18" fill="white" stroke="black" onclick="toggle('7,16,ID51');"/>
+<rect ID="ID52" x="82" y="40" width="18" height="18" fill="white" stroke="black" onclick="toggle('7,8,ID52');"/>
+<rect ID="ID53" x="102" y="40" width="18" height="18" fill="white" stroke="black" onclick="toggle('7,4,ID53');"/>
+<rect ID="ID54" x="122" y="40" width="18" height="18" fill="white" stroke="black" onclick="toggle('7,2,ID54');"/>
+<rect ID="ID55" x="142" y="40" width="18" height="18" fill="white" stroke="black" onclick="toggle('7,1,ID55');"/>
+<rect ID="ID56" x="162" y="40" width="18" height="18" fill="white" stroke="black" onclick="toggle('8,128,ID56');"/>
+<rect ID="ID57" x="182" y="40" width="18" height="18" fill="white" stroke="black" onclick="toggle('8,64,ID57');"/>
+<rect ID="ID58" x="202" y="40" width="18" height="18" fill="white" stroke="black" onclick="toggle('8,32,ID58');"/>
+<rect ID="ID59" x="222" y="40" width="18" height="18" fill="white" stroke="black" onclick="toggle('8,16,ID59');"/>
+<rect ID="ID60" x="242" y="40" width="18" height="18" fill="white" stroke="black" onclick="toggle('8,8,ID60');"/>
+<rect ID="ID61" x="262" y="40" width="18" height="18" fill="white" stroke="black" onclick="toggle('8,4,ID61');"/>
+<rect ID="ID62" x="282" y="40" width="18" height="18" fill="white" stroke="black" onclick="toggle('8,2,ID62');"/>
+<rect ID="ID63" x="302" y="40" width="18" height="18" fill="white" stroke="black" onclick="toggle('8,1,ID63');"/>
+<rect ID="ID64" x="322" y="40" width="18" height="18" fill="white" stroke="black" onclick="toggle('9,128,ID64');"/>
+<rect ID="ID65" x="342" y="40" width="18" height="18" fill="white" stroke="black" onclick="toggle('9,64,ID65');"/>
+<rect ID="ID66" x="362" y="40" width="18" height="18" fill="white" stroke="black" onclick="toggle('9,32,ID66');"/>
+<rect ID="ID67" x="382" y="40" width="18" height="18" fill="white" stroke="black" onclick="toggle('9,16,ID67');"/>
+<rect ID="ID68" x="402" y="40" width="18" height="18" fill="white" stroke="black" onclick="toggle('9,8,ID68');"/>
+<rect ID="ID69" x="422" y="40" width="18" height="18" fill="white" stroke="black" onclick="toggle('9,4,ID69');"/>
+<rect ID="ID70" x="442" y="40" width="18" height="18" fill="white" stroke="black" onclick="toggle('9,2,ID70');"/>
+<rect ID="ID71" x="462" y="40" width="18" height="18" fill="white" stroke="black" onclick="toggle('9,1,ID71');"/>
+<rect ID="ID72" x="2" y="60" width="18" height="18" fill="white" stroke="black" onclick="toggle('10,128,ID72');"/>
+<rect ID="ID73" x="22" y="60" width="18" height="18" fill="white" stroke="black" onclick="toggle('10,64,ID73');"/>
+<rect ID="ID74" x="42" y="60" width="18" height="18" fill="white" stroke="black" onclick="toggle('10,32,ID74');"/>
+<rect ID="ID75" x="62" y="60" width="18" height="18" fill="white" stroke="black" onclick="toggle('10,16,ID75');"/>
+<rect ID="ID76" x="82" y="60" width="18" height="18" fill="white" stroke="black" onclick="toggle('10,8,ID76');"/>
+<rect ID="ID77" x="102" y="60" width="18" height="18" fill="white" stroke="black" onclick="toggle('10,4,ID77');"/>
+<rect ID="ID78" x="122" y="60" width="18" height="18" fill="white" stroke="black" onclick="toggle('10,2,ID78');"/>
+<rect ID="ID79" x="142" y="60" width="18" height="18" fill="white" stroke="black" onclick="toggle('10,1,ID79');"/>
+<rect ID="ID80" x="162" y="60" width="18" height="18" fill="white" stroke="black" onclick="toggle('11,128,ID80');"/>
+<rect ID="ID81" x="182" y="60" width="18" height="18" fill="white" stroke="black" onclick="toggle('11,64,ID81');"/>
+<rect ID="ID82" x="202" y="60" width="18" height="18" fill="white" stroke="black" onclick="toggle('11,32,ID82');"/>
+<rect ID="ID83" x="222" y="60" width="18" height="18" fill="white" stroke="black" onclick="toggle('11,16,ID83');"/>
+<rect ID="ID84" x="242" y="60" width="18" height="18" fill="white" stroke="black" onclick="toggle('11,8,ID84');"/>
+<rect ID="ID85" x="262" y="60" width="18" height="18" fill="white" stroke="black" onclick="toggle('11,4,ID85');"/>
+<rect ID="ID86" x="282" y="60" width="18" height="18" fill="white" stroke="black" onclick="toggle('11,2,ID86');"/>
+<rect ID="ID87" x="302" y="60" width="18" height="18" fill="white" stroke="black" onclick="toggle('11,1,ID87');"/>
+<rect ID="ID88" x="322" y="60" width="18" height="18" fill="white" stroke="black" onclick="toggle('12,128,ID88');"/>
+<rect ID="ID89" x="342" y="60" width="18" height="18" fill="white" stroke="black" onclick="toggle('12,64,ID89');"/>
+<rect ID="ID90" x="362" y="60" width="18" height="18" fill="white" stroke="black" onclick="toggle('12,32,ID90');"/>
+<rect ID="ID91" x="382" y="60" width="18" height="18" fill="white" stroke="black" onclick="toggle('12,16,ID91');"/>
+<rect ID="ID92" x="402" y="60" width="18" height="18" fill="white" stroke="black" onclick="toggle('12,8,ID92');"/>
+<rect ID="ID93" x="422" y="60" width="18" height="18" fill="white" stroke="black" onclick="toggle('12,4,ID93');"/>
+<rect ID="ID94" x="442" y="60" width="18" height="18" fill="white" stroke="black" onclick="toggle('12,2,ID94');"/>
+<rect ID="ID95" x="462" y="60" width="18" height="18" fill="white" stroke="black" onclick="toggle('12,1,ID95');"/>
+<rect ID="ID96" x="2" y="80" width="18" height="18" fill="white" stroke="black" onclick="toggle('13,128,ID96');"/>
+<rect ID="ID97" x="22" y="80" width="18" height="18" fill="white" stroke="black" onclick="toggle('13,64,ID97');"/>
+<rect ID="ID98" x="42" y="80" width="18" height="18" fill="white" stroke="black" onclick="toggle('13,32,ID98');"/>
+<rect ID="ID99" x="62" y="80" width="18" height="18" fill="white" stroke="black" onclick="toggle('13,16,ID99');"/>
+<rect ID="ID100" x="82" y="80" width="18" height="18" fill="white" stroke="black" onclick="toggle('13,8,ID100');"/>
+<rect ID="ID101" x="102" y="80" width="18" height="18" fill="white" stroke="black" onclick="toggle('13,4,ID101');"/>
+<rect ID="ID102" x="122" y="80" width="18" height="18" fill="white" stroke="black" onclick="toggle('13,2,ID102');"/>
+<rect ID="ID103" x="142" y="80" width="18" height="18" fill="white" stroke="black" onclick="toggle('13,1,ID103');"/>
+<rect ID="ID104" x="162" y="80" width="18" height="18" fill="white" stroke="black" onclick="toggle('14,128,ID104');"/>
+<rect ID="ID105" x="182" y="80" width="18" height="18" fill="white" stroke="black" onclick="toggle('14,64,ID105');"/>
+<rect ID="ID106" x="202" y="80" width="18" height="18" fill="white" stroke="black" onclick="toggle('14,32,ID106');"/>
+<rect ID="ID107" x="222" y="80" width="18" height="18" fill="white" stroke="black" onclick="toggle('14,16,ID107');"/>
+<rect ID="ID108" x="242" y="80" width="18" height="18" fill="white" stroke="black" onclick="toggle('14,8,ID108');"/>
+<rect ID="ID109" x="262" y="80" width="18" height="18" fill="white" stroke="black" onclick="toggle('14,4,ID109');"/>
+<rect ID="ID110" x="282" y="80" width="18" height="18" fill="white" stroke="black" onclick="toggle('14,2,ID110');"/>
+<rect ID="ID111" x="302" y="80" width="18" height="18" fill="white" stroke="black" onclick="toggle('14,1,ID111');"/>
+<rect ID="ID112" x="322" y="80" width="18" height="18" fill="white" stroke="black" onclick="toggle('15,128,ID112');"/>
+<rect ID="ID113" x="342" y="80" width="18" height="18" fill="white" stroke="black" onclick="toggle('15,64,ID113');"/>
+<rect ID="ID114" x="362" y="80" width="18" height="18" fill="white" stroke="black" onclick="toggle('15,32,ID114');"/>
+<rect ID="ID115" x="382" y="80" width="18" height="18" fill="white" stroke="black" onclick="toggle('15,16,ID115');"/>
+<rect ID="ID116" x="402" y="80" width="18" height="18" fill="white" stroke="black" onclick="toggle('15,8,ID116');"/>
+<rect ID="ID117" x="422" y="80" width="18" height="18" fill="white" stroke="black" onclick="toggle('15,4,ID117');"/>
+<rect ID="ID118" x="442" y="80" width="18" height="18" fill="white" stroke="black" onclick="toggle('15,2,ID118');"/>
+<rect ID="ID119" x="462" y="80" width="18" height="18" fill="white" stroke="black" onclick="toggle('15,1,ID119');"/>
+<rect ID="ID120" x="2" y="100" width="18" height="18" fill="white" stroke="black" onclick="toggle('16,128,ID120');"/>
+<rect ID="ID121" x="22" y="100" width="18" height="18" fill="white" stroke="black" onclick="toggle('16,64,ID121');"/>
+<rect ID="ID122" x="42" y="100" width="18" height="18" fill="white" stroke="black" onclick="toggle('16,32,ID122');"/>
+<rect ID="ID123" x="62" y="100" width="18" height="18" fill="white" stroke="black" onclick="toggle('16,16,ID123');"/>
+<rect ID="ID124" x="82" y="100" width="18" height="18" fill="white" stroke="black" onclick="toggle('16,8,ID124');"/>
+<rect ID="ID125" x="102" y="100" width="18" height="18" fill="white" stroke="black" onclick="toggle('16,4,ID125');"/>
+<rect ID="ID126" x="122" y="100" width="18" height="18" fill="white" stroke="black" onclick="toggle('16,2,ID126');"/>
+<rect ID="ID127" x="142" y="100" width="18" height="18" fill="white" stroke="black" onclick="toggle('16,1,ID127');"/>
+<rect ID="ID128" x="162" y="100" width="18" height="18" fill="white" stroke="black" onclick="toggle('17,128,ID128');"/>
+<rect ID="ID129" x="182" y="100" width="18" height="18" fill="white" stroke="black" onclick="toggle('17,64,ID129');"/>
+<rect ID="ID130" x="202" y="100" width="18" height="18" fill="white" stroke="black" onclick="toggle('17,32,ID130');"/>
+<rect ID="ID131" x="222" y="100" width="18" height="18" fill="white" stroke="black" onclick="toggle('17,16,ID131');"/>
+<rect ID="ID132" x="242" y="100" width="18" height="18" fill="white" stroke="black" onclick="toggle('17,8,ID132');"/>
+<rect ID="ID133" x="262" y="100" width="18" height="18" fill="white" stroke="black" onclick="toggle('17,4,ID133');"/>
+<rect ID="ID134" x="282" y="100" width="18" height="18" fill="white" stroke="black" onclick="toggle('17,2,ID134');"/>
+<rect ID="ID135" x="302" y="100" width="18" height="18" fill="white" stroke="black" onclick="toggle('17,1,ID135');"/>
+<rect ID="ID136" x="322" y="100" width="18" height="18" fill="white" stroke="black" onclick="toggle('18,128,ID136');"/>
+<rect ID="ID137" x="342" y="100" width="18" height="18" fill="white" stroke="black" onclick="toggle('18,64,ID137');"/>
+<rect ID="ID138" x="362" y="100" width="18" height="18" fill="white" stroke="black" onclick="toggle('18,32,ID138');"/>
+<rect ID="ID139" x="382" y="100" width="18" height="18" fill="white" stroke="black" onclick="toggle('18,16,ID139');"/>
+<rect ID="ID140" x="402" y="100" width="18" height="18" fill="white" stroke="black" onclick="toggle('18,8,ID140');"/>
+<rect ID="ID141" x="422" y="100" width="18" height="18" fill="white" stroke="black" onclick="toggle('18,4,ID141');"/>
+<rect ID="ID142" x="442" y="100" width="18" height="18" fill="white" stroke="black" onclick="toggle('18,2,ID142');"/>
+<rect ID="ID143" x="462" y="100" width="18" height="18" fill="white" stroke="black" onclick="toggle('18,1,ID143');"/>
+<rect ID="ID144" x="2" y="120" width="18" height="18" fill="white" stroke="black" onclick="toggle('19,128,ID144');"/>
+<rect ID="ID145" x="22" y="120" width="18" height="18" fill="white" stroke="black" onclick="toggle('19,64,ID145');"/>
+<rect ID="ID146" x="42" y="120" width="18" height="18" fill="white" stroke="black" onclick="toggle('19,32,ID146');"/>
+<rect ID="ID147" x="62" y="120" width="18" height="18" fill="white" stroke="black" onclick="toggle('19,16,ID147');"/>
+<rect ID="ID148" x="82" y="120" width="18" height="18" fill="white" stroke="black" onclick="toggle('19,8,ID148');"/>
+<rect ID="ID149" x="102" y="120" width="18" height="18" fill="white" stroke="black" onclick="toggle('19,4,ID149');"/>
+<rect ID="ID150" x="122" y="120" width="18" height="18" fill="white" stroke="black" onclick="toggle('19,2,ID150');"/>
+<rect ID="ID151" x="142" y="120" width="18" height="18" fill="white" stroke="black" onclick="toggle('19,1,ID151');"/>
+<rect ID="ID152" x="162" y="120" width="18" height="18" fill="white" stroke="black" onclick="toggle('20,128,ID152');"/>
+<rect ID="ID153" x="182" y="120" width="18" height="18" fill="white" stroke="black" onclick="toggle('20,64,ID153');"/>
+<rect ID="ID154" x="202" y="120" width="18" height="18" fill="white" stroke="black" onclick="toggle('20,32,ID154');"/>
+<rect ID="ID155" x="222" y="120" width="18" height="18" fill="white" stroke="black" onclick="toggle('20,16,ID155');"/>
+<rect ID="ID156" x="242" y="120" width="18" height="18" fill="white" stroke="black" onclick="toggle('20,8,ID156');"/>
+<rect ID="ID157" x="262" y="120" width="18" height="18" fill="white" stroke="black" onclick="toggle('20,4,ID157');"/>
+<rect ID="ID158" x="282" y="120" width="18" height="18" fill="white" stroke="black" onclick="toggle('20,2,ID158');"/>
+<rect ID="ID159" x="302" y="120" width="18" height="18" fill="white" stroke="black" onclick="toggle('20,1,ID159');"/>
+<rect ID="ID160" x="322" y="120" width="18" height="18" fill="white" stroke="black" onclick="toggle('21,128,ID160');"/>
+<rect ID="ID161" x="342" y="120" width="18" height="18" fill="white" stroke="black" onclick="toggle('21,64,ID161');"/>
+<rect ID="ID162" x="362" y="120" width="18" height="18" fill="white" stroke="black" onclick="toggle('21,32,ID162');"/>
+<rect ID="ID163" x="382" y="120" width="18" height="18" fill="white" stroke="black" onclick="toggle('21,16,ID163');"/>
+<rect ID="ID164" x="402" y="120" width="18" height="18" fill="white" stroke="black" onclick="toggle('21,8,ID164');"/>
+<rect ID="ID165" x="422" y="120" width="18" height="18" fill="white" stroke="black" onclick="toggle('21,4,ID165');"/>
+<rect ID="ID166" x="442" y="120" width="18" height="18" fill="white" stroke="black" onclick="toggle('21,2,ID166');"/>
+<rect ID="ID167" x="462" y="120" width="18" height="18" fill="white" stroke="black" onclick="toggle('21,1,ID167');"/>
+<rect ID="ID168" x="2" y="140" width="18" height="18" fill="white" stroke="black" onclick="toggle('22,128,ID168');"/>
+<rect ID="ID169" x="22" y="140" width="18" height="18" fill="white" stroke="black" onclick="toggle('22,64,ID169');"/>
+<rect ID="ID170" x="42" y="140" width="18" height="18" fill="white" stroke="black" onclick="toggle('22,32,ID170');"/>
+<rect ID="ID171" x="62" y="140" width="18" height="18" fill="white" stroke="black" onclick="toggle('22,16,ID171');"/>
+<rect ID="ID172" x="82" y="140" width="18" height="18" fill="white" stroke="black" onclick="toggle('22,8,ID172');"/>
+<rect ID="ID173" x="102" y="140" width="18" height="18" fill="white" stroke="black" onclick="toggle('22,4,ID173');"/>
+<rect ID="ID174" x="122" y="140" width="18" height="18" fill="white" stroke="black" onclick="toggle('22,2,ID174');"/>
+<rect ID="ID175" x="142" y="140" width="18" height="18" fill="white" stroke="black" onclick="toggle('22,1,ID175');"/>
+<rect ID="ID176" x="162" y="140" width="18" height="18" fill="white" stroke="black" onclick="toggle('23,128,ID176');"/>
+<rect ID="ID177" x="182" y="140" width="18" height="18" fill="white" stroke="black" onclick="toggle('23,64,ID177');"/>
+<rect ID="ID178" x="202" y="140" width="18" height="18" fill="white" stroke="black" onclick="toggle('23,32,ID178');"/>
+<rect ID="ID179" x="222" y="140" width="18" height="18" fill="white" stroke="black" onclick="toggle('23,16,ID179');"/>
+<rect ID="ID180" x="242" y="140" width="18" height="18" fill="white" stroke="black" onclick="toggle('23,8,ID180');"/>
+<rect ID="ID181" x="262" y="140" width="18" height="18" fill="white" stroke="black" onclick="toggle('23,4,ID181');"/>
+<rect ID="ID182" x="282" y="140" width="18" height="18" fill="white" stroke="black" onclick="toggle('23,2,ID182');"/>
+<rect ID="ID183" x="302" y="140" width="18" height="18" fill="white" stroke="black" onclick="toggle('23,1,ID183');"/>
+<rect ID="ID184" x="322" y="140" width="18" height="18" fill="white" stroke="black" onclick="toggle('24,128,ID184');"/>
+<rect ID="ID185" x="342" y="140" width="18" height="18" fill="white" stroke="black" onclick="toggle('24,64,ID185');"/>
+<rect ID="ID186" x="362" y="140" width="18" height="18" fill="white" stroke="black" onclick="toggle('24,32,ID186');"/>
+<rect ID="ID187" x="382" y="140" width="18" height="18" fill="white" stroke="black" onclick="toggle('24,16,ID187');"/>
+<rect ID="ID188" x="402" y="140" width="18" height="18" fill="white" stroke="black" onclick="toggle('24,8,ID188');"/>
+<rect ID="ID189" x="422" y="140" width="18" height="18" fill="white" stroke="black" onclick="toggle('24,4,ID189');"/>
+<rect ID="ID190" x="442" y="140" width="18" height="18" fill="white" stroke="black" onclick="toggle('24,2,ID190');"/>
+<rect ID="ID191" x="462" y="140" width="18" height="18" fill="white" stroke="black" onclick="toggle('24,1,ID191');"/>
+<rect ID="ID192" x="2" y="160" width="18" height="18" fill="white" stroke="black" onclick="toggle('25,128,ID192');"/>
+<rect ID="ID193" x="22" y="160" width="18" height="18" fill="white" stroke="black" onclick="toggle('25,64,ID193');"/>
+<rect ID="ID194" x="42" y="160" width="18" height="18" fill="white" stroke="black" onclick="toggle('25,32,ID194');"/>
+<rect ID="ID195" x="62" y="160" width="18" height="18" fill="white" stroke="black" onclick="toggle('25,16,ID195');"/>
+<rect ID="ID196" x="82" y="160" width="18" height="18" fill="white" stroke="black" onclick="toggle('25,8,ID196');"/>
+<rect ID="ID197" x="102" y="160" width="18" height="18" fill="white" stroke="black" onclick="toggle('25,4,ID197');"/>
+<rect ID="ID198" x="122" y="160" width="18" height="18" fill="white" stroke="black" onclick="toggle('25,2,ID198');"/>
+<rect ID="ID199" x="142" y="160" width="18" height="18" fill="white" stroke="black" onclick="toggle('25,1,ID199');"/>
+<rect ID="ID200" x="162" y="160" width="18" height="18" fill="white" stroke="black" onclick="toggle('26,128,ID200');"/>
+<rect ID="ID201" x="182" y="160" width="18" height="18" fill="white" stroke="black" onclick="toggle('26,64,ID201');"/>
+<rect ID="ID202" x="202" y="160" width="18" height="18" fill="white" stroke="black" onclick="toggle('26,32,ID202');"/>
+<rect ID="ID203" x="222" y="160" width="18" height="18" fill="white" stroke="black" onclick="toggle('26,16,ID203');"/>
+<rect ID="ID204" x="242" y="160" width="18" height="18" fill="white" stroke="black" onclick="toggle('26,8,ID204');"/>
+<rect ID="ID205" x="262" y="160" width="18" height="18" fill="white" stroke="black" onclick="toggle('26,4,ID205');"/>
+<rect ID="ID206" x="282" y="160" width="18" height="18" fill="white" stroke="black" onclick="toggle('26,2,ID206');"/>
+<rect ID="ID207" x="302" y="160" width="18" height="18" fill="white" stroke="black" onclick="toggle('26,1,ID207');"/>
+<rect ID="ID208" x="322" y="160" width="18" height="18" fill="white" stroke="black" onclick="toggle('27,128,ID208');"/>
+<rect ID="ID209" x="342" y="160" width="18" height="18" fill="white" stroke="black" onclick="toggle('27,64,ID209');"/>
+<rect ID="ID210" x="362" y="160" width="18" height="18" fill="white" stroke="black" onclick="toggle('27,32,ID210');"/>
+<rect ID="ID211" x="382" y="160" width="18" height="18" fill="white" stroke="black" onclick="toggle('27,16,ID211');"/>
+<rect ID="ID212" x="402" y="160" width="18" height="18" fill="white" stroke="black" onclick="toggle('27,8,ID212');"/>
+<rect ID="ID213" x="422" y="160" width="18" height="18" fill="white" stroke="black" onclick="toggle('27,4,ID213');"/>
+<rect ID="ID214" x="442" y="160" width="18" height="18" fill="white" stroke="black" onclick="toggle('27,2,ID214');"/>
+<rect ID="ID215" x="462" y="160" width="18" height="18" fill="white" stroke="black" onclick="toggle('27,1,ID215');"/>
+<rect ID="ID216" x="2" y="180" width="18" height="18" fill="white" stroke="black" onclick="toggle('28,128,ID216');"/>
+<rect ID="ID217" x="22" y="180" width="18" height="18" fill="white" stroke="black" onclick="toggle('28,64,ID217');"/>
+<rect ID="ID218" x="42" y="180" width="18" height="18" fill="white" stroke="black" onclick="toggle('28,32,ID218');"/>
+<rect ID="ID219" x="62" y="180" width="18" height="18" fill="white" stroke="black" onclick="toggle('28,16,ID219');"/>
+<rect ID="ID220" x="82" y="180" width="18" height="18" fill="white" stroke="black" onclick="toggle('28,8,ID220');"/>
+<rect ID="ID221" x="102" y="180" width="18" height="18" fill="white" stroke="black" onclick="toggle('28,4,ID221');"/>
+<rect ID="ID222" x="122" y="180" width="18" height="18" fill="white" stroke="black" onclick="toggle('28,2,ID222');"/>
+<rect ID="ID223" x="142" y="180" width="18" height="18" fill="white" stroke="black" onclick="toggle('28,1,ID223');"/>
+<rect ID="ID224" x="162" y="180" width="18" height="18" fill="white" stroke="black" onclick="toggle('29,128,ID224');"/>
+<rect ID="ID225" x="182" y="180" width="18" height="18" fill="white" stroke="black" onclick="toggle('29,64,ID225');"/>
+<rect ID="ID226" x="202" y="180" width="18" height="18" fill="white" stroke="black" onclick="toggle('29,32,ID226');"/>
+<rect ID="ID227" x="222" y="180" width="18" height="18" fill="white" stroke="black" onclick="toggle('29,16,ID227');"/>
+<rect ID="ID228" x="242" y="180" width="18" height="18" fill="white" stroke="black" onclick="toggle('29,8,ID228');"/>
+<rect ID="ID229" x="262" y="180" width="18" height="18" fill="white" stroke="black" onclick="toggle('29,4,ID229');"/>
+<rect ID="ID230" x="282" y="180" width="18" height="18" fill="white" stroke="black" onclick="toggle('29,2,ID230');"/>
+<rect ID="ID231" x="302" y="180" width="18" height="18" fill="white" stroke="black" onclick="toggle('29,1,ID231');"/>
+<rect ID="ID232" x="322" y="180" width="18" height="18" fill="white" stroke="black" onclick="toggle('30,128,ID232');"/>
+<rect ID="ID233" x="342" y="180" width="18" height="18" fill="white" stroke="black" onclick="toggle('30,64,ID233');"/>
+<rect ID="ID234" x="362" y="180" width="18" height="18" fill="white" stroke="black" onclick="toggle('30,32,ID234');"/>
+<rect ID="ID235" x="382" y="180" width="18" height="18" fill="white" stroke="black" onclick="toggle('30,16,ID235');"/>
+<rect ID="ID236" x="402" y="180" width="18" height="18" fill="white" stroke="black" onclick="toggle('30,8,ID236');"/>
+<rect ID="ID237" x="422" y="180" width="18" height="18" fill="white" stroke="black" onclick="toggle('30,4,ID237');"/>
+<rect ID="ID238" x="442" y="180" width="18" height="18" fill="white" stroke="black" onclick="toggle('30,2,ID238');"/>
+<rect ID="ID239" x="462" y="180" width="18" height="18" fill="white" stroke="black" onclick="toggle('30,1,ID239');"/>
+<rect ID="ID240" x="2" y="200" width="18" height="18" fill="white" stroke="black" onclick="toggle('31,128,ID240');"/>
+<rect ID="ID241" x="22" y="200" width="18" height="18" fill="white" stroke="black" onclick="toggle('31,64,ID241');"/>
+<rect ID="ID242" x="42" y="200" width="18" height="18" fill="white" stroke="black" onclick="toggle('31,32,ID242');"/>
+<rect ID="ID243" x="62" y="200" width="18" height="18" fill="white" stroke="black" onclick="toggle('31,16,ID243');"/>
+<rect ID="ID244" x="82" y="200" width="18" height="18" fill="white" stroke="black" onclick="toggle('31,8,ID244');"/>
+<rect ID="ID245" x="102" y="200" width="18" height="18" fill="white" stroke="black" onclick="toggle('31,4,ID245');"/>
+<rect ID="ID246" x="122" y="200" width="18" height="18" fill="white" stroke="black" onclick="toggle('31,2,ID246');"/>
+<rect ID="ID247" x="142" y="200" width="18" height="18" fill="white" stroke="black" onclick="toggle('31,1,ID247');"/>
+<rect ID="ID248" x="162" y="200" width="18" height="18" fill="white" stroke="black" onclick="toggle('32,128,ID248');"/>
+<rect ID="ID249" x="182" y="200" width="18" height="18" fill="white" stroke="black" onclick="toggle('32,64,ID249');"/>
+<rect ID="ID250" x="202" y="200" width="18" height="18" fill="white" stroke="black" onclick="toggle('32,32,ID250');"/>
+<rect ID="ID251" x="222" y="200" width="18" height="18" fill="white" stroke="black" onclick="toggle('32,16,ID251');"/>
+<rect ID="ID252" x="242" y="200" width="18" height="18" fill="white" stroke="black" onclick="toggle('32,8,ID252');"/>
+<rect ID="ID253" x="262" y="200" width="18" height="18" fill="white" stroke="black" onclick="toggle('32,4,ID253');"/>
+<rect ID="ID254" x="282" y="200" width="18" height="18" fill="white" stroke="black" onclick="toggle('32,2,ID254');"/>
+<rect ID="ID255" x="302" y="200" width="18" height="18" fill="white" stroke="black" onclick="toggle('32,1,ID255');"/>
+<rect ID="ID256" x="322" y="200" width="18" height="18" fill="white" stroke="black" onclick="toggle('33,128,ID256');"/>
+<rect ID="ID257" x="342" y="200" width="18" height="18" fill="white" stroke="black" onclick="toggle('33,64,ID257');"/>
+<rect ID="ID258" x="362" y="200" width="18" height="18" fill="white" stroke="black" onclick="toggle('33,32,ID258');"/>
+<rect ID="ID259" x="382" y="200" width="18" height="18" fill="white" stroke="black" onclick="toggle('33,16,ID259');"/>
+<rect ID="ID260" x="402" y="200" width="18" height="18" fill="white" stroke="black" onclick="toggle('33,8,ID260');"/>
+<rect ID="ID261" x="422" y="200" width="18" height="18" fill="white" stroke="black" onclick="toggle('33,4,ID261');"/>
+<rect ID="ID262" x="442" y="200" width="18" height="18" fill="white" stroke="black" onclick="toggle('33,2,ID262');"/>
+<rect ID="ID263" x="462" y="200" width="18" height="18" fill="white" stroke="black" onclick="toggle('33,1,ID263');"/>
+<rect ID="ID264" x="2" y="220" width="18" height="18" fill="white" stroke="black" onclick="toggle('34,128,ID264');"/>
+<rect ID="ID265" x="22" y="220" width="18" height="18" fill="white" stroke="black" onclick="toggle('34,64,ID265');"/>
+<rect ID="ID266" x="42" y="220" width="18" height="18" fill="white" stroke="black" onclick="toggle('34,32,ID266');"/>
+<rect ID="ID267" x="62" y="220" width="18" height="18" fill="white" stroke="black" onclick="toggle('34,16,ID267');"/>
+<rect ID="ID268" x="82" y="220" width="18" height="18" fill="white" stroke="black" onclick="toggle('34,8,ID268');"/>
+<rect ID="ID269" x="102" y="220" width="18" height="18" fill="white" stroke="black" onclick="toggle('34,4,ID269');"/>
+<rect ID="ID270" x="122" y="220" width="18" height="18" fill="white" stroke="black" onclick="toggle('34,2,ID270');"/>
+<rect ID="ID271" x="142" y="220" width="18" height="18" fill="white" stroke="black" onclick="toggle('34,1,ID271');"/>
+<rect ID="ID272" x="162" y="220" width="18" height="18" fill="white" stroke="black" onclick="toggle('35,128,ID272');"/>
+<rect ID="ID273" x="182" y="220" width="18" height="18" fill="white" stroke="black" onclick="toggle('35,64,ID273');"/>
+<rect ID="ID274" x="202" y="220" width="18" height="18" fill="white" stroke="black" onclick="toggle('35,32,ID274');"/>
+<rect ID="ID275" x="222" y="220" width="18" height="18" fill="white" stroke="black" onclick="toggle('35,16,ID275');"/>
+<rect ID="ID276" x="242" y="220" width="18" height="18" fill="white" stroke="black" onclick="toggle('35,8,ID276');"/>
+<rect ID="ID277" x="262" y="220" width="18" height="18" fill="white" stroke="black" onclick="toggle('35,4,ID277');"/>
+<rect ID="ID278" x="282" y="220" width="18" height="18" fill="white" stroke="black" onclick="toggle('35,2,ID278');"/>
+<rect ID="ID279" x="302" y="220" width="18" height="18" fill="white" stroke="black" onclick="toggle('35,1,ID279');"/>
+<rect ID="ID280" x="322" y="220" width="18" height="18" fill="white" stroke="black" onclick="toggle('36,128,ID280');"/>
+<rect ID="ID281" x="342" y="220" width="18" height="18" fill="white" stroke="black" onclick="toggle('36,64,ID281');"/>
+<rect ID="ID282" x="362" y="220" width="18" height="18" fill="white" stroke="black" onclick="toggle('36,32,ID282');"/>
+<rect ID="ID283" x="382" y="220" width="18" height="18" fill="white" stroke="black" onclick="toggle('36,16,ID283');"/>
+<rect ID="ID284" x="402" y="220" width="18" height="18" fill="white" stroke="black" onclick="toggle('36,8,ID284');"/>
+<rect ID="ID285" x="422" y="220" width="18" height="18" fill="white" stroke="black" onclick="toggle('36,4,ID285');"/>
+<rect ID="ID286" x="442" y="220" width="18" height="18" fill="white" stroke="black" onclick="toggle('36,2,ID286');"/>
+<rect ID="ID287" x="462" y="220" width="18" height="18" fill="white" stroke="black" onclick="toggle('36,1,ID287');"/>
+<rect ID="ID288" x="2" y="240" width="18" height="18" fill="white" stroke="black" onclick="toggle('37,128,ID288');"/>
+<rect ID="ID289" x="22" y="240" width="18" height="18" fill="white" stroke="black" onclick="toggle('37,64,ID289');"/>
+<rect ID="ID290" x="42" y="240" width="18" height="18" fill="white" stroke="black" onclick="toggle('37,32,ID290');"/>
+<rect ID="ID291" x="62" y="240" width="18" height="18" fill="white" stroke="black" onclick="toggle('37,16,ID291');"/>
+<rect ID="ID292" x="82" y="240" width="18" height="18" fill="white" stroke="black" onclick="toggle('37,8,ID292');"/>
+<rect ID="ID293" x="102" y="240" width="18" height="18" fill="white" stroke="black" onclick="toggle('37,4,ID293');"/>
+<rect ID="ID294" x="122" y="240" width="18" height="18" fill="white" stroke="black" onclick="toggle('37,2,ID294');"/>
+<rect ID="ID295" x="142" y="240" width="18" height="18" fill="white" stroke="black" onclick="toggle('37,1,ID295');"/>
+<rect ID="ID296" x="162" y="240" width="18" height="18" fill="white" stroke="black" onclick="toggle('38,128,ID296');"/>
+<rect ID="ID297" x="182" y="240" width="18" height="18" fill="white" stroke="black" onclick="toggle('38,64,ID297');"/>
+<rect ID="ID298" x="202" y="240" width="18" height="18" fill="white" stroke="black" onclick="toggle('38,32,ID298');"/>
+<rect ID="ID299" x="222" y="240" width="18" height="18" fill="white" stroke="black" onclick="toggle('38,16,ID299');"/>
+<rect ID="ID300" x="242" y="240" width="18" height="18" fill="white" stroke="black" onclick="toggle('38,8,ID300');"/>
+<rect ID="ID301" x="262" y="240" width="18" height="18" fill="white" stroke="black" onclick="toggle('38,4,ID301');"/>
+<rect ID="ID302" x="282" y="240" width="18" height="18" fill="white" stroke="black" onclick="toggle('38,2,ID302');"/>
+<rect ID="ID303" x="302" y="240" width="18" height="18" fill="white" stroke="black" onclick="toggle('38,1,ID303');"/>
+<rect ID="ID304" x="322" y="240" width="18" height="18" fill="white" stroke="black" onclick="toggle('39,128,ID304');"/>
+<rect ID="ID305" x="342" y="240" width="18" height="18" fill="white" stroke="black" onclick="toggle('39,64,ID305');"/>
+<rect ID="ID306" x="362" y="240" width="18" height="18" fill="white" stroke="black" onclick="toggle('39,32,ID306');"/>
+<rect ID="ID307" x="382" y="240" width="18" height="18" fill="white" stroke="black" onclick="toggle('39,16,ID307');"/>
+<rect ID="ID308" x="402" y="240" width="18" height="18" fill="white" stroke="black" onclick="toggle('39,8,ID308');"/>
+<rect ID="ID309" x="422" y="240" width="18" height="18" fill="white" stroke="black" onclick="toggle('39,4,ID309');"/>
+<rect ID="ID310" x="442" y="240" width="18" height="18" fill="white" stroke="black" onclick="toggle('39,2,ID310');"/>
+<rect ID="ID311" x="462" y="240" width="18" height="18" fill="white" stroke="black" onclick="toggle('39,1,ID311');"/>
+<rect ID="ID312" x="2" y="260" width="18" height="18" fill="white" stroke="black" onclick="toggle('40,128,ID312');"/>
+<rect ID="ID313" x="22" y="260" width="18" height="18" fill="white" stroke="black" onclick="toggle('40,64,ID313');"/>
+<rect ID="ID314" x="42" y="260" width="18" height="18" fill="white" stroke="black" onclick="toggle('40,32,ID314');"/>
+<rect ID="ID315" x="62" y="260" width="18" height="18" fill="white" stroke="black" onclick="toggle('40,16,ID315');"/>
+<rect ID="ID316" x="82" y="260" width="18" height="18" fill="white" stroke="black" onclick="toggle('40,8,ID316');"/>
+<rect ID="ID317" x="102" y="260" width="18" height="18" fill="white" stroke="black" onclick="toggle('40,4,ID317');"/>
+<rect ID="ID318" x="122" y="260" width="18" height="18" fill="white" stroke="black" onclick="toggle('40,2,ID318');"/>
+<rect ID="ID319" x="142" y="260" width="18" height="18" fill="white" stroke="black" onclick="toggle('40,1,ID319');"/>
+<rect ID="ID320" x="162" y="260" width="18" height="18" fill="white" stroke="black" onclick="toggle('41,128,ID320');"/>
+<rect ID="ID321" x="182" y="260" width="18" height="18" fill="white" stroke="black" onclick="toggle('41,64,ID321');"/>
+<rect ID="ID322" x="202" y="260" width="18" height="18" fill="white" stroke="black" onclick="toggle('41,32,ID322');"/>
+<rect ID="ID323" x="222" y="260" width="18" height="18" fill="white" stroke="black" onclick="toggle('41,16,ID323');"/>
+<rect ID="ID324" x="242" y="260" width="18" height="18" fill="white" stroke="black" onclick="toggle('41,8,ID324');"/>
+<rect ID="ID325" x="262" y="260" width="18" height="18" fill="white" stroke="black" onclick="toggle('41,4,ID325');"/>
+<rect ID="ID326" x="282" y="260" width="18" height="18" fill="white" stroke="black" onclick="toggle('41,2,ID326');"/>
+<rect ID="ID327" x="302" y="260" width="18" height="18" fill="white" stroke="black" onclick="toggle('41,1,ID327');"/>
+<rect ID="ID328" x="322" y="260" width="18" height="18" fill="white" stroke="black" onclick="toggle('42,128,ID328');"/>
+<rect ID="ID329" x="342" y="260" width="18" height="18" fill="white" stroke="black" onclick="toggle('42,64,ID329');"/>
+<rect ID="ID330" x="362" y="260" width="18" height="18" fill="white" stroke="black" onclick="toggle('42,32,ID330');"/>
+<rect ID="ID331" x="382" y="260" width="18" height="18" fill="white" stroke="black" onclick="toggle('42,16,ID331');"/>
+<rect ID="ID332" x="402" y="260" width="18" height="18" fill="white" stroke="black" onclick="toggle('42,8,ID332');"/>
+<rect ID="ID333" x="422" y="260" width="18" height="18" fill="white" stroke="black" onclick="toggle('42,4,ID333');"/>
+<rect ID="ID334" x="442" y="260" width="18" height="18" fill="white" stroke="black" onclick="toggle('42,2,ID334');"/>
+<rect ID="ID335" x="462" y="260" width="18" height="18" fill="white" stroke="black" onclick="toggle('42,1,ID335');"/>
+<rect ID="ID336" x="2" y="280" width="18" height="18" fill="white" stroke="black" onclick="toggle('43,128,ID336');"/>
+<rect ID="ID337" x="22" y="280" width="18" height="18" fill="white" stroke="black" onclick="toggle('43,64,ID337');"/>
+<rect ID="ID338" x="42" y="280" width="18" height="18" fill="white" stroke="black" onclick="toggle('43,32,ID338');"/>
+<rect ID="ID339" x="62" y="280" width="18" height="18" fill="white" stroke="black" onclick="toggle('43,16,ID339');"/>
+<rect ID="ID340" x="82" y="280" width="18" height="18" fill="white" stroke="black" onclick="toggle('43,8,ID340');"/>
+<rect ID="ID341" x="102" y="280" width="18" height="18" fill="white" stroke="black" onclick="toggle('43,4,ID341');"/>
+<rect ID="ID342" x="122" y="280" width="18" height="18" fill="white" stroke="black" onclick="toggle('43,2,ID342');"/>
+<rect ID="ID343" x="142" y="280" width="18" height="18" fill="white" stroke="black" onclick="toggle('43,1,ID343');"/>
+<rect ID="ID344" x="162" y="280" width="18" height="18" fill="white" stroke="black" onclick="toggle('44,128,ID344');"/>
+<rect ID="ID345" x="182" y="280" width="18" height="18" fill="white" stroke="black" onclick="toggle('44,64,ID345');"/>
+<rect ID="ID346" x="202" y="280" width="18" height="18" fill="white" stroke="black" onclick="toggle('44,32,ID346');"/>
+<rect ID="ID347" x="222" y="280" width="18" height="18" fill="white" stroke="black" onclick="toggle('44,16,ID347');"/>
+<rect ID="ID348" x="242" y="280" width="18" height="18" fill="white" stroke="black" onclick="toggle('44,8,ID348');"/>
+<rect ID="ID349" x="262" y="280" width="18" height="18" fill="white" stroke="black" onclick="toggle('44,4,ID349');"/>
+<rect ID="ID350" x="282" y="280" width="18" height="18" fill="white" stroke="black" onclick="toggle('44,2,ID350');"/>
+<rect ID="ID351" x="302" y="280" width="18" height="18" fill="white" stroke="black" onclick="toggle('44,1,ID351');"/>
+<rect ID="ID352" x="322" y="280" width="18" height="18" fill="white" stroke="black" onclick="toggle('45,128,ID352');"/>
+<rect ID="ID353" x="342" y="280" width="18" height="18" fill="white" stroke="black" onclick="toggle('45,64,ID353');"/>
+<rect ID="ID354" x="362" y="280" width="18" height="18" fill="white" stroke="black" onclick="toggle('45,32,ID354');"/>
+<rect ID="ID355" x="382" y="280" width="18" height="18" fill="white" stroke="black" onclick="toggle('45,16,ID355');"/>
+<rect ID="ID356" x="402" y="280" width="18" height="18" fill="white" stroke="black" onclick="toggle('45,8,ID356');"/>
+<rect ID="ID357" x="422" y="280" width="18" height="18" fill="white" stroke="black" onclick="toggle('45,4,ID357');"/>
+<rect ID="ID358" x="442" y="280" width="18" height="18" fill="white" stroke="black" onclick="toggle('45,2,ID358');"/>
+<rect ID="ID359" x="462" y="280" width="18" height="18" fill="white" stroke="black" onclick="toggle('45,1,ID359');"/>
+<rect ID="ID360" x="2" y="300" width="18" height="18" fill="white" stroke="black" onclick="toggle('46,128,ID360');"/>
+<rect ID="ID361" x="22" y="300" width="18" height="18" fill="white" stroke="black" onclick="toggle('46,64,ID361');"/>
+<rect ID="ID362" x="42" y="300" width="18" height="18" fill="white" stroke="black" onclick="toggle('46,32,ID362');"/>
+<rect ID="ID363" x="62" y="300" width="18" height="18" fill="white" stroke="black" onclick="toggle('46,16,ID363');"/>
+<rect ID="ID364" x="82" y="300" width="18" height="18" fill="white" stroke="black" onclick="toggle('46,8,ID364');"/>
+<rect ID="ID365" x="102" y="300" width="18" height="18" fill="white" stroke="black" onclick="toggle('46,4,ID365');"/>
+<rect ID="ID366" x="122" y="300" width="18" height="18" fill="white" stroke="black" onclick="toggle('46,2,ID366');"/>
+<rect ID="ID367" x="142" y="300" width="18" height="18" fill="white" stroke="black" onclick="toggle('46,1,ID367');"/>
+<rect ID="ID368" x="162" y="300" width="18" height="18" fill="white" stroke="black" onclick="toggle('47,128,ID368');"/>
+<rect ID="ID369" x="182" y="300" width="18" height="18" fill="white" stroke="black" onclick="toggle('47,64,ID369');"/>
+<rect ID="ID370" x="202" y="300" width="18" height="18" fill="white" stroke="black" onclick="toggle('47,32,ID370');"/>
+<rect ID="ID371" x="222" y="300" width="18" height="18" fill="white" stroke="black" onclick="toggle('47,16,ID371');"/>
+<rect ID="ID372" x="242" y="300" width="18" height="18" fill="white" stroke="black" onclick="toggle('47,8,ID372');"/>
+<rect ID="ID373" x="262" y="300" width="18" height="18" fill="white" stroke="black" onclick="toggle('47,4,ID373');"/>
+<rect ID="ID374" x="282" y="300" width="18" height="18" fill="white" stroke="black" onclick="toggle('47,2,ID374');"/>
+<rect ID="ID375" x="302" y="300" width="18" height="18" fill="white" stroke="black" onclick="toggle('47,1,ID375');"/>
+<rect ID="ID376" x="322" y="300" width="18" height="18" fill="white" stroke="black" onclick="toggle('48,128,ID376');"/>
+<rect ID="ID377" x="342" y="300" width="18" height="18" fill="white" stroke="black" onclick="toggle('48,64,ID377');"/>
+<rect ID="ID378" x="362" y="300" width="18" height="18" fill="white" stroke="black" onclick="toggle('48,32,ID378');"/>
+<rect ID="ID379" x="382" y="300" width="18" height="18" fill="white" stroke="black" onclick="toggle('48,16,ID379');"/>
+<rect ID="ID380" x="402" y="300" width="18" height="18" fill="white" stroke="black" onclick="toggle('48,8,ID380');"/>
+<rect ID="ID381" x="422" y="300" width="18" height="18" fill="white" stroke="black" onclick="toggle('48,4,ID381');"/>
+<rect ID="ID382" x="442" y="300" width="18" height="18" fill="white" stroke="black" onclick="toggle('48,2,ID382');"/>
+<rect ID="ID383" x="462" y="300" width="18" height="18" fill="white" stroke="black" onclick="toggle('48,1,ID383');"/>
+<rect ID="ID384" x="2" y="320" width="18" height="18" fill="white" stroke="black" onclick="toggle('49,128,ID384');"/>
+<rect ID="ID385" x="22" y="320" width="18" height="18" fill="white" stroke="black" onclick="toggle('49,64,ID385');"/>
+<rect ID="ID386" x="42" y="320" width="18" height="18" fill="white" stroke="black" onclick="toggle('49,32,ID386');"/>
+<rect ID="ID387" x="62" y="320" width="18" height="18" fill="white" stroke="black" onclick="toggle('49,16,ID387');"/>
+<rect ID="ID388" x="82" y="320" width="18" height="18" fill="white" stroke="black" onclick="toggle('49,8,ID388');"/>
+<rect ID="ID389" x="102" y="320" width="18" height="18" fill="white" stroke="black" onclick="toggle('49,4,ID389');"/>
+<rect ID="ID390" x="122" y="320" width="18" height="18" fill="white" stroke="black" onclick="toggle('49,2,ID390');"/>
+<rect ID="ID391" x="142" y="320" width="18" height="18" fill="white" stroke="black" onclick="toggle('49,1,ID391');"/>
+<rect ID="ID392" x="162" y="320" width="18" height="18" fill="white" stroke="black" onclick="toggle('50,128,ID392');"/>
+<rect ID="ID393" x="182" y="320" width="18" height="18" fill="white" stroke="black" onclick="toggle('50,64,ID393');"/>
+<rect ID="ID394" x="202" y="320" width="18" height="18" fill="white" stroke="black" onclick="toggle('50,32,ID394');"/>
+<rect ID="ID395" x="222" y="320" width="18" height="18" fill="white" stroke="black" onclick="toggle('50,16,ID395');"/>
+<rect ID="ID396" x="242" y="320" width="18" height="18" fill="white" stroke="black" onclick="toggle('50,8,ID396');"/>
+<rect ID="ID397" x="262" y="320" width="18" height="18" fill="white" stroke="black" onclick="toggle('50,4,ID397');"/>
+<rect ID="ID398" x="282" y="320" width="18" height="18" fill="white" stroke="black" onclick="toggle('50,2,ID398');"/>
+<rect ID="ID399" x="302" y="320" width="18" height="18" fill="white" stroke="black" onclick="toggle('50,1,ID399');"/>
+<rect ID="ID400" x="322" y="320" width="18" height="18" fill="white" stroke="black" onclick="toggle('51,128,ID400');"/>
+<rect ID="ID401" x="342" y="320" width="18" height="18" fill="white" stroke="black" onclick="toggle('51,64,ID401');"/>
+<rect ID="ID402" x="362" y="320" width="18" height="18" fill="white" stroke="black" onclick="toggle('51,32,ID402');"/>
+<rect ID="ID403" x="382" y="320" width="18" height="18" fill="white" stroke="black" onclick="toggle('51,16,ID403');"/>
+<rect ID="ID404" x="402" y="320" width="18" height="18" fill="white" stroke="black" onclick="toggle('51,8,ID404');"/>
+<rect ID="ID405" x="422" y="320" width="18" height="18" fill="white" stroke="black" onclick="toggle('51,4,ID405');"/>
+<rect ID="ID406" x="442" y="320" width="18" height="18" fill="white" stroke="black" onclick="toggle('51,2,ID406');"/>
+<rect ID="ID407" x="462" y="320" width="18" height="18" fill="white" stroke="black" onclick="toggle('51,1,ID407');"/>
+<rect ID="ID408" x="2" y="340" width="18" height="18" fill="white" stroke="black" onclick="toggle('52,128,ID408');"/>
+<rect ID="ID409" x="22" y="340" width="18" height="18" fill="white" stroke="black" onclick="toggle('52,64,ID409');"/>
+<rect ID="ID410" x="42" y="340" width="18" height="18" fill="white" stroke="black" onclick="toggle('52,32,ID410');"/>
+<rect ID="ID411" x="62" y="340" width="18" height="18" fill="white" stroke="black" onclick="toggle('52,16,ID411');"/>
+<rect ID="ID412" x="82" y="340" width="18" height="18" fill="white" stroke="black" onclick="toggle('52,8,ID412');"/>
+<rect ID="ID413" x="102" y="340" width="18" height="18" fill="white" stroke="black" onclick="toggle('52,4,ID413');"/>
+<rect ID="ID414" x="122" y="340" width="18" height="18" fill="white" stroke="black" onclick="toggle('52,2,ID414');"/>
+<rect ID="ID415" x="142" y="340" width="18" height="18" fill="white" stroke="black" onclick="toggle('52,1,ID415');"/>
+<rect ID="ID416" x="162" y="340" width="18" height="18" fill="white" stroke="black" onclick="toggle('53,128,ID416');"/>
+<rect ID="ID417" x="182" y="340" width="18" height="18" fill="white" stroke="black" onclick="toggle('53,64,ID417');"/>
+<rect ID="ID418" x="202" y="340" width="18" height="18" fill="white" stroke="black" onclick="toggle('53,32,ID418');"/>
+<rect ID="ID419" x="222" y="340" width="18" height="18" fill="white" stroke="black" onclick="toggle('53,16,ID419');"/>
+<rect ID="ID420" x="242" y="340" width="18" height="18" fill="white" stroke="black" onclick="toggle('53,8,ID420');"/>
+<rect ID="ID421" x="262" y="340" width="18" height="18" fill="white" stroke="black" onclick="toggle('53,4,ID421');"/>
+<rect ID="ID422" x="282" y="340" width="18" height="18" fill="white" stroke="black" onclick="toggle('53,2,ID422');"/>
+<rect ID="ID423" x="302" y="340" width="18" height="18" fill="white" stroke="black" onclick="toggle('53,1,ID423');"/>
+<rect ID="ID424" x="322" y="340" width="18" height="18" fill="white" stroke="black" onclick="toggle('54,128,ID424');"/>
+<rect ID="ID425" x="342" y="340" width="18" height="18" fill="white" stroke="black" onclick="toggle('54,64,ID425');"/>
+<rect ID="ID426" x="362" y="340" width="18" height="18" fill="white" stroke="black" onclick="toggle('54,32,ID426');"/>
+<rect ID="ID427" x="382" y="340" width="18" height="18" fill="white" stroke="black" onclick="toggle('54,16,ID427');"/>
+<rect ID="ID428" x="402" y="340" width="18" height="18" fill="white" stroke="black" onclick="toggle('54,8,ID428');"/>
+<rect ID="ID429" x="422" y="340" width="18" height="18" fill="white" stroke="black" onclick="toggle('54,4,ID429');"/>
+<rect ID="ID430" x="442" y="340" width="18" height="18" fill="white" stroke="black" onclick="toggle('54,2,ID430');"/>
+<rect ID="ID431" x="462" y="340" width="18" height="18" fill="white" stroke="black" onclick="toggle('54,1,ID431');"/>
+<rect ID="ID432" x="2" y="360" width="18" height="18" fill="white" stroke="black" onclick="toggle('55,128,ID432');"/>
+<rect ID="ID433" x="22" y="360" width="18" height="18" fill="white" stroke="black" onclick="toggle('55,64,ID433');"/>
+<rect ID="ID434" x="42" y="360" width="18" height="18" fill="white" stroke="black" onclick="toggle('55,32,ID434');"/>
+<rect ID="ID435" x="62" y="360" width="18" height="18" fill="white" stroke="black" onclick="toggle('55,16,ID435');"/>
+<rect ID="ID436" x="82" y="360" width="18" height="18" fill="white" stroke="black" onclick="toggle('55,8,ID436');"/>
+<rect ID="ID437" x="102" y="360" width="18" height="18" fill="white" stroke="black" onclick="toggle('55,4,ID437');"/>
+<rect ID="ID438" x="122" y="360" width="18" height="18" fill="white" stroke="black" onclick="toggle('55,2,ID438');"/>
+<rect ID="ID439" x="142" y="360" width="18" height="18" fill="white" stroke="black" onclick="toggle('55,1,ID439');"/>
+<rect ID="ID440" x="162" y="360" width="18" height="18" fill="white" stroke="black" onclick="toggle('56,128,ID440');"/>
+<rect ID="ID441" x="182" y="360" width="18" height="18" fill="white" stroke="black" onclick="toggle('56,64,ID441');"/>
+<rect ID="ID442" x="202" y="360" width="18" height="18" fill="white" stroke="black" onclick="toggle('56,32,ID442');"/>
+<rect ID="ID443" x="222" y="360" width="18" height="18" fill="white" stroke="black" onclick="toggle('56,16,ID443');"/>
+<rect ID="ID444" x="242" y="360" width="18" height="18" fill="white" stroke="black" onclick="toggle('56,8,ID444');"/>
+<rect ID="ID445" x="262" y="360" width="18" height="18" fill="white" stroke="black" onclick="toggle('56,4,ID445');"/>
+<rect ID="ID446" x="282" y="360" width="18" height="18" fill="white" stroke="black" onclick="toggle('56,2,ID446');"/>
+<rect ID="ID447" x="302" y="360" width="18" height="18" fill="white" stroke="black" onclick="toggle('56,1,ID447');"/>
+<rect ID="ID448" x="322" y="360" width="18" height="18" fill="white" stroke="black" onclick="toggle('57,128,ID448');"/>
+<rect ID="ID449" x="342" y="360" width="18" height="18" fill="white" stroke="black" onclick="toggle('57,64,ID449');"/>
+<rect ID="ID450" x="362" y="360" width="18" height="18" fill="white" stroke="black" onclick="toggle('57,32,ID450');"/>
+<rect ID="ID451" x="382" y="360" width="18" height="18" fill="white" stroke="black" onclick="toggle('57,16,ID451');"/>
+<rect ID="ID452" x="402" y="360" width="18" height="18" fill="white" stroke="black" onclick="toggle('57,8,ID452');"/>
+<rect ID="ID453" x="422" y="360" width="18" height="18" fill="white" stroke="black" onclick="toggle('57,4,ID453');"/>
+<rect ID="ID454" x="442" y="360" width="18" height="18" fill="white" stroke="black" onclick="toggle('57,2,ID454');"/>
+<rect ID="ID455" x="462" y="360" width="18" height="18" fill="white" stroke="black" onclick="toggle('57,1,ID455');"/>
+<rect ID="ID456" x="2" y="380" width="18" height="18" fill="white" stroke="black" onclick="toggle('58,128,ID456');"/>
+<rect ID="ID457" x="22" y="380" width="18" height="18" fill="white" stroke="black" onclick="toggle('58,64,ID457');"/>
+<rect ID="ID458" x="42" y="380" width="18" height="18" fill="white" stroke="black" onclick="toggle('58,32,ID458');"/>
+<rect ID="ID459" x="62" y="380" width="18" height="18" fill="white" stroke="black" onclick="toggle('58,16,ID459');"/>
+<rect ID="ID460" x="82" y="380" width="18" height="18" fill="white" stroke="black" onclick="toggle('58,8,ID460');"/>
+<rect ID="ID461" x="102" y="380" width="18" height="18" fill="white" stroke="black" onclick="toggle('58,4,ID461');"/>
+<rect ID="ID462" x="122" y="380" width="18" height="18" fill="white" stroke="black" onclick="toggle('58,2,ID462');"/>
+<rect ID="ID463" x="142" y="380" width="18" height="18" fill="white" stroke="black" onclick="toggle('58,1,ID463');"/>
+<rect ID="ID464" x="162" y="380" width="18" height="18" fill="white" stroke="black" onclick="toggle('59,128,ID464');"/>
+<rect ID="ID465" x="182" y="380" width="18" height="18" fill="white" stroke="black" onclick="toggle('59,64,ID465');"/>
+<rect ID="ID466" x="202" y="380" width="18" height="18" fill="white" stroke="black" onclick="toggle('59,32,ID466');"/>
+<rect ID="ID467" x="222" y="380" width="18" height="18" fill="white" stroke="black" onclick="toggle('59,16,ID467');"/>
+<rect ID="ID468" x="242" y="380" width="18" height="18" fill="white" stroke="black" onclick="toggle('59,8,ID468');"/>
+<rect ID="ID469" x="262" y="380" width="18" height="18" fill="white" stroke="black" onclick="toggle('59,4,ID469');"/>
+<rect ID="ID470" x="282" y="380" width="18" height="18" fill="white" stroke="black" onclick="toggle('59,2,ID470');"/>
+<rect ID="ID471" x="302" y="380" width="18" height="18" fill="white" stroke="black" onclick="toggle('59,1,ID471');"/>
+<rect ID="ID472" x="322" y="380" width="18" height="18" fill="white" stroke="black" onclick="toggle('60,128,ID472');"/>
+<rect ID="ID473" x="342" y="380" width="18" height="18" fill="white" stroke="black" onclick="toggle('60,64,ID473');"/>
+<rect ID="ID474" x="362" y="380" width="18" height="18" fill="white" stroke="black" onclick="toggle('60,32,ID474');"/>
+<rect ID="ID475" x="382" y="380" width="18" height="18" fill="white" stroke="black" onclick="toggle('60,16,ID475');"/>
+<rect ID="ID476" x="402" y="380" width="18" height="18" fill="white" stroke="black" onclick="toggle('60,8,ID476');"/>
+<rect ID="ID477" x="422" y="380" width="18" height="18" fill="white" stroke="black" onclick="toggle('60,4,ID477');"/>
+<rect ID="ID478" x="442" y="380" width="18" height="18" fill="white" stroke="black" onclick="toggle('60,2,ID478');"/>
+<rect ID="ID479" x="462" y="380" width="18" height="18" fill="white" stroke="black" onclick="toggle('60,1,ID479');"/>
+<rect ID="ID480" x="2" y="400" width="18" height="18" fill="white" stroke="black" onclick="toggle('61,128,ID480');"/>
+<rect ID="ID481" x="22" y="400" width="18" height="18" fill="white" stroke="black" onclick="toggle('61,64,ID481');"/>
+<rect ID="ID482" x="42" y="400" width="18" height="18" fill="white" stroke="black" onclick="toggle('61,32,ID482');"/>
+<rect ID="ID483" x="62" y="400" width="18" height="18" fill="white" stroke="black" onclick="toggle('61,16,ID483');"/>
+<rect ID="ID484" x="82" y="400" width="18" height="18" fill="white" stroke="black" onclick="toggle('61,8,ID484');"/>
+<rect ID="ID485" x="102" y="400" width="18" height="18" fill="white" stroke="black" onclick="toggle('61,4,ID485');"/>
+<rect ID="ID486" x="122" y="400" width="18" height="18" fill="white" stroke="black" onclick="toggle('61,2,ID486');"/>
+<rect ID="ID487" x="142" y="400" width="18" height="18" fill="white" stroke="black" onclick="toggle('61,1,ID487');"/>
+<rect ID="ID488" x="162" y="400" width="18" height="18" fill="white" stroke="black" onclick="toggle('62,128,ID488');"/>
+<rect ID="ID489" x="182" y="400" width="18" height="18" fill="white" stroke="black" onclick="toggle('62,64,ID489');"/>
+<rect ID="ID490" x="202" y="400" width="18" height="18" fill="white" stroke="black" onclick="toggle('62,32,ID490');"/>
+<rect ID="ID491" x="222" y="400" width="18" height="18" fill="white" stroke="black" onclick="toggle('62,16,ID491');"/>
+<rect ID="ID492" x="242" y="400" width="18" height="18" fill="white" stroke="black" onclick="toggle('62,8,ID492');"/>
+<rect ID="ID493" x="262" y="400" width="18" height="18" fill="white" stroke="black" onclick="toggle('62,4,ID493');"/>
+<rect ID="ID494" x="282" y="400" width="18" height="18" fill="white" stroke="black" onclick="toggle('62,2,ID494');"/>
+<rect ID="ID495" x="302" y="400" width="18" height="18" fill="white" stroke="black" onclick="toggle('62,1,ID495');"/>
+<rect ID="ID496" x="322" y="400" width="18" height="18" fill="white" stroke="black" onclick="toggle('63,128,ID496');"/>
+<rect ID="ID497" x="342" y="400" width="18" height="18" fill="white" stroke="black" onclick="toggle('63,64,ID497');"/>
+<rect ID="ID498" x="362" y="400" width="18" height="18" fill="white" stroke="black" onclick="toggle('63,32,ID498');"/>
+<rect ID="ID499" x="382" y="400" width="18" height="18" fill="white" stroke="black" onclick="toggle('63,16,ID499');"/>
+<rect ID="ID500" x="402" y="400" width="18" height="18" fill="white" stroke="black" onclick="toggle('63,8,ID500');"/>
+<rect ID="ID501" x="422" y="400" width="18" height="18" fill="white" stroke="black" onclick="toggle('63,4,ID501');"/>
+<rect ID="ID502" x="442" y="400" width="18" height="18" fill="white" stroke="black" onclick="toggle('63,2,ID502');"/>
+<rect ID="ID503" x="462" y="400" width="18" height="18" fill="white" stroke="black" onclick="toggle('63,1,ID503');"/>
+
+
+	
+      </svg>
+
+      <form name="form1">
+	<textarea name="data" rows="10" cols="50"></textarea>
+      </form>
+    </p>
+  </body>
+</html>
+
