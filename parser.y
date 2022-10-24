@@ -28,15 +28,14 @@
 
 
   // compiler internal flags
-  bool add16_is_needed=true;
+  bool memcpy_is_needed=false;
+  bool mobcpy_is_needed=true;
   bool signed_comparison_is_needed=false;
   bool twos_complement_is_needed = false;
-  bool pbin_is_needed = false;
   bool byte2hex_is_needed = false;
   bool printf_is_needed = false;
   bool scanf_is_needed = false;
   bool getkey_is_needed = false;
-  bool hex2petscii_is_needed = false;
   bool symbol_table_is_needed = false;
 
   
@@ -70,7 +69,9 @@
   stack <string> var_scope_stack;
   stack <int> label_stack;
   vector <int> label_vector;
-
+  vector <int> mob_vector;
+  vector <string> mobs;
+  
   string stripFirst( string s )
   {
     return s.substr( 1, s.length()-1);
@@ -88,6 +89,13 @@
     return return_value;
   }
 
+  bool isMob( string s )
+  {
+    bool return_value = false;
+    if( s[0] == 'm' ) return_value = true;
+    return return_value;
+  }
+  
   bool isFloat( string s )
   {
     bool return_value = false;
@@ -556,7 +564,7 @@
     asm_function * ptr_function = new asm_function( s, l );
     asm_functions.push_back( ptr_function );
   }
-  
+
   class asm_string
   {
   public:
@@ -630,7 +638,7 @@
       out << "\t.BYTE #$00" << endl;
       return out;
     }
- 
+
 
   /* ASM VARIABLE TYPES & SIZES */
   /* 0 - unsigned int - 1 bytes */
@@ -638,6 +646,7 @@
   /* 2 - word - 2 bytes */
   /* 4 - double - 2 bytes */
   /* 8 - float - 5 bytes */
+  /* 16 - mob - 63 bytes */
   class asm_variable
   {
   public:
@@ -670,6 +679,10 @@
 	    // float
 	    data_start += 5;
 	    break;
+	  case 16:
+	    // mob
+	     data_start += 63;
+	     break;
 	  default:
 	    data_start += 1;
 	  }	   
@@ -679,6 +692,7 @@
     int getAddressAsInt() { return address; };
     string getIdentifier(){ return name; };
     void setData( string s ){ data = s; };
+    void setAddress( int i ){ address = i; };
     int getType(){ return type; };
     string getPrintableType()
     {
@@ -694,6 +708,8 @@
 	  return string( "double" );
 	case 8:
 	  return string( "float" );
+	case 16:
+	  return string( "mob" );
 	}
 
     };
@@ -885,6 +901,9 @@
       case 8:
 	s = string( "float" );
 	break;
+      case 16:
+	s = string( "mob" );
+	break;
       default:
 	s = string( "unknown_type" );	    
       }	   
@@ -967,7 +986,8 @@
     
     return;
   }
-  
+
+
   void ProcessFunctions()
   {
     for( int j=0; j<asm_functions.size(); j++ )
@@ -1026,7 +1046,7 @@
 	int j = asm_strings[i]->getIndex() -1; 
 
 	int instruction_address = asm_instr[j]->getAddress();
-
+	
 	asm_instr[j+1]->setString( string("LDA #$") + string(asm_strings[i]->getH()));
 	asm_instr[j+1]->setSize( 2  );
 
@@ -1038,6 +1058,38 @@
 	asm_instr[j+4]->setString( string( "STA $02"));
 	asm_instr[j+4]->setSize( 2  );
       }
+  }
+
+  void ProcessMobs()
+  {
+    int first_location = 12288;
+    for( int i=0; i<mobs.size(); i++ )
+      {
+	// get identifier
+	string id = string("");
+	string bytes = string("");
+	string tmp_string = mobs[i];
+	std::size_t found = tmp_string.find(string("."));
+
+	//addAsm( string(".org $") + string(  toHex(64*(192+i))), 0, true );
+	if (found!=std::string::npos)
+	  {
+	    id = tmp_string.substr(0, found );
+	    //	    cerr << id << endl;
+	    //tmp_string.replace(found,tmp_string.length(),"$");
+	    bytes = tmp_string.substr( found, tmp_string.length() );
+	    //asm_instr[j]->setString( tmp_string );
+	    //cerr << found << endl;
+	  }
+	
+	int j = getIndexOf( id.c_str() );
+
+	//asm_variables[j]->setAddress( current_code_location );
+	addAsm( string("MOBLBL")+id+string(":"), 0, true );	
+	addAsm( bytes, 63, false);
+	//current_code_location+=63; // the +1 is for the null terminated zero
+      }
+
   }
 
   void addAsm( string s,  bool l = false)
@@ -1195,7 +1247,7 @@
 
 //%parse-param { FILE* fp }
 %token VOID 
-%token <nd_obj> tSPRITEXY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tJSR tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER PRINTFF SCANFF INT FLOAT CHAR WHILE FOR IF ELSE TRUE FALSE NUMBER FLOAT_NUM ID LE GE EQ NE GT LT AND OR STR ADD SUBTRACT MULTIPLY DIVIDE  UNARY INCLUDE RETURN
+%token <nd_obj> tSPRITEXY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tJSR tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER PRINTFF SCANFF INT FLOAT CHAR WHILE FOR IF ELSE TRUE FALSE NUMBER FLOAT_NUM ID LE GE EQ NE GT LT AND OR STR ADD SUBTRACT MULTIPLY DIVIDE  UNARY INCLUDE RETURN
 %type <nd_obj> headers main body return function datatype statement arithmetic relop program else
    %type <nd_obj2> init value expression
       %type <nd_obj3> condition
@@ -1256,7 +1308,9 @@ FLOAT  { addParserComment( string( "RULE: datatype: ") + string( $$.name )); cur
 |
 CHAR { addParserComment( string( "RULE: datatype: ") + string( $$.name )); current_variable_type=0;strcpy( $$.name, "CHAR" );}
 |
-VOID { addParserComment( string( "RULE: datatype: ") + string( $$.name )); current_variable_type=16;strcpy( $$.name, "VOID" );}
+tMOB { addParserComment( string( "RULE: datatype: ") + string( $$.name )); current_variable_type=16;strcpy( $$.name, "MOB" );}
+|
+VOID { addParserComment( string( "RULE: datatype: ") + string( $$.name )); current_variable_type=32;strcpy( $$.name, "VOID" );}
 ;
 
 
@@ -1354,6 +1408,8 @@ body: WHILE
   addComment( "                      ELSE:" );
   addAsm( string("JMP ") + getLabel( label_vector[label_major]+1, false), 3, false);
   addAsm( generateNewLabel(), 0, true );
+
+
 }
  else
    {
@@ -1533,7 +1589,6 @@ body: WHILE
     }
   else if( getTypeOf( $3.name ) == 1 )
     {
-      addDebugComment( "\t\t\t\t\t\t<<<=====" );
       current_variable_base_address = getAddressOf( $3.name );
       // this really should convert it to decimal first
       int inst_size = 3;
@@ -1544,10 +1599,6 @@ body: WHILE
       addAsm( "JSR BYTE2HEX", 3, false );
     }
 };
-
-
-
-
 | PRINTFF '(' STR ')' ';'
 {
   addComment( "=========================================================");      
@@ -1612,10 +1663,10 @@ body: WHILE
       addParserComment( "t == 2 || t == 4" );
 
       addAsm( string("LDA $") + toHex(getAddressOf($3.name )).c_str(), 3, false );
-      addComment("Push the argument onto the stack before function call" );
+      addDebugComment("Push the argument onto the stack before function call" );
       addAsm( "PHA" );
       addAsm( string("LDA $") + toHex(getAddressOf($3.name )+1).c_str(), 3, false );
-      addComment("Push the argument onto the stack before function call" );
+      addDebugComment("Push the argument onto the stack before function call" );
       addAsm( "PHA" );
       
       addAsm( "JSR BYTE2HEX", 3, false );
@@ -1628,9 +1679,9 @@ body: WHILE
     }
   else if( string( $3.name) != "A" )
     {
-      addParserComment( "Straight from A register" );
+      addDebugComment( "Straight from A register" );
       addAsm( string("LDA ") + string($3.name), 3, false );
-      addComment("Push the argument onto the stack before function call" );
+      addDebugComment("Push the argument onto the stack before function call" );
       addAsm( "PHA" );
       addAsm( "JSR BYTE2HEX", 3, false );
     }
@@ -1670,16 +1721,8 @@ body: WHILE
   addParserComment( "=========================================================");
   addParserComment( string("               poke ") + string($3.name) + string( ", ") + string( $5.name)  );
   addParserComment( "=========================================================");
-  //$$.nd = mknode(NULL, NULL, "poke");
-  int var_index = getIndexOf( $5.name );
-  if( var_index == -1 )
-    {
-      addAsm( string( "; [ERROR] Variable [") +  string($5.name) + string("] not found in vector!"), 0, true );
-    }
-  else
-    {
-      addAsm( string( "LDA $" ) + asm_variables[ var_index ]->getAddress(), 3, false );
-    }
+  int addr = getAddressOf( $5.name );
+  addAsm( string( "LDA $" ) + toHex(addr), 3, false );
   addAsm( string( "STA $" ) + toHex( atoi( $3.name )), 3, false );
 };
 | tPOKE '(' ID ',' ID ')' ';'
@@ -1687,19 +1730,16 @@ body: WHILE
   addParserComment( "=========================================================");
   addParserComment( string("   ID ID       poke ") + string($3.name) + string( ", ") + string( $5.name)  );
   addParserComment( "=========================================================");
-  //$$.nd = mknode(NULL, NULL, "poke");
   pushScope( "POKE" );
 
   int addr = getAddressOf( $3.name );
   int addr2 = getAddressOf( $5.name );
-  cerr << addr << endl;
+  //cerr << addr << endl;
   addAsm( string( "LDA $" ) + toHex(addr),  3, false );
   addAsm( string( "STA " ) + getLabel( label_vector[label_major],false), 3, false );
   addAsm( string( "LDA $" ) + toHex(addr+1),  3, false );
   addAsm( string( "STA " ) + getLabel( label_vector[label_major]+1,false), 3, false );
-
   addAsm( string( "LDA $" ) + toHex( addr2 ), 3, false );
-  //getLabel( label_vector[label_major]-1);
   addAsm( ".BYTE #$8D;\t  <-- STA absolute", 1, false );
   addAsm( generateNewLabel() + string( "\t\t\t; <-- low byte"), 0, true );
   addAsm( ".BYTE #$00", 1, false );
@@ -2070,6 +2110,57 @@ statement: datatype ID init
       addDebugComment( " else if( isInteger($3.name) ) - Line 1898" );
       addAsm( string( "LDA #$" ) + toHex( atoi( stripFirst($3.name).c_str() ) ), 2, false);
     }
+  else if( isMob( $3.name ))
+    {
+      pushScope("MOB");
+      //int base_addr = getAddressOf( $2.name );
+
+
+      // first 2 bytes are: sprite # and sprite location
+      int sprite_number = mob_vector[0]; // 0-7
+      int sprite_location = mob_vector[1]; // 192, 193... etc
+
+      cerr << sprite_number << " " << sprite_location << endl;
+      
+      int sprite_pointer = 2040 + sprite_number;
+      
+      addAsm( string( "LDA #$") + toHex( sprite_location + sprite_number ), 2, false );
+      addAsm( string( "STA $") + toHex( sprite_pointer ), 3, false );
+
+      int sprite_base_address = (sprite_number + sprite_location)*64;
+
+      string BA_L = toHex(get_word_L(sprite_base_address));
+      string BA_H = toHex(get_word_H(sprite_base_address));
+      
+      
+      string byte_string = string($2.name) + string( ":\n\t.BYTE " );
+      for( int i=2; i<mob_vector.size(); i++ )
+	{
+	  byte_string += string( "#$" ) + toHex( mob_vector[i]);
+	  if( i<(mob_vector.size()-1) ) byte_string+=string(", ");
+	}
+      mobs.push_back( byte_string );
+
+      mob_vector.erase(mob_vector.begin(),mob_vector.end());
+
+      addAsm( string( "JSR " ) + getLabel( ((int)label_vector[label_major]), false ), 3, false );
+      addAsm( byte_string, 63, true );
+      addAsm( generateNewLabel(), 0, true );
+      addAsm( "PLA" );
+      addAsm( "STA $FB", 2, false );
+      addAsm( "PLA" );
+      addAsm( "STA $FC", 2, false );
+      addAsm( "INC $FB", 2, false );
+      addAsm( string("LDA #$") + BA_L, 2, false );
+      addAsm( "STA $FD", 2, false );
+      addAsm( string("LDA #$") + BA_H, 2, false );
+      addAsm( "STA $FE", 2, false );
+      addAsm( "JSR MOBCPY", 3, false );
+      mobcpy_is_needed = true;
+      popScope();
+
+      
+    }
   else
     {
       addAsm( "; \t\t\t\tUnknown Value in Source Code" , 0, false );
@@ -2224,7 +2315,8 @@ init: '=' expression
 {
   addParserComment( string( "RULE: init: '=' expression" ) );
   //addParserComment( string( $2.name ) );
-  //  cerr << current_variable_type << endl;
+  //cerr << current_variable_type << endl;
+
   
   if( string( $2.name ) == "ARG" )
     {
@@ -2263,7 +2355,7 @@ init: '=' expression
   else if( isInteger( $2.name ) )
     {
 
-      addDebugComment( string( "else if( isInteger(") + string($2.name) + string( ")) - line 2087" ));
+      addDebugComment( string( "else if( isInteger(") + string($2.name) + string( ")) - line 2263" ));
 
       if( current_variable_type == 1 )
 	{
@@ -2286,6 +2378,12 @@ init: '=' expression
 	  strcpy( $$.name, "A" ); 
 
 	}
+    }
+  else if( isMob( $2.name ) )
+    {
+      //cerr << getAddressOf( stripFirst( $2.name ) ) << ": ";
+      strcpy( $$.name, $2.name );
+
     }
   else
     {
@@ -2839,17 +2937,118 @@ expression: expression arithmetic expression
       
       
     }
-  // the result of this expression is in A
-  // if( FAC == 0 )
-  //  {
-  //    strcpy( $$.name, string(string("A") + string($3.name)).c_str() );
-  //  }
   if( FAC == 1 )
     {
       strcpy( $$.name, "FAC" );
     }
 	
 }
+| '{' expression '}'
+{
+  addParserComment( "{ expression }" );
+  addAsm( "; testing", 0, false );
+
+};
+| '{' value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ','
+value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ','
+value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ','
+value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ','
+value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ','
+value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ','
+value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' value '}'
+{
+  int sprite_number = atoi( $2.name );
+  if( sprite_number > 7 || sprite_number < 0 )
+    {
+      addCompilerMessage( "invalid MOB number: should be 0-7", 3 );
+    }
+
+  int sprite_location = atoi( $4.name );
+  if( sprite_location > 255 || sprite_location < 0 )
+    {
+      addCompilerMessage( "invalid MOB location: should be 0-255", 3 );
+    }
+  
+  mob_vector.push_back( atoi(stripFirst( $2.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $4.name ).c_str()) );
+  
+ 
+  mob_vector.push_back( atoi(stripFirst( $6.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $8.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $10.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $12.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $14.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $16.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $18.name ).c_str()) );
+  
+  mob_vector.push_back( atoi(stripFirst( $20.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $22.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $24.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $26.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $28.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $30.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $32.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $34.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $36.name ).c_str()) );
+
+  mob_vector.push_back( atoi(stripFirst( $38.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $40.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $42.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $44.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $46.name ).c_str()) );
+ 
+  
+  mob_vector.push_back( atoi(stripFirst( $48.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $50.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $52.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $54.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $56.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $58.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $60.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $62.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $64.name ).c_str()) );
+
+  mob_vector.push_back( atoi(stripFirst( $66.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $68.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $70.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $72.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $74.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $76.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $78.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $80.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $82.name ).c_str()) );
+
+  mob_vector.push_back( atoi(stripFirst( $84.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $86.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $88.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $90.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $92.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $94.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $96.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $98.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $100.name ).c_str()) );
+
+  mob_vector.push_back( atoi(stripFirst( $102.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $104.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $106.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $108.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $110.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $112.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $114.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $116.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $118.name ).c_str()) );
+
+  mob_vector.push_back( atoi(stripFirst( $120.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $122.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $124.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $126.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $128.name ).c_str()) );
+  mob_vector.push_back( atoi(stripFirst( $130.name ).c_str()) );
+  
+  strcpy( $$.name, "m" );
+
+};
+
 | tTWOS '(' ID ')'
 {
   twos_complement_is_needed = true;
@@ -2862,7 +3061,7 @@ expression: expression arithmetic expression
   addAsm( "JSR TWOS", 3, false );
   addAsm( "PLA" );
   strcpy( $$.name, "A");
-}
+};
 | tSIN '(' expression ')'
 {
   addComment( "=========================================================");  
@@ -2991,21 +3190,21 @@ expression: expression arithmetic expression
   addParserComment( string("RULE: expression: value: [") + string( $1.name ) + string(")") );
   addParserComment( string( $1.name ) );
   strcpy( $$.name, $1.name);
-}
+};
 | ID
 {
   addParserComment(string( "RULE: expression: ID : ") + string($1.name ));
   int base_address = getAddressOf($1.name);
   int t = getTypeOf( $1.name );
   strcpy( $$.name, (string( "$" ) + toHex(getAddressOf($1.name ))).c_str() );
-}
+};
 | tPEEK '(' NUMBER ')'
 {
   if( atoi( $3.name ) > 65535 ) addCompilerMessage( "memory location out of range", 2 );
   if( atoi( $3.name ) < 0 ) addCompilerMessage( "memory location out of range", 2 );
   addAsm( string("LDA $") + toHex(atoi( $3.name )), 3, false );
   strcpy( $$.name, "A" );
-}
+};
 | tPEEK '(' expression ')'
 {
   
@@ -3106,16 +3305,11 @@ return: RETURN ';'
 | RETURN {} expression ';'
 {
   addParserComment( "RULE: return: RETURN {} expression ';'" );
-  //  addAsm( string( "STA $" ) + toHex(getAddressOf("function_return_value")), 3, false );
   addAsm("RTS");
 }
 | RETURN {} value ';'
 {
   addParserComment( "RULE: return: RETURN {} value ';'" );
-
-  addComment( "Whatever value is in Accumulator when return is called is stored in 'return_value'" );
-  //addAsm( string( "STA $" ) + toHex(getAddressOf("function_return_value")), 3, false );
-
   addAsm("RTS");
 }
 |
@@ -3204,10 +3398,6 @@ int main(int argc, char *argv[])
   current_state = string("unknown" );
   current_code_location = code_start;
   
-  // temp storage for return values from expressions
-  //addAsmVariable( "function_return_value", 1 );
-  //addAsmVariable( "op1", 1 );
-
   if( scanf_is_needed)
     {
       addAsmVariable( "buffer_tmp_l", 1 );
@@ -3239,60 +3429,7 @@ int main(int argc, char *argv[])
       //printf("Semantic analysis completed with no errors");
     }
 
-  // a built-in-function that will convert an integer into a null-terminated
-  // buffer of PETSCII displayable characters.
- 
-  //if( hex2petscii_is_needed )
-  if( false )
-    {
-      // function for just one digit
-      addAsm( "H2PDIGIT:", 0, true );
-      
-      addAsm( string( "LDA $") + toHex(getAddressOf( "hex2petscii_tmp_byte" ) ), 3, false );
-      
-      addAsm( "AND #$0F", 2, false );
-      addAsm( "CLC", 1, false );
-      addAsm( "ADC #$1E", 2, false );
-      addAsm( "CMP #$28", 2, false );
-      addAsm( ".BYTE #$90, #$03", 2, false);
-      addAsm( "CLC", 1, false );
-      addAsm( "ADC #$19", 2, false );
-      addAsm( "JSR $FFD2", 3, false );
-      addAsm( "RTS", 1, false );
-
-
-      // function for values > than 1 digit
-      addAsm( "H2PMANY:", 0, true );
-      addAsm( "LDX #$00", 2, false );
-      addAsm( "H2PMANY1:\t\t;top of H2PMANY loop #1", 0, true );
-      addAsm( string( "LDA $") + toHex( getAddressOf( "hex2petscii_tmp_l" ) ) + string( ",X"), 3, false );
-
-      addAsm( "AND #$0F", 2, false );
-      addAsm( "PHA", 1, false );
-      addAsm( string( "LDA $") + toHex(getAddressOf( "hex2petscii_tmp_l" ) )+ string( ",X"), 3, false );
-      addAsm( "AND #$F0", 2, false );
-      addAsm( "LSR", 1, false );
-      addAsm( "LSR", 1, false );
-      addAsm( "LSR", 1, false );
-      addAsm( "LSR", 1, false );
-      addAsm( "PHA", 1, false );
-      addAsm( "CPX #$01", 2, false );
-      addAsm( ".BYTE #$F0", 1, false );
-      addAsm( ".BYTE #$04", 1, false );
-      addAsm( "INX", 1, false );
-      addAsm( "JMP H2PMANY1", 3, false );
-	      
-      addAsm( "LDX #$04", 2, false );
-      addAsm( "H2PMANY2:\t\t;top of H2PMANY loop #2", 0, true );
-      addAsm( "PLA" );
-      addAsm( string( "STA $" ) + toHex(getAddressOf( "hex2petscii_tmp_byte" )), 3, false );
-      addAsm( "JSR H2PDIGIT", 3, false );
-      addAsm( "CPX #$00", 2, false );
-      addAsm( ".BYTE #$90, #$03", 2, false );
-      addAsm( "JMP H2PMANY2", 3, false );
-      addAsm( "RTS", 1, false );
-    }
-  if( signed_comparison_is_needed )
+   if( signed_comparison_is_needed )
     {
       //addAsm( ".BYTE #$00;\tTemporary storage for comparison", 1, false );
       //addAsm( ".BYTE #$00;\tMore temporary storage for comparison", 1, false );
@@ -3320,66 +3457,6 @@ int main(int argc, char *argv[])
       addAsm( "LDA $02", 2, false );
       addAsm( "CMP $03", 2, false );
       addAsm( "PHP" );// push the status register to the stack with the correct values after cmp
-      // ==================================================================================
-      addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_2" ) ), 3, false );
-      addAsm( "PHA" );
-      addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_1" ) ), 3, false );
-      addAsm( "PHA" );
-      addAsm( "RTS" );
-    }
-  if( false /*add16_is_needed*/ )
-    {
-      addAsm( "ADD16:\t\t;Add 2 16 bit numbers", 0, true );
-      addAsm( "PLA" );
-      addAsm( string( "STA $" ) + toHex(getAddressOf( "return_address_1" ) ), 3, false );
-      addAsm( "PLA" );
-      addAsm( string( "STA $" ) + toHex(getAddressOf( "return_address_2" ) ), 3, false );
-      // ==================================================================================
-      
-
-
-      // ==================================================================================
-      addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_2" ) ), 3, false );
-      addAsm( "PHA" );
-      addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_1" ) ), 3, false );
-      addAsm( "PHA" );
-      addAsm( "RTS" );
-
-    }
-  if( false )
-    {
-      // FMULT: multiply a FPOINT from memory (LB=A, HB=Y) and FAC ($7A&$7B)
-      addAsm( "FMULT:", 0, true );
-      addAsm( "PLA" );
-      addAsm( string( "STA $" ) + toHex(getAddressOf( "return_address_1" ) ), 3, false );
-      addAsm( "PLA" );
-      addAsm( string( "STA $" ) + toHex(getAddressOf( "return_address_2" ) ), 3, false );
-      // ==================================================================================
-
-      // TBD
-      
-      // ==================================================================================
-      addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_2" ) ), 3, false );
-      addAsm( "PHA" );
-      addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_1" ) ), 3, false );
-      addAsm( "PHA" );
-      addAsm( "RTS" );
-    }
-  if( false )
-    {
-      // FIN: floating point to memory
-      addAsm( "FIN:", 0, true );
-      addAsm( "PLA" );
-      addAsm( string( "STA $" ) + toHex(getAddressOf( "return_address_1" ) ), 3, false );
-      addAsm( "PLA" );
-      addAsm( string( "STA $" ) + toHex(getAddressOf( "return_address_2" ) ), 3, false );
-      // =================================================================================
-      addAsm( "PLA" );
-      addAsm( "STA $7A", 2, false ); // Low Byte
-      addAsm( "PLA" );
-      addAsm( "STA $7B", 2, false ); // High Byte
-      addAsm( "JSR $0079", 3, false );
-      addAsm( "JSR $BCF3", 3, false );
       // ==================================================================================
       addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_2" ) ), 3, false );
       addAsm( "PHA" );
@@ -3440,6 +3517,51 @@ int main(int argc, char *argv[])
       
       
       
+      //==================================================================================
+      addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_2" )), 3, false );
+      addAsm( "PHA" );
+      addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_1" )) , 3, false );
+      addAsm( "PHA" );
+  
+      addAsm( "RTS" );
+
+      
+    }
+  if( mobcpy_is_needed )
+    {
+      // a QUICK and DIRTY MEMCPY of 63 BYTES
+      addAsm( "MOBCPY:\t\t; Copy 63 bytes from $FB/$FC to $FD/$FE", 0, true ); 
+      addAsm( "LDY #$3F" );
+      addAsm( "MOBCPL1:", 0, true );
+      addAsm( "CPY #$00", 2, false );
+      addAsm( "BEQ MOBCPL2", 2, false );
+      addAsm( "LDA ($FB),Y", 2, false );
+      addAsm( "STA ($FD),Y", 2, false );
+      addAsm( "DEY", 1, false );
+      addAsm( "JMP MOBCPL1", 3, false );
+      addAsm( "MOBCPL2:", 0, true );
+      addAsm( "RTS" );
+    }
+  if( memcpy_is_needed )
+    {
+      // this is the template to use for a built-in function
+      addAsm( "MEMCPY:\t\t; Copy STACK[0] bytes from $FB/$FC to $FD/$FE", 0, true );
+      // save return address from the stack
+      addAsm( "PLA" );
+      addAsm( string( "STA $" ) + toHex(getAddressOf(  "return_address_1" ) ), 3, false );
+      addAsm( "PLA" );
+      addAsm( string( "STA $" ) + toHex(getAddressOf(  "return_address_2" ) ), 3, false );
+      //==================================================================================
+      addAsm( "PLA" );
+      addAsm( "TAY" );
+      addAsm( "MEMCPL1:", 0, true );
+      addAsm( "CPY #$00", 2, false );
+      addAsm( "BEQ MEMCPL2", 2, false );
+      addAsm( "LDA ($FB),Y", 2, false );
+      addAsm( "STA ($FD),Y", 2, false );
+      addAsm( "DEY", 1, false );
+      addAsm( "JMP MEMCPL1", 3, false );
+      addAsm( "MEMCPL2:", 0, true );
       //==================================================================================
       addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_2" )), 3, false );
       addAsm( "PHA" );
@@ -3564,6 +3686,7 @@ int main(int argc, char *argv[])
   ProcessFunctions();
   ProcessMemoryLocationsOfCode();
   ProcessStrings();
+  //ProcessMobs();
   current_code_location = code_start;  // reset the memory counter
   
   ProcessMemoryLocationsOfCode();
