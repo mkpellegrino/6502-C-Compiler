@@ -2526,6 +2526,19 @@ init: '=' expression
 	  strcpy( $$.name, "A" ); 
 
 	}
+      else
+	{
+	  
+	  int tmp_int = atoi( stripFirst($2.name).c_str() );
+	  if( tmp_int < 0 )
+	    {
+	      tmp_int=twos_complement(tmp_int);
+	    }
+	  addAsm( string( "LDA #$" ) + toHex( tmp_int ), 2, false);
+
+	  strcpy( $$.name, "A" ); 
+
+	}
     }
   else if( isMob( $2.name ) )
     {
@@ -3482,6 +3495,11 @@ return: RETURN ';'
 int main(int argc, char *argv[])
 {
   label_major=0;
+  label_vector.push_back(0);
+  label_vector.push_back(0);
+  label_vector.push_back(0);
+  label_vector.push_back(0);
+  label_vector.push_back(0);
   label_vector.push_back(0);
   label_vector.push_back(0);
   label_vector.push_back(0);
