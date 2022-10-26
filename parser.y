@@ -104,6 +104,13 @@
     return return_value;
   }
 
+  bool isUint( string s )
+  {
+    bool return_value = false;
+    if( s[0] == 'u' ) return_value = true;
+    return return_value;
+  }
+  
   bool isWord( string s )
   {
     bool return_value = false;
@@ -623,20 +630,21 @@
   ostream & operator << (ostream &out, const asm_string &a) 
     {
       out << "; $" << std::hex << a.address << "\t\t\t\"" << a.text << "\"" << endl;
-      out << a.name << ":\n";
+      out << a.name << ":\n\t.BYTE ";
       for( int i = 0; i<a.text.size(); i++ )
 	{
 	  if( a.text[i] == '\\' && a.text[i+1] == 'n')
 	    {
-	      out << "\t.BYTE #$0D" << endl;
+	      out << "#$0D, ";
 	      i++;
 	    }
 	  else
 	    {
-	      out << "\t.BYTE #$" << toHex((int)a.text[i]) << endl;
+	      out << "#$" << toHex((int)a.text[i]) << ", ";
 	    }
+	 
 	}
-      out << "\t.BYTE #$00" << endl;
+      out << "#$00" << endl;
       return out;
     }
 
@@ -918,7 +926,7 @@
 	    addCompilerMessage( "you cannot re-declare variables", 3 );
 	  }
       }
-    if( t == 1 || t == 2 || t == 4 || t == 8 )
+    if( t == 0 | t == 1 || t == 2 || t == 4 || t == 8 )
       {
 	addDebugComment( string( "Adding: " ) + string(id) + string(" of type: ") + s  );
 	asm_variable * new_asm_variable = new asm_variable( id, t );
@@ -1864,7 +1872,8 @@ condition: expression relop expression
   else if( getAddressOf($1.name) != -1 )
     {
       addDebugComment( "Address Found" );
-
+      //cerr << $1.name << " " << getTypeOf( $1.name ) << endl;
+      
       addAsm( string( "LDA $" ) + toHex( getAddressOf($1.name)), 3, false);
 
       //addAsm( string( "LDA #$" ) + toHex(atoi(stripFirst( $3.name ).c_str())), 2, false );
@@ -1894,17 +1903,29 @@ condition: expression relop expression
 
       addCompilerMessage( "error in for loop initialization", 2 );
     }
-  addAsm( "PHA" );
-  addAsm( "\n", 0, false );
-  addComment( $1.name );
-  addAsm( "\n", 0, false );
+  if( getTypeOf( $1.name ) != 0 )
+    {
+      addAsm( "PHA" );
+    }
+  //addAsm( "\n", 0, false );
+  //addComment( $1.name );
+  //addAsm( "\n", 0, false );
   
   /* When comparing Negatives and Positives, please take special care! */
   /* check bit 7 of A and B... if they are the same then continue, otherwise */
   /* undo two's complement in the one where 7 is set */
   
   // if( getTypeOf( $1.name ) == 8 && isFloat($3.name)) // MEM vs. IMM
-  if( getTypeOf( $1.name ) == 8 && isFloat($3.name)) // FPMEM vs. IMM
+  if( getTypeOf( $1.name ) == 0 )
+    {
+      addDebugComment( string( $1.name ) + string(" vs. ") + string($3.name) ); 
+      int tmp_rhs = atoi( stripFirst($3.name).c_str() );
+      if( tmp_rhs > 255 ) addCompilerMessage( "type mismatch.  uint is 0-255.  cannont compare with a number > 255.", 3 );
+      addAsm( string("CMP #$") + toHex(tmp_rhs), 2, false );
+
+
+    }
+  else if( getTypeOf( $1.name ) == 8 && isFloat($3.name)) // FPMEM vs. IMM
     {
       addAsm( "LDA #$00", 2, false );
       addAsm( "PHA" );
@@ -1973,7 +1994,7 @@ condition: expression relop expression
       addAsm( "JSR SIGNEDCMP", 3, false );
  
     }
-    addAsm( "PLP" );
+  if( getTypeOf( $1.name ) != 0 ) addAsm( "PLP" );
 
   if( scope_stack.top() == "FOR" ) 
     {
@@ -2232,6 +2253,12 @@ statement: datatype ID init
     {
       // then it's an address
       addAsm( string("LDA ") + string($3.name), 3, false );
+    }
+  else if( isUint($3.name) )
+    {
+      addParserComment( string( "UINT: " ) + string( $2.name ) + string( " " ) + string( $3.name ) );
+      // then it's an unsigned integer (type 0 - 8 bits)
+      addAsm( string("LDA ") + string($3.name) , 2, false );
     }
   else if( isByte($3.name) )
     {
@@ -2500,12 +2527,19 @@ init: '=' expression
     {
       strcpy( $$.name, $2.name );
     }
-  else if( isInteger( $2.name ) )
+  else if( isInteger( $2.name ) || isUint( $2.name ) )
     {
 
       addDebugComment( string( "else if( isInteger(") + string($2.name) + string( ")) - line 2263" ));
 
-      if( current_variable_type == 1 )
+      if( current_variable_type == 0 )
+	{
+	  int tmp_int = atoi( stripFirst($2.name).c_str() );
+	  addAsm( string( "LDA #$" ) + toHex( tmp_int ), 2, false);
+
+	  strcpy( $$.name, "A" ); 
+	}
+      else if( current_variable_type == 1 )
 	{
 	  int tmp_int = atoi( stripFirst($2.name).c_str() );
 	  if( tmp_int < 0 )
@@ -3214,7 +3248,10 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
   addComment( "=========================================================");  
   addComment( string("                 getin()" ));
   addComment( "=========================================================");
-  addAsm( "JSR $FFE4", 3, false );
+
+  addAsm( "LDA $CB", 2, false );
+  
+  //addAsm( "JSR $FFE4", 3, false );
   strcpy( $$.name, "A" );
 };
 | tTWOS '(' ID ')'
@@ -3434,8 +3471,25 @@ FLOAT_NUM
 }
 | NUMBER
 {
+  //cerr << current_variable_type << endl;
+  
   int v = atoi( $1.name );
-  strcpy($$.name, string( string("i") + string($1.name)).c_str());
+  if( current_variable_type == 0 )
+    {
+      strcpy($$.name, string( string("u") + string($1.name)).c_str());
+    }
+  else if( current_variable_type == 1 )
+    {
+      strcpy($$.name, string( string("i") + string($1.name)).c_str());
+    }
+  else if( current_variable_type == 2 )
+    {
+      strcpy($$.name, string( string("w") + string($1.name)).c_str());
+    }
+  else
+    {
+       strcpy($$.name, string( string("i") + string($1.name)).c_str());
+    }
 }
 | tWORD
 {
@@ -3841,7 +3895,7 @@ int main(int argc, char *argv[])
 
       // puts a keypress on the stack
       addAsm( "GETKEY:", 0, true );
-      addAsm( "JSR $FFCF", 3, false );
+      addAsm( "JSR $FFE4", 3, false );
       addAsm( "CMP #$00", 2, false );
       addAsm( "BEQ GETKEY", 2, false );
       /* this memory loc could be anywhere */
