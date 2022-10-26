@@ -28,6 +28,7 @@
 
 
   // compiler internal flags
+  bool cls_is_needed=false;
   bool memcpy_is_needed=false;
   bool mobcpy_is_needed=true;
   bool signed_comparison_is_needed=false;
@@ -1264,7 +1265,7 @@
 
 //%parse-param { FILE* fp }
 %token VOID 
-%token <nd_obj> tGETIN tSPRITEXY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tJSR tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER PRINTFF SCANFF INT FLOAT CHAR WHILE FOR IF ELSE TRUE FALSE NUMBER FLOAT_NUM ID LE GE EQ NE GT LT AND OR STR ADD SUBTRACT MULTIPLY DIVIDE  UNARY INCLUDE RETURN
+%token <nd_obj> tGETIN tSPRITEXY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tTOFLOAT tJSR tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER PRINTFF SCANFF INT FLOAT CHAR WHILE FOR IF ELSE TRUE FALSE NUMBER FLOAT_NUM ID LE GE EQ NE GT LT AND OR STR ADD SUBTRACT MULTIPLY DIVIDE  UNARY INCLUDE RETURN
 %type <nd_obj> headers main body return function datatype statement arithmetic relop program else
    %type <nd_obj2> init value expression
       %type <nd_obj3> condition
@@ -1691,7 +1692,7 @@ body: WHILE
     }
   else if( isFloat( string($3.name ) ))
     {
-      addCompilerMessage( "cannot byte2hex a float", 2 );
+      addCompilerMessage( "cannot byte2hex a float... try printf", 2 );
       addComment("cannot byte2hex a float");
     }
   else if( string( $3.name) != "A" )
@@ -1703,6 +1704,14 @@ body: WHILE
       addAsm( "JSR BYTE2HEX", 3, false );
     }
 }
+| tCLS '(' ')' ';'
+{
+  addComment( "=========================================================");  
+  addComment( "                 cls()");
+  addComment( "=========================================================");  
+  cls_is_needed = true;
+  addAsm( "JSR CLS", 3, false );
+};
 | tJSR '(' NUMBER ')' ';'
 {
   addComment( "=========================================================");  
@@ -3144,6 +3153,20 @@ expression: expression arithmetic expression
   addAsm( "; testing", 0, false );
 
 };
+| tTOFLOAT '(' expression ')'
+{
+  int t = getTypeOf( $3.name );
+  if( t == 0 && isAddress($3.name ))
+    {
+      // then it's a an unsigned byte
+      addAsm( string("LDY ") + string( $3.name ), 3, false ); 
+      addAsm( "LDA #$00", 2, false );
+      addAsm( "JSR $B391", 3, false );
+    }
+  
+  
+  strcpy( $$.name, "FAC" );
+};
 | '{' value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ','
 value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ','
 value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ','
@@ -3753,6 +3776,21 @@ int main(int argc, char *argv[])
       addAsm( "RTS" );
 
       
+    }
+  if( cls_is_needed )
+    {
+      addAsm( "CLS:\t\t; Clear Screen Routine", 0, true );
+      addAsm( "LDA #$20", 2, false ); // space
+      addAsm( "LDX #$00", 2, false ); // (essentially 256)
+      addAsm( "CLSLOOP:", 0, true );
+      addAsm( "STA $0400,X", 3, false );
+      addAsm( "STA $0500,X", 3, false );
+      addAsm( "STA $0600,X", 3, false );
+      addAsm( "STA $06E8,X", 3, false );
+      addAsm( "DEX" );
+      addAsm( "BNE CLSLOOP", 2, false );
+      addAsm( "RTS" );
+
     }
   if( mobcpy_is_needed )
     {
