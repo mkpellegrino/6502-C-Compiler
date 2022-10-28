@@ -11,6 +11,7 @@ unary "++"|"--"
 
 %%
 "tofloat"   { strcpy(yylval.nd_obj.name,(yytext)); return tTOFLOAT; }
+"touint"   { strcpy(yylval.nd_obj.name,(yytext)); return tTOUINT; }
 "cls"           { strcpy(yylval.nd_obj.name,(yytext)); return tCLS; }
 "getin"           { strcpy(yylval.nd_obj.name,(yytext)); return tGETIN; }
 "mob"               { strcpy(yylval.nd_obj.name,(yytext)); return tMOB; }
