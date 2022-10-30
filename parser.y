@@ -28,6 +28,10 @@
 
 
   // compiler internal flags
+  bool split_byte_is_needed=false;
+  bool decimal_digit_is_neeeded=false;
+  bool modulus_is_needed=false;
+  bool div10_is_needed=false;
   bool return_addresses_needed=true;
   bool umul_is_needed=false;
   bool cls_is_needed=false;
@@ -35,7 +39,7 @@
   bool mobcpy_is_needed=false;
   bool signed_comparison_is_needed=false;
   bool twos_complement_is_needed = false;
-  bool byte2hex_is_needed = true;
+  bool byte2hex_is_needed = false;
   bool printf_is_needed = false;
   bool scanf_is_needed = false;
   bool getkey_is_needed = false;
@@ -944,8 +948,7 @@
   void pushScope( string s )
   {
     addParserComment( "=========================================================");
-    addParserComment( "                     New Scope " + s );
-    addParserComment( "=========================================================");
+    addParserComment( "                     New Scope (" + s + ")" );
     scope_stack.push( s );
     var_scope_stack.push(".");
     label_stack.push( label );
@@ -966,8 +969,8 @@
     label_stack.pop();
     label_major--;
 
-    addParserComment( string("Label Major: ") + itos( label_major ) );
-    addParserComment( string("Label Minor: ") + itos( label_vector[label_major] ) );
+    //addParserComment( string("Label Major: ") + itos( label_major ) );
+    //addParserComment( string("Label Minor: ") + itos( label_vector[label_major] ) );
     addParserComment( "=========================================================");
   }
   
@@ -1269,7 +1272,7 @@
 
 //%parse-param { FILE* fp }
 %token VOID 
-%token <nd_obj> tGETIN tSPRITEXY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tTOFLOAT tTOUINT tJSR tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER PRINTFF SCANFF INT FLOAT CHAR WHILE FOR IF ELSE TRUE FALSE NUMBER FLOAT_NUM ID LE GE EQ NE GT LT AND OR STR ADD SUBTRACT MULTIPLY DIVIDE  UNARY INCLUDE RETURN
+%token <nd_obj> tGETIN tSPRITEXY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tTOFLOAT tTOUINT tJSR tNOP tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER PRINTFF SCANFF INT FLOAT CHAR WHILE FOR IF ELSE TRUE FALSE NUMBER FLOAT_NUM ID LE GE EQ NE GT LT AND OR STR ADD SUBTRACT MULTIPLY DIVIDE  UNARY INCLUDE RETURN
 %type <nd_obj> headers main body return function datatype statement arithmetic relop program else
    %type <nd_obj2> init value expression
       %type <nd_obj3> condition
@@ -1425,13 +1428,11 @@ body: WHILE
 }
 '{' body '}'
 {
-
-  addComment( "---------------------------------------------------------" );
-  addComment( "                      ELSE:" );
   addAsm( string("JMP ") + getLabel( label_vector[label_major]+1, false), 3, false);
   addAsm( generateNewLabel(), 0, true );
 
-
+  addComment( "---------------------------------------------------------" );
+  addComment( "                      ELSE:" );
 }
  else
    {
@@ -1720,6 +1721,10 @@ body: WHILE
   addComment( "                 jsr");
   addComment( "=========================================================");  
   addAsm(string( "JSR $") + toHex( atoi( $3.name )), 3, false );
+};
+| tNOP '(' ')' ';'
+{
+  addAsm("NOP", 1, false );
 };
 | tRTS '(' ')' ';'
 {
@@ -2701,14 +2706,31 @@ expression: expression arithmetic expression
     }
     else if( type2 == 8 && isFloat( $1.name ) )
     {
-      addDebugComment( "FLOAT_IMM arithmetic FLOAT_MEM" );
+
 
       inlineFloat( $1.name );
-      
-      int base_address_op1 = hexToDecimal( $3.name );
- 
+
+      int base_address_op1 = 105;
+      int base_address_op2 = hexToDecimal( $3.name );
+
+      // put op1 into fac
+      addAsm( string("LDA #$") + toHex(get_word_L(base_address_op2)), 2, false );
+      addAsm( string("LDY #$") + toHex(get_word_H(base_address_op2)), 2, false );
+      addAsm( "JSR $BBA2", 3, false );
       addAsm( string("LDA #$") + toHex(get_word_L(base_address_op1)), 2, false );
       addAsm( string("LDY #$") + toHex(get_word_H(base_address_op1)), 2, false );
+
+      
+
+      // SWITCH ORDER OF OP1 and OP2 HERE
+      addDebugComment( "FLOAT_IMM arithmetic FLOAT_MEM" );
+      
+      //inlineFloat( $1.name );
+      
+      //int base_address_op1 = hexToDecimal( $3.name );
+ 
+      //addAsm( string("LDA #$") + toHex(get_word_L(base_address_op1)), 2, false );
+      //addAsm( string("LDY #$") + toHex(get_word_H(base_address_op1)), 2, false );
      
       if( string($2.name) == string("*"))
 	{
@@ -3963,6 +3985,150 @@ int main(int argc, char *argv[])
 
       
     }
+  if( split_byte_is_needed )
+    {
+      return_addresses_needed = true;
+
+      // this is the template to use for a built-in function
+      addAsm( "SPLITBYTE:\t\t;S1 -> S1=Hi Bits   S0=Lo Bits", 0, true );
+
+      // save return address from the stack
+      addAsm( "PLA" );
+      addAsm( string( "STA $" ) + toHex(getAddressOf(  "return_address_1" ) ), 3, false );
+      addAsm( "PLA" );
+      addAsm( string( "STA $" ) + toHex(getAddressOf(  "return_address_2" ) ), 3, false );
+      //==================================================================================
+      addAsm( "PLA" );
+      addAsm( "STA $52", 2, false);
+      addAsm( "LSR" );
+      addAsm( "LSR" );
+      addAsm( "LSR" );
+      addAsm( "LSR" );
+      addAsm( "AND #$0F", 2, false );
+      addAsm( "PHA" );
+      addAsm( "LDA $52", 2, false );
+      addAsm( "AND #$0F", 2, false );
+      addAsm( "PHA" );
+      //==================================================================================
+      addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_2" )), 3, false );
+      addAsm( "PHA" );
+      addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_1" )) , 3, false );
+      addAsm( "PHA" );  
+      addAsm( "RTS" );
+
+    }
+  if( decimal_digit_is_neeeded )
+    {
+      return_addresses_needed = true;
+
+      // this is the template to use for a built-in function
+      addAsm( "DECDIG:\t\t;Divide number on stack by 10", 0, true );
+
+      // save return address from the stack
+      addAsm( "PLA" );
+      addAsm( string( "STA $" ) + toHex(getAddressOf(  "return_address_1" ) ), 3, false );
+      addAsm( "PLA" );
+      addAsm( string( "STA $" ) + toHex(getAddressOf(  "return_address_2" ) ), 3, false );
+      //==================================================================================
+      addAsm( "PLA" );
+
+      addAsm( "TAX" );
+      addAsm( "DEX" );
+      addAsm( "BMI DECDIGBK", 2, false);
+      addAsm( "LDA #$00", 2, false );
+      addAsm( "CLC" );
+      addAsm( "PHP" );
+      addAsm( "SED" );
+      addAsm( "DECDIGLP:", 0, true );
+      addAsm( "ADC #$01", 2, false );
+      addAsm( "DEX" );
+      addAsm( "BPL DECDIGLP", 2, false );
+      addAsm( "PLP" );
+      addAsm( "DECDIGBK:", 0, true );
+
+      addAsm( "PHA" );
+      //==================================================================================
+      addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_2" )), 3, false );
+      addAsm( "PHA" );
+      addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_1" )) , 3, false );
+      addAsm( "PHA" );  
+      addAsm( "RTS" );
+
+    }
+  if( div10_is_needed )
+    {
+      // DIVIDE BY 10 ROUTINE
+      return_addresses_needed = true;
+
+      // this is the template to use for a built-in function
+      addAsm( "DIV10:\t\t;Divide number on stack by 10", 0, true );
+
+      // save return address from the stack
+      addAsm( "PLA" );
+      addAsm( string( "STA $" ) + toHex(getAddressOf(  "return_address_1" ) ), 3, false );
+      addAsm( "PLA" );
+      addAsm( string( "STA $" ) + toHex(getAddressOf(  "return_address_2" ) ), 3, false );
+      //==================================================================================
+      addAsm( "PLA" );
+      addAsm( "LSR" );
+      addAsm( "STA $2A", 2, false );
+      addAsm( "LSR" );
+      addAsm( "ADC $2A", 2, false );
+      addAsm( "ROR" );
+      addAsm( "LSR" );
+      addAsm( "LSR" );
+      addAsm( "ADC $2A", 2, false );
+      addAsm( "ROR" );
+      addAsm( "ADC $2A", 2, false );
+      addAsm( "ROR" );
+      addAsm( "LSR" );
+      addAsm( "LSR" );
+      addAsm( "PHA" ); // result back on stack
+      //==================================================================================
+      addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_2" )), 3, false );
+      addAsm( "PHA" );
+      addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_1" )) , 3, false );
+      addAsm( "PHA" );  
+      addAsm( "RTS" );
+    }
+    if( modulus_is_needed )
+    {
+      // MODULUS ROUTIUNE
+      return_addresses_needed = true;
+
+      // this is the template to use for a built-in function
+      addAsm( "MOD:\t\tS1 % S2", 0, true );
+
+      // save return address from the stack
+      addAsm( "PLA" );
+      addAsm( string( "STA $" ) + toHex(getAddressOf(  "return_address_1" ) ), 3, false );
+      addAsm( "PLA" );
+      addAsm( string( "STA $" ) + toHex(getAddressOf(  "return_address_2" ) ), 3, false );
+      //==================================================================================
+      addAsm( "PLA" );
+      addAsm( "STA $2A", 2, false ); // S1
+      addAsm( "PLA" );
+      addAsm( "STA $52", 2, false ); // S2
+	
+      addAsm( "SEC" );
+      addAsm( "LDA $2A", 2, false );
+      addAsm( "SBC $52", 2, false );
+      addAsm( "ADC" );
+      addAsm( "" );
+      addAsm( "" );
+      addAsm( "" );
+      addAsm( "" );
+      addAsm( "" );
+      addAsm( "" );
+      addAsm( "" );
+      //==================================================================================
+      addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_2" )), 3, false );
+      addAsm( "PHA" );
+      addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_1" )) , 3, false );
+      addAsm( "PHA" );  
+      addAsm( "RTS" );
+    }
+
   if( cls_is_needed )
     {
       addAsm( "CLS:\t\t; Clear Screen Routine", 0, true );

@@ -10,6 +10,7 @@ frmt  [{\t}|{\n}]
 unary "++"|"--"
 
 %%
+"nop"   { strcpy(yylval.nd_obj.name,(yytext)); return tNOP; }
 "tofloat"   { strcpy(yylval.nd_obj.name,(yytext)); return tTOFLOAT; }
 "touint"   { strcpy(yylval.nd_obj.name,(yytext)); return tTOUINT; }
 "cls"           { strcpy(yylval.nd_obj.name,(yytext)); return tCLS; }
