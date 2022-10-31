@@ -1562,12 +1562,12 @@ body: WHILE
   addComment( "=========================================================");      
   addComment( string("printf(") + string($3.name) + string( ");") );
   addComment( "=========================================================");  
-  addParserComment( string("(work-in-progress) printf(") + string($3.name) + string( ");") );
+  addParserComment( string("printf(") + string($3.name) + string( ");") );
   if( getTypeOf( $3.name ) == 0 || getTypeOf( $3.name ) == 1 )
     {
       //cerr << $3.name << endl;
       byte2hex_is_needed = true;
-      //addAsm( string("LDA ") + string($3.name), 3, false );
+      addAsm( string("LDA ") + string($3.name), 3, false );
       addAsm( "PHA" );
       addAsm( "JSR BYTE2HEX", 3, false );
     }
@@ -2817,48 +2817,122 @@ expression: expression arithmetic expression
   
     else if( type1 == 1 && type2 == 1 && isAddress( $3.name ) && isAddress( $1.name ) )
     {
-      addAsm( string( "LDA ") +  string($3.name), 3, false); // 
+      addAsm( "; HERE", 0, false );
+      addAsm( string( "LDA ") +  string($1.name), 3, false); // 
       if( string( $2.name ) == string("+"))
 	{
 	  addAsm( "CLC" );
-	  addAsm( string( "ADC " ) + string($1.name), 3, false );
+	  addAsm( string( "ADC " ) + string($3.name), 3, false );
 	}
       else if( string( $2.name ) == string("-"))
 	{
 	  addAsm( "SEC" );
-	  addAsm( string( "SBC " ) + string($1.name), 3, false );
+	  addAsm( string( "SBC " ) + string($3.name), 3, false );
+	}
+      else if( string( $2.name ) == string("*"))
+	{
+	  umul_is_needed = true;
+	  addAsm( "STA $02", 2, false );
+	  addAsm( string( "LDA " ) + string( $3.name ), 3, false );
+	  addAsm( "STA $03", 2, false );
+	  addAsm( "JSR UMUL", 3, false );
+	  addAsm( "LDA $03", 2, false );
 	}
       strcpy( $$.name, "A" );
       
     }
   else if( isAddress( $3.name ) && isInteger( $1.name ) )
     {
-      addAsm( string( "LDA ") +  string($3.name), 3, false); // 
+      addAsm( string( "LDA ") +  string($3.name), 3, false); //
+      
       if( string( $2.name ) == string("+"))
 	{
 	  addAsm( "CLC" );
-	  addAsm( string( "ADC #$" ) + toHex(atoi(stripFirst($1.name).c_str())), 2, false );
+	  int tmp_int = atoi(stripFirst($1.name).c_str());
+	  if( tmp_int < 0 )
+	    {
+	      tmp_int = twos_complement( tmp_int );
+	    }
+	  addAsm( string( "ADC #$" ) + toHex(tmp_int), 2, false );
 	}
       else if( string( $2.name ) == string("-"))
 	{
 	  addAsm( "SEC" );
-	  addAsm( string( "SBC #$" ) + toHex(atoi(stripFirst($1.name).c_str())), 2, false );
+
+	  int tmp_int = atoi(stripFirst($1.name).c_str());
+	  if( tmp_int < 0 )
+	    {
+	      tmp_int = twos_complement( tmp_int );
+	    }
+	  addAsm( string( "SBC #$" ) + toHex(tmp_int), 2, false );
 	}
+     else if( string( $2.name ) == string("*"))
+	{
+	  int tmp_int = atoi(stripFirst($1.name).c_str());
+	  if( tmp_int < 0 )
+	    {
+	      tmp_int = twos_complement( tmp_int );
+	    }
+	    
+	  umul_is_needed = true;
+	  addAsm( "STA $02", 2, false );
+	  addAsm( string( "LDA #$" ) + toHex( tmp_int ), 2, false );
+	  addAsm( "STA $03", 2, false );
+	  addAsm( "JSR UMUL", 3, false );
+	  addAsm( "LDA $03", 2, false );
+
+	}
+     else if( string( $2.name ) == string("/"))
+	{
+	  addAsm( "; SIGNED integer division (IMM / MEM) not yet implemented", 3, false );
+	}
+      
       strcpy( $$.name, "A" );
     }
-  else if( isAddress( $1.name ) && isInteger( $3.name ) )
+  else if( isAddress( $1.name ) && isInteger( $3.name ) )     // MEM vs. IMM
     {
       addAsm( string( "LDA ") +  string($1.name), 3, false); // 
       if( string( $2.name ) == string("+"))
 	{
 	  addAsm( "CLC" );
-	  addAsm( string( "ADC #$" ) + toHex(atoi(stripFirst($3.name).c_str())), 2, false );
+	  int tmp_int = atoi(stripFirst($3.name).c_str());
+	  if( tmp_int < 0 )
+	    {
+	      tmp_int = twos_complement( tmp_int );
+	    }
+	  addAsm( string( "ADC #$" ) + toHex(tmp_int), 2, false );
 	}
       else if( string( $2.name ) == string("-"))
 	{
 	  addAsm( "SEC" );
-	  addAsm( string( "SBC #$" ) + toHex(atoi(stripFirst($3.name).c_str())), 2, false );
+
+	  int tmp_int = atoi(stripFirst($3.name).c_str());
+	  if( tmp_int < 0 )
+	    {
+	      tmp_int = twos_complement( tmp_int );
+	    }
+	  addAsm( string( "SBC #$" ) + toHex(tmp_int), 2, false );
 	}
+      else if( string( $2.name ) == string("*"))
+	{
+	  addCompilerMessage( "SIGNED integer multiplication (MEM * IMM) not yet implemented (try re-ordering)", 3 );
+	  umul_is_needed = true;
+	  int tmp_int = atoi(stripFirst($1.name).c_str());
+	  if( tmp_int < 0 )
+	    {
+	      tmp_int = twos_complement( tmp_int );
+	    }
+	  addAsm( "STA $02", 2, false );
+	  addAsm( string( "LDA #$" ) + toHex( tmp_int ) , 2, false );
+	  addAsm( "STA $03", 2, false );
+	  addAsm( "JSR UMUL", 3, false );
+	  addAsm( "LDA $03", 2, false );
+	}
+     else if( string( $2.name ) == string("/"))
+	{
+	  addAsm( "; SIGNED integer division (MEM / IMM) not yet implemented", 3, false );
+	}
+
       strcpy( $$.name, "A" );
     }
   else if( getTypeOf( $1.name ) == 2 && getTypeOf( $3.name ) == 8 )
@@ -2997,32 +3071,67 @@ expression: expression arithmetic expression
   /* if they're BOTH IMM's */
   else if( isInteger( $1.name ) && isInteger( $3.name ))
     {
-      addDebugComment( "IMM + IMM (1)" );
+      addParserComment( string( "IMM" ) + string( $2.name ) + string( "IMM (1)") );
+      
       int tmp_int1 = atoi( stripFirst($1.name).c_str() );
       int tmp_int2 = atoi( stripFirst($3.name).c_str() );
+      //cerr << toHex( tmp_int1 + tmp_int2 ) << endl;
+      int tmp_int3;
 
+      
       /* then this is a compile-time arithetic operation */
       if( string( $2.name ) == "+"  )
         {
+	  tmp_int3 = tmp_int1 + tmp_int2;
+	  if( tmp_int3 < 0 || tmp_int3 > 127)
+	    {
+	      tmp_int3 = twos_complement( tmp_int3);
+	    }
 	  //addAsm( string("LDA #$") + toHex( tmp_int1 + tmp_int2 ), 2, false ); 
-	  strcpy( $$.name, string( string("i") + toString( tmp_int1 + tmp_int2 )).c_str() );
+	  //strcpy( $$.name, string( string("i") + toString( tmp_int1 + tmp_int2 )).c_str() );
+	  addAsm( string( "LDA #$" ) + toHex ( tmp_int3  ), 2, false );
+	  //strcpy( $$.name, toString( tmp_int1 * tmp_int2 ).c_str() );
+	  strcpy( $$.name, "A" );
 	}
       else if( string( $2.name ) == "-" )
 	{
+	  tmp_int3 = tmp_int1 - tmp_int2;
+	  if( tmp_int3 < 0 || tmp_int3 > 127)
+	    {
+	      tmp_int3 = twos_complement( tmp_int3);
+	    }
 	  //addAsm( string("LDA #$") + toHex( tmp_int1 - tmp_int2 ), 2, false ); 
-	  strcpy( $$.name, toString( tmp_int1 - tmp_int2 ).c_str() );
+	  //strcpy( $$.name, toString( tmp_int1 - tmp_int2 ).c_str() );
+	  addAsm( string( "LDA #$" ) + toHex ( tmp_int3  ), 2, false );
+	  //strcpy( $$.name, toString( tmp_int1 * tmp_int2 ).c_str() );
+	  strcpy( $$.name, "A" );
+
 	}
       else if( string( $2.name ) == "*" )
 	{
-	  //addAsm( string("LDA #$") + toHex( tmp_int1 * tmp_int2 ), 2, false ); 
+	  tmp_int3 = tmp_int1 * tmp_int2;
+	  if( tmp_int3 < 0 || tmp_int3 > 127 )
+	    {
+	      tmp_int3 = twos_complement( tmp_int3);
+	    }
 
-	  strcpy( $$.name, toString( tmp_int1 * tmp_int2 ).c_str() );
+	  addAsm( string( "LDA #$" ) + toHex ( tmp_int3  ) + string( "; *** "), 2, false );
+	  strcpy( $$.name, "A" );
 	}
       else if( string( $2.name ) == "/" )
 	{
-	  //addAsm( string("LDA #$") + toHex( tmp_int1 / tmp_int2 ), 2, false ); 
+	  //addAsm( string("LDA #$") + toHex( tmp_int1 / tmp_int2 ), 2, false );
+	  tmp_int3 = tmp_int1 / tmp_int2;
+	  if( tmp_int3 < 0 )
+	    {
+	      tmp_int3 = twos_complement( tmp_int3);
+	    }
 
-	  strcpy( $$.name, toString( tmp_int1 / tmp_int2 ).c_str() );
+	  addAsm( string( "LDA #$" ) + toHex ( tmp_int3  ), 2, false );
+	  //strcpy( $$.name, toString( tmp_int1 * tmp_int2 ).c_str() );
+	  strcpy( $$.name, "A" );
+
+	  //strcpy( $$.name, toString( tmp_int1 / tmp_int2 ).c_str() );
 	}
       else
 	{
