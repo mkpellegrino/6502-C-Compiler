@@ -969,8 +969,6 @@
     label_stack.pop();
     label_major--;
 
-    //addParserComment( string("Label Major: ") + itos( label_major ) );
-    //addParserComment( string("Label Minor: ") + itos( label_vector[label_major] ) );
     addParserComment( "=========================================================");
   }
   
@@ -978,7 +976,14 @@
   
   bool previousAsm( string s )
   {
-    if( asm_instr[ asm_instr.size()-1 ]->getString() == s ) return true;
+    int i=asm_instr.size()-1;
+    
+    while( asm_instr[ i ]->getString().c_str()[0] == ';' )
+      {
+	i--;
+      }
+    if( asm_instr[ i ]->getString() == s ) return true;
+    //if( asm_instr[ asm_instr.size()-1 ]->getString() == s ) return true;
     return false;
   }
 
@@ -1582,12 +1587,27 @@ body: WHILE
       addAsm( "LDA #$69; ARG_L", 2, false );
       addAsm( "LDY #$00; ARG_H", 2, false );
       addAsm( "JSR $BBA2; RAM -> FAC", 3, false ); // FP ->FAC
+      addAsm( "JSR $BDDD; FAC -> PETSCII ($0100)", 3, false );
+      addAsm( "LDA #$00", 2, false );
+      addAsm( "STA $02", 2, false );
+      addAsm( "LDA #$01", 2, false );
+      addAsm( "STA $03", 2, false );
+      addAsm( "JSR PRN", 3, false);
+      
+
       // call the FOUT
-      addAsm( "JSR $AABC; FAC -> CRT", 3, false ); // FP --> CRT
+      
+      //addAsm( "JSR $AABC; FAC -> CRT", 3, false ); // FP --> CRT
     }
   else if( string($3.name) == string("FAC") )
     {
-      addAsm( "JSR $AABC; FAC -> CRT", 3, false ); // FP --> CRT
+      addAsm( "JSR $BDDD; FAC -> PETSCII ($0100)", 3, false );
+      addAsm( "LDA #$00", 2, false );
+      addAsm( "STA $02", 2, false );
+      addAsm( "LDA #$01", 2, false );
+      addAsm( "STA $03", 2, false );
+      addAsm( "JSR PRN", 3, false);
+      //addAsm( "JSR $AABC; FAC -> CRT", 3, false ); // FP --> CRT
     }
   else if( getTypeOf( $3.name ) == 8)
     {
@@ -1599,7 +1619,19 @@ body: WHILE
       // load it into FAC
       addAsm( "JSR $BBA2; RAM -> FAC", 3, false ); // FP ->FAC
       // call the FOUT
-      addAsm( "JSR $AABC; FAC -> CRT", 3, false ); // FP --> CRT
+
+      addAsm( "JSR $BDDD; FAC -> PETSCII ($0100)", 3, false );
+      addAsm( "LDA #$00", 2, false );
+      addAsm( "STA $02", 2, false );
+      addAsm( "LDA #$01", 2, false );
+      addAsm( "STA $03", 2, false );
+      addAsm( "JSR PRN", 3, false );
+
+
+
+
+
+      //addAsm( "JSR $AABC; FAC -> CRT", 3, false ); // FP --> CRT
     }
   else if( getTypeOf( $3.name ) == 2 )
     {
@@ -2791,8 +2823,17 @@ expression: expression arithmetic expression
     else if( type1 == 0 && type2 == 0 && isAddress( $3.name ) && isAddress( $1.name ) )
       {
 	addDebugComment( "UINT_mem arith UINT_mem" );
-	
-	addAsm( string( "LDA ") +  string($1.name), 3, false); // 
+
+
+	if( !previousAsm( string( "STA ") +  string($1.name)) )
+	  {
+	    addAsm( string( "LDA ") +  string($1.name), 3, false); // 
+	  }
+	else
+	  {
+	    addAsm( string( "; commented out by optimizer"), 0, false); // 
+	    addAsm( string( "; LDA ") +  string($1.name), 3, false); // 
+	  }
 	if( string( $2.name ) == string("+"))
 	  {
 	    addAsm( "CLC" );
@@ -2814,10 +2855,38 @@ expression: expression arithmetic expression
 	  }
 	strcpy( $$.name, "A" );
       }
-  
+    else if( type1 == 0 && type2 == 0 && isAddress( $1.name ) && isInteger( $3.name ) )
+      {
+	addAsm( "; ****** <--- HERE **** ", 0, false );
+      addAsm( string( "LDA ") +  string($1.name), 3, false); // 
+      if( string( $2.name ) == string("+"))
+	{
+	  addAsm( "CLC" );
+	  int tmp_int = atoi(stripFirst($3.name).c_str());
+	  addAsm( string( "ADC #$" ) + toHex(tmp_int), 2, false );
+	}
+      else if( string( $2.name ) == string("-"))
+	{
+	  addAsm( "SEC" );
+
+	  int tmp_int = atoi(stripFirst($3.name).c_str());
+	  addAsm( string( "SBC #$" ) + toHex(tmp_int), 2, false );
+	}
+      else if( string( $2.name ) == string("*"))
+	{
+	  addCompilerMessage( "SIGNED integer multiplication (MEM * IMM) not yet implemented (try re-ordering)", 3 );
+	  umul_is_needed = true;
+	  int tmp_int = atoi(stripFirst($1.name).c_str());
+	  addAsm( "STA $02", 2, false );
+	  addAsm( string( "LDA #$" ) + toHex( tmp_int ) , 2, false );
+	  addAsm( "STA $03", 2, false );
+	  addAsm( "JSR UMUL", 3, false );
+	  addAsm( "LDA $03", 2, false );
+	}
+      	strcpy( $$.name, "A" );
+      }
     else if( type1 == 1 && type2 == 1 && isAddress( $3.name ) && isAddress( $1.name ) )
     {
-      addAsm( "; HERE", 0, false );
       addAsm( string( "LDA ") +  string($1.name), 3, false); // 
       if( string( $2.name ) == string("+"))
 	{
