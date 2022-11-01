@@ -29,7 +29,7 @@
 
   // compiler internal flags
   bool split_byte_is_needed=false;
-  bool decimal_digit_is_neeeded=false;
+  bool decimal_digit_is_needed=false;
   bool modulus_is_needed=false;
   bool div10_is_needed=false;
   bool return_addresses_needed=true;
@@ -1571,10 +1571,25 @@ body: WHILE
   if( getTypeOf( $3.name ) == 0 || getTypeOf( $3.name ) == 1 )
     {
       //cerr << $3.name << endl;
-      byte2hex_is_needed = true;
+      //byte2hex_is_needed = true;
+      decimal_digit_is_needed = true;
+      split_byte_is_needed = true;
       addAsm( string("LDA ") + string($3.name), 3, false );
       addAsm( "PHA" );
-      addAsm( "JSR BYTE2HEX", 3, false );
+      addAsm( "JSR DECDIG", 3, false );
+      addAsm( "JSR SPLITBYTE", 3, false );
+      addAsm( "PLA" );
+      addAsm( "CLC" );
+      addAsm( "ADC #$30", 2, false );
+      addAsm( "JSR $FFD2", 3, false );
+      addAsm( "PLA" );
+      addAsm( "CLC" );
+      addAsm( "ADC #$30", 2, false );
+      addAsm( "JSR $FFD2", 3, false );
+      
+      //addAsm( string("LDA ") + string($3.name), 3, false );
+      //addAsm( "PHA" );
+      //addAsm( "JSR BYTE2HEX", 3, false );
     }
   else if( string($3.name ) == string("A") )
     {
@@ -4195,7 +4210,7 @@ int main(int argc, char *argv[])
       addAsm( "RTS" );
 
     }
-  if( decimal_digit_is_neeeded )
+  if( decimal_digit_is_needed )
     {
       return_addresses_needed = true;
 
