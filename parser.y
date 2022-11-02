@@ -40,6 +40,7 @@
   bool signed_comparison_is_needed=false;
   bool twos_complement_is_needed = false;
   bool byte2hex_is_needed = false;
+  bool byt2str_is_needed = false;
   bool printf_is_needed = false;
   bool scanf_is_needed = false;
   bool getkey_is_needed = false;
@@ -1572,21 +1573,47 @@ body: WHILE
     {
       //cerr << $3.name << endl;
       //byte2hex_is_needed = true;
-      decimal_digit_is_needed = true;
-      split_byte_is_needed = true;
+      //decimal_digit_is_needed = true;
+      //split_byte_is_needed = true;
+      byt2str_is_needed = true;
+      pushScope( "PRINTF" );
       addAsm( string("LDA ") + string($3.name), 3, false );
       addAsm( "PHA" );
-      addAsm( "JSR DECDIG", 3, false );
-      addAsm( "JSR SPLITBYTE", 3, false );
+      addAsm( "JSR BYT2STR", 3, false );
+
       addAsm( "PLA" );
-      addAsm( "CLC" );
-      addAsm( "ADC #$30", 2, false );
-      addAsm( "JSR $FFD2", 3, false );
+      addAsm( "TAX" );
       addAsm( "PLA" );
-      addAsm( "CLC" );
-      addAsm( "ADC #$30", 2, false );
+      addAsm( "TAY" );
+      addAsm( "PLA" );
+      addAsm( "CMP #$30", 2, false );
+
+      addAsm( string( "BEQ " ) + getLabel( label_vector[label_major]+2,false), 2, false ); // BNE AA
       addAsm( "JSR $FFD2", 3, false );
+      addAsm( "TYA" );
+      addAsm( generateNewLabel() + string( "\t\t\t; Just Two Bytes"), 0, true ); // LABEL BB
       
+      addAsm( "JSR $FFD2", 3, false );
+      addAsm( generateNewLabel() + string( "\t\t\t; Only One Byte"), 0, true ); // LABEL CC
+      addAsm( "TXA" );
+      addAsm( "JSR $FFD2", 3, false );
+      addAsm( "; jump to label below ", 0, true );
+      addAsm( string( "JMP " ) + getLabel( label_vector[label_major]+1,false), 3, false );
+      addAsm( generateNewLabel() + string( "\t\t\t; Label CMP2"), 0, true ); // LABEL AA
+      addAsm( "TYA" );
+      addAsm( "CMP #$30", 2, false );
+      //addAsm( "BEQ ___2ndlabel_above", 2, false );
+      addAsm( string( "BEQ " ) + getLabel( label_vector[label_major]-2,false), 2, false );
+      addAsm( string( "JMP " ) + getLabel( label_vector[label_major]-3,false), 3, false );
+      addAsm( generateNewLabel() + string( "\t\t\t; Done"), 0, true );
+      
+      //addAsm( ".BYTE #$F0, #$03", 2, false );
+      //addAsm( "JSR $FFD2", 3, false );
+      //addAsm( "TYA" );
+      //addAsm( "JSR $FFD2", 3, false );
+      //addAsm( "TXA" );
+      //addAsm( "JSR $FFD2", 3, false );
+      popScope();
       //addAsm( string("LDA ") + string($3.name), 3, false );
       //addAsm( "PHA" );
       //addAsm( "JSR BYTE2HEX", 3, false );
@@ -4152,6 +4179,68 @@ int main(int argc, char *argv[])
       addAsm( "RTS" );
       
     }
+  if( byt2str_is_needed  )
+    {
+      return_addresses_needed = true;
+      addAsm( "BYT2STR:\t\t;Turns a 1 byte value into 3 PETSCII chars on stack", 0, true );
+      addAsm( "PLA" );
+      addAsm( string( "STA $" ) + toHex(getAddressOf(  "return_address_1" ) ), 3, false );
+      addAsm( "PLA" );
+      addAsm( string( "STA $" ) + toHex(getAddressOf(  "return_address_2" ) ), 3, false );
+      //==================================================================================
+      addAsm( "PLA" ); // the value to be put into the string
+
+      addAsm( "LDX #$00", 2, false );
+      addAsm( "B2SL1:", 0, true );
+      
+      addAsm( "SEC" );
+      addAsm( "SBC #$64", 2, false );
+      addAsm( "BCC B2SL2", 2, false );
+      addAsm( "INX" );
+      addAsm( "JMP B2SL1", 3, false );
+      addAsm( "B2SL2:", 0, true );
+      addAsm( "CLC" );
+      addAsm( "ADC #$64", 2, false );
+      addAsm( "TAY" );
+      addAsm( "TXA" );
+      addAsm( "CLC" );
+      addAsm( "ADC #$30", 2, false );
+      addAsm( "PHA" );
+      addAsm( "TYA" );
+      addAsm( "LDX #$00", 2, false );
+
+
+      addAsm( "B2SL3:", 0, true );
+      addAsm( "SEC" );
+      addAsm( "SBC #$0A", 2, false );
+      addAsm( "BCC B2SL4", 2, false );
+      addAsm( "INX" );
+      addAsm( "JMP B2SL3", 3, false );
+      addAsm( "B2SL4:", 0, true );
+      addAsm( "CLC" );
+      addAsm( "ADC #$0A", 2, false );
+      addAsm( "TAY" );
+      addAsm( "TXA" );
+      addAsm( "CLC" );
+      addAsm( "ADC #$30", 2, false );
+      addAsm( "PHA" );
+      addAsm( "TYA" );
+      addAsm( "LDX #$00", 2, false );
+
+      addAsm( "TYA" );
+      addAsm( "ADC #$30", 2, false );
+      addAsm( "PHA" );
+      
+      
+      //==================================================================================
+      addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_2" )), 3, false );
+      addAsm( "PHA" );
+      addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_1" )) , 3, false );
+      addAsm( "PHA" );  
+      addAsm( "RTS" );
+
+      
+    }
   if( false )
     {
       return_addresses_needed = true;
@@ -4193,15 +4282,19 @@ int main(int argc, char *argv[])
       //==================================================================================
       addAsm( "PLA" );
       addAsm( "STA $52", 2, false);
-      addAsm( "LSR" );
-      addAsm( "LSR" );
-      addAsm( "LSR" );
-      addAsm( "LSR" );
       addAsm( "AND #$0F", 2, false );
+      addAsm( "CLC" );
+      addAsm( "ADC #$30", 2, false );
       addAsm( "PHA" );
       addAsm( "LDA $52", 2, false );
+      addAsm( "LSR" );
+      addAsm( "LSR" );
+      addAsm( "LSR" );
+      addAsm( "LSR" );
       addAsm( "AND #$0F", 2, false );
-      addAsm( "PHA" );
+      addAsm( "CLC" );
+      addAsm( "ADC #$30", 2, false );
+      addAsm( "PHA" );      
       //==================================================================================
       addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_2" )), 3, false );
       addAsm( "PHA" );
