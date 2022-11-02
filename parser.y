@@ -1569,30 +1569,23 @@ body: WHILE
   addComment( string("printf(") + string($3.name) + string( ");") );
   addComment( "=========================================================");  
   addParserComment( string("printf(") + string($3.name) + string( ");") );
-  if( getTypeOf( $3.name ) == 0 || getTypeOf( $3.name ) == 1 )
+  if( getTypeOf( $3.name ) == 0 )
     {
-      //cerr << $3.name << endl;
-      //byte2hex_is_needed = true;
-      //decimal_digit_is_needed = true;
-      //split_byte_is_needed = true;
       byt2str_is_needed = true;
       pushScope( "PRINTF" );
       addAsm( string("LDA ") + string($3.name), 3, false );
       addAsm( "PHA" );
       addAsm( "JSR BYT2STR", 3, false );
-
       addAsm( "PLA" );
       addAsm( "TAX" );
       addAsm( "PLA" );
       addAsm( "TAY" );
       addAsm( "PLA" );
       addAsm( "CMP #$30", 2, false );
-
       addAsm( string( "BEQ " ) + getLabel( label_vector[label_major]+2,false), 2, false ); // BNE AA
       addAsm( "JSR $FFD2", 3, false );
       addAsm( "TYA" );
       addAsm( generateNewLabel() + string( "\t\t\t; Just Two Bytes"), 0, true ); // LABEL BB
-      
       addAsm( "JSR $FFD2", 3, false );
       addAsm( generateNewLabel() + string( "\t\t\t; Only One Byte"), 0, true ); // LABEL CC
       addAsm( "TXA" );
@@ -1602,21 +1595,73 @@ body: WHILE
       addAsm( generateNewLabel() + string( "\t\t\t; Label CMP2"), 0, true ); // LABEL AA
       addAsm( "TYA" );
       addAsm( "CMP #$30", 2, false );
-      //addAsm( "BEQ ___2ndlabel_above", 2, false );
       addAsm( string( "BEQ " ) + getLabel( label_vector[label_major]-2,false), 2, false );
       addAsm( string( "JMP " ) + getLabel( label_vector[label_major]-3,false), 3, false );
       addAsm( generateNewLabel() + string( "\t\t\t; Done"), 0, true );
-      
-      //addAsm( ".BYTE #$F0, #$03", 2, false );
-      //addAsm( "JSR $FFD2", 3, false );
-      //addAsm( "TYA" );
-      //addAsm( "JSR $FFD2", 3, false );
-      //addAsm( "TXA" );
-      //addAsm( "JSR $FFD2", 3, false );
       popScope();
+    }
+  else if( getTypeOf( $3.name ) == 1 )
+    {
+      byt2str_is_needed = true;
+      
+      pushScope( "PRINTF" );
+      //addAsm( "LDA #$00", 2, false );
+      //addAsm( "LDA #$7F", 2, false );
+      //addAsm( "PHA" );
+      addAsm( string("LDA ") + string($3.name), 3, false );
+      addAsm( "PHA" );
+      
+      addAsm( "CMP #$7F", 2, false );
+      addAsm( string( "BCC " ) + getLabel( label_vector[label_major],false), 2, false ); // BCC Skip
+      addAsm( string("LDA ") + string($3.name), 3, false );
+      //addAsm( "SEC" );
+      // addAsm( string("STA ") + string($3.name), 3, false );
+      //addAsm( "JSR BYTE2HEX", 3, false ); byte2hex_is_needed = true;
+      addAsm( "LDA #$2D", 2, false );
+      addAsm( "JSR $FFD2", 3, false );
+      
+      // put it into two's complement
+      addAsm( "PLA" );
+
+      addAsm( "SEC" );
+      addAsm( "SBC #$01", 2, false );
+      addAsm( "EOR #$FF", 2, false );
+      addAsm( "PHA" );
+      
+      
+      addAsm( generateNewLabel() , 0, true ); // LABEL BB      
+
       //addAsm( string("LDA ") + string($3.name), 3, false );
       //addAsm( "PHA" );
-      //addAsm( "JSR BYTE2HEX", 3, false );
+      
+
+      addAsm( "JSR BYT2STR", 3, false );
+      addAsm( "PLA" );
+      addAsm( "TAX" );
+      addAsm( "PLA" );
+      addAsm( "TAY" );
+      addAsm( "PLA" );
+      addAsm( "CMP #$30", 2, false );
+      addAsm( string( "BEQ " ) + getLabel( label_vector[label_major]+2,false), 2, false ); // BNE AA
+      addAsm( "JSR $FFD2", 3, false );
+      addAsm( "TYA" );
+      addAsm( generateNewLabel() + string( "\t\t\t; Just Two Bytes"), 0, true ); // LABEL BB
+      addAsm( "JSR $FFD2", 3, false );
+      addAsm( generateNewLabel() + string( "\t\t\t; Only One Byte"), 0, true ); // LABEL CC
+      addAsm( "TXA" );
+      addAsm( "JSR $FFD2", 3, false );
+      addAsm( "; jump to label below ", 0, true );
+      addAsm( string( "JMP " ) + getLabel( label_vector[label_major]+1,false), 3, false );
+      addAsm( generateNewLabel() + string( "\t\t\t; Label CMP2"), 0, true ); // LABEL AA
+      addAsm( "TYA" );
+      addAsm( "CMP #$30", 2, false );
+      addAsm( string( "BEQ " ) + getLabel( label_vector[label_major]-2,false), 2, false );
+      addAsm( string( "JMP " ) + getLabel( label_vector[label_major]-3,false), 3, false );
+      addAsm( generateNewLabel() + string( "\t\t\t; Done"), 0, true );
+      popScope();
+
+
+
     }
   else if( string($3.name ) == string("A") )
     {
@@ -4083,8 +4128,6 @@ int main(int argc, char *argv[])
    if( signed_comparison_is_needed )
     {
       return_addresses_needed = true;
-      //addAsm( ".BYTE #$00;\tTemporary storage for comparison", 1, false );
-      //addAsm( ".BYTE #$00;\tMore temporary storage for comparison", 1, false );
       addAsm( "SIGNEDCMP:\t\t;Signed Comparison", 0, true );
       addAsm( "PLA" );
       addAsm( string( "STA $" ) + toHex(getAddressOf( "return_address_1" )), 3, false );
@@ -4095,7 +4138,6 @@ int main(int argc, char *argv[])
       addAsm( "STA $02", 2, false ); 
       addAsm( "PLA" ); // OP2
       addAsm( "STA $03", 2, false );
-
       addAsm( "EOR $02", 2, false);
       addAsm( "ROL" ); // C is now set (if warrented)
       addAsm( "BCS SGNCMPSKIP", 2, false );
