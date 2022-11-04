@@ -45,7 +45,8 @@
   bool scanf_is_needed = false;
   bool getkey_is_needed = false;
   bool symbol_table_is_needed = false;
-
+  bool sidrnd_is_needed = false;
+  bool sidrnd_is_initialised = false;
   bool long_branches = true;
   
   bool debug_comments_are_needed = true;
@@ -1278,7 +1279,7 @@
 
 //%parse-param { FILE* fp }
 %token VOID 
-%token <nd_obj> tGETIN tSPRITEXY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tTOFLOAT tTOUINT tJSR tNOP tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER PRINTFF SCANFF INT FLOAT CHAR WHILE FOR IF ELSE TRUE FALSE NUMBER FLOAT_NUM ID LE GE EQ NE GT LT AND OR STR ADD SUBTRACT MULTIPLY DIVIDE  UNARY INCLUDE RETURN
+%token <nd_obj> tGETIN tSPRITEXY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tTOFLOAT tTOUINT tJSR tRND tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER PRINTFF SCANFF INT FLOAT CHAR WHILE FOR IF ELSE TRUE FALSE NUMBER FLOAT_NUM ID LE GE EQ NE GT LT AND OR STR ADD SUBTRACT MULTIPLY DIVIDE  UNARY INCLUDE RETURN
 %type <nd_obj> headers main body return function datatype statement arithmetic relop program else
    %type <nd_obj2> init value expression
       %type <nd_obj3> condition
@@ -1299,6 +1300,7 @@ headers: headers headers { $$.nd = mknode($1.nd, $2.nd, "headers"); }
 main: datatype ID
 {
   addAsm( string( ".org $" ) + toHex( code_start ), 0, true );
+  
   addComment( "======================== main() =========================" );
 };
 
@@ -1679,7 +1681,8 @@ body: WHILE
       addAsm( "STA $02", 2, false );
       addAsm( "LDA #$01", 2, false );
       addAsm( "STA $03", 2, false );
-      addAsm( "JSR PRN", 3, false);
+      addAsm( "JSR PRN", 3, false); printf_is_needed = true;
+
       
 
       // call the FOUT
@@ -1693,7 +1696,7 @@ body: WHILE
       addAsm( "STA $02", 2, false );
       addAsm( "LDA #$01", 2, false );
       addAsm( "STA $03", 2, false );
-      addAsm( "JSR PRN", 3, false);
+      addAsm( "JSR PRN", 3, false); printf_is_needed = true;
       //addAsm( "JSR $AABC; FAC -> CRT", 3, false ); // FP --> CRT
     }
   else if( getTypeOf( $3.name ) == 8)
@@ -1712,7 +1715,7 @@ body: WHILE
       addAsm( "STA $02", 2, false );
       addAsm( "LDA #$01", 2, false );
       addAsm( "STA $03", 2, false );
-      addAsm( "JSR PRN", 3, false );
+      addAsm( "JSR PRN", 3, false ); printf_is_needed = true;
 
 
 
@@ -1743,7 +1746,6 @@ body: WHILE
   addComment( "=========================================================");      
   addComment( string("printf(") + string($3.name) + string( ");") );
   addComment( "=========================================================");  
-  printf_is_needed=true;
   // add the string stripped of its' quotes
 		
   addString( string("STRLBL") + itos(string_number++), string($3.name).substr(1,string($3.name).length()-2), asm_instr.size() );
@@ -1752,7 +1754,7 @@ body: WHILE
   addAsm( "NOP ; to be replaced", 1, false);
   addAsm( "NOP ; to be replaced", 1, false);
   addAsm( "NOP ; to be replaced", 1, false);
-  addAsm( "JSR PRN", 3, false );
+  addAsm( "JSR PRN", 3, false ); printf_is_needed = true;
 };
 | tBYTE2HEX '(' expression ')' ';'
 {
@@ -1825,6 +1827,24 @@ body: WHILE
       addAsm( "JSR BYTE2HEX", 3, false );
     }
 }
+| tCURSORXY '(' expression ',' expression ')' ';'
+{
+  addComment( "=========================================================");  
+  addComment( string("           cursorxy(") + string($3.name) + string(",") + string( $5.name ) + string( ")" ));
+  addComment( "=========================================================");  
+  if( getTypeOf( $3.name ) > 1 || getTypeOf( $5.name ) > 1 )
+    {
+      addCompilerMessage( "cursorxy arguments must be uint or int", 3 );
+    }
+  if( atoi( $3.name ) < 0 || atoi( $5.name ) < 0 )
+    {
+      addCompilerMessage( "cursorxy arguments must be > 0", 3 );
+    }
+  addAsm( "CLC" );
+  addAsm( string( "LDY " ) + string( $3.name ), 3, false );
+  addAsm( string( "LDX " ) + string( $5.name ), 3, false );
+  addAsm( "JSR $FFF0", 3, false );
+};
 | tCLS '(' ')' ';'
 {
   addComment( "=========================================================");  
@@ -1840,6 +1860,13 @@ body: WHILE
   addComment( "                 jsr");
   addComment( "=========================================================");  
   addAsm(string( "JSR $") + toHex( atoi( $3.name )), 3, false );
+};
+| tJMP '(' NUMBER ')' ';'
+{
+  addComment( "=========================================================");  
+  addComment( string( "                 jmp $") + toHex( atoi($3.name) ));
+  addComment( "=========================================================");  
+  addAsm(string( "JMP $") + toHex( atoi( $3.name )), 3, false );
 };
 | tNOP '(' ')' ';'
 {
@@ -3580,6 +3607,21 @@ expression: expression arithmetic expression
   addAsm( "; testing", 0, false );
 
 };
+| tRND '(' expression ')' 
+{
+  addComment( "=========================================================");  
+  addComment( string( "           rnd(") + string( $3.name ) + string( ");") );
+  addComment( "=========================================================");
+  sidrnd_is_needed = true;
+  if( !sidrnd_is_initialised  )
+    {
+      addAsm( "JSR SIDRND; initialize random number generator", 3, false );
+      sidrnd_is_initialised = true;
+    }
+  
+  addAsm( "LDA $D41B", 3, false );
+  strcpy( $$.name, "A" );
+};
 | tTOUINT '(' expression ')'
 {
   //cerr << $3.name << endl;
@@ -3938,16 +3980,20 @@ FLOAT_NUM
 }
 | NUMBER
 {
-  //cerr << current_variable_type << endl;
-  
+  addParserComment( string( "RULE: value: NUMBER: (") + string( $1.name ) + string(")") );
   int v = atoi( $1.name );
+
+  if( getTypeOf( $1.name ) != -1 ) current_variable_type = getTypeOf( $1.name );
+
+
   if( current_variable_type == 0 )
     {
-      if( atoi( $1.name ) > 255 || atoi( $1.name ) < 0 ) addCompilerMessage( "uint out of range (0-255)", 3 );
+      //if( atoi( $1.name ) > 255 || atoi( $1.name ) < 0 ) addCompilerMessage( "uint out of range (0-255)", 3 );
       strcpy($$.name, string( string("u") + string($1.name)).c_str());
     }
   else if( current_variable_type == 1 )
     {
+      //if( atoi( $1.name ) > 127 || atoi( $1.name ) < -128 ) addCompilerMessage( "int out of range (-128 to +127)", 3 );
       strcpy($$.name, string( string("i") + string($1.name)).c_str());
     }
   else if( current_variable_type == 2 )
@@ -4103,6 +4149,7 @@ int main(int argc, char *argv[])
       addAsmVariable( "return_address_1", 0 );
       addAsmVariable( "return_address_2", 0 );
     }
+      
   yyparse(); 
   
 
@@ -4179,6 +4226,18 @@ int main(int argc, char *argv[])
        // =================================================================================
        addAsm( "RTS" );
 
+     }
+   if( sidrnd_is_needed )
+     {
+       addAsm( "SIDRND:", 0, true );
+       addAsm( "PHA" );
+       addAsm( "LDA #$FF", 2, false );
+       addAsm( "STA $D40E", 3, false );
+       addAsm( "STA $D40F", 3, false );
+       addAsm( "LDA #$80", 2, false );
+       addAsm( "STA $D412", 3, false );
+       addAsm( "PLA" );
+       addAsm( "RTS" );       
      }
    if( byte2hex_is_needed )
     {

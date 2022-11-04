@@ -10,6 +10,8 @@ frmt  [{\t}|{\n}]
 unary "++"|"--"
 
 %%
+"rnd"    { strcpy(yylval.nd_obj.name,(yytext)); return tRND; }
+"cursorxy"    { strcpy(yylval.nd_obj.name,(yytext)); return tCURSORXY; }
 "nop"   { strcpy(yylval.nd_obj.name,(yytext)); return tNOP; }
 "tofloat"   { strcpy(yylval.nd_obj.name,(yytext)); return tTOFLOAT; }
 "touint"   { strcpy(yylval.nd_obj.name,(yytext)); return tTOUINT; }
@@ -23,6 +25,7 @@ unary "++"|"--"
 "sin"                    { strcpy(yylval.nd_obj.name,(yytext)); return tSIN; }
 "cos"                    { strcpy(yylval.nd_obj.name,(yytext)); return tCOS; }
 "jsr"                    { strcpy(yylval.nd_obj.name,(yytext)); return tJSR; }
+"jmp"                    { strcpy(yylval.nd_obj.name,(yytext)); return tJMP; }
 "twos"                   { strcpy(yylval.nd_obj.name,(yytext)); return tTWOS; }
 "byte2hex"                   { strcpy(yylval.nd_obj.name,(yytext)); return tBYTE2HEX; }
 "rts"                    { strcpy(yylval.nd_obj.name,(yytext)); return tRTS; }
