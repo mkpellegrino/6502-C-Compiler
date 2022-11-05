@@ -38,7 +38,6 @@ int main()
   spriteoff( 3 );
   pressenter();
   
-  
   printf( "SPRITESET\n" );
   spriteset( 10 );
   pressenter();
@@ -59,6 +58,55 @@ int main()
   pressenter();
   spritetoggle( 15 );
   pressenter();
+
+
+  printf( "NOW WITH VARIABLES\n" );
+  pressenter();
+  printf( "SPRITEON & SPRITEOFF\n" );
+
+  uint s = 1;
+  while( s < 9 )
+    {
+      spriteon( s );
+      pressenter();
+      asl( s );
+    }
+
+  s = 4;
+  spriteoff( s );
+  pressenter();
+
+  s = 3;
+  spriteoff( s );
+  pressenter();
+  
+  printf( "SPRITESET\n" );
+  s = 10;
+  spriteset( s );
+  pressenter();
+  s = 5;
+  spriteset( s );
+  pressenter();
+  s = 15;
+  spriteset( s );  
+  pressenter();
+
+  printf( "SPRITETOGGLE\n" );
+  s = 3;
+  spritetoggle( s );
+  pressenter();
+  spritetoggle( s );
+  pressenter();
+
+  s = 12;
+  spritetoggle( s );
+  pressenter();
+  spritetoggle( s );
+  pressenter();
+  s = 15;
+  spritetoggle( s );
+  
+
   
   printf( "DONE\n" );
   return;

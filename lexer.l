@@ -30,6 +30,7 @@ unary "++"|"--"
 "sin"                    { strcpy(yylval.nd_obj.name,(yytext)); return tSIN; }
 "cos"                    { strcpy(yylval.nd_obj.name,(yytext)); return tCOS; }
 "jsr"                    { strcpy(yylval.nd_obj.name,(yytext)); return tJSR; }
+"asl"                    { strcpy(yylval.nd_obj.name,(yytext)); return tASL; }
 "jmp"                    { strcpy(yylval.nd_obj.name,(yytext)); return tJMP; }
 "twos"                   { strcpy(yylval.nd_obj.name,(yytext)); return tTWOS; }
 "byte2hex"                   { strcpy(yylval.nd_obj.name,(yytext)); return tBYTE2HEX; }

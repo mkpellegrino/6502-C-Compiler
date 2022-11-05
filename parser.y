@@ -1278,7 +1278,7 @@
 
 //%parse-param { FILE* fp }
 %token VOID 
-%token <nd_obj> tSPRITECOLLISION tGETIN tSPRITEXY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tTOFLOAT tTOUINT tJSR tSPREITSET tSPRITEON tSPRITEOFF tSPRITETOGGLE tRND tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER PRINTFF SCANFF INT FLOAT CHAR WHILE FOR IF ELSE TRUE FALSE NUMBER FLOAT_NUM ID LE GE EQ NE GT LT AND OR STR ADD SUBTRACT MULTIPLY DIVIDE  UNARY INCLUDE RETURN
+%token <nd_obj> tSPRITECOLLISION tGETIN tSPRITEXY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tTOFLOAT tTOUINT tJSR tASL tSPREITSET tSPRITEON tSPRITEOFF tSPRITETOGGLE tRND tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER PRINTFF SCANFF INT FLOAT CHAR WHILE FOR IF ELSE TRUE FALSE NUMBER FLOAT_NUM ID LE GE EQ NE GT LT AND OR STR ADD SUBTRACT MULTIPLY DIVIDE  UNARY INCLUDE RETURN
 %type <nd_obj> headers main body return function datatype statement arithmetic relop program else
    %type <nd_obj2> init value expression
       %type <nd_obj3> condition
@@ -1921,6 +1921,16 @@ body: WHILE
   //cls_is_needed = true;
   addAsm( "JSR $FF81; cls()", 3, false );
 
+};
+| tASL '(' expression ')' ';'
+{
+  addComment( "=========================================================");  
+  addComment( "                 cls()");
+  addComment( "=========================================================");  
+  
+  int x = getAddressOf( $3.name );
+  addAsm( string( "ASL $") + toHex( x ), 3, false );
+  
 };
 | tJSR '(' NUMBER ')' ';'
 {

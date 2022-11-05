@@ -1,6 +1,7 @@
 ; uint : return_address_1 : $0334 (820)
 ; uint : return_address_2 : $0335 (821)
 ; uint : i : $0336 (822)
+; uint : s : $0337 (823)
 ; Adding: return_address_1 of type: uint
 ; Adding: return_address_2 of type: uint
 ; RULE: datatype: int
@@ -487,7 +488,7 @@ LBL1L8:
 	STA $D007; 09EE
 	LDA #$0B; 09F1
 	STA $03; 09F3
-	LDA #$15; 09F5
+	LDA #$FF; 09F5
 	STA $02; 09F7
 	JSR PRN; 09F9
 ; RULE: value: NUMBER: (1)
@@ -540,9 +541,9 @@ LBL1L8:
 	AND $D015; 0A39
 	STA $D015; 0A3C
 	JSR LBL0L0; pressenter(); 0A3F
-	LDA #$0B; 0A42
+	LDA #$0C; 0A42
 	STA $03; 0A44
-	LDA #$2B; 0A46
+	LDA #$15; 0A46
 	STA $02; 0A48
 	JSR PRN; 0A4A
 ; RULE: value: NUMBER: (10)
@@ -566,9 +567,9 @@ LBL1L8:
 	LDA #$0F; 0A5D
 	STA $D015; 0A5F
 	JSR LBL0L0; pressenter(); 0A62
-	LDA #$0B; 0A65
+	LDA #$0C; 0A65
 	STA $03; 0A67
-	LDA #$36; 0A69
+	LDA #$20; 0A69
 	STA $02; 0A6B
 	JSR PRN; 0A6D
 ; RULE: value: NUMBER: (3)
@@ -611,81 +612,281 @@ LBL1L8:
 	EOR $D015; 0A9E
 	STA $D015; 0AA1
 	JSR LBL0L0; pressenter(); 0AA4
-	LDA #$0B; 0AA7
+	LDA #$0C; 0AA7
 	STA $03; 0AA9
-	LDA #$44; 0AAB
+	LDA #$2E; 0AAB
 	STA $02; 0AAD
 	JSR PRN; 0AAF
+	JSR LBL0L0; pressenter(); 0AB2
+	LDA #$0C; 0AB5
+	STA $03; 0AB7
+	LDA #$42; 0AB9
+	STA $02; 0ABB
+	JSR PRN; 0ABD
+; RULE: datatype: uint
+; RULE: value: NUMBER: (1)
+; RULE: expression: value: [u1)
+; u1
+; RULE: init: '=' expression
+; else if( isInteger(u1)) - line 2263
+	LDA #$01; 0AC0
+; RULE: statement: datatype ID init
+; UINT s=A
+; Adding: s of type: uint
+	STA $0337; ; 0AC2
+; =========================================================
+;                      New Scope (WHILE)
+;                         WHILE LOOP
+	PHA; 0AC5
+LBL1L9:
+; RULE: expression: ID : s
+; RULE: value: NUMBER: (9)
+; RULE: expression: value: [u9)
+; u9
+; =========================================================
+;             condition in WHILE
+; WHILE $0337<u9
+; =========================================================
+LBL1L10:			; Top of WHILE Loop
+; Address Found
+	LDA $0337; 0AC6
+; $0337 vs. u9
+	CMP #$09; 0AC9
+	.BYTE #$90, #$03; 0ACB
+	JMP LBL1L12; jump to ELSE; 0ACD
+LBL1L11:
+; RULE: expression: ID : s
+; statement: tSPRITEON '(' expression ')' ';' 
+	LDA $D015; 0AD0
+	ORA $0337; 0AD3
+	STA $D015; 0AD6
+	JSR LBL0L0; pressenter(); 0AD9
+; RULE: expression: ID : s
+	ASL $0337; 0ADC
+	JMP LBL1L10; jump to top of FOR; 0ADF
+LBL1L12:
+	PLA; 0AE2
+; Release Scope WHILE
+; =========================================================
+; RULE: value: NUMBER: (4)
+; RULE: expression: value: [u4)
+; u4
+; RULE: init: '=' expression
+; else if( isInteger(u4)) - line 2263
+	LDA #$04; 0AE3
+; RULE: statement: ID init
+	STA $0337; 0AE5
+; RULE: expression: ID : s
+; statement: tSPRITEOFF '(' expression ')' ';' 
+	LDA $0337; 0AE8
+	EOR #$FF; 0AEB
+	AND $D015; 0AED
+	STA $D015; 0AF0
+	JSR LBL0L0; pressenter(); 0AF3
+; RULE: value: NUMBER: (3)
+; RULE: expression: value: [i3)
+; i3
+; RULE: init: '=' expression
+; else if( isInteger(i3)) - line 2263
+	LDA #$03; 0AF6
+; RULE: statement: ID init
+	STA $0337; 0AF8
+; RULE: expression: ID : s
+; statement: tSPRITEOFF '(' expression ')' ';' 
+	LDA $0337; 0AFB
+	EOR #$FF; 0AFE
+	AND $D015; 0B00
+	STA $D015; 0B03
+	JSR LBL0L0; pressenter(); 0B06
+	LDA #$0C; 0B09
+	STA $03; 0B0B
+	LDA #$58; 0B0D
+	STA $02; 0B0F
+	JSR PRN; 0B11
+; RULE: value: NUMBER: (10)
+; RULE: expression: value: [i10)
+; i10
+; RULE: init: '=' expression
+; else if( isInteger(i10)) - line 2263
+	LDA #$0A; 0B14
+; RULE: statement: ID init
+	STA $0337; 0B16
+; RULE: expression: ID : s
+; statement: tSPRITESET '(' expression ')' ';' 
+	LDA $0337; 0B19
+	STA $D015; 0B1C
+	JSR LBL0L0; pressenter(); 0B1F
+; RULE: value: NUMBER: (5)
+; RULE: expression: value: [i5)
+; i5
+; RULE: init: '=' expression
+; else if( isInteger(i5)) - line 2263
+	LDA #$05; 0B22
+; RULE: statement: ID init
+	STA $0337; 0B24
+; RULE: expression: ID : s
+; statement: tSPRITESET '(' expression ')' ';' 
+	LDA $0337; 0B27
+	STA $D015; 0B2A
+	JSR LBL0L0; pressenter(); 0B2D
+; RULE: value: NUMBER: (15)
+; RULE: expression: value: [i15)
+; i15
+; RULE: init: '=' expression
+; else if( isInteger(i15)) - line 2263
+	LDA #$0F; 0B30
+; RULE: statement: ID init
+	STA $0337; 0B32
+; RULE: expression: ID : s
+; statement: tSPRITESET '(' expression ')' ';' 
+	LDA $0337; 0B35
+	STA $D015; 0B38
+	JSR LBL0L0; pressenter(); 0B3B
+	LDA #$0C; 0B3E
+	STA $03; 0B40
+	LDA #$63; 0B42
+	STA $02; 0B44
+	JSR PRN; 0B46
+; RULE: value: NUMBER: (3)
+; RULE: expression: value: [i3)
+; i3
+; RULE: init: '=' expression
+; else if( isInteger(i3)) - line 2263
+	LDA #$03; 0B49
+; RULE: statement: ID init
+	STA $0337; 0B4B
+; RULE: expression: ID : s
+; statement: tSPRITETOGGLE '(' expression ')' ';' 
+	LDA $0337; 0B4E
+	EOR $D015; 0B51
+	STA $D015; 0B54
+	JSR LBL0L0; pressenter(); 0B57
+; RULE: expression: ID : s
+; statement: tSPRITETOGGLE '(' expression ')' ';' 
+	LDA $0337; 0B5A
+	EOR $D015; 0B5D
+	STA $D015; 0B60
+	JSR LBL0L0; pressenter(); 0B63
+; RULE: value: NUMBER: (12)
+; RULE: expression: value: [i12)
+; i12
+; RULE: init: '=' expression
+; else if( isInteger(i12)) - line 2263
+	LDA #$0C; 0B66
+; RULE: statement: ID init
+	STA $0337; 0B68
+; RULE: expression: ID : s
+; statement: tSPRITETOGGLE '(' expression ')' ';' 
+	LDA $0337; 0B6B
+	EOR $D015; 0B6E
+	STA $D015; 0B71
+	JSR LBL0L0; pressenter(); 0B74
+; RULE: expression: ID : s
+; statement: tSPRITETOGGLE '(' expression ')' ';' 
+	LDA $0337; 0B77
+	EOR $D015; 0B7A
+	STA $D015; 0B7D
+	JSR LBL0L0; pressenter(); 0B80
+; RULE: value: NUMBER: (15)
+; RULE: expression: value: [i15)
+; i15
+; RULE: init: '=' expression
+; else if( isInteger(i15)) - line 2263
+	LDA #$0F; 0B83
+; RULE: statement: ID init
+	STA $0337; 0B85
+; RULE: expression: ID : s
+; statement: tSPRITETOGGLE '(' expression ')' ';' 
+	LDA $0337; 0B88
+	EOR $D015; 0B8B
+	STA $D015; 0B8E
+	LDA #$0C; 0B91
+	STA $03; 0B93
+	LDA #$71; 0B95
+	STA $02; 0B97
+	JSR PRN; 0B99
 ; RULE: return: RETURN {} ';'
-	RTS; 0AB2
+	RTS; 0B9C
 ; RULE: datatype: int
 LBL0L0:
-	JSR SCANF; 0AB3
+	JSR SCANF; 0B9D
 ; RULE: return: RETURN {} ';'
-	RTS; 0AB6
+	RTS; 0BA0
 MOBCPY:		; Copy 63 bytes from $FB/$FC to $FD/$FE
-	LDY #$3F; 0AB7
+	LDY #$3F; 0BA1
 MOBCPL1:
-	CPY #$00; 0AB9
-	BEQ MOBCPL2; 0ABB
-	LDA ($FB),Y; 0ABD
-	STA ($FD),Y; 0ABF
-	DEY; 0AC1
-	JMP MOBCPL1; 0AC2
+	CPY #$00; 0BA3
+	BEQ MOBCPL2; 0BA5
+	LDA ($FB),Y; 0BA7
+	STA ($FD),Y; 0BA9
+	DEY; 0BAB
+	JMP MOBCPL1; 0BAC
 MOBCPL2:
-	RTS; 0AC5
+	RTS; 0BAF
 PRN:
-	LDY #$00; 0AC6
+	LDY #$00; 0BB0
 PRN_LOOP:
-	LDA ($02),Y; 0AC8
-	CMP #$00; 0ACA
-	BEQ PRN_END; 0ACC
-	JSR $FFD2; 0ACE
-	INY; 0AD1
-	JMP PRN_LOOP; 0AD2
+	LDA ($02),Y; 0BB2
+	CMP #$00; 0BB4
+	BEQ PRN_END; 0BB6
+	JSR $FFD2; 0BB8
+	INY; 0BBB
+	JMP PRN_LOOP; 0BBC
 PRN_END:
-	RTS; 0AD5
+	RTS; 0BBF
 SCANF:
-	LDX #$00; 0AD6
-	STX $CFDE; 0AD8
+	LDX #$00; 0BC0
+	STX $CFDE; 0BC2
 SCANFTOP:
-	JSR $FF9F; 0ADB
-	JSR $FFE4; 0ADE
-	BEQ SCANFTOP; 0AE1
-	CMP #$0D; 0AE3
-	BEQ SCANFEND; 0AE5
-	CMP #$14; 0AE7
-	BEQ BKSPC; 0AE9
-	JSR $FFD2; 0AEB
-	LDX $CFDE; 0AEE
-	STA $CFE0,X; 0AF1
-	INX; 0AF4
-	STX $CFDE; 0AF5
-	CPX #$10; 0AF8
-	BEQ SCANFEND; 0AFA
-	JMP SCANFTOP; 0AFC
+	JSR $FF9F; 0BC5
+	JSR $FFE4; 0BC8
+	BEQ SCANFTOP; 0BCB
+	CMP #$0D; 0BCD
+	BEQ SCANFEND; 0BCF
+	CMP #$14; 0BD1
+	BEQ BKSPC; 0BD3
+	JSR $FFD2; 0BD5
+	LDX $CFDE; 0BD8
+	STA $CFE0,X; 0BDB
+	INX; 0BDE
+	STX $CFDE; 0BDF
+	CPX #$10; 0BE2
+	BEQ SCANFEND; 0BE4
+	JMP SCANFTOP; 0BE6
 SCANFEND:
-	RTS; 0AFF
+	RTS; 0BE9
 BKSPC:
-	LDX $CFDF; 0B00
-	DEX; 0B03
-	STX $CFDF; 0B04
-	JMP SCANFTOP; 0B07
+	LDX $CFDF; 0BEA
+	DEX; 0BED
+	STX $CFDF; 0BEE
+	JMP SCANFTOP; 0BF1
 GETKEY:
-	JSR $FFE4; 0B0A
-	CMP #$00; 0B0D
-	BEQ GETKEY; 0B0F
-	STA $CFDF; 0B11
-	RTS; 0B14
-; $b15			"SPRITEON & SPRITEOFF\n"
+	JSR $FFE4; 0BF4
+	CMP #$00; 0BF7
+	BEQ GETKEY; 0BF9
+	STA $CFDF; 0BFB
+	RTS; 0BFE
+; $bff			"SPRITEON & SPRITEOFF\n"
 STRLBL0:
 	.BYTE #$53, #$50, #$52, #$49, #$54, #$45, #$4F, #$4E, #$20, #$26, #$20, #$53, #$50, #$52, #$49, #$54, #$45, #$4F, #$46, #$46, #$0D, #$00
-; $b2b			"SPRITESET\n"
+; $c15			"SPRITESET\n"
 STRLBL1:
 	.BYTE #$53, #$50, #$52, #$49, #$54, #$45, #$53, #$45, #$54, #$0D, #$00
-; $b36			"SPRITETOGGLE\n"
+; $c20			"SPRITETOGGLE\n"
 STRLBL2:
 	.BYTE #$53, #$50, #$52, #$49, #$54, #$45, #$54, #$4F, #$47, #$47, #$4C, #$45, #$0D, #$00
-; $b44			"DONE\n"
+; $c2e			"NOW WITH VARIABLES\n"
 STRLBL3:
+	.BYTE #$4E, #$4F, #$57, #$20, #$57, #$49, #$54, #$48, #$20, #$56, #$41, #$52, #$49, #$41, #$42, #$4C, #$45, #$53, #$0D, #$00
+; $c42			"SPRITEON & SPRITEOFF\n"
+STRLBL4:
+	.BYTE #$53, #$50, #$52, #$49, #$54, #$45, #$4F, #$4E, #$20, #$26, #$20, #$53, #$50, #$52, #$49, #$54, #$45, #$4F, #$46, #$46, #$0D, #$00
+; $c58			"SPRITESET\n"
+STRLBL5:
+	.BYTE #$53, #$50, #$52, #$49, #$54, #$45, #$53, #$45, #$54, #$0D, #$00
+; $c63			"SPRITETOGGLE\n"
+STRLBL6:
+	.BYTE #$53, #$50, #$52, #$49, #$54, #$45, #$54, #$4F, #$47, #$47, #$4C, #$45, #$0D, #$00
+; $c71			"DONE\n"
+STRLBL7:
 	.BYTE #$44, #$4F, #$4E, #$45, #$0D, #$00
