@@ -10,6 +10,11 @@ frmt  [{\t}|{\n}]
 unary "++"|"--"
 
 %%
+"spritetoggle"     { strcpy(yylval.nd_obj.name,(yytext)); return tSPRITETOGGLE; }
+"spriteoff"        { strcpy(yylval.nd_obj.name,(yytext)); return tSPRITEOFF; }
+"spriteset"        { strcpy(yylval.nd_obj.name,(yytext)); return tSPRITESET; }
+"spriteon"         { strcpy(yylval.nd_obj.name,(yytext)); return tSPRITEON; }
+"spritecollision"  { strcpy(yylval.nd_obj.name,(yytext)); return tSPRITECOLLISION; }
 "rnd"    { strcpy(yylval.nd_obj.name,(yytext)); return tRND; }
 "cursorxy"    { strcpy(yylval.nd_obj.name,(yytext)); return tCURSORXY; }
 "nop"   { strcpy(yylval.nd_obj.name,(yytext)); return tNOP; }

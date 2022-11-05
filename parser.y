@@ -146,7 +146,6 @@
     bool return_value = false;
     //if( s[0] != '#' && s[0] != '$' ) return_value = true;
     if( s[0] == 'i' ) return_value = true;
-
     return return_value;
   }
   
@@ -1279,7 +1278,7 @@
 
 //%parse-param { FILE* fp }
 %token VOID 
-%token <nd_obj> tGETIN tSPRITEXY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tTOFLOAT tTOUINT tJSR tRND tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER PRINTFF SCANFF INT FLOAT CHAR WHILE FOR IF ELSE TRUE FALSE NUMBER FLOAT_NUM ID LE GE EQ NE GT LT AND OR STR ADD SUBTRACT MULTIPLY DIVIDE  UNARY INCLUDE RETURN
+%token <nd_obj> tSPRITECOLLISION tGETIN tSPRITEXY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tTOFLOAT tTOUINT tJSR tSPREITSET tSPRITEON tSPRITEOFF tSPRITETOGGLE tRND tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER PRINTFF SCANFF INT FLOAT CHAR WHILE FOR IF ELSE TRUE FALSE NUMBER FLOAT_NUM ID LE GE EQ NE GT LT AND OR STR ADD SUBTRACT MULTIPLY DIVIDE  UNARY INCLUDE RETURN
 %type <nd_obj> headers main body return function datatype statement arithmetic relop program else
    %type <nd_obj2> init value expression
       %type <nd_obj3> condition
@@ -1470,21 +1469,90 @@ body: WHILE
 {
   $$.nd = mknode($1.nd, $2.nd, "statements");
 };
+/* | tSPRITEON '(' expression ')' ';' */
+/* { */
+/*   addParserComment( "statement: tSPRITEON '(' expression ')' ';' " ); */
+/*   if( isInteger( $3.name ) ) */
+/*     { */
+/*       int x = atoi( stripFirst( $3.name ).c_str() ); */
+/*       addAsm( string( "LDA #$" ) + toHex( x ), 2, false ); */
+/*       addAsm( "STA $D015", 3, false ); */
+/*     } */
+/*   else if( isAddress( $3.name ) ) */
+/*     { */
+/*       int x = getAddressOf( $3.name ); */
+/*       addAsm( string( "LDA $" ) + toHex( x ), 3, false ); */
+/*       addAsm( "STA $D015", 3, false ); */
+/*     } */
+/* }; */
 | tSPRITEON '(' expression ')' ';'
 {
   addParserComment( "statement: tSPRITEON '(' expression ')' ';' " );
-  if( isInteger( $3.name ) )
+  
+  if( isInteger($3.name) || isUint( $3.name ) )
     {
       int x = atoi( stripFirst( $3.name ).c_str() );
-      addAsm( string( "LDA #$" ) + toHex( x ), 2, false ); 
-      addAsm( "STA $D015", 3, false );
+      addAsm( string( "LDA #$") + toHex( x ), 2, false );
+      addAsm( "ORA $D015", 3, false );
     }
-  else if( isAddress( $3.name ) )
+  else
     {
       int x = getAddressOf( $3.name );
-      addAsm( string( "LDA $" ) + toHex( x ), 3, false ); 
-      addAsm( "STA $D015", 3, false );      
+      addAsm( "LDA $D015", 3, false );
+      addAsm( string( "ORA $") + toHex( x ), 3, false );
     }
+  addAsm( "STA $D015", 3, false );
+};
+| tSPRITEOFF '(' expression ')' ';'
+{
+  addParserComment( "statement: tSPRITEOFF '(' expression ')' ';' " );
+  if( isInteger($3.name) || isUint( $3.name ) )
+    {
+      int x = atoi( stripFirst( $3.name ).c_str() );
+      addAsm( string( "LDA #$") + toHex( x ), 2, false );
+      addAsm( "EOR #$FF", 2, false );
+      addAsm( "AND $D015", 3, false );
+    }
+  else
+    {
+      int x = getAddressOf( $3.name );
+      addAsm( string( "LDA $") + toHex( x ), 3, false );
+      addAsm( "EOR #$FF", 2, false );
+      addAsm( "AND $D015", 3, false );
+    }
+  addAsm( "STA $D015", 3, false );
+};
+| tSPRITETOGGLE '(' expression ')' ';'
+{
+  addParserComment( "statement: tSPRITETOGGLE '(' expression ')' ';' " );
+  if( isInteger($3.name) || isUint( $3.name ) )
+    {
+      int x = atoi( stripFirst( $3.name ).c_str() );
+      addAsm( string( "LDA #$") + toHex( x ), 2, false );
+      addAsm( "EOR $D015", 3, false );
+    }
+  else
+    {
+      int x = getAddressOf( $3.name );
+      addAsm( string( "LDA $") + toHex( x ), 3, false );
+      addAsm( "EOR $D015", 3, false );
+    }
+  addAsm( "STA $D015", 3, false );
+};
+| tSPRITESET '(' expression ')' ';'
+{
+  addParserComment( "statement: tSPRITESET '(' expression ')' ';' " );
+  if( isInteger($3.name) || isUint( $3.name ) )
+    {
+      int x = atoi( stripFirst( $3.name ).c_str() );
+      addAsm( string( "LDA #$") + toHex( x ), 2, false );
+    }
+  else
+    {
+      int x = getAddressOf( $3.name );
+      addAsm( string( "LDA $") + toHex( x ), 3, false );
+    }
+  addAsm( "STA $D015", 3, false );
 };
 | tSPRITEXY '(' expression ',' expression ',' expression ')' ';'
 {
@@ -2686,7 +2754,7 @@ init: '=' expression
     {
       // then it's the result
       // of the expression is stored in A
-      
+      addComment( "\t\t\t\t\t<< HERE" );
       strcpy( $$.name, "A" );
     }
   else if( isFloat( $2.name ) )
@@ -3911,6 +3979,17 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
   int base_address = getAddressOf($1.name);
   int t = getTypeOf( $1.name );
   strcpy( $$.name, (string( "$" ) + toHex(getAddressOf($1.name ))).c_str() );
+};
+| tSPRITECOLLISION '(' ')'
+{
+  addAsm( "LDA $D01E", 3, false );
+  strcpy( $$.name, "A" );
+};
+| tSPRITECOLLISION '(' expression ')'
+{
+  addAsm( "LDA $D01E;\t\t\tMOB COllision Register", 3, false );
+  addAsm( string( "AND " ) + string( $3.name ), 3, false );
+  strcpy( $$.name, "A" );
 };
 | tPEEK '(' NUMBER ')'
 {
