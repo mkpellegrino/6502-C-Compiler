@@ -49,7 +49,7 @@
   bool sidrnd_is_initialised = false;
   bool long_branches = true;
   
-  bool debug_comments_are_needed = true;
+  bool debug_comments_are_needed = false;
   bool debug_flag_is_on = false;
 
 
@@ -961,7 +961,7 @@
   void popScope()
   {
     string return_value;
-    addParserComment( string("Release Scope ") + string( scope_stack.top()) );
+    addParserComment( string("                    Release Scope (") + string( scope_stack.top()) + string( ")" ));
     while( var_scope_stack.top() != "." )
       {
 	var_scope_stack.pop();
@@ -1278,7 +1278,7 @@
 
 //%parse-param { FILE* fp }
 %token VOID 
-%token <nd_obj> tSPRITECOLLISION tGETIN tSPRITEXY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tTOFLOAT tTOUINT tJSR tASL tSPREITSET tSPRITEON tSPRITEOFF tSPRITETOGGLE tRND tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER PRINTFF SCANFF INT FLOAT CHAR WHILE FOR IF ELSE TRUE FALSE NUMBER FLOAT_NUM ID LE GE EQ NE GT LT AND OR STR ADD SUBTRACT MULTIPLY DIVIDE  UNARY INCLUDE RETURN
+%token <nd_obj> tSPRITECOLLISION tGETIN tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tTOFLOAT tTOUINT tJSR tASL tLSR tSPRITESET tSPRITEON tSPRITEOFF tSPRITETOGGLE tRND tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER PRINTFF SCANFF INT FLOAT CHAR WHILE FOR IF ELSE TRUE FALSE NUMBER FLOAT_NUM ID LE GE EQ NE GT LT AND OR STR ADD SUBTRACT MULTIPLY DIVIDE  UNARY INCLUDE RETURN
 %type <nd_obj> headers main body return function datatype statement arithmetic relop program else
    %type <nd_obj2> init value expression
       %type <nd_obj3> condition
@@ -1469,22 +1469,6 @@ body: WHILE
 {
   $$.nd = mknode($1.nd, $2.nd, "statements");
 };
-/* | tSPRITEON '(' expression ')' ';' */
-/* { */
-/*   addParserComment( "statement: tSPRITEON '(' expression ')' ';' " ); */
-/*   if( isInteger( $3.name ) ) */
-/*     { */
-/*       int x = atoi( stripFirst( $3.name ).c_str() ); */
-/*       addAsm( string( "LDA #$" ) + toHex( x ), 2, false ); */
-/*       addAsm( "STA $D015", 3, false ); */
-/*     } */
-/*   else if( isAddress( $3.name ) ) */
-/*     { */
-/*       int x = getAddressOf( $3.name ); */
-/*       addAsm( string( "LDA $" ) + toHex( x ), 3, false ); */
-/*       addAsm( "STA $D015", 3, false ); */
-/*     } */
-/* }; */
 | tSPRITEON '(' expression ')' ';'
 {
   addParserComment( "statement: tSPRITEON '(' expression ')' ';' " );
@@ -1510,16 +1494,14 @@ body: WHILE
     {
       int x = atoi( stripFirst( $3.name ).c_str() );
       addAsm( string( "LDA #$") + toHex( x ), 2, false );
-      addAsm( "EOR #$FF", 2, false );
-      addAsm( "AND $D015", 3, false );
     }
   else
     {
       int x = getAddressOf( $3.name );
       addAsm( string( "LDA $") + toHex( x ), 3, false );
-      addAsm( "EOR #$FF", 2, false );
-      addAsm( "AND $D015", 3, false );
     }
+  addAsm( "EOR #$FF", 2, false );
+  addAsm( "AND $D015", 3, false );
   addAsm( "STA $D015", 3, false );
 };
 | tSPRITETOGGLE '(' expression ')' ';'
@@ -1529,14 +1511,13 @@ body: WHILE
     {
       int x = atoi( stripFirst( $3.name ).c_str() );
       addAsm( string( "LDA #$") + toHex( x ), 2, false );
-      addAsm( "EOR $D015", 3, false );
     }
   else
     {
       int x = getAddressOf( $3.name );
       addAsm( string( "LDA $") + toHex( x ), 3, false );
-      addAsm( "EOR $D015", 3, false );
     }
+  addAsm( "EOR $D015", 3, false );
   addAsm( "STA $D015", 3, false );
 };
 | tSPRITESET '(' expression ')' ';'
@@ -1556,38 +1537,199 @@ body: WHILE
 };
 | tSPRITEXY '(' expression ',' expression ',' expression ')' ';'
 {
+  addComment( string( "spritexy( ") + string( $3.name ) + string(", ") + string( $5.name ) + string( ", " ) + string( $7.name ) + string( " );" ) );
+
+
   int base_address = 53248;
   int sprite_address = 0;
   int x_coord = 0;
   int y_coord = 0;
-  /* calculate which sprite it is */
-    if( isInteger( $3.name ) )
+  if( isInteger( $3.name ) && isInteger( $5.name ) && isInteger( $7.name ))
     {
       sprite_address = atoi( stripFirst( $3.name ).c_str() );
       sprite_address*=2;
       sprite_address+=base_address;
+      x_coord = atoi( stripFirst( $5.name ).c_str() );
+      addAsm( string( "LDA #$" ) + toHex( x_coord) , 2, false );
+      addAsm( string( "STA $" ) + toHex( sprite_address ), 3, false );
+      y_coord = atoi( stripFirst( $7.name ).c_str() );
+      addAsm( string( "LDA #$" ) + toHex( y_coord) , 2, false );
+      addAsm( string( "STA $" ) + toHex( sprite_address+1 ), 3, false );
     }
-  else if( isAddress( $3.name ) )
+  else if( isInteger( $3.name ) && isInteger( $5.name ) && isAddress( $7.name ))
     {
-      int x = getAddressOf( $3.name );
-      addAsm( string( "LDA $" ) + toHex( x ), 3, false ); 
-      addAsm( "STA $D015", 3, false );      
+      sprite_address = atoi( stripFirst( $3.name ).c_str() );
+      sprite_address*=2;
+      sprite_address+=base_address;
+      x_coord = atoi( stripFirst( $5.name ).c_str() );
+      addAsm( string( "LDA #$" ) + toHex( x_coord) , 2, false );
+      addAsm( string( "STA $" ) + toHex( sprite_address ), 3, false );
+      //y_coord = atoi( stripFirst( $7.name ).c_str() );
+      addAsm( string( "LDA " ) + string($7.name) , 3, false );
+      addAsm( string( "STA $" ) + toHex( sprite_address+1 ), 3, false );
+    }
+  else if( isInteger( $3.name ) && isAddress( $5.name ) && isAddress( $7.name ))
+    {
+      sprite_address = atoi( stripFirst( $3.name ).c_str() );
+      sprite_address*=2;
+      sprite_address+=base_address;
+      //x_coord = atoi( stripFirst( $5.name ).c_str() );
+      addAsm( string( "LDA " ) + string($5.name) , 3, false );
+      addAsm( string( "STA $" ) + toHex( sprite_address ), 3, false );
+      //y_coord = atoi( stripFirst( $7.name ).c_str() );
+      addAsm( string( "LDA " ) + string($7.name) , 3, false );
+      addAsm( string( "STA $" ) + toHex( sprite_address+1 ), 3, false );
+    }
+  else if( isInteger( $3.name ) && isAddress( $5.name ) && isInteger( $7.name ))
+    {
+       
+      sprite_address = atoi( stripFirst( $3.name ).c_str() );
+      sprite_address*=2;
+      sprite_address+=base_address;
+      //x_coord = atoi( stripFirst( $5.name ).c_str() );
+      addAsm( string( "LDA " ) + string($5.name), 3, false );
+      addAsm( string( "STA $" ) + toHex( sprite_address ), 3, false );
+      y_coord = atoi( stripFirst( $7.name ).c_str() );
+      addAsm( string( "LDA #$" ) + toHex( y_coord), 2, false );
+      addAsm( string( "STA $" ) + toHex( sprite_address+1 ), 3, false );
+    }
+  else if( isAddress( $3.name ) && isAddress( $5.name ) && isAddress( $7.name ))
+    {
+      addComment( "All 3 parameters are variables" );
+      addAsm( string( "LDA " ) + string( $3.name ), 3, false );
+      addAsm( "CLC" );
+      addAsm( "ASL" ); // 2x
+      addAsm( "TAX" );
+      addAsm( string( "LDA " ) + string($5.name), 3, false );
+      addAsm( string( "STA $D000,X; set the x-coord" ), 3, false );
+
+      addAsm( "INX" );
+      addAsm( string( "LDA " ) + string($7.name), 3, false );
+      addAsm( string( "STA $D000,X; set the y-coord" ), 3, false );
+      
+    }
+  else if( isAddress( $3.name ) && isInteger( $5.name ) && isInteger( $7.name ))
+    {
+      addComment( "All 3 parameters are variables" );
+      addAsm( string( "LDA " ) + string( $3.name ), 3, false );
+      addAsm( "CLC" );
+      addAsm( "ASL" ); // 2x
+      addAsm( "TAX" );
+      addAsm( string( "LDA #$" ) + stripFirst(string($5.name)), 2, false );
+      addAsm( string( "STA $D000,X; set the x-coord" ), 3, false );
+
+      addAsm( "INX" );
+      addAsm( string( "LDA #$" ) + stripFirst(string($7.name)), 2, false );
+      addAsm( string( "STA $D000,X; set the y-coord" ), 3, false );
+      
+    }
+  else
+    {
+      addComment( "Use all Variables for parameters" );
     }
 
-    if( isInteger( $5.name ) )
-      {
-	x_coord = atoi( stripFirst( $5.name ).c_str() );
-      }
+};
+| tSPRITEX '(' expression ',' expression ')' ';'
+{
+  addComment( string( "spritex( ") + string( $3.name ) + string(", ") + string( $5.name ) + string( " );" ) );
 
-    if( isInteger( $7.name ) )
-      {
-	y_coord = atoi( stripFirst( $7.name ).c_str() );
-      }
-    addAsm( string( "LDA #$" ) + toHex( x_coord) , 2, false );
-    addAsm( string( "STA $" ) + toHex( sprite_address ), 3, false );
-    addAsm( string( "LDA #$" ) + toHex( y_coord) , 2, false );
-    addAsm( string( "STA $" ) + toHex( sprite_address+1 ), 3, false );
-    
+
+  int base_address = 53248;
+  int sprite_address = 0;
+  int x_coord = 0;
+  int y_coord = 0;
+  if( isInteger( $3.name ) && isInteger( $5.name ))
+    {
+      sprite_address = atoi( stripFirst( $3.name ).c_str() );
+      sprite_address*=2;
+      sprite_address+=base_address;
+      x_coord = atoi( stripFirst( $5.name ).c_str() );
+      addAsm( string( "LDA #$" ) + toHex( x_coord) , 2, false );
+      addAsm( string( "STA $" ) + toHex( sprite_address ), 3, false );
+    }
+  else if( isInteger( $3.name ) && isAddress( $5.name ))
+    {
+      sprite_address = atoi( stripFirst( $3.name ).c_str() );
+      sprite_address*=2;
+      sprite_address+=base_address;
+      addAsm( string( "LDA " ) + string($5.name) , 3, false );
+      addAsm( string( "STA $" ) + toHex( sprite_address ), 3, false );
+    }
+  else if( isAddress( $3.name ) && isAddress( $5.name ) )
+    {
+      addAsm( string( "LDA " ) + string( $3.name ), 3, false );
+      addAsm( "CLC" );
+      addAsm( "ASL" ); // 2x
+      addAsm( "TAX" );
+      addAsm( string( "LDA " ) + string($5.name), 3, false );
+      addAsm( string( "STA $D000,X; set the x-coord" ), 3, false );
+      
+    }
+  else if( isAddress( $3.name ) && isInteger( $5.name ))
+    {
+      addAsm( string( "LDA " ) + string( $3.name ), 3, false );
+      addAsm( "CLC" );
+      addAsm( "ASL" ); // 2x
+      addAsm( "TAX" );
+      addAsm( string( "LDA #$" ) + stripFirst(string($5.name)), 2, false );
+      addAsm( string( "STA $D000,X; set the x-coord" ), 3, false );
+    }
+  else
+    {
+      addCompilerMessage( "spritex error", 1 );
+    }
+
+};
+| tSPRITEY '(' expression ',' expression ')' ';'
+{
+  addComment( string( "spritey( ") + string( $3.name ) + string(", ") + string( $5.name ) + string( " );" ) );
+
+
+  int base_address = 53248;
+  int sprite_address = 0;
+  int x_coord = 0;
+  int y_coord = 0;
+  if( isInteger( $3.name ) && isInteger( $5.name ))
+    {
+      sprite_address = atoi( stripFirst( $3.name ).c_str() );
+      sprite_address*=2;
+      sprite_address+=base_address;
+      x_coord = atoi( stripFirst( $5.name ).c_str() );
+      addAsm( string( "LDA #$" ) + toHex( x_coord) , 2, false );
+      addAsm( string( "STA $" ) + toHex( sprite_address + 1 ), 3, false );
+    }
+  else if( isInteger( $3.name ) && isAddress( $5.name ))
+    {
+      sprite_address = atoi( stripFirst( $3.name ).c_str() );
+      sprite_address*=2;
+      sprite_address+=base_address;
+      addAsm( string( "LDA " ) + string($5.name) , 3, false );
+      addAsm( string( "STA $" ) + toHex( sprite_address +1 ), 3, false );
+    }
+  else if( isAddress( $3.name ) && isAddress( $5.name ) )
+    {
+      addAsm( string( "LDA " ) + string( $3.name ), 3, false );
+      addAsm( "CLC" );
+      addAsm( "ASL" ); // 2x
+      addAsm( "TAX" );
+      addAsm( string( "LDA " ) + string($5.name), 3, false );
+      addAsm( string( "STA $D001,X; set the x-coord" ), 3, false );
+      
+    }
+  else if( isAddress( $3.name ) && isInteger( $5.name ))
+    {
+      addAsm( string( "LDA " ) + string( $3.name ), 3, false );
+      addAsm( "CLC" );
+      addAsm( "ASL" ); // 2x
+      addAsm( "TAX" );
+      addAsm( string( "LDA #$" ) + stripFirst(string($5.name)), 2, false );
+      addAsm( string( "STA $D001,X; set the x-coord" ), 3, false );
+    }
+  else
+    {
+      addCompilerMessage( "spritex error", 1 );
+    }
+
 };
 | tSPRITECOLOUR '(' expression ',' expression ')' ';'
 {
@@ -1600,7 +1742,7 @@ body: WHILE
   int sprite_number = 0;
   int sprite_colour = 0;
 
-  if( isInteger( $5.name ) )
+  if( isInteger( $5.name ) || isUint( $5.name ))
     {
       sprite_colour = atoi( stripFirst( $5.name ).c_str() ); // the sprite #
       addAsm( string( "LDA #$" ) + toHex( sprite_colour ), 2, false );
@@ -1608,10 +1750,10 @@ body: WHILE
   else if( isAddress( $5.name ) )
     {
       sprite_colour = getAddressOf( $5.name );
-      addAsm( string( "LDA $" ) + toHex( sprite_colour ), 2, false );
+      addAsm( string( "LDA $" ) + toHex( sprite_colour ), 3, false );
     }
 
-  if( isInteger( $3.name ) )
+  if( isInteger( $3.name ) || isUint( $5.name ))
     {
       sprite_number = atoi( stripFirst( $3.name ).c_str() ); // the sprite #
       addAsm( string( "STA $" + toHex( base_addr+sprite_number+39 )), 3, false );
@@ -1619,7 +1761,8 @@ body: WHILE
   else if( isAddress( $3.name ) )
     {
       sprite_number = getAddressOf( $3.name );
-      addAsm( string( "STA $" + toHex( base_addr+sprite_number+39 )), 3, false );
+      addAsm( string( "LDX $" ) + toHex( getAddressOf( $3.name ) ), 3, false );
+      addAsm( string( "STA $D027,X" ), 3, false );
     } 
 };
 /* SCANF(ish) COMMAND!!! */
@@ -1899,7 +2042,13 @@ body: WHILE
 {
   addComment( "=========================================================");  
   addComment( string("           cursorxy(") + string($3.name) + string(",") + string( $5.name ) + string( ")" ));
-  addComment( "=========================================================");  
+  addComment( "=========================================================");
+
+
+
+  addAsm( "CLC" );
+
+
   if( getTypeOf( $3.name ) > 1 || getTypeOf( $5.name ) > 1 )
     {
       addCompilerMessage( "cursorxy arguments must be uint or int", 3 );
@@ -1908,9 +2057,42 @@ body: WHILE
     {
       addCompilerMessage( "cursorxy arguments must be > 0", 3 );
     }
-  addAsm( "CLC" );
-  addAsm( string( "LDY " ) + string( $3.name ), 3, false );
-  addAsm( string( "LDX " ) + string( $5.name ), 3, false );
+
+  
+  if( isInteger( $3.name ) || isUint( $3.name ))
+    {
+      int x_coord = atoi( stripFirst( $3.name ).c_str() );
+      addAsm( string( "LDY #$" ) + toHex( x_coord ), 2, false );
+    }
+  else if( isAddress( $3.name ) )
+    {
+      int x_coord = getAddressOf( $3.name );
+      addAsm( string( "LDY $" ) + toHex( x_coord ), 3, false );
+    }
+  else
+    {
+      addCompilerMessage( string( "unknown type: ") + string( $3.name ) , 3 );
+    }
+
+
+
+  if( isInteger( $5.name ) || isUint( $5.name ))
+    {
+      int y_coord = atoi( stripFirst( $5.name ).c_str() );
+      addAsm( string( "LDX #$" ) + toHex( y_coord ), 2, false );
+    }
+  else if( isAddress( $5.name ) )
+    {
+      int y_coord = getAddressOf( $5.name );
+      addAsm( string( "LDX $" ) + toHex( y_coord ), 3, false );
+    }
+  else
+    {
+      addCompilerMessage( string( "unknown type: ") + string( $5.name ) , 3 );
+    }
+
+
+  
   addAsm( "JSR $FFF0", 3, false );
 };
 | tCLS '(' ')' ';'
@@ -1922,10 +2104,20 @@ body: WHILE
   addAsm( "JSR $FF81; cls()", 3, false );
 
 };
+| tLSR '(' expression ')' ';'
+{
+  addComment( "=========================================================");  
+  addComment( "                 lsr(expression)");
+  addComment( "=========================================================");  
+  
+  int x = getAddressOf( $3.name );
+  addAsm( string( "LSR $") + toHex( x ), 3, false );
+  
+};
 | tASL '(' expression ')' ';'
 {
   addComment( "=========================================================");  
-  addComment( "                 cls()");
+  addComment( "                 asl(expression)");
   addComment( "=========================================================");  
   
   int x = getAddressOf( $3.name );
@@ -2629,6 +2821,11 @@ statement: datatype ID init
  
   current_variable_type=getTypeOf($2.name);
   current_variable_base_address = getAddressOf( $1.name );
+
+  if( current_variable_base_address == -1 )
+    {
+      addCompilerMessage( "Undeclared Variable", 3 );
+    }
   
   //cerr << current_variable_type << endl;
   if( getTypeOf($2.name) == 8 && getTypeOf($1.name) == 8 )
@@ -2744,6 +2941,7 @@ init: '=' expression
   //addParserComment( string( $2.name ) );
   //cerr << current_variable_type << endl;
 
+  //cerr << $2.name << endl;
   
   if( string( $2.name ) == "ARG" )
     {
@@ -3594,6 +3792,20 @@ expression: expression arithmetic expression
 	      
 	      strcpy( $$.name, "A" );
 	    }
+	  else if( isAddress( $1.name ) && isUint( $3.name ) )
+	    {
+	      addAsm( string( "LDA " ) + string( $1.name ), 3, false );
+	      addAsm( "CLC" );
+	      addAsm( string("ADC #$") + toHex(atoi(stripFirst($3.name).c_str())),2, false);
+	      strcpy( $$.name, "A" );
+	    }
+	  else if( isAddress( $1.name ) && isInteger( $3.name ) )
+	    {
+	      addAsm( string( "LDA " ) + string( $1.name ), 3, false );
+	      addAsm( "CLC" );
+	      addAsm( string("ADC #$") + toHex(atoi(stripFirst($3.name).c_str())),2, false);
+	      strcpy( $$.name, "A" );
+	    }
 	  else
 	    {
 	      addCompilerMessage( "math error", 3);
@@ -3663,9 +3875,23 @@ expression: expression arithmetic expression
 	      
 	      strcpy( $$.name, "A" );
 	    }
-
+	  else if( isAddress( $1.name ) && isUint( $3.name ) )
+	    {
+	      addAsm( string( "LDA " ) + string( $1.name ), 3, false );
+	      addAsm( "SEC" );
+	      addAsm( string("SBC #$") + toHex(atoi(stripFirst($3.name).c_str())),2, false);
+	      strcpy( $$.name, "A" );
+	    }
+	  else if( isAddress( $1.name ) && isInteger( $3.name ) )
+	    {
+	      addAsm( string( "LDA " ) + string( $1.name ), 3, false );
+	      addAsm( "SEC" );
+	      addAsm( string("SBC #$") + toHex(atoi(stripFirst($3.name).c_str())),2, false);
+	      strcpy( $$.name, "A" );
+	    }
 	  else
 	    {
+
 	      addCompilerMessage( "math error", 3);
 	    }
 
@@ -3997,7 +4223,7 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
 };
 | tSPRITECOLLISION '(' expression ')'
 {
-  addAsm( "LDA $D01E;\t\t\tMOB COllision Register", 3, false );
+  addAsm( "LDA $D01E;\t\t\tMOB Collision Register", 3, false );
   addAsm( string( "AND " ) + string( $3.name ), 3, false );
   strcpy( $$.name, "A" );
 };
@@ -4064,12 +4290,12 @@ relop: LT { current_state = string( "LT" );  }
 value:
 FLOAT_NUM
 {
-  addParserComment( string( "RULE: value: FLOAT_NUM: (") + string( $1.name ) + string(")") );
+  addDebugComment( string( "RULE: value: FLOAT_NUM: (") + string( $1.name ) + string(")") );
   strcpy($$.name, string( string("f") + string($1.name)).c_str());
 }
 | NUMBER
 {
-  addParserComment( string( "RULE: value: NUMBER: (") + string( $1.name ) + string(")") );
+  addDebugComment( string( "RULE: value: NUMBER: (") + string( $1.name ) + string(")") );
   int v = atoi( $1.name );
 
   if( getTypeOf( $1.name ) != -1 ) current_variable_type = getTypeOf( $1.name );
@@ -4103,21 +4329,19 @@ FLOAT_NUM
   /* 4 - double - 2 bytes */
   /* 8 - float - 5 bytes */
 
-  addParserComment(string("RULE: value: WORD :") +  string($1.name ));
+  addDebugComment(string("RULE: value: WORD :") +  string($1.name ));
   strcpy( $$.name, $1.name );
 }
 | INT
 {
-  addParserComment(string("RULE: value: INT :") +  string($1.name ));
+  addDebugComment(string("RULE: value: INT :") +  string($1.name ));
   strcpy( $$.name, $1.name );
 }
 | CHARACTER
 {
-  addParserComment( "RULE: value: CHARACTER" );
+  addDebugComment( "RULE: value: CHARACTER" );
   strcpy($$.name, $1.name);
-  //sprintf($$.type, "char");
-  //add('C');
-  $$.nd = mknode(NULL, NULL, $1.name);
+  //$$.nd = mknode(NULL, NULL, $1.name);
 }
 ;
 

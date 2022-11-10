@@ -10,6 +10,11 @@ frmt  [{\t}|{\n}]
 unary "++"|"--"
 
 %%
+"mob"               { strcpy(yylval.nd_obj.name,(yytext)); return tMOB; }
+"spritexy"               { strcpy(yylval.nd_obj.name,(yytext)); return tSPRITEXY; }
+"spritex"               { strcpy(yylval.nd_obj.name,(yytext)); return tSPRITEX; }
+"spritey"               { strcpy(yylval.nd_obj.name,(yytext)); return tSPRITEY; }
+"spritecolour"               { strcpy(yylval.nd_obj.name,(yytext)); return tSPRITECOLOUR; }
 "spritetoggle"     { strcpy(yylval.nd_obj.name,(yytext)); return tSPRITETOGGLE; }
 "spriteoff"        { strcpy(yylval.nd_obj.name,(yytext)); return tSPRITEOFF; }
 "spriteset"        { strcpy(yylval.nd_obj.name,(yytext)); return tSPRITESET; }
@@ -22,15 +27,12 @@ unary "++"|"--"
 "touint"   { strcpy(yylval.nd_obj.name,(yytext)); return tTOUINT; }
 "cls"           { strcpy(yylval.nd_obj.name,(yytext)); return tCLS; }
 "getin"           { strcpy(yylval.nd_obj.name,(yytext)); return tGETIN; }
-"mob"               { strcpy(yylval.nd_obj.name,(yytext)); return tMOB; }
-"spritexy"               { strcpy(yylval.nd_obj.name,(yytext)); return tSPRITEXY; }
-"spritecolour"               { strcpy(yylval.nd_obj.name,(yytext)); return tSPRITECOLOUR; }
-"spriteon"               { strcpy(yylval.nd_obj.name,(yytext)); return tSPRITEON; }
 "tan"                    { strcpy(yylval.nd_obj.name,(yytext)); return tTAN; }
 "sin"                    { strcpy(yylval.nd_obj.name,(yytext)); return tSIN; }
 "cos"                    { strcpy(yylval.nd_obj.name,(yytext)); return tCOS; }
 "jsr"                    { strcpy(yylval.nd_obj.name,(yytext)); return tJSR; }
 "asl"                    { strcpy(yylval.nd_obj.name,(yytext)); return tASL; }
+"lsr"                    { strcpy(yylval.nd_obj.name,(yytext)); return tLSR; }
 "jmp"                    { strcpy(yylval.nd_obj.name,(yytext)); return tJMP; }
 "twos"                   { strcpy(yylval.nd_obj.name,(yytext)); return tTWOS; }
 "byte2hex"                   { strcpy(yylval.nd_obj.name,(yytext)); return tBYTE2HEX; }
