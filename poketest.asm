@@ -1,0 +1,1517 @@
+.org $0834
+	LDA $D021
+	STA $0336; 
+	LDA $D020
+	STA $0337; 
+	LDA #$00
+	STA $D020; 
+	LDA #$00
+	STA $D021; 
+	JSR CLS; cls()
+	JSR LBL0L11; intro()
+	LDA #$00
+	STA $0338; 
+	LDA #$00
+	STA $0339; 
+	LDA #$00
+	STA $033A; 
+	JSR SIDRND; initialize random number generator
+	LDA $D41B
+	STA $0338
+	LDA $D41B
+	STA $0339
+	LDA $D41B
+	STA $033A
+	LDA #$C0
+	STA $07F8
+	JSR LBL1L0
+sprite1:
+	.BYTE #$00, #$18, #$00, #$00, #$18, #$00, #$00, #$24, #$00, #$00, #$24, #$00, #$00, #$42, #$00, #$00, #$42, #$00, #$00, #$99, #$00, #$00, #$99, #$00, #$00, #$99, #$00, #$11, #$18, #$88, #$12, #$00, #$48, #$14, #$00, #$28, #$18, #$00, #$18, #$10, #$00, #$08, #$20, #$00, #$04, #$40, #$00, #$02, #$40, #$66, #$02, #$3F, #$99, #$FC, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00
+LBL1L0:
+	PLA
+	STA $FB
+	PLA
+	STA $FC
+	INC $FB
+	LDA #$00
+	STA $FD
+	LDA #$30
+	STA $FE
+	JSR MOBCPY
+	LDA #$C2
+	STA $07F9
+	JSR LBL1L1
+sprite2:
+	.BYTE #$00, #$60, #$00, #$00, #$60, #$00, #$00, #$00, #$00, #$00, #$20, #$00, #$00, #$40, #$00, #$00, #$20, #$00, #$00, #$40, #$00, #$00, #$20, #$00, #$00, #$40, #$00, #$00, #$20, #$00, #$00, #$40, #$00, #$00, #$20, #$00, #$00, #$40, #$00, #$00, #$20, #$00, #$00, #$40, #$00, #$00, #$20, #$00, #$00, #$40, #$00, #$00, #$20, #$00, #$00, #$40, #$00, #$00, #$20, #$00, #$00, #$40, #$00
+LBL1L1:
+	PLA
+	STA $FB
+	PLA
+	STA $FC
+	INC $FB
+	LDA #$80
+	STA $FD
+	LDA #$30
+	STA $FE
+	JSR MOBCPY
+	LDA #$C4
+	STA $07FA
+	JSR LBL1L2
+tf1:
+	.BYTE #$40, #$00, #$02, #$A0, #$00, #$05, #$A0, #$00, #$05, #$A0, #$00, #$05, #$A0, #$00, #$05, #$A0, #$3E, #$05, #$A0, #$41, #$05, #$A0, #$9C, #$85, #$A0, #$A2, #$85, #$9F, #$55, #$79, #$80, #$49, #$01, #$9F, #$55, #$79, #$A0, #$A2, #$85, #$A0, #$9C, #$85, #$A0, #$41, #$05, #$A0, #$3E, #$05, #$A0, #$22, #$05, #$A0, #$00, #$05, #$A0, #$00, #$05, #$A0, #$00, #$05, #$40, #$00, #$02
+LBL1L2:
+	PLA
+	STA $FB
+	PLA
+	STA $FC
+	INC $FB
+	LDA #$00
+	STA $FD
+	LDA #$31
+	STA $FE
+	JSR MOBCPY
+	LDA #$C6
+	STA $07FB
+	JSR LBL1L3
+tf2:
+	.BYTE #$40, #$00, #$02, #$A0, #$00, #$05, #$A0, #$00, #$05, #$A0, #$00, #$05, #$A0, #$00, #$05, #$A0, #$3E, #$05, #$A0, #$41, #$05, #$A0, #$9C, #$85, #$A0, #$A2, #$85, #$9F, #$55, #$79, #$80, #$49, #$01, #$9F, #$55, #$79, #$A0, #$A2, #$85, #$A0, #$9C, #$85, #$A0, #$41, #$05, #$A0, #$3E, #$05, #$A0, #$22, #$05, #$A0, #$00, #$05, #$A0, #$00, #$05, #$A0, #$00, #$05, #$40, #$00, #$02
+LBL1L3:
+	PLA
+	STA $FB
+	PLA
+	STA $FC
+	INC $FB
+	LDA #$80
+	STA $FD
+	LDA #$31
+	STA $FE
+	JSR MOBCPY
+	LDA #$C8
+	STA $07FC
+	JSR LBL1L4
+tf3:
+	.BYTE #$40, #$00, #$02, #$A0, #$00, #$05, #$A0, #$00, #$05, #$A0, #$00, #$05, #$A0, #$00, #$05, #$A0, #$3E, #$05, #$A0, #$41, #$05, #$A0, #$9C, #$85, #$A0, #$A2, #$85, #$9F, #$55, #$79, #$80, #$49, #$01, #$9F, #$55, #$79, #$A0, #$A2, #$85, #$A0, #$9C, #$85, #$A0, #$41, #$05, #$A0, #$3E, #$05, #$A0, #$22, #$05, #$A0, #$00, #$05, #$A0, #$00, #$05, #$A0, #$00, #$05, #$40, #$00, #$02
+LBL1L4:
+	PLA
+	STA $FB
+	PLA
+	STA $FC
+	INC $FB
+	LDA #$00
+	STA $FD
+	LDA #$32
+	STA $FE
+	JSR MOBCPY
+	LDA #$CA
+	STA $07FD
+	JSR LBL1L5
+alm1:
+	.BYTE #$00, #$24, #$00, #$00, #$24, #$00, #$00, #$24, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$24, #$00, #$00, #$24, #$00, #$00, #$24, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$24, #$00, #$00, #$24, #$00, #$00, #$24, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$24, #$00, #$00, #$24, #$00, #$00, #$24, #$00
+LBL1L5:
+	PLA
+	STA $FB
+	PLA
+	STA $FC
+	INC $FB
+	LDA #$80
+	STA $FD
+	LDA #$32
+	STA $FE
+	JSR MOBCPY
+	LDA #$CC
+	STA $07FE
+	JSR LBL1L6
+alm2:
+	.BYTE #$00, #$24, #$00, #$00, #$24, #$00, #$00, #$24, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$24, #$00, #$00, #$24, #$00, #$00, #$24, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$24, #$00, #$00, #$24, #$00, #$00, #$24, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$24, #$00, #$00, #$24, #$00, #$00, #$24, #$00
+LBL1L6:
+	PLA
+	STA $FB
+	PLA
+	STA $FC
+	INC $FB
+	LDA #$00
+	STA $FD
+	LDA #$33
+	STA $FE
+	JSR MOBCPY
+	LDA #$CE
+	STA $07FF
+	JSR LBL1L7
+alm3:
+	.BYTE #$00, #$24, #$00, #$00, #$24, #$00, #$00, #$24, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$24, #$00, #$00, #$24, #$00, #$00, #$24, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$24, #$00, #$00, #$24, #$00, #$00, #$24, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$24, #$00, #$00, #$24, #$00, #$00, #$24, #$00
+LBL1L7:
+	PLA
+	STA $FB
+	PLA
+	STA $FC
+	INC $FB
+	LDA #$80
+	STA $FD
+	LDA #$33
+	STA $FE
+	JSR MOBCPY
+	LDA #$01
+	STA $033B; 
+	LDA #$00
+	STA $033C; 
+	LDA #$02
+	STA $033D; 
+	LDA #$03
+	STA $033E; 
+	LDA #$04
+	STA $033F; 
+	LDA #$05
+	STA $0340; 
+	LDA #$06
+	STA $0341; 
+	LDA #$07
+	STA $0342; 
+	LDA #$00
+	STA $0343; 
+	LDA #$00
+	STA $0344; 
+	LDA #$00
+	STA $0345; 
+	LDA #$00
+	STA $0346; 
+	LDA #$50
+	STA $0347; 
+	LDA #$E6
+	STA $0348; 
+	LDA #$50
+	STA $0349; 
+	LDA #$3C
+	STA $034A; 
+	LDA #$00
+	STA $034B; 
+	LDA #$50
+	STA $034C; 
+	LDA #$55
+	STA $034D; 
+	LDA #$50
+	STA $034E; 
+	LDA #$6E
+	STA $034F; 
+	LDA #$04
+	STA $0350; 
+	LDA #$04
+	STA $0351; 
+	LDA #$04
+	STA $0352; 
+	LDA #$02
+	STA $0353; 
+	LDA #$14
+	STA $0354; 
+	LDA #$14
+	STA $0355; 
+	LDA #$03
+	STA $0356; 
+	LDA #$1E
+	STA $0357; 
+	LDA #$1E
+	STA $0358; 
+	LDA #$04
+	STA $0359; 
+	LDA #$28
+	STA $035A; 
+	LDA #$28
+	STA $035B; 
+	LDA $D41B
+	STA $035C; 
+	LDA #$81
+	STA $035D
+	LDA #$00
+	STA $035E
+	LDA #$00
+	STA $035F
+	LDA #$00
+	STA $0360
+	LDA #$00
+	STA $0361
+	LDA #$81
+	STA $69
+	LDA #$00
+	STA $6A
+	LDA #$00
+	STA $6B
+	LDA #$00
+	STA $6C
+	LDA #$00
+	STA $6D
+	LDA #$69
+	LDY #$00
+	JSR $BBA2; RAM -> FAC
+	LDA #$5D
+	LDY #$03
+	JSR $B850; RAM - FAC
+	LDX #$5D
+	LDY #$03
+	JSR $BBD4;  FAC -> MEM
+	LDA #$0F
+	STA $D027
+	LDA #$0F
+	STA $D028
+LBL1L8:
+	PHA
+	LDA #$02
+	STA $0362; 
+LBL1L9:			; Top of FOR Loop
+	LDA $0362
+	CMP #$08
+	.BYTE #$B0, #$03
+	JMP LBL1L11; if c==0 jump to BODY
+	JMP LBL1L12; jump out of FOR
+LBL1L10:
+	LDA $0362
+	CLC
+	ADC #$01
+	STA $0362
+	JMP LBL1L9; jump to top of FOR
+LBL1L11:
+	LDA #$0A
+	LDX $0362
+	STA $D027,X
+	JMP LBL1L10; jump to iterator 
+LBL1L12:
+	PLA
+	LDA #$00
+	STA $0363; 
+	LDA #$00
+	STA $0364; 
+	LDA #$00
+	STA $0365; 
+	JSR LBL0L10; levelup()
+	LDA #$FF
+	STA $D015
+	LDA $033C
+	CLC
+	ASL
+	TAX
+	LDA $0347
+	STA $D000,X; set the x-coord
+	INX
+	LDA $0348
+	STA $D000,X; set the y-coord
+	LDA $033D
+	CLC
+	ASL
+	TAX
+	LDA $0349
+	STA $D000,X; set the x-coord
+	INX
+	LDA $034A
+	STA $D000,X; set the y-coord
+	LDA $033E
+	CLC
+	ASL
+	TAX
+	LDA $034C
+	STA $D000,X; set the x-coord
+	INX
+	LDA $034D
+	STA $D000,X; set the y-coord
+	LDA $033F
+	CLC
+	ASL
+	TAX
+	LDA $034E
+	STA $D000,X; set the x-coord
+	INX
+	LDA $034F
+	STA $D000,X; set the y-coord
+	LDA $CB
+	STA $0364
+	PHA
+LBL1L13:
+LBL1L14:			; Top of WHILE Loop
+	LDA $0364
+	CMP #$3E
+	.BYTE #$D0, #$03
+	JMP LBL1L16; if z==1 jump to ELSE
+LBL1L15:
+LBL2L0:
+	LDA $0365
+	CMP #$00
+	.BYTE #$F0, #$03
+	JMP LBL2L2; jump to ELSE
+LBL2L1:
+	JSR LBL0L3; checkLeft()
+	JSR LBL0L4; checkRight()
+	JSR LBL0L0; checkFire()
+	JSR LBL0L6; updateMisslePosition()
+	JSR LBL0L8; updateAlienMisslePosition()
+	JSR LBL0L7; alienFire()
+	JSR LBL0L2; updateAlienPosition()
+	JSR LBL0L5; updateStats()
+	JSR LBL0L1; checkAlienHit()
+	JMP LBL2L3
+LBL2L2:
+LBL2L3:
+	LDA $0365
+	CLC
+	ADC #$01
+	STA $0365
+	LDA $CB
+	STA $0364
+	JMP LBL1L14; jump to top of FOR
+LBL1L16:
+	PLA
+	LDA $0337
+	STA $D020; 
+	LDA $0336
+	STA $D021; 
+	RTS
+LBL0L0:
+LBL1L17:
+	LDA $0364
+	CMP #$3C
+	.BYTE #$F0, #$03
+	JMP LBL1L19; jump to ELSE
+LBL1L18:
+LBL2L4:
+	LDA $0363
+	CMP #$00
+	.BYTE #$F0, #$03
+	JMP LBL2L6; jump to ELSE
+LBL2L5:
+	LDA #$02
+	ORA $D015
+	STA $D015
+	LDA $033B
+	CLC
+	ASL
+	TAX
+	LDA $0347
+	STA $D000,X; set the x-coord
+	LDA $033B
+	CLC
+	ASL
+	TAX
+	LDA #$240
+	STA $D001,X; set the x-coord
+	LDA #$F0
+	STA $0363
+	JMP LBL2L7
+LBL2L6:
+LBL2L7:
+	JMP LBL1L20
+LBL1L19:
+LBL1L20:
+	RTS
+LBL0L1:
+	LDA $D01E
+	STA $0366; 
+LBL1L21:
+	LDA $0366
+	CMP #$06
+	.BYTE #$F0, #$03
+	JMP LBL1L23; jump to ELSE
+LBL1L22:
+	JSR LBL0L9; cleanscore()
+	LDA #$87
+	STA $69
+	LDA #$48
+	STA $6A
+	LDA #$00
+	STA $6B
+	LDA #$00
+	STA $6C
+	LDA #$00
+	STA $6D
+	LDA #$69
+	LDY #$00
+	JSR $BBA2; RAM -> FAC
+	LDA #$5D
+	LDY #$03
+	JSR $B867; RAM + FAC
+	LDX #$5D
+	LDY #$03
+	JSR $BBD4;  FAC -> MEM
+	LDA $034B
+	CLC
+	ADC #$01
+	STA $034B
+	LDA $033B
+	CLC
+	ASL
+	TAX
+	LDA #$0
+	STA $D001,X; set the x-coord
+	LDA #$02
+	EOR #$FF
+	AND $D015
+	STA $D015
+	LDA #$00
+	STA $0363
+	LDA $D41B
+	STA $035C
+	LDA $0349
+	CLC
+	ADC $035C
+	STA $0349
+	JMP LBL1L24
+LBL1L23:
+LBL1L24:
+LBL1L25:
+	LDA $0366
+	CMP #$0A
+	.BYTE #$F0, #$03
+	JMP LBL1L27; jump to ELSE
+LBL1L26:
+	JSR LBL0L9; cleanscore()
+	LDA #$88
+	STA $69
+	LDA #$16
+	STA $6A
+	LDA #$00
+	STA $6B
+	LDA #$00
+	STA $6C
+	LDA #$00
+	STA $6D
+	LDA #$69
+	LDY #$00
+	JSR $BBA2; RAM -> FAC
+	LDA #$5D
+	LDY #$03
+	JSR $B867; RAM + FAC
+	LDX #$5D
+	LDY #$03
+	JSR $BBD4;  FAC -> MEM
+	LDA $034B
+	CLC
+	ADC #$01
+	STA $034B
+	LDA $033B
+	CLC
+	ASL
+	TAX
+	LDA #$0
+	STA $D001,X; set the x-coord
+	LDA #$02
+	EOR #$FF
+	AND $D015
+	STA $D015
+	LDA #$00
+	STA $0363
+	LDA $D41B
+	STA $035C
+	LDA #$02
+	EOR #$FF
+	AND $D015
+	STA $D015
+	LDA $034C
+	CLC
+	ADC $035C
+	STA $034C
+	JMP LBL1L28
+LBL1L27:
+LBL1L28:
+LBL1L29:
+	LDA $0366
+	CMP #$12
+	.BYTE #$F0, #$03
+	JMP LBL1L31; jump to ELSE
+LBL1L30:
+	JSR LBL0L9; cleanscore()
+	LDA #$88
+	STA $69
+	LDA #$48
+	STA $6A
+	LDA #$00
+	STA $6B
+	LDA #$00
+	STA $6C
+	LDA #$00
+	STA $6D
+	LDA #$69
+	LDY #$00
+	JSR $BBA2; RAM -> FAC
+	LDA #$5D
+	LDY #$03
+	JSR $B867; RAM + FAC
+	LDX #$5D
+	LDY #$03
+	JSR $BBD4;  FAC -> MEM
+	LDA $034B
+	CLC
+	ADC #$01
+	STA $034B
+	LDA #$02
+	EOR #$FF
+	AND $D015
+	STA $D015
+	LDA $033B
+	CLC
+	ASL
+	TAX
+	LDA #$0
+	STA $D001,X; set the x-coord
+	LDA #$00
+	STA $0363
+	LDA $D41B
+	STA $035C
+	LDA $034E
+	CLC
+	ADC $035C
+	STA $034E
+	JMP LBL1L32
+LBL1L31:
+LBL1L32:
+LBL1L33:
+	LDA $0366
+	CMP #$21
+	.BYTE #$F0, #$03
+	JMP LBL1L35; jump to ELSE
+LBL1L34:
+	JSR LBL0L9; cleanscore()
+	LDA #$87
+	STA $69
+	LDA #$48
+	STA $6A
+	LDA #$00
+	STA $6B
+	LDA #$00
+	STA $6C
+	LDA #$00
+	STA $6D
+	LDA #$69
+	LDY #$00
+	JSR $BBA2; RAM -> FAC
+	LDA #$5D
+	LDY #$03
+	JSR $B850; RAM - FAC
+	LDX #$5D
+	LDY #$03
+	JSR $BBD4;  FAC -> MEM
+	LDA #$FE
+	STA $0343
+	LDA #$20
+	EOR #$FF
+	AND $D015
+	STA $D015
+	LDA $0340
+	CLC
+	ASL
+	TAX
+	LDA #$254
+	STA $D001,X; set the x-coord
+	JMP LBL1L36
+LBL1L35:
+LBL1L36:
+LBL1L37:
+	LDA $0366
+	CMP #$41
+	.BYTE #$F0, #$03
+	JMP LBL1L39; jump to ELSE
+LBL1L38:
+	JSR LBL0L9; cleanscore()
+	LDA #$88
+	STA $69
+	LDA #$16
+	STA $6A
+	LDA #$00
+	STA $6B
+	LDA #$00
+	STA $6C
+	LDA #$00
+	STA $6D
+	LDA #$69
+	LDY #$00
+	JSR $BBA2; RAM -> FAC
+	LDA #$5D
+	LDY #$03
+	JSR $B850; RAM - FAC
+	LDX #$5D
+	LDY #$03
+	JSR $BBD4;  FAC -> MEM
+	LDA #$FE
+	STA $0344
+	LDA #$40
+	EOR #$FF
+	AND $D015
+	STA $D015
+	LDA $0341
+	CLC
+	ASL
+	TAX
+	LDA #$254
+	STA $D001,X; set the x-coord
+	JMP LBL1L40
+LBL1L39:
+LBL1L40:
+LBL1L41:
+	LDA $0366
+	CMP #$81
+	.BYTE #$F0, #$03
+	JMP LBL1L43; jump to ELSE
+LBL1L42:
+	JSR LBL0L9; cleanscore()
+	LDA #$88
+	STA $69
+	LDA #$48
+	STA $6A
+	LDA #$00
+	STA $6B
+	LDA #$00
+	STA $6C
+	LDA #$00
+	STA $6D
+	LDA #$69
+	LDY #$00
+	JSR $BBA2; RAM -> FAC
+	LDA #$5D
+	LDY #$03
+	JSR $B850; RAM - FAC
+	LDX #$5D
+	LDY #$03
+	JSR $BBD4;  FAC -> MEM
+	LDA #$FE
+	STA $0343
+	LDA #$80
+	EOR #$FF
+	AND $D015
+	STA $D015
+	LDA $0342
+	CLC
+	ASL
+	TAX
+	LDA #$254
+	STA $D001,X; set the x-coord
+	JMP LBL1L44
+LBL1L43:
+LBL1L44:
+LBL1L45:
+	LDA $034B
+	CMP #$08
+	.BYTE #$F0, #$03
+	JMP LBL1L47; jump to ELSE
+LBL1L46:
+	LDA #$00
+	STA $034B
+	JSR LBL0L10; levelup()
+	LDA #$FF
+	STA $D015
+	JMP LBL1L48
+LBL1L47:
+LBL1L48:
+	RTS
+LBL0L2:
+LBL1L49:
+	LDA $0355
+	CMP #$00
+	.BYTE #$B0, #$03
+	JMP LBL1L51; if c==0 jump to ELSE
+	.BYTE #$D0, #$03
+	JMP LBL1L51; if z==1 jump to ELSE
+LBL1L50:
+LBL2L8:
+	LDA $0354
+	CMP #$80
+	.BYTE #$B0, #$03
+	JMP LBL2L10; if c==0 jump to ELSE
+	.BYTE #$D0, #$03
+	JMP LBL2L10; if z==1 jump to ELSE
+LBL2L9:
+	LDA $0349
+	CLC
+	ADC $0353
+	STA $0349
+	JMP LBL2L11
+LBL2L10:
+	LDA $0349
+	SEC
+	SBC $0353
+	STA $0349
+LBL2L11:
+	LDA $0355
+	SEC
+	SBC #$01
+	STA $0355
+	LDA $033D
+	CLC
+	ASL
+	TAX
+	LDA $0349
+	STA $D000,X; set the x-coord
+	JMP LBL1L52
+LBL1L51:
+	LDA $D41B
+	STA $0355
+	LDA $D41B
+	STA $0354
+LBL1L52:
+LBL1L53:
+	LDA $0358
+	CMP #$00
+	.BYTE #$B0, #$03
+	JMP LBL1L55; if c==0 jump to ELSE
+	.BYTE #$D0, #$03
+	JMP LBL1L55; if z==1 jump to ELSE
+LBL1L54:
+LBL2L12:
+	LDA $0357
+	CMP #$80
+	.BYTE #$B0, #$03
+	JMP LBL2L14; if c==0 jump to ELSE
+	.BYTE #$D0, #$03
+	JMP LBL2L14; if z==1 jump to ELSE
+LBL2L13:
+	LDA $034C
+	CLC
+	ADC $0356
+	STA $034C
+	JMP LBL2L15
+LBL2L14:
+	LDA $034C
+	SEC
+	SBC $0356
+	STA $034C
+LBL2L15:
+	LDA $0358
+	SEC
+	SBC #$01
+	STA $0358
+	LDA $033E
+	CLC
+	ASL
+	TAX
+	LDA $034C
+	STA $D000,X; set the x-coord
+	JMP LBL1L56
+LBL1L55:
+	LDA $D41B
+	STA $0358
+	LDA $D41B
+	STA $0357
+LBL1L56:
+LBL1L57:
+	LDA $035B
+	CMP #$00
+	.BYTE #$B0, #$03
+	JMP LBL1L59; if c==0 jump to ELSE
+	.BYTE #$D0, #$03
+	JMP LBL1L59; if z==1 jump to ELSE
+LBL1L58:
+LBL2L16:
+	LDA $035A
+	CMP #$80
+	.BYTE #$B0, #$03
+	JMP LBL2L18; if c==0 jump to ELSE
+	.BYTE #$D0, #$03
+	JMP LBL2L18; if z==1 jump to ELSE
+LBL2L17:
+	LDA $034E
+	CLC
+	ADC $0359
+	STA $034E
+	JMP LBL2L19
+LBL2L18:
+	LDA $034E
+	SEC
+	SBC $0359
+	STA $034E
+LBL2L19:
+	LDA $035B
+	SEC
+	SBC #$01
+	STA $035B
+	LDA $033F
+	CLC
+	ASL
+	TAX
+	LDA $034E
+	STA $D000,X; set the x-coord
+	JMP LBL1L60
+LBL1L59:
+	LDA $D41B
+	STA $035B
+	LDA $D41B
+	STA $035A
+LBL1L60:
+	RTS
+LBL0L3:
+LBL1L61:
+	LDA $0364
+	CMP #$1E
+	.BYTE #$F0, #$03
+	JMP LBL1L63; jump to ELSE
+LBL1L62:
+LBL2L20:
+	LDA $0347
+	CMP #$17
+	.BYTE #$B0, #$03
+	JMP LBL2L22; if c==0 jump to ELSE
+	.BYTE #$D0, #$03
+	JMP LBL2L22; if z==1 jump to ELSE
+LBL2L21:
+	LDA $0347
+	SEC
+	SBC $0350
+	STA $0347
+	LDA $033C
+	CLC
+	ASL
+	TAX
+	LDA $0347
+	STA $D000,X; set the x-coord
+	JMP LBL2L23
+LBL2L22:
+LBL2L23:
+	JMP LBL1L64
+LBL1L63:
+LBL1L64:
+	RTS
+LBL0L4:
+LBL1L65:
+	LDA $0364
+	CMP #$26
+	.BYTE #$F0, #$03
+	JMP LBL1L67; jump to ELSE
+LBL1L66:
+LBL2L24:
+	LDA $0347
+	CMP #$F0
+	.BYTE #$90, #$03
+	JMP LBL2L26; jump to ELSE
+LBL2L25:
+	LDA $0347
+	CLC
+	ADC $0350
+	STA $0347
+	LDA $033C
+	CLC
+	ASL
+	TAX
+	LDA $0347
+	STA $D000,X; set the x-coord
+	JMP LBL2L27
+LBL2L26:
+LBL2L27:
+	JMP LBL1L68
+LBL1L67:
+LBL1L68:
+	RTS
+LBL0L5:
+LBL1L69:
+	LDA $0365
+	CMP #$00
+	.BYTE #$F0, #$03
+	JMP LBL1L71; jump to ELSE
+LBL1L70:
+	CLC
+	LDY #$1F
+	LDX #$03
+	JSR $FFF0
+	LDA #$15
+	STA $03
+	LDA #$78
+	STA $02
+	JSR PRN
+	CLC
+	LDY #$1F
+	LDX #$04
+	JSR $FFF0
+	LDA #$5D
+	LDY #$03
+	JSR $BBA2; RAM -> FAC
+	JSR $BDDD; FAC -> PETSCII ($0100)
+	LDA #$00
+	STA $02
+	LDA #$01
+	STA $03
+	JSR PRN
+	CLC
+	LDY #$1F
+	LDX #$06
+	JSR $FFF0
+	LDA #$15
+	STA $03
+	LDA #$7E
+	STA $02
+	JSR PRN
+	CLC
+	LDY #$21
+	LDX #$07
+	JSR $FFF0
+	LDA $034B
+	PHA
+	JSR BYT2STR
+	PLA
+	TAX
+	PLA
+	TAY
+	PLA
+	CMP #$30
+	BEQ LBL2L30
+	JSR $FFD2
+	TYA
+LBL2L28:			; Just Two Bytes
+	JSR $FFD2
+LBL2L29:			; Only One Byte
+	TXA
+	JSR $FFD2
+; jump to label below 
+	JMP LBL2L31
+LBL2L30:			; Label CMP2
+	TYA
+	CMP #$30
+	BEQ LBL2L29
+	JMP LBL2L28
+LBL2L31:			; Done
+	JMP LBL1L72
+LBL1L71:
+LBL1L72:
+	RTS
+LBL0L6:
+LBL1L73:
+	LDA $0363
+	CMP #$00
+	.BYTE #$B0, #$03
+	JMP LBL1L75; if c==0 jump to ELSE
+	.BYTE #$D0, #$03
+	JMP LBL1L75; if z==1 jump to ELSE
+LBL1L74:
+	LDA $0363
+	SEC
+	SBC $0351
+	STA $0363
+	LDA $033B
+	CLC
+	ASL
+	TAX
+	LDA $0363
+	STA $D001,X; set the x-coord
+	JMP LBL1L76
+LBL1L75:
+LBL1L76:
+	RTS
+LBL0L7:
+LBL1L77:
+	LDA $0343
+	CMP #$F0
+	.BYTE #$B0, #$03
+	JMP LBL1L79; if c==0 jump to ELSE
+	.BYTE #$D0, #$03
+	JMP LBL1L79; if z==1 jump to ELSE
+LBL1L78:
+	LDA $D41B
+	STA $0338
+LBL2L32:
+	LDA $0338
+	CMP #$FA
+	.BYTE #$B0, #$03
+	JMP LBL2L34; if c==0 jump to ELSE
+	.BYTE #$D0, #$03
+	JMP LBL2L34; if z==1 jump to ELSE
+LBL2L33:
+	LDA #$20
+	ORA $D015
+	STA $D015
+	LDA $0340
+	CLC
+	ASL
+	TAX
+	LDA $0349
+	STA $D000,X; set the x-coord
+	LDA #$3C
+	STA $0343
+	JMP LBL2L35
+LBL2L34:
+LBL2L35:
+	JMP LBL1L80
+LBL1L79:
+LBL1L80:
+LBL1L81:
+	LDA $0344
+	CMP #$F0
+	.BYTE #$B0, #$03
+	JMP LBL1L83; if c==0 jump to ELSE
+	.BYTE #$D0, #$03
+	JMP LBL1L83; if z==1 jump to ELSE
+LBL1L82:
+	LDA $D41B
+	STA $0339
+LBL2L36:
+	LDA $0339
+	CMP #$FA
+	.BYTE #$B0, #$03
+	JMP LBL2L38; if c==0 jump to ELSE
+	.BYTE #$D0, #$03
+	JMP LBL2L38; if z==1 jump to ELSE
+LBL2L37:
+	LDA #$40
+	ORA $D015
+	STA $D015
+	LDA $0341
+	CLC
+	ASL
+	TAX
+	LDA $034C
+	STA $D000,X; set the x-coord
+	LDA #$55
+	STA $0344
+	JMP LBL2L39
+LBL2L38:
+LBL2L39:
+	JMP LBL1L84
+LBL1L83:
+LBL1L84:
+LBL1L85:
+	LDA $0345
+	CMP #$FA
+	.BYTE #$B0, #$03
+	JMP LBL1L87; if c==0 jump to ELSE
+	.BYTE #$D0, #$03
+	JMP LBL1L87; if z==1 jump to ELSE
+LBL1L86:
+	LDA $D41B
+	STA $033A
+LBL2L40:
+	LDA $033A
+	CMP #$F0
+	.BYTE #$B0, #$03
+	JMP LBL2L42; if c==0 jump to ELSE
+	.BYTE #$D0, #$03
+	JMP LBL2L42; if z==1 jump to ELSE
+LBL2L41:
+	LDA #$80
+	ORA $D015
+	STA $D015
+	LDA $0342
+	CLC
+	ASL
+	TAX
+	LDA $034E
+	STA $D000,X; set the x-coord
+	LDA #$6E
+	STA $0345
+	JMP LBL2L43
+LBL2L42:
+LBL2L43:
+	JMP LBL1L88
+LBL1L87:
+LBL1L88:
+	RTS
+LBL0L8:
+LBL1L89:
+	LDA $0343
+	CMP #$F0
+	.BYTE #$90, #$03
+	JMP LBL1L91; jump to ELSE
+LBL1L90:
+	LDA $0343
+	CLC
+	ADC $0352
+	STA $0343
+	LDA $0340
+	CLC
+	ASL
+	TAX
+	LDA $0343
+	STA $D001,X; set the x-coord
+	JMP LBL1L92
+LBL1L91:
+LBL1L92:
+LBL1L93:
+	LDA $0343
+	CMP #$F0
+	.BYTE #$B0, #$03
+	JMP LBL1L95; if c==1 jump to ELSE
+LBL1L94:
+	LDA #$FE
+	STA $0343
+	LDA #$20
+	EOR #$FF
+	AND $D015
+	STA $D015
+	LDA $0340
+	CLC
+	ASL
+	TAX
+	LDA #$254
+	STA $D001,X; set the x-coord
+	JMP LBL1L96
+LBL1L95:
+LBL1L96:
+LBL1L97:
+	LDA $0344
+	CMP #$F0
+	.BYTE #$90, #$03
+	JMP LBL1L99; jump to ELSE
+LBL1L98:
+	LDA $0344
+	CLC
+	ADC $0352
+	STA $0344
+	LDA $0341
+	CLC
+	ASL
+	TAX
+	LDA $0344
+	STA $D001,X; set the x-coord
+	JMP LBL1L100
+LBL1L99:
+LBL1L100:
+LBL1L101:
+	LDA $0344
+	CMP #$F0
+	.BYTE #$B0, #$03
+	JMP LBL1L103; if c==1 jump to ELSE
+LBL1L102:
+	LDA #$FE
+	STA $0344
+	LDA #$40
+	EOR #$FF
+	AND $D015
+	STA $D015
+	LDA $0341
+	CLC
+	ASL
+	TAX
+	LDA #$254
+	STA $D001,X; set the x-coord
+	JMP LBL1L104
+LBL1L103:
+LBL1L104:
+LBL1L105:
+	LDA $0345
+	CMP #$F0
+	.BYTE #$90, #$03
+	JMP LBL1L107; jump to ELSE
+LBL1L106:
+	LDA $0345
+	CLC
+	ADC $0352
+	STA $0345
+	LDA $0342
+	CLC
+	ASL
+	TAX
+	LDA $0345
+	STA $D001,X; set the x-coord
+	JMP LBL1L108
+LBL1L107:
+LBL1L108:
+LBL1L109:
+	LDA $0345
+	CMP #$F0
+	.BYTE #$B0, #$03
+	JMP LBL1L111; if c==1 jump to ELSE
+LBL1L110:
+	LDA #$FE
+	STA $0345
+	LDA #$80
+	EOR #$FF
+	AND $D015
+	STA $D015
+	LDA $0342
+	CLC
+	ASL
+	TAX
+	LDA #$254
+	STA $D001,X; set the x-coord
+	JMP LBL1L112
+LBL1L111:
+LBL1L112:
+	RTS
+LBL0L9:
+	CLC
+	LDY #$1F
+	LDX #$04
+	JSR $FFF0
+	LDA #$15
+	STA $03
+	LDA #$84
+	STA $02
+	JSR PRN
+	CLC
+	LDY #$22
+	LDX #$07
+	JSR $FFF0
+	RTS
+LBL0L10:
+	LDA $0346
+	CLC
+	ADC #$01
+	STA $0346
+	LDA #$00
+	STA $D015
+	JSR CLS; cls()
+	CLC
+	LDY #$0D
+	LDX #$06
+	JSR $FFF0
+	LDA #$15
+	STA $03
+	LDA #$90
+	STA $02
+	JSR PRN
+	LDA $0346
+	PHA
+	JSR BYT2STR
+	PLA
+	TAX
+	PLA
+	TAY
+	PLA
+	CMP #$30
+	BEQ LBL1L115
+	JSR $FFD2
+	TYA
+LBL1L113:			; Just Two Bytes
+	JSR $FFD2
+LBL1L114:			; Only One Byte
+	TXA
+	JSR $FFD2
+; jump to label below 
+	JMP LBL1L116
+LBL1L115:			; Label CMP2
+	TYA
+	CMP #$30
+	BEQ LBL1L114
+	JMP LBL1L113
+LBL1L116:			; Done
+	CLC
+	LDY #$08
+	LDX #$0A
+	JSR $FFF0
+	LDA #$15
+	STA $03
+	LDA #$97
+	STA $02
+	JSR PRN
+	JSR LBL0L12; pause()
+	JSR CLS; cls()
+	LDA $0352
+	CLC
+	ADC #$01
+	STA $0352
+	LDA $0353
+	CLC
+	ADC #$01
+	STA $0353
+	LDA $0356
+	CLC
+	ADC #$01
+	STA $0356
+	LDA $0359
+	CLC
+	ADC #$01
+	STA $0359
+	LDA $034A
+	CLC
+	ADC #$05
+	STA $034A
+	LDA $034D
+	CLC
+	ADC #$05
+	STA $034D
+	LDA $034F
+	CLC
+	ADC #$05
+	STA $034F
+	RTS
+LBL0L11:
+	JSR CLS; cls()
+	CLC
+	LDY #$0D
+	LDX #$06
+	JSR $FFF0
+	LDA #$15
+	STA $03
+	LDA #$AF
+	STA $02
+	JSR PRN
+	CLC
+	LDY #$09
+	LDX #$08
+	JSR $FFF0
+	LDA #$15
+	STA $03
+	LDA #$BC
+	STA $02
+	JSR PRN
+	CLC
+	LDY #$08
+	LDX #$0A
+	JSR $FFF0
+	LDA #$15
+	STA $03
+	LDA #$D2
+	STA $02
+	JSR PRN
+	CLC
+	LDY #$0B
+	LDX #$0D
+	JSR $FFF0
+	LDA #$15
+	STA $03
+	LDA #$EA
+	STA $02
+	JSR PRN
+	CLC
+	LDY #$09
+	LDX #$0F
+	JSR $FFF0
+	LDA #$15
+	STA $03
+	LDA #$FA
+	STA $02
+	JSR PRN
+	JSR LBL0L12; pause()
+	RTS
+LBL0L12:
+	JSR SCANF
+	RTS
+SIDRND:
+	PHA
+	LDA #$FF
+	STA $D40E
+	STA $D40F
+	LDA #$80
+	STA $D412
+	PLA
+	RTS
+BYT2STR:		;Turns a 1 byte value into 3 PETSCII chars on stack
+	PLA
+	STA $0334
+	PLA
+	STA $0335
+	PLA
+	LDX #$00
+B2SL1:
+	SEC
+	SBC #$64
+	BCC B2SL2
+	INX
+	JMP B2SL1
+B2SL2:
+	CLC
+	ADC #$64
+	TAY
+	TXA
+	CLC
+	ADC #$30
+	PHA
+	TYA
+	LDX #$00
+B2SL3:
+	SEC
+	SBC #$0A
+	BCC B2SL4
+	INX
+	JMP B2SL3
+B2SL4:
+	CLC
+	ADC #$0A
+	TAY
+	TXA
+	CLC
+	ADC #$30
+	PHA
+	TYA
+	LDX #$00
+	TYA
+	ADC #$30
+	PHA
+	LDA $0335
+	PHA
+	LDA $0334
+	PHA
+	RTS
+CLS:		; Clear Screen Routine
+	LDA #$20
+	LDX #$00
+CLSLOOP:
+	STA $0400,X
+	STA $0500,X
+	STA $0600,X
+	STA $06E8,X
+	DEX
+	BNE CLSLOOP
+	RTS
+MOBCPY:		; Copy 63 bytes from $FB/$FC to $FD/$FE
+	LDY #$3F
+MOBCPL1:
+	CPY #$00
+	BEQ MOBCPL2
+	LDA ($FB),Y
+	STA ($FD),Y
+	DEY
+	JMP MOBCPL1
+MOBCPL2:
+	RTS
+PRN:
+	LDY #$00
+PRN_LOOP:
+	LDA ($02),Y
+	CMP #$00
+	BEQ PRN_END
+	JSR $FFD2
+	INY
+	JMP PRN_LOOP
+PRN_END:
+	RTS
+SCANF:
+	LDX #$00
+	STX $CFDE
+SCANFTOP:
+	JSR $FF9F
+	JSR $FFE4
+	BEQ SCANFTOP
+	CMP #$0D
+	BEQ SCANFEND
+	CMP #$14
+	BEQ BKSPC
+	JSR $FFD2
+	LDX $CFDE
+	STA $CFE0,X
+	INX
+	STX $CFDE
+	CPX #$10
+	BEQ SCANFEND
+	JMP SCANFTOP
+SCANFEND:
+	RTS
+BKSPC:
+	LDX $CFDF
+	DEX
+	STX $CFDF
+	JMP SCANFTOP
+GETKEY:
+	JSR $FFE4
+	CMP #$00
+	BEQ GETKEY
+	STA $CFDF
+	RTS
+; $1578			"SCORE"
+STRLBL0:
+	.BYTE #$53, #$43, #$4F, #$52, #$45, #$00
+; $157e			"KILLS"
+STRLBL1:
+	.BYTE #$4B, #$49, #$4C, #$4C, #$53, #$00
+; $1584			"           "
+STRLBL2:
+	.BYTE #$20, #$20, #$20, #$20, #$20, #$20, #$20, #$20, #$20, #$20, #$20, #$00
+; $1590			"LEVEL "
+STRLBL3:
+	.BYTE #$4C, #$45, #$56, #$45, #$4C, #$20, #$00
+; $1597			"PRESS ENTER TO BEGIN!!!"
+STRLBL4:
+	.BYTE #$50, #$52, #$45, #$53, #$53, #$20, #$45, #$4E, #$54, #$45, #$52, #$20, #$54, #$4F, #$20, #$42, #$45, #$47, #$49, #$4E, #$21, #$21, #$21, #$00
+; $15af			"THREE-ON-ONE"
+STRLBL5:
+	.BYTE #$54, #$48, #$52, #$45, #$45, #$2D, #$4F, #$4E, #$2D, #$4F, #$4E, #$45, #$00
+; $15bc			"BY MICHAEL PELLEGRINO"
+STRLBL6:
+	.BYTE #$42, #$59, #$20, #$4D, #$49, #$43, #$48, #$41, #$45, #$4C, #$20, #$50, #$45, #$4C, #$4C, #$45, #$47, #$52, #$49, #$4E, #$4F, #$00
+; $15d2			"PRESS ENTER TO BEGIN!!!"
+STRLBL7:
+	.BYTE #$50, #$52, #$45, #$53, #$53, #$20, #$45, #$4E, #$54, #$45, #$52, #$20, #$54, #$4F, #$20, #$42, #$45, #$47, #$49, #$4E, #$21, #$21, #$21, #$00
+; $15ea			"<-- (U) (O) -->"
+STRLBL8:
+	.BYTE #$3C, #$2D, #$2D, #$20, #$28, #$55, #$29, #$20, #$28, #$4F, #$29, #$20, #$2D, #$2D, #$3E, #$00
+; $15fa			"(Q)UIT   (SPACE) FIRE"
+STRLBL9:
+	.BYTE #$28, #$51, #$29, #$55, #$49, #$54, #$20, #$20, #$20, #$28, #$53, #$50, #$41, #$43, #$45, #$29, #$20, #$46, #$49, #$52, #$45, #$00

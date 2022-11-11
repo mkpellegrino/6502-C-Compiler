@@ -1,0 +1,99 @@
+; uint : return_address_1 : $0334 (820)
+; uint : return_address_2 : $0335 (821)
+; uint : y : $0336 (822)
+; uint : _y_1 : $0337 (823)
+; uint : _y_2 : $0338 (824)
+; uint : _y_3 : $0339 (825)
+; uint : _y_4 : $033A (826)
+; uint : _y_5 : $033B (827)
+; uint : _y_6 : $033C (828)
+; uint : _y_7 : $033D (829)
+; uint : _y_8 : $033E (830)
+; uint : _y_9 : $033F (831)
+; uint : l : $0340 (832)
+.org $0834
+	LDA #$02; 0834
+	LDX #$01; 0836
+	STA $0336,X; 0838
+	LDA #$08; 083B
+	LDX #$03; 083D
+	STA $0336,X; 083F
+	LDA #$10; 0842
+	LDX #$09; 0844
+	STA $0336,X; 0846
+LBL1L0:
+	PHA; 0849
+	LDA #$00; 084A
+	STA $0340; ; 084C
+LBL1L1:			; Top of FOR Loop
+	LDA $0340; 084F
+	CMP #$0A; 0852
+	.BYTE #$B0, #$03; 0854
+	JMP LBL1L3; if c==0 jump to BODY; 0856
+	JMP LBL1L4; jump out of FOR; 0859
+LBL1L2:
+	LDA $0340; 085C
+	CLC; 085F
+	ADC #$01; 0860
+	STA $0340; 0862
+	JMP LBL1L1; jump to top of FOR; 0865
+LBL1L3:
+	LDX $0340; 0868
+	LDA $0336,X; 086B
+	PHA; 086E
+	JSR BYTE2HEX; 086F
+	LDA #$08; 0872
+	STA $03; 0874
+	LDA #$C7; 0876
+	STA $02; 0878
+	JSR PRN; 087A
+	JMP LBL1L2; jump to iterator ; 087D
+LBL1L4:
+	PLA; 0880
+	RTS; 0881
+BYTE2HEX:		;Display a Hexadecimal Byte
+	PLA; 0882
+	STA $0334; 0883
+	PLA; 0886
+	STA $0335; 0887
+	CLD; 088A
+	PLA; 088B
+	TAX; 088C
+	AND #$F0; 088D
+	LSR; 088F
+	LSR; 0890
+	LSR; 0891
+	LSR; 0892
+	CMP #$0A; 0893
+	.BYTE #$90, #$03; 0895
+	CLC; 0897
+	ADC #$07; 0898
+	ADC #$30; 089A
+	JSR $FFD2; 089C
+	TXA; 089F
+	AND #$0F; 08A0
+	CMP #$0A; 08A2
+	.BYTE #$90, #$03; 08A4
+	CLC; 08A6
+	ADC #$07; 08A7
+	ADC #$30; 08A9
+	JSR $FFD2; 08AB
+	LDA $0335; 08AE
+	PHA; 08B1
+	LDA $0334; 08B2
+	PHA; 08B5
+	RTS; 08B6
+PRN:
+	LDY #$00; 08B7
+PRN_LOOP:
+	LDA ($02),Y; 08B9
+	CMP #$00; 08BB
+	BEQ PRN_END; 08BD
+	JSR $FFD2; 08BF
+	INY; 08C2
+	JMP PRN_LOOP; 08C3
+PRN_END:
+	RTS; 08C6
+; $8c7			" "
+STRLBL0:
+	.BYTE #$20, #$00

@@ -2100,8 +2100,19 @@ body: WHILE
   addComment( "=========================================================");  
   addComment( "                 cls()");
   addComment( "=========================================================");  
+  cls_is_needed = true;
+  addAsm( "JSR CLS; cls()", 3, false );
+  //addAsm( "JSR $FF81; cls()", 3, false );
+
+};
+| tCLS '(' expression ')' ';'
+{
+  addComment( "=========================================================");  
+  addComment( "                 cls()");
+  addComment( "=========================================================");  
   //cls_is_needed = true;
-  addAsm( "JSR $FF81; cls()", 3, false );
+  //addAsm( "JSR CLS; cls()", 3, false );
+  addAsm( "JSR $FF81; kernal cls()", 3, false );
 
 };
 | tLSR '(' expression ')' ';'
@@ -2814,7 +2825,49 @@ statement: datatype ID init
       /* unknown type */
       break;
     }
-}
+};
+| datatype ID '[' NUMBER ']'
+{
+  addParserComment( "RULE: statement: datatype ID '[' NUMBER ']'  <== ARRAY" );
+  cerr << "initializing an array" << endl;
+  cerr << "type: " << $1.name << "\tid: " << $2.name << "\tlength: " << $4.name << endl;
+  if( atoi( $4.name ) > 255 || atoi( $4.name ) < 1 ) addCompilerMessage( "Array index out of range 1-255");
+  //addParserComment( string($1.name) + " " + string( $2.name ) + "=" + string($3.name) );
+  int length = atoi( $4.name );
+  string my_type = string($1.name);
+  
+  for( int i = 0; i < length; i++ )
+    {
+      if( i == 0 )
+	{
+	  addAsmVariable( $2.name, current_variable_type );
+	}
+      else
+	{
+	  addAsmVariable( string( string( "_" ) + string( $2.name ) + string( "_" ) + toString(i)).c_str(), current_variable_type );
+	}
+    }
+
+};
+| ID '[' expression ']' init
+{
+  addParserComment( "RULE: statement: ID '[' expression ']' init" );
+  current_variable_type=getTypeOf($1.name);
+  current_variable_base_address = getAddressOf( $1.name );
+
+  if( isAddress($3.name) )
+    {
+      int addr_of_index = getAddressOf($3.name);
+      addAsm( string("LDX ") + string($3.name), 3, false );
+    }
+  else //if( isInteger($3.name ) )
+    {
+      addAsm( string("LDX #$") + toHex(atoi(stripFirst($3.name).c_str())), 2, false );
+
+    }
+
+  addAsm( string("STA $") + toHex( current_variable_base_address ) + string( ",X" ), 3, false );
+};
 | ID init
 {
   addParserComment( "RULE: statement: ID init" );
@@ -3904,7 +3957,37 @@ expression: expression arithmetic expression
       strcpy( $$.name, "FAC" );
     }
 	
-}
+};
+| ID '[' expression ']'
+{
+  addParserComment( "ID '[' expression ']'" );
+  int type_of_variable = getTypeOf( $1.name );
+  //toHex(get_word_L(base_address_op1))
+
+  if( isAddress( $3.name ) )
+    {
+      addAsm( string( "LDX " ) + string( $3.name ), 3, false );
+    }
+  else if( string( $3.name ) == string("A") )
+    {
+      addAsm( "TAX" );
+    }
+  else if( isInteger( $3.name ) || isUint( $3.name ) || isByte( $3.name ) )
+    {
+      if( atoi($3.name) > 255 || atoi($3.name) < 0 ) addCompilerMessage( "Index Out of Range", 3 );
+      addAsm( string( "LDX #$") + toHex( atoi( stripFirst($3.name).c_str() ) ), 2, false );
+    }
+
+  addAsm( string( "LDA $" ) + toHex(getAddressOf($1.name)) + string(",X"), 3, false );
+  //addAsm( string( "LDA #$") + toHex(get_word_L(getAddressOf($1.name))), 3, false );
+  //addAsm( "STA $02", 2, false );
+  //addAsm( string( "LDA #$") + toHex(get_word_H(getAddressOf($1.name))), 3, false );
+  //addAsm( "STA $03", 2, false );
+  //addAsm( "LDA ($02,X)", 2, false );
+  
+  //  cerr << type_of_variable << endl;
+  strcpy( $$.name, "A" );
+};
 | '{' expression '}'
 {
   addParserComment( "{ expression }" );

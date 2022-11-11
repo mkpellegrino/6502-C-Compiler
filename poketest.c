@@ -2,13 +2,16 @@
 
 int main()
 {
-  cls();
+
   uint oldbg = peek( 53281 );
   uint oldbd = peek( 53280 );
   
   poke( 53280, 0 );
   poke( 53281, 0 );
+  cls();
 
+
+  intro();
 
   uint g1 = 0;
   uint g2 = 0;
@@ -40,8 +43,10 @@ int main()
 
   //mob sprite5 = { 4, 196, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 96, 6, 0, 96, 1, 129, 128, 1, 129, 128, 7, 255, 224, 7, 255, 224, 30, 126, 120, 30, 126, 120, 127, 255, 254, 127, 255, 254, 102, 0, 102, 102, 0, 102, 102, 0, 102, 102, 0, 102, 1, 231, 128, 1, 231, 128 };
 
-  uint arg = 0;
-  uint ret = 0;
+  //uint arg = 0;
+  //uint ret = 0;
+
+
   
   uint missle = 1;
   uint ship = 0;
@@ -55,6 +60,9 @@ int main()
   uint a1fire = 0;
   uint a2fire = 0;
   uint a3fire = 0;
+
+
+  uint level = 0;
   
   // player
   uint x = 80;
@@ -65,6 +73,7 @@ int main()
   uint x2 = 80;
   uint y2 = 60;
 
+  uint kills = 0;
   // alien 2
   uint x3 = 80;
   uint y3 = 85;
@@ -75,26 +84,28 @@ int main()
   
   uint playerspeed = 4;
   uint misslespeed = 4;
+
+  
+  uint alienmisslespeed = 4;
   
   uint alien1speed = 2;
   uint alien1direction = 20;
   uint alien1distance = 20;
 
-  uint alien2speed = 2; // was 4
+  uint alien2speed = 3; // was 4
   uint alien2direction = 30;
   uint alien2distance = 30;
 
-  uint alien3speed = 2;  // was 6
+  uint alien3speed = 4;  // was 6
   uint alien3direction = 40;
   uint alien3distance = 40;
 
   uint s = rnd(1);
 
-
   float score = 1.0;
   score = score - 1.0;
 
-  spriteset( 255 );
+  
 
   spritecolour( 0, 15 );
   spritecolour( 1, 15 );
@@ -104,12 +115,9 @@ int main()
       spritecolour( i, 10 );
     }
 
-  spritexy( ship, x, y );
-  spritexy( missle, 80, 200 );
-  spritexy( alien1, x2, y2 );
-  spritexy( alien2, x3, y3 );
-  spritexy( alien3, x4, y4 );
-
+  
+  
+  
   // Hx  K    Dc 
   // 3E (Q) = 62   Quit
   // 3C ( ) = 60   Fire
@@ -123,6 +131,13 @@ int main()
   uint firey = 0;
   uint c = 0;
   uint timer = 0;
+  levelup();
+  spriteset( 255 );
+  spritexy( ship, x, y );
+  spritexy( missle, 80, 200 );
+  spritexy( alien1, x2, y2 );
+  spritexy( alien2, x3, y3 );
+  spritexy( alien3, x4, y4 );
   c = getin();
   while( c != 62 )
     {
@@ -156,6 +171,7 @@ int checkFire()
     {
       if( firey == 0 )
 	{
+	  spriteon( 2 );
 	  spritex( missle, x );
 	  spritey( missle, 240 );
 	  firey = 240;
@@ -172,7 +188,9 @@ int checkAlienHit()
     {
       cleanscore();
       score = score + 100.0;
+      kills = kills + 1;
       spritey( missle, 0 );
+      spriteoff( 2 );
       firey=0;
       s = rnd(1);
       x2 = x2 + s;
@@ -182,9 +200,13 @@ int checkAlienHit()
     {
       cleanscore();
       score = score + 150.0;
+      kills = kills + 1;
       spritey( missle, 0 );
+      spriteoff( 2 );
+
       firey=0;
       s = rnd(1);
+      spriteoff( 2 );
       x3 = x3 + s;
     }
 
@@ -192,6 +214,8 @@ int checkAlienHit()
     {
       cleanscore();
       score = score + 200.0;
+      kills = kills + 1;
+      spriteoff( 2 );
       spritey( missle, 0 );
       firey=0;
       s = rnd(1);
@@ -225,6 +249,12 @@ int checkAlienHit()
       spritey( alien3m, 254 );
     }
 
+  if( kills == 8 )
+    {
+      kills = 0;
+      levelup();
+      spriteset(255);
+    }
   return;
 }
 
@@ -332,6 +362,11 @@ int updateStats()
       printf( "SCORE" );
       cursorxy( 31, 4 );
       printf( score );
+
+      cursorxy( 31, 6 );
+      printf( "KILLS" );
+      cursorxy( 33, 7 );
+      printf( kills );
     }
   return;
 }
@@ -387,7 +422,7 @@ int updateAlienMisslePosition()
   
   if( a1fire < 240 )
     {
-      a1fire = a1fire + misslespeed;
+      a1fire = a1fire + alienmisslespeed;
       spritey( alien1m, a1fire );
     }
   
@@ -400,7 +435,7 @@ int updateAlienMisslePosition()
   
   if( a2fire < 240 )
     {
-      a2fire = a2fire + misslespeed;
+      a2fire = a2fire + alienmisslespeed;
       spritey( alien2m, a2fire );
     }
     
@@ -413,7 +448,7 @@ int updateAlienMisslePosition()
 
   if( a3fire <240 )
     {
-      a3fire = a3fire + misslespeed;
+      a3fire = a3fire + alienmisslespeed;
       spritey( alien3m, a3fire );
     }
   
@@ -432,11 +467,55 @@ int cleanscore()
 {
   cursorxy( 31, 4 );
   printf( "           " );
+  cursorxy( 34, 7 );
   return;
 }
 
-int sidescreen()
+int levelup()
 {
+  level = level + 1;
+  spriteset(0);
+  cls();
+  cursorxy( 13, 6 );
+  printf( "LEVEL " );
+  printf( level );
+  cursorxy( 8, 10 );
+  printf( "PRESS ENTER TO BEGIN!!!" );
+  pause();
+  cls();
+  alienmisslespeed = alienmisslespeed + 1;
+  
+  alien1speed = alien1speed + 1;
+  alien2speed = alien2speed + 1;
+  alien3speed = alien3speed + 1;
 
+  y2 = y2 + 5;
+  y3 = y3 + 5;
+  y4 = y4 + 5;
+  
+  return;
+}
+
+int intro()
+{
+  cls();
+
+  cursorxy( 13, 6 );
+  printf( "THREE-ON-ONE" );
+  cursorxy( 9, 8 );
+  printf( "BY MICHAEL PELLEGRINO" );
+  cursorxy( 8, 10 );
+  printf( "PRESS ENTER TO BEGIN!!!" );
+  cursorxy( 11, 13 );
+  printf( "<-- (U) (O) -->" );
+  cursorxy( 9, 15 );
+  printf( "(Q)UIT   (SPACE) FIRE" );
+  pause();
+  return;
+}
+
+int pause()
+{
+  scanf( " " );
   return;
 }
