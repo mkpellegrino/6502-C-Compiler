@@ -1007,7 +1007,8 @@
       {
 	cerr << "\t\t$" <<  asm_variables[i]->getAddress() << " : "  << asm_variables[i]->getIdentifier() << " : " << asm_variables[i]->getPrintableType() << endl;
 
-	cout << "; " << asm_variables[i]->getPrintableType() << " : " << asm_variables[i]->getIdentifier() << " : $" << asm_variables[i]->getAddress() << " (" << asm_variables[i]->getAddressAsInt() << ")" << endl;
+	// this gets added directly to the output file!
+	if( asm_variables[i]->getIdentifier().c_str()[0] != '_' ) cout << "; " << asm_variables[i]->getPrintableType() << " : " << asm_variables[i]->getIdentifier() << " : $" << asm_variables[i]->getAddress() << " (" << asm_variables[i]->getAddressAsInt() << ")" << endl;
       }
     cerr << "\tStrings" << endl;
     for( int i=0; i<asm_strings.size(); i++ )
@@ -2120,6 +2121,7 @@ body: WHILE
   addComment( "=========================================================");  
   addComment( "                 lsr(expression)");
   addComment( "=========================================================");  
+
   
   int x = getAddressOf( $3.name );
   addAsm( string( "LSR $") + toHex( x ), 3, false );
@@ -2366,9 +2368,17 @@ condition: expression relop expression
   if( getTypeOf( $1.name ) == 0 && getTypeOf( $3.name ) == 0 )
     {
       addDebugComment( string( $1.name ) + string(" vs. ") + string($3.name) ); 
-      int tmp_rhs = atoi( stripFirst($3.name).c_str() );
-      if( tmp_rhs > 255 || tmp_rhs < 0 ) addCompilerMessage( "type mismatch.  uint is 0-255.  cannot compare with a number > 255 or < 0.", 3 );
-      addAsm( string("CMP #$") + toHex(tmp_rhs), 2, false );
+      cerr << $1.name << " vs. " << $3.name << endl;
+      if( isAddress($1.name) && isAddress($3.name ))
+	{
+	  addAsm( string("CMP ") + string( $3.name ), 3, false );
+	}
+      else
+	{
+	  int tmp_rhs = atoi( stripFirst($3.name).c_str() );
+	  if( tmp_rhs > 255 || tmp_rhs < 0 ) addCompilerMessage( "type mismatch.  uint is 0-255.  cannot compare with a number > 255 or < 0.", 3 );
+	  addAsm( string("CMP #$") + toHex(tmp_rhs), 2, false );
+	}
 
     }
   else if( getTypeOf( $1.name ) == 0 )
@@ -2829,8 +2839,8 @@ statement: datatype ID init
 | datatype ID '[' NUMBER ']'
 {
   addParserComment( "RULE: statement: datatype ID '[' NUMBER ']'  <== ARRAY" );
-  cerr << "initializing an array" << endl;
-  cerr << "type: " << $1.name << "\tid: " << $2.name << "\tlength: " << $4.name << endl;
+  //cerr << "initializing an array" << endl;
+  //cerr << "type: " << $1.name << "\tid: " << $2.name << "\tlength: " << $4.name << endl;
   if( atoi( $4.name ) > 255 || atoi( $4.name ) < 1 ) addCompilerMessage( "Array index out of range 1-255");
   //addParserComment( string($1.name) + " " + string( $2.name ) + "=" + string($3.name) );
   int length = atoi( $4.name );
