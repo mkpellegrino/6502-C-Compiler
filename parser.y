@@ -2251,6 +2251,11 @@ condition: expression relop expression
   // at this point, we need to look at the type of the variable that is located
   // at the $1.name address, so we know how to compare it with another number
 
+  if( getTypeOf( $1.name ) == 0 && string( $2.name ) == string( ">=" ) && atoi(stripFirst($3.name).c_str()) == 0 )
+    {
+      addCompilerMessage( "UINTs can ONLY be >= 0... this line of code will lead to an infinite loop ", 3 );
+    }
+
   if( getTypeOf( $3.name ) == 8 && isFloat($1.name)) // MEM vs. IMM
     {
       addParserComment( "FLOAT v. FLOAT (imm)" );
