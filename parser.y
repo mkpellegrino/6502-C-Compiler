@@ -1290,7 +1290,7 @@
 
 //%parse-param { FILE* fp }
 %token VOID 
-%token <nd_obj> tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tTOFLOAT tTOUINT tDEC tINC tJSR tASL tLSR tSPRITESET tSPRITEON tSPRITEOFF tSPRITETOGGLE tRND tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER PRINTFF SCANFF INT FLOAT CHAR WHILE FOR IF ELSE TRUE FALSE NUMBER FLOAT_NUM ID LE GE EQ NE GT LT AND OR STR ADD SUBTRACT MULTIPLY DIVIDE  UNARY INCLUDE RETURN
+%token <nd_obj> tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tTOFLOAT tTOUINT tDEC tINC tJSR tLDA tASL tLSR tSPRITESET tSPRITEON tSPRITEOFF tSPRITETOGGLE tRND tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER PRINTFF SCANFF INT FLOAT CHAR WHILE FOR IF ELSE TRUE FALSE NUMBER FLOAT_NUM ID LE GE EQ NE GT LT AND OR STR ADD SUBTRACT MULTIPLY DIVIDE  UNARY INCLUDE RETURN
 %type <nd_obj> headers main body return function datatype statement arithmetic relop program else
    %type <nd_obj2> init value expression
       %type <nd_obj3> condition
@@ -1467,6 +1467,10 @@ body: WHILE
 | body body
 {
   $$.nd = mknode($1.nd, $2.nd, "statements");
+};
+| tLDA '(' expression ')' ';'
+{
+  addAsm( string( "LDA " ) + string( $3.name ), 3, false );
 };
 | tSPRITEON '(' expression ')' ';'
 {
@@ -2186,7 +2190,7 @@ condition: expression relop expression
       addAsm( "JSR $BC5B; CMP(FAC, RAM)", 3, false );
       addAsm( "PHA" );
     }
-  else if( isUintID($1.name) && isIntID($3.name))
+  else if( isUintID($1.name) && isIntID($3.name))  // mismatch
     {
       addAsm( string("LDA ") + string($1.name), 3, false );
       addAsm( "PHA" );
@@ -4671,26 +4675,18 @@ int main(int argc, char *argv[])
       addAsm( "PLA" );
       addAsm( string( "STA $" ) + toHex(getAddressOf( "return_address_2" )), 3, false );
       // ==================================================================================
+      // BNE: #$D0   BEQ: #$F0   BCC: #$B0   BCS: #$90
       addAsm( "PLA" ); // pull the signed value off the stack
       addAsm( "STA $05",2,false ); // save the signed byte in Zeropage ($0005)
-      addAsm( "AND #$80", 2, false );
-      addAsm( "CMP #$80", 2, false );
+      addAsm( "AND #$80", 2, false );          // SIGNED INT: F3 -> 80 (it's negative)
+      addAsm( "CMP #$80", 2, false );          // IF IT's NEGATIVE
       addAsm( "PLA" ); // get the unsigned byte
-      addAsm( ".BYTE #$D0, #$10", 2, false ); // branch to USCMPS1 if bit 7 is NOT set
-      addAsm( "STA $2A",2,false ); // save the unsigned byte in Zeropage ($002A)
-      addAsm( "AND #$80", 2, false );
-      addAsm( "CMP #$80", 2, false );
-      addAsm( ".BYTE #$D0, #$08", 2, false ); // branch to USCMPS1 if bit 7 is NOT set
-      addAsm( "LDA $05", 2, false );
-      addAsm( "CMP $2A", 2, false );
-      addAsm( ".BYTE #$B0, #$06", 2, false ); // to USCMPS2
-      addAsm( ".BYTE #$90, #$04", 2, false ); // to USCMPS2
-      // now skip to the return part of this function
-      // the Compare results are on the stack
-      //addAsm( "USCMPS1:", 0, true );
-      addAsm( "LDA #$01", 2, false );
-      addAsm( "CMP #$00", 2, false );
-      //addAsm( "USCMPS2:", 0, true );
+      addAsm( ".BYTE #$B0, #$0A", 2, false );  // JumpRel 16 bytes fwd   -> (***)
+      addAsm( "CMP $05", 2, false );           // A = UINT
+      addAsm( ".BYTE #$B0, #$06", 2, false );  // JumpRel +6             -> (+++)
+      addAsm( ".BYTE #$90, #$04", 2, false );  // JumpRel +4             -> (+++)
+      addAsm( "LDA #$01", 2, false );          // A=1                       (***)
+      addAsm( "CMP #$00", 2, false );          // CMP A with 0
       addAsm( "PHP" );      
       // ==================================================================================
       addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_2" ) ), 3, false );

@@ -7,9 +7,9 @@
 alpha [a-zA-Z]
 digit [0-9]
 frmt  [{\t}|{\n}]
-unary "++"|"--"
 
 %%
+"dec"               { strcpy(yylval.nd_obj.name,(yytext)); return tDEC; }
 "inc"               { strcpy(yylval.nd_obj.name,(yytext)); return tINC; }
 "mob"               { strcpy(yylval.nd_obj.name,(yytext)); return tMOB; }
 "spritexy"               { strcpy(yylval.nd_obj.name,(yytext)); return tSPRITEXY; }
@@ -33,6 +33,7 @@ unary "++"|"--"
 "sin"                    { strcpy(yylval.nd_obj.name,(yytext)); return tSIN; }
 "cos"                    { strcpy(yylval.nd_obj.name,(yytext)); return tCOS; }
 "jsr"                    { strcpy(yylval.nd_obj.name,(yytext)); return tJSR; }
+"lda"                    { strcpy(yylval.nd_obj.name,(yytext)); return tLDA; }
 "asl"                    { strcpy(yylval.nd_obj.name,(yytext)); return tASL; }
 "lsr"                    { strcpy(yylval.nd_obj.name,(yytext)); return tLSR; }
 "jmp"                    { strcpy(yylval.nd_obj.name,(yytext)); return tJMP; }
@@ -64,7 +65,6 @@ unary "++"|"--"
 {alpha}({alpha}|{digit})*   { strcpy(yylval.nd_obj.name,(yytext)); return ID; }
 "++"                        { strcpy(yylval.nd_obj.name,(yytext)); return tPLUSPLUS; }
 "--"                        { strcpy(yylval.nd_obj.name,(yytext)); return tMINUSMINUS; }
-{unary}                     { strcpy(yylval.nd_obj.name,(yytext)); return UNARY; }
 "<="                        { strcpy(yylval.nd_obj.name,(yytext)); return LE; }
 ">="                        { strcpy(yylval.nd_obj.name,(yytext)); return GE; }
 "=="                        { strcpy(yylval.nd_obj.name,(yytext)); return EQ; }
