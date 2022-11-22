@@ -28,6 +28,7 @@
 
 
   // compiler internal flags
+  bool unsigned_signed_cmp_is_needed=true;
   bool split_byte_is_needed=false;
   bool decimal_digit_is_needed=false;
   bool modulus_is_needed=false;
@@ -106,21 +107,21 @@
     return return_value;
   }
   
-  bool isFloat( string s )
+  bool isFloatIMM( string s )
   {
     bool return_value = false;
     if( s[0] == 'f' ) return_value = true;
     return return_value;
   }
 
-  bool isUint( string s )
+  bool isUintIMM( string s )
   {
     bool return_value = false;
     if( s[0] == 'u' ) return_value = true;
     return return_value;
   }
   
-  bool isWord( string s )
+  bool isWordIMM( string s )
   {
     bool return_value = false;
     if( s[0] == 'w' ) return_value = true;
@@ -134,6 +135,13 @@
     return return_value;
   }
 
+  bool isDoubleIMM( string s )
+  {
+    bool return_value = false;
+    if( s[0] == 'd' ) return_value = true;
+    return return_value;
+  }
+
   bool isByte( string s )
   {
     bool return_value = false;
@@ -141,7 +149,7 @@
     return return_value;
   }
 
-  bool isInteger( string s )
+  bool isIntIMM( string s )
   {
     bool return_value = false;
     //if( s[0] != '#' && s[0] != '$' ) return_value = true;
@@ -296,7 +304,7 @@
     return return_value;
   }
 
- string fractionalToBinary( double value )
+  string fractionalToBinary( double value )
   {
     string binary_value;
     int count=0;
@@ -318,7 +326,7 @@
     return binary_value;
   }
 
- string integerToBinary( int value, int s = 8)
+  string integerToBinary( int value, int s = 8)
   {
     value = abs(value);
     string binary_value;
@@ -382,15 +390,15 @@
     first_one++;
     nmb = nmb.substr( first_one, nmb.length() );
     nmb = exponent + sign + nmb;
-     while( nmb.length() < 40 )
+    while( nmb.length() < 40 )
       {
 	nmb+="0";
       }
-     while( nmb.length() > 40 )
+    while( nmb.length() > 40 )
       {
 	nmb = nmb.substr(0, nmb.length()-1);
       }
-     return_value = binaryToHex( nmb );
+    return_value = binaryToHex( nmb );
     return return_value;
   }
 
@@ -651,7 +659,7 @@
 	    // mob
 	    //data_start += 63;
 	    // not stored in typical variable space
-	     break;
+	    break;
 	  default:
 	    data_start += 1;
 	  }	   
@@ -760,6 +768,49 @@
       }
   }
 
+  bool isUintID( string s )
+  {
+    bool return_value = false;
+    if( getTypeOf( s ) == 0 ) return_value = true;
+    return return_value;
+  }
+
+  bool isIntID( string s )
+  {
+    bool return_value = false;
+    if( getTypeOf( s ) == 1 ) return_value = true;
+    return return_value;
+  }
+
+  bool isWordID( string s )
+  {
+    bool return_value = false;
+    if( getTypeOf( s ) == 2 ) return_value = true;
+    return return_value;
+  }
+
+  bool isDoubleID( string s )
+  {
+    bool return_value = false;
+    if( getTypeOf( s ) == 4 ) return_value = true;
+    return return_value;
+  }
+
+  bool isFloatID( string s )
+  {
+    bool return_value = false;
+    if( getTypeOf( s ) == 8 ) return_value = true;
+    return return_value;
+  }
+
+  bool isMobID( string s )
+  {
+    bool return_value = false;
+    if( getTypeOf( s ) == 16 ) return_value = true;
+    return return_value;
+  }
+
+    
   // I really should add opcodes to these instructions
   class asm_instruction
   {
@@ -1150,6 +1201,23 @@
   	  }
       }
   }
+
+  void compareFloatVsFloat( string OP1, string OP2 )
+  {
+    addCommentSection( "FLOAT IMM vs. FLOAT MEM" );
+    addComment(  OP1 + string( " v. " ) + OP2 );
+    // FP Operations
+    inlineFloat( OP1, 105);
+    current_variable_base_address = getAddressOf( OP2 );
+    addAsm( string("LDA #$") + toHex( get_word_L( current_variable_base_address )), 2, false );
+    addAsm( string("LDY #$") + toHex( get_word_H( current_variable_base_address )), 2, false );
+    addAsm( "JSR $BBA2; RAM -> FAC", 3, false );
+    addAsm( "LDA #$69", 2, false );
+    addAsm( "LDY #$00", 2, false );
+    addAsm( "JSR $BC5B; CMP(FAC, RAM)", 3, false );
+    addAsm( "PHA" );
+    return;
+  }
   
   void yyerror(const char *s);
   int yylex();
@@ -1222,7 +1290,7 @@
 
 //%parse-param { FILE* fp }
 %token VOID 
-%token <nd_obj> tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tTOFLOAT tTOUINT tINC tJSR tASL tLSR tSPRITESET tSPRITEON tSPRITEOFF tSPRITETOGGLE tRND tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER PRINTFF SCANFF INT FLOAT CHAR WHILE FOR IF ELSE TRUE FALSE NUMBER FLOAT_NUM ID LE GE EQ NE GT LT AND OR STR ADD SUBTRACT MULTIPLY DIVIDE  UNARY INCLUDE RETURN
+%token <nd_obj> tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tTOFLOAT tTOUINT tDEC tINC tJSR tASL tLSR tSPRITESET tSPRITEON tSPRITEOFF tSPRITETOGGLE tRND tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER PRINTFF SCANFF INT FLOAT CHAR WHILE FOR IF ELSE TRUE FALSE NUMBER FLOAT_NUM ID LE GE EQ NE GT LT AND OR STR ADD SUBTRACT MULTIPLY DIVIDE  UNARY INCLUDE RETURN
 %type <nd_obj> headers main body return function datatype statement arithmetic relop program else
    %type <nd_obj2> init value expression
       %type <nd_obj3> condition
@@ -1270,7 +1338,7 @@ function: function function
 datatype:
 INT { addParserComment( string( "RULE: datatype: ") + string( $$.name )); current_variable_type=1; strcpy( $$.name, "INT" );}
 |
-tBYTE { addParserComment( string( "RULE: datatype: ") + string( $$.name )); current_variable_type=1; strcpy( $$.name, "BYTE" );}
+tBYTE { addParserComment( string( "RULE: datatype: ") + string( $$.name )); current_variable_type=0; strcpy( $$.name, "BYTE" );}
 |
 tWORD { addParserComment( string( "RULE: datatype: ") + string( $$.name )); current_variable_type=2; strcpy( $$.name, "WORD" );}
 |
@@ -1302,7 +1370,7 @@ body: WHILE
 }
 '(' condition
 {
-    addAsm( generateNewLabel(), 0, true );
+  addAsm( generateNewLabel(), 0, true );
 }
 ')' '{' body
 {
@@ -1335,7 +1403,7 @@ body: WHILE
 {  addAsm( generateNewLabel(), 0, true ); }
 '{' body '}'
 {
-    addCommentBreak();
+  addCommentBreak();
   addAsm( string( "JMP " ) + getLabel( ((int)label_vector[label_major]-2), false ) + "; jump to iterator", 3, false );
   
   addAsm( generateNewLabel(), 0, true );
@@ -1404,7 +1472,7 @@ body: WHILE
 {
   addParserComment( "statement: tSPRITEON '(' expression ')' ';' " );
   
-  if( isInteger($3.name) || isUint( $3.name ) )
+  if( isIntIMM($3.name) || isUintIMM( $3.name ) )
     {
       int x = atoi( stripFirst( $3.name ).c_str() );
       addAsm( string( "LDA #$") + toHex( x ), 2, false );
@@ -1421,7 +1489,7 @@ body: WHILE
 | tSPRITEOFF '(' expression ')' ';'
 {
   addParserComment( "statement: tSPRITEOFF '(' expression ')' ';' " );
-  if( isInteger($3.name) || isUint( $3.name ) )
+  if( isIntIMM($3.name) || isUintIMM( $3.name ) )
     {
       int x = atoi( stripFirst( $3.name ).c_str() );
       addAsm( string( "LDA #$") + toHex( x ), 2, false );
@@ -1438,7 +1506,7 @@ body: WHILE
 | tSPRITETOGGLE '(' expression ')' ';'
 {
   addParserComment( "statement: tSPRITETOGGLE '(' expression ')' ';' " );
-  if( isInteger($3.name) || isUint( $3.name ) )
+  if( isIntIMM($3.name) || isUintIMM( $3.name ) )
     {
       int x = atoi( stripFirst( $3.name ).c_str() );
       addAsm( string( "LDA #$") + toHex( x ), 2, false );
@@ -1454,7 +1522,7 @@ body: WHILE
 | tSPRITESET '(' expression ')' ';'
 {
   addParserComment( "statement: tSPRITESET '(' expression ')' ';' " );
-  if( isInteger($3.name) || isUint( $3.name ) )
+  if( isIntIMM($3.name) || isUintIMM( $3.name ) )
     {
       int x = atoi( stripFirst( $3.name ).c_str() );
       addAsm( string( "LDA #$") + toHex( x ), 2, false );
@@ -1475,7 +1543,7 @@ body: WHILE
   int sprite_address = 0;
   int x_coord = 0;
   int y_coord = 0;
-  if( isInteger( $3.name ) && isInteger( $5.name ) && isInteger( $7.name ))
+  if( isIntIMM( $3.name ) && isIntIMM( $5.name ) && isIntIMM( $7.name ))
     {
       sprite_address = atoi( stripFirst( $3.name ).c_str() );
       sprite_address*=2;
@@ -1487,7 +1555,7 @@ body: WHILE
       addAsm( string( "LDA #$" ) + toHex( y_coord) , 2, false );
       addAsm( string( "STA $" ) + toHex( sprite_address+1 ), 3, false );
     }
-  else if( isInteger( $3.name ) && isInteger( $5.name ) && isAddress( $7.name ))
+  else if( isIntIMM( $3.name ) && isIntIMM( $5.name ) && isAddress( $7.name ))
     {
       sprite_address = atoi( stripFirst( $3.name ).c_str() );
       sprite_address*=2;
@@ -1498,7 +1566,7 @@ body: WHILE
       addAsm( string( "LDA " ) + string($7.name) , 3, false );
       addAsm( string( "STA $" ) + toHex( sprite_address+1 ), 3, false );
     }
-  else if( isInteger( $3.name ) && isAddress( $5.name ) && isAddress( $7.name ))
+  else if( isIntIMM( $3.name ) && isAddress( $5.name ) && isAddress( $7.name ))
     {
       sprite_address = atoi( stripFirst( $3.name ).c_str() );
       sprite_address*=2;
@@ -1508,7 +1576,7 @@ body: WHILE
       addAsm( string( "LDA " ) + string($7.name) , 3, false );
       addAsm( string( "STA $" ) + toHex( sprite_address+1 ), 3, false );
     }
-  else if( isInteger( $3.name ) && isAddress( $5.name ) && isInteger( $7.name ))
+  else if( isIntIMM( $3.name ) && isAddress( $5.name ) && isIntIMM( $7.name ))
     {
        
       sprite_address = atoi( stripFirst( $3.name ).c_str() );
@@ -1535,7 +1603,7 @@ body: WHILE
       addAsm( string( "STA $D000,X; set the y-coord" ), 3, false );
       
     }
-  else if( isAddress( $3.name ) && isInteger( $5.name ) && isInteger( $7.name ))
+  else if( isAddress( $3.name ) && isIntIMM( $5.name ) && isIntIMM( $7.name ))
     {
       addComment( "All 3 parameters are variables" );
       addAsm( string( "LDA " ) + string( $3.name ), 3, false );
@@ -1561,7 +1629,7 @@ body: WHILE
   int sprite_address = 0;
   int x_coord = 0;
   int y_coord = 0;
-  if( isInteger( $3.name ) && isInteger( $5.name ))
+  if( isIntIMM( $3.name ) && isIntIMM( $5.name ))
     {
       sprite_address = atoi( stripFirst( $3.name ).c_str() );
       sprite_address*=2;
@@ -1570,7 +1638,7 @@ body: WHILE
       addAsm( string( "LDA #$" ) + toHex( x_coord) , 2, false );
       addAsm( string( "STA $" ) + toHex( sprite_address ), 3, false );
     }
-  else if( isInteger( $3.name ) && isAddress( $5.name ))
+  else if( isIntIMM( $3.name ) && isAddress( $5.name ))
     {
       sprite_address = atoi( stripFirst( $3.name ).c_str() );
       sprite_address*=2;
@@ -1588,7 +1656,7 @@ body: WHILE
       addAsm( string( "STA $D000,X; set the x-coord" ), 3, false );
       
     }
-  else if( isAddress( $3.name ) && isInteger( $5.name ))
+  else if( isAddress( $3.name ) && isIntIMM( $5.name ))
     {
       addAsm( string( "LDA " ) + string( $3.name ), 3, false );
       addAsm( "CLC" );
@@ -1610,7 +1678,7 @@ body: WHILE
   int sprite_address = 0;
   int x_coord = 0;
   int y_coord = 0;
-  if( isInteger( $3.name ) && isInteger( $5.name ))
+  if( ( isIntIMM( $3.name ) && isIntIMM( $5.name )) || (isUintIMM( $3.name ) && isUintIMM( $5.name ) ) )
     {
       sprite_address = atoi( stripFirst( $3.name ).c_str() );
       sprite_address*=2;
@@ -1619,7 +1687,7 @@ body: WHILE
       addAsm( string( "LDA #$" ) + toHex( x_coord) , 2, false );
       addAsm( string( "STA $" ) + toHex( sprite_address + 1 ), 3, false );
     }
-  else if( isInteger( $3.name ) && isAddress( $5.name ))
+  else if( (isIntIMM( $3.name ) && isIntID( $5.name )) || (isIntIMM( $3.name ) && isUintID( $5.name )) || (isUintIMM( $3.name ) && isIntID( $5.name )) || (isUintIMM( $3.name ) && isUintIMM( $5.name )) || (isIntIMM( $3.name ) && isIntIMM( $5.name )) || (isIntIMM( $3.name ) && isUintIMM( $5.name )) || (isUintIMM( $3.name ) && isIntIMM( $5.name )) || (isUintIMM( $3.name ) && isUintIMM( $5.name )))
     {
       sprite_address = atoi( stripFirst( $3.name ).c_str() );
       sprite_address*=2;
@@ -1637,7 +1705,7 @@ body: WHILE
       addAsm( string( "STA $D001,X; set the x-coord" ), 3, false );
       
     }
-  else if( isAddress( $3.name ) && isInteger( $5.name ))
+  else if( isAddress( $3.name ) && isIntIMM( $5.name ))
     {
       addAsm( string( "LDA " ) + string( $3.name ), 3, false );
       addAsm( "CLC" );
@@ -1660,7 +1728,7 @@ body: WHILE
   int sprite_number = 0;
   int sprite_colour = 0;
 
-  if( isInteger( $5.name ) || isUint( $5.name ))
+  if( isIntIMM( $5.name ) || isUintIMM( $5.name ))
     {
       sprite_colour = atoi( stripFirst( $5.name ).c_str() ); // the sprite #
       addAsm( string( "LDA #$" ) + toHex( sprite_colour ), 2, false );
@@ -1671,7 +1739,7 @@ body: WHILE
       addAsm( string( "LDA $" ) + toHex( sprite_colour ), 3, false );
     }
 
-  if( isInteger( $3.name ) || isUint( $5.name ))
+  if( isIntIMM( $3.name ) || isUintIMM( $5.name ))
     {
       sprite_number = atoi( stripFirst( $3.name ).c_str() ); // the sprite #
       addAsm( string( "STA $" + toHex( base_addr+sprite_number+39 )), 3, false );
@@ -1694,7 +1762,7 @@ body: WHILE
 {
   addCommentSection( string("printf(") + string($3.name) + string( ");") );
   //addParserComment( string("printf(") + string($3.name) + string( ");") );
-  if( getTypeOf( $3.name ) == 0 )
+  if( isUintID( $3.name ) )
     {
       byt2str_is_needed = true;
       pushScope( "PRINTF" );
@@ -1725,7 +1793,7 @@ body: WHILE
       addAsm( generateNewLabel() + string( "\t\t\t; Done"), 0, true );
       popScope();
     }
-  else if( getTypeOf( $3.name ) == 1 )
+  else if( isIntID( $3.name ) )
     {
       byt2str_is_needed = true;
       pushScope( "PRINTF" );
@@ -1796,7 +1864,7 @@ body: WHILE
       addAsm( "STA $03", 2, false );
       addAsm( "JSR PRN", 3, false); printf_is_needed = true;
     }
-  else if( getTypeOf( $3.name ) == 8)
+  else if( isFloatID( $3.name ) )
     {
       current_variable_base_address = getAddressOf( $3.name );
 
@@ -1814,16 +1882,16 @@ body: WHILE
       addAsm( "STA $03", 2, false );
       addAsm( "JSR PRN", 3, false ); printf_is_needed = true;
     }
-  else if( getTypeOf( $3.name ) == 2 )
+  else if( isIntID( $3.name ) )
     {
       current_variable_base_address = getAddressOf( $3.name );
       int base_address_op1 = hexToDecimal( $3.name );
+      addComment( toHex( base_address_op1 ) );
       int inst_size = 3;
-      if( base_address_op1 < 256 ) inst_size--;
+      if( base_address_op1 < 256 ) inst_size = 2;
       // store the word  as a float
       addAsm( string("LDY $") + toHex( ( base_address_op1 )), inst_size, false );
-
-      if( base_address_op1+1 >= 256 ) inst_size++;
+      if( (base_address_op1+1) >= 256 ) inst_size = 3;
       addAsm( string("LDA $") + toHex( ( base_address_op1+1 )), inst_size, false );
       addAsm( "JSR $B391", 3, false );
 
@@ -1860,7 +1928,7 @@ body: WHILE
       t = getTypeOf( $3.name );
     }
 
-  addCommentSection( string("                 byte2hex(") + string( $3.name ) + string(")"));
+  addCommentSection( string("byte2hex(") + string( $3.name ) + string(")"));
   addParserComment( $3.name  );
   if( t == 0 || t == 1 )
     {
@@ -1870,11 +1938,11 @@ body: WHILE
       addAsm( "PHA" );
       addAsm( "JSR BYTE2HEX", 3, false );
     }
-  else if( isWord($3.name) /* == 'w'*/ )
+  else if( isWordIMM($3.name) /* == 'w'*/ )
     {
       addParserComment( "t == word" );
-      $3.name[0] = ' ';
-      int tmp = atoi( $3.name );
+      //$3.name[0] = ' ';
+      int tmp = atoi( stripFirst($3.name).c_str() );
       addAsm( string( "LDA #$" ) + toHex( get_word_L( atoi( $3.name ))), 2, false );
       addAsm( "PHA" );
       addAsm( string( "LDA #$" ) + toHex( get_word_H( atoi( $3.name ))), 2, false );      
@@ -1895,7 +1963,7 @@ body: WHILE
       addAsm( "JSR BYTE2HEX", 3, false );
       addAsm( "JSR BYTE2HEX", 3, false );
     }
-  else if( isFloat( string($3.name ) ))
+  else if( isFloatIMM( string($3.name ) ))
     {
       addCompilerMessage( "cannot byte2hex a float... try printf", 2 );
       addComment("cannot byte2hex a float");
@@ -1921,7 +1989,7 @@ body: WHILE
     {
       addCompilerMessage( "cursorxy arguments must be > 0", 3 );
     }
-  if( isInteger( $3.name ) || isUint( $3.name ))
+  if( isIntIMM( $3.name ) || isUintIMM( $3.name ))
     {
       int x_coord = atoi( stripFirst( $3.name ).c_str() );
       addAsm( string( "LDY #$" ) + toHex( x_coord ), 2, false );
@@ -1935,7 +2003,7 @@ body: WHILE
     {
       addCompilerMessage( string( "unknown type: ") + string( $3.name ) , 3 );
     }
-  if( isInteger( $5.name ) || isUint( $5.name ))
+  if( isIntIMM( $5.name ) || isUintIMM( $5.name ))
     {
       int y_coord = atoi( stripFirst( $5.name ).c_str() );
       addAsm( string( "LDX #$" ) + toHex( y_coord ), 2, false );
@@ -2003,7 +2071,7 @@ body: WHILE
 };
 | tPOKE '(' NUMBER ',' ID ')' ';'
 {
-  addCommentSection( string("               poke ") + string($3.name) + string( ", ") + string( $5.name)  );
+  addCommentSection( string(" poke ") + string($3.name) + string( ", ") + string( $5.name)  );
   int addr = getAddressOf( $5.name );
   addAsm( string( "LDA $" ) + toHex(addr), 3, false );
   int tmp_s = toHex(atoi($3.name)).length();
@@ -2046,12 +2114,35 @@ body: WHILE
 condition: expression relop expression
 {
   addDebugComment( "=========================================================");
-  addDebugComment( string( "            condition in ") + string( scope_stack.top() ));
+  addDebugComment( string( "condition in ") + string( scope_stack.top() ));
   addParserComment( scope_stack.top() + string(" ")  + string($1.name) + string($2.name) + string($3.name) );
   addDebugComment( "=========================================================");
+  if( isUintID( $1.name ) ) addComment( "UintID" );
+  if( isIntID( $1.name ) ) addComment( "IntID" );
+  if( isWordID( $1.name ) ) addComment( "WordID" );
+  if( isDoubleID( $1.name ) ) addComment( "DoubleID" );
+  if( isFloatID( $1.name ) ) addComment( "FloatID" );
+  if( isUintIMM( $1.name ) ) addComment( "UintIMM" );
+  if( isIntIMM( $1.name ) ) addComment( "IntIMM" );
+  if( isWordIMM( $1.name ) ) addComment( "WordIMM" );
+  if( isDoubleIMM( $1.name ) ) addComment( "DoubleIMM" );
+  if( isFloatIMM( $1.name ) ) addComment( "FloatIMM" );
+  addComment( " vs. " );
+  if( isUintID( $3.name ) ) addComment( "UintID" );
+  if( isIntID( $3.name ) ) addComment( "IntID" );
+  if( isWordID( $3.name ) ) addComment( "WordID" );
+  if( isDoubleID( $3.name ) ) addComment( "DoubleID" );
+  if( isFloatID( $3.name ) ) addComment( "FloatID" );
+  if( isUintIMM( $3.name ) ) addComment( "UintIMM" );
+  if( isIntIMM( $3.name ) ) addComment( "IntIMM" );
+  if( isWordIMM( $3.name ) ) addComment( "WordIMM" );
+  if( isDoubleIMM( $3.name ) ) addComment( "DoubleIMM" );
+  if( isFloatIMM( $3.name ) ) addComment( "FloatIMM" );
+
   
   if( scope_stack.top() == "FOR" ) addAsm( generateNewLabel() + string( "\t\t\t; Top of FOR Loop"), 0, true );  
   if( scope_stack.top() == "WHILE" ) addAsm( generateNewLabel() + string( "\t\t\t; Top of WHILE Loop"), 0, true );  
+  if( scope_stack.top() == "IF" ) addAsm( generateNewLabel() + string( "\t\t\t; Top of IF statement"), 0, true );  
 
   
   // at this point, we need to look at the type of the variable that is located
@@ -2062,125 +2153,222 @@ condition: expression relop expression
       addCompilerMessage( "UINTs can ONLY be >= 0... this line of code will lead to an infinite loop ", 3 );
     }
 
-if( getTypeOf( $1.name ) == 0 && string( $2.name ) == string( "<" ) && atoi(stripFirst($3.name).c_str()) == 0 )
+  if( getTypeOf( $1.name ) == 0 && string( $2.name ) == string( "<" ) && atoi(stripFirst($3.name).c_str()) == 0 )
     {
       addCompilerMessage( "UINTs can ONLY be >= 0... this line of code will lead to an infinite loop ", 3 );
     }
 
-if( getTypeOf( $1.name ) == 1 && string( $2.name ) == string( ">" ) && atoi(stripFirst($3.name).c_str()) == 128 )
+  if( getTypeOf( $1.name ) == 1 && string( $2.name ) == string( ">" ) && atoi(stripFirst($3.name).c_str()) == 128 )
     {
       addCompilerMessage( "INTs can ONLY be between -127 and +128... this line of code will lead to an infinite loop ", 3 );
     }
  
 
-if( getTypeOf( $1.name ) == 1 && string( $2.name ) == string( "<=" ) && atoi(stripFirst($3.name).c_str()) == 128 )
+  if( getTypeOf( $1.name ) == 1 && string( $2.name ) == string( "<=" ) && atoi(stripFirst($3.name).c_str()) == 128 )
     {
       addCompilerMessage( "INTs can ONLY be between -127 and +128... this line of code will lead to an infinite loop ", 3 );
     }
-  
 
-  if( getTypeOf( $3.name ) == 8 && isFloat($1.name)) // FLOAT MEM vs. IMM
+
+  // ====================================================================================================================
+  //                 COMPARISONS START HERE
+  // ====================================================================================================================
+  if( isFloatIMM($1.name) && isFloatID($3.name)) 
     {
-      addParserComment( "FLOAT v. FLOAT (imm)" );
       // FP Operations
       inlineFloat( $1.name, 105);
-
       current_variable_base_address = getAddressOf( $3.name );
       addAsm( string("LDA #$") + toHex( get_word_L( current_variable_base_address )), 2, false );
       addAsm( string("LDY #$") + toHex( get_word_H( current_variable_base_address )), 2, false );
-
       addAsm( "JSR $BBA2; RAM -> FAC", 3, false );
       addAsm( "LDA #$69", 2, false );
       addAsm( "LDY #$00", 2, false );
       addAsm( "JSR $BC5B; CMP(FAC, RAM)", 3, false );
-
+      addAsm( "PHA" );
     }
-  else if( getTypeOf( $1.name ) == 8 && isFloat($3.name)) // FLOAT MEM vs. IMM
+  else if( isUintID($1.name) && isIntID($3.name))
     {
-      addParserComment( "FLOAT v. FLOAT (imm)" );
+      addAsm( string("LDA ") + string($1.name), 3, false );
+      addAsm( "PHA" );
+      addAsm( string("LDA ") + string($3.name), 3, false );
+      addAsm( "PHA" );
+      addAsm( "JSR USCMP", 3, false );
+      addAsm( "PLP" );
+    }
+  else if( isUintID($1.name) && isUintID($3.name))
+    {
+      // Done
+      addAsm( string("LDA ") + string( $1.name ), 3, false );
+      addAsm( string("CMP ") + string( $3.name ), 3, false );
+    }
+  else if( isUintID($1.name) && isUintIMM( $3.name ))
+    {
+      // Done
+      addAsm( string("LDA ") + string( $1.name ), 3, false );
+      addAsm( string("CMP #$") + toHex( atoi(stripFirst($3.name).c_str() )), 2, false );
+    }
+  else if( isUintIMM($1.name) && isUintID( $3.name ))
+    {
+      // Done
+      addAsm( string("LDA #$") + toHex( atoi(stripFirst($1.name).c_str() )), 2, false );
+      addAsm( string("CMP ") + string( $3.name ), 3, false );
+    }
+  else if( isUintIMM($1.name) && isUintIMM( $3.name ))
+    {
+      // Done
+      addAsm( string("LDA #$") + toHex( atoi(stripFirst($1.name).c_str() )), 2, false );
+      addAsm( string("CMP #$") + toHex( atoi(stripFirst($3.name).c_str() )), 2, false );
+    }
+  else if( isIntID($1.name) && isIntID($3.name) )
+    {
+      signed_comparison_is_needed = true;
+
+      addAsm( string("LDA ") + string( $1.name ), 3, false );
+      addAsm( "PHA" );
+      addAsm( string("LDA ") + string( $3.name ), 3, false );
+      addAsm( "PHA" );
+      addAsm( "JSR SIGNEDCMP", 3, false );
+      addAsm( "PLP" );     
+    }
+  else if( isIntID($1.name) && isIntIMM($3.name) )
+    {
+      signed_comparison_is_needed = true;
+      
+      addAsm( string("LDA ") + string( $1.name ), 3, false );
+      addAsm( "PHA" );
+      addAsm( string("LDA #$") + toHex( atoi(stripFirst($3.name).c_str() )), 2, false );
+      addAsm( "PHA" );
+      addAsm( "JSR SIGNEDCMP", 3, false );
+      addAsm( "PLP" );     
+    }
+  else if( isIntIMM($1.name) && isIntID($3.name) )
+    {
+      signed_comparison_is_needed = true;
+      int OP1 = atoi(stripFirst($1.name).c_str());
+      if( OP1 < 0 )
+	{
+	  OP1 = twos_complement( OP1 );
+	}
+      addAsm( string("LDA #$") + toHex( OP1 ), 2, false );
+      addAsm( "PHA" );
+      addAsm( string("LDA ") + string( $3.name ), 3, false );
+      addAsm( "PHA" );
+      addAsm( "JSR SIGNEDCMP", 3, false );
+      addAsm( "PLP" );     
+    }
+  else if( isIntIMM($1.name) && isIntIMM($3.name) )
+    {
+      signed_comparison_is_needed = true;
+      int OP1 = atoi(stripFirst($1.name).c_str());
+      if( OP1 < 0 )
+	{
+	  OP1 = twos_complement( OP1 );
+	}
+      int OP2 = atoi(stripFirst($3.name).c_str());
+      if( OP2 < 0 )
+	{
+	  OP2 = twos_complement( OP2 );
+	}
+
+      addAsm( string("LDA #$") + toHex( OP1 ), 2, false );
+      addAsm( "PHA" );
+      addAsm( string("LDA #$") + toHex( OP2 ), 2, false );
+      addAsm( "PHA" );
+      addAsm( "JSR SIGNEDCMP", 3, false );
+      addAsm( "PLP" );     
+    }
+  else if( isFloatID( $1.name ) && isFloatIMM($3.name))
+    {
       // FP Operations
       inlineFloat( $3.name, 105 );
-
       current_variable_base_address = getAddressOf( $1.name );
       addAsm( string("LDA #$") + toHex( get_word_L( current_variable_base_address )), 2, false );
       addAsm( string("LDY #$") + toHex( get_word_H( current_variable_base_address )), 2, false );
       addAsm( "JSR $BBA2; RAM -> FAC", 3, false );
       addAsm( "LDA #$69", 2, false );
       addAsm( "LDY #$00", 2, false );
-
       addAsm( "JSR $BC5B; CMP(FAC, RAM)", 3, false );
-
     }
-  else if( getTypeOf( $1.name ) == 8 && getTypeOf($3.name) == 8 ) // FLOAT IMM vs. MEM
+  else if( isWordID( $1.name ) && isUintID( $3.name ) )
     {
-      addParserComment( "FLOAT v. FLOAT" );
+      addAsm( "LDX #$01", 2, false );
+      addAsm( string( "LDA ") + string( $1.name ) + string( ",X" ),3, false );      
+      addAsm( "CMP #$00", 2, false );
+      // if A is NOT 0, then WORD > UINT
+      addAsm( ".BYTE #$D0, #$06", 2, false );
+      addCompilerMessage( "If address of OP1 or OP2 is in Zero Page, instruction size may vary", 0);
+      addAsm( string("LDA ") + string( $1.name ),3, false );
+      addAsm( string("CMP ") + string( $3.name ), 3, false );
+    }
+  else if( isFloatID($1.name) && isFloatID( $3.name ) )
+    {
       // store the first one in FAC
       int current_variable_base_address = getAddressOf( $1.name );
-
       addAsm( string("LDA #$") + toHex( get_word_L( current_variable_base_address )), 2, false );
       addAsm( string("LDY #$") + toHex( get_word_H( current_variable_base_address )), 2, false );
       // store it in FAC
       addAsm( "JSR $BBA2", 3, false ); // FP ->FAC
-
-
       current_variable_base_address = getAddressOf( $3.name );
       addAsm( string("LDA #$") + toHex( get_word_L( current_variable_base_address )), 2, false );
-      addAsm( string("LDY #$") + toHex( get_word_H( current_variable_base_address )), 2, false );    
+      addAsm( string("LDY #$") + toHex( get_word_H( current_variable_base_address )), 2, false );   
       addAsm( "JSR $BC5B", 3, false );
-
-      // if A == 00, they are equal
-      // if A == 01, then FAC > RAM
-      // if A == FF, then FAC < RAM
-
-      
     }
   else if( string($1.name) == "XA" )
     {
+      addCommentSection( "WORD  vs.  ???" );
+      addComment( string( $1.name ) + string( " v. " ) + string( $3.name ) );
       addParserComment( "XA" );
       // do nothing - the values are already in X and A
     }
   else if( string($1.name) == "A" )
     {
+      addCommentSection( "??? (A)  vs.  ???" );
+      addComment( string( $1.name ) + string( " v. " ) + string( $3.name ) );
       addParserComment( "A" );
-
       // do nothing - the value is already in A
     }
   else if( getAddressOf($1.name) != -1 )
     {
-      addDebugComment( "Address Found" );
-      
+      addCommentSection( "Address?  vs.  ???" );
       addAsm( string( "LDA $" ) + toHex( getAddressOf($1.name)), 3, false);
-
-      //addAsm( string( "LDA #$" ) + toHex(atoi(stripFirst( $3.name ).c_str())), 2, false );
-      
     }
   else if( isAddress($1.name))
     {
+      addCommentSection( "??? (Addr)  vs.  ???" );
+      addComment( string( $1.name ) + string( " v. " ) + string( $3.name ) );
       addParserComment( "ADDR v." );
-
       // then it's already an address
       addAsm( string( "LDA " ) + string($1.name), 3, false);
     }
   else if( isByte( $1.name ))
     {
+      addCommentSection( "??? (Byte)  vs.  ???" );
+      addComment( string( $1.name ) + string( " v. " ) + string( $3.name ) );
       addParserComment( "Byte v." );
 
       addAsm( string( "LDA " ) + string($1.name), 2, false);
     }
-  else if( isInteger( $1.name))
+  else if( isIntIMM( $1.name))
     {
+      addCommentSection( "??? (Integer)  vs.  ???" );
+      addComment( string( $1.name ) + string( " v. " ) + string( $3.name ) );
+
       addParserComment( "Integer v." );
       addAsm( string( "LDA #$" ) + toHex(atoi($1.name)), 2, false);
     }
+
   else 
     {
+      addCommentSection( "???  vs.  ???" );
+      addComment( string( $1.name ) + string( " v. " ) + string( $3.name ) );
       addParserComment( "Error" );
-
       addCompilerMessage( "error in for loop initialization", 2 );
     }
-  if( getTypeOf( $1.name ) != 0 )
+ 
+  if( getTypeOf( $1.name ) != 0 && getTypeOf( $1.name ) != 2)
     {
-      addAsm( "PHA" );
+      //addComment( "If OP1 is NOT a uint, push it onto the stack" );
+      // addAsm( "PHA" );
     }
   //addAsm( "\n", 0, false );
   //addComment( $1.name );
@@ -2190,104 +2378,101 @@ if( getTypeOf( $1.name ) == 1 && string( $2.name ) == string( "<=" ) && atoi(str
   /* check bit 7 of A and B... if they are the same then continue, otherwise */
   /* undo two's complement in the one where 7 is set */
   
-  // if( getTypeOf( $1.name ) == 8 && isFloat($3.name)) // MEM vs. IMM
-  if( getTypeOf( $1.name ) == 0 && getTypeOf( $3.name ) == 0 )
+  // if( getTypeOf( $1.name ) == 8 && isFloatIMM($3.name)) // MEM vs. IMM
+  if( isUintID($1.name) && isUintID( $3.name ))
     {
-      addDebugComment( string( $1.name ) + string("(uint) vs. ") + string($3.name) + string( "(uint)")); 
+      // they HAVE to be both addresses because they're UintID's
       if( isAddress($1.name) && isAddress($3.name ))
 	{
-	  addAsm( string("CMP ") + string( $3.name ), 3, false );
+	  //addAsm( string("CMP ") + string( $3.name ), 3, false );
 	}
       else
 	{
-	  int tmp_rhs = atoi( stripFirst($3.name).c_str() );
-	  if( tmp_rhs > 255 || tmp_rhs < 0 ) addCompilerMessage( "type mismatch.  uint is 0-255.  cannot compare with a number > 255 or < 0.", 3 );
-	  addAsm( string("CMP #$") + toHex(tmp_rhs), 2, false );
+	  //int tmp_rhs = atoi( stripFirst($3.name).c_str() );
+	  //if( tmp_rhs > 255 || tmp_rhs < 0 ) addCompilerMessage( "type mismatch.  uint is 0-255.  cannot compare with a number > 255 or < 0.", 3 );
+	  //addAsm( string("CMP #$") + toHex(tmp_rhs), 2, false );
 	}
 
     }
-  else if( getTypeOf( $1.name ) == 2  && getTypeOf( $3.name ) == 0 )
+  else if( isUintID( $1.name ) )
     {
-      addComment( "Compare a Word and a Uint" );
-      addAsm( "PHA" ); // push A
-      addAsm( "TXA" ); // X->A
-      addAsm( "CMP #$00", 2, false );
-
-      // if A is NOT 0, then WORD > UINT
-      addAsm( "BNE SKIPTOLABEL", 2, false );
-      
-      addAsm( string( "" ), 3, false );
-      addAsm( string( "" ), 3, false );
-      addAsm( string( "" ), 3, false );
-      addAsm( string( "" ), 3, false );
-      addAsm( string( "" ), 3, false );
-
+      //addCommentSection( "UINT vs.  ??" );
+      //addComment( string( $1.name ) + string( " v. " ) + string( $3.name ) );
+      //int tmp_rhs = atoi( stripFirst($3.name).c_str() );
+      //if( tmp_rhs > 255 || tmp_rhs < 0 ) addCompilerMessage( "type mismatch.  uint is 0-255.  cannot compare with a number > 255 or < 0.", 3 );
+      //addAsm( string("CMP #$") + toHex(tmp_rhs), 2, false );
     }
-  else if( getTypeOf( $1.name ) == 0 )
+  else if( isFloatID( $1.name ) && isFloatIMM($3.name)) // FPMEM vs. IMM
     {
-      addDebugComment( string( $1.name ) + string(" vs. ") + string($3.name) ); 
-      int tmp_rhs = atoi( stripFirst($3.name).c_str() );
-      if( tmp_rhs > 255 || tmp_rhs < 0 ) addCompilerMessage( "type mismatch.  uint is 0-255.  cannot compare with a number > 255 or < 0.", 3 );
-      addAsm( string("CMP #$") + toHex(tmp_rhs), 2, false );
-    }
-  else if( getTypeOf( $1.name ) == 8 && isFloat($3.name)) // FPMEM vs. IMM
-    {
+      addCommentSection( "FLOAT  vs.  FLOAT IMM" );
+      addComment( string( $1.name ) + string( " v. " ) + string( $3.name ) );
+
       addAsm( "LDA #$00", 2, false );
       addAsm( "PHA" );
       signed_comparison_is_needed = true;
       addAsm( "JSR SIGNEDCMP", 3, false );
+      addAsm( "PLP" );
 
     }
-  // if it's ID < IMM
-  else if( getTypeOf( $1.name ) == 8 && getTypeOf($3.name) == 8 )
+  else if( isFloatID($1.name) && isFloatID($3.name) )
     {
+      addCommentSection( "FLOAT IMM  vs. FLOAT MEM" );
+      addComment( string( $1.name ) + string( " v. " ) + string( $3.name ) );
+
       addAsm( "LDA #$00", 2, false );
       addAsm( "PHA" );
       signed_comparison_is_needed = true;
       addAsm( "JSR SIGNEDCMP", 3, false );
+      addAsm( "PLP" );
+
     }
   else if( string($3.name) == "A" )
     {
+      addComment( "DO NOTHING (A)" );
       // do nothing - the value is already in A
     }
   else if( isByte( $3.name)) 
     {
-      addDebugComment( string( "getTypeOf( $3.name ) == Byte" ) );
+      addComment( string( "getTypeOf( $3.name ) == Byte" ) );
       addAsm( string( "LDA " ) + string( $3.name ), 2, false );
       addAsm( "PHA" );
       signed_comparison_is_needed = true;
       addAsm( "JSR SIGNEDCMP", 3, false );
-      
-    }
-  else if( isInteger( $3.name ))
-    {
-      addDebugComment( string( "getTypeOf( $3.name ) == Integer (" ) + string( $3.name ) + string(")"));
-      int tmp_int = atoi( stripFirst($3.name).c_str() );
-      if( tmp_int < 0 )
-	{
-	  tmp_int=twos_complement(tmp_int);
-	}
+      addAsm( "PLP" );
 
-      addAsm( string( "LDA #$" ) + toHex( tmp_int ), 2, false );
-      addAsm( "PHA" );
-      signed_comparison_is_needed = true;
-      addAsm( "JSR SIGNEDCMP", 3, false );
- 
+    }
+  else if( isIntIMM( $3.name ))
+    {
+      //addComment( string( "getTypeOf( $3.name ) == Integer (" ) + string( $3.name ) + string(")"));
+      //int tmp_int = atoi( stripFirst($3.name).c_str() );
+      //if( tmp_int < 0 )
+      //{
+      //  tmp_int=twos_complement(tmp_int);
+      //}
+
+      //addAsm( string( "LDA #$" ) + toHex( tmp_int ), 2, false );
+      //addAsm( "PHA" );
+      //signed_comparison_is_needed = true;
+      //addAsm( "JSR SIGNEDCMP", 3, false );
+      //addAsm( "PLP" );
+
     }
   else if( isAddress( $3.name ))
     {
-      addDebugComment( "It's an Address" );
-      addAsm( string( "LDA " ) + $3.name, 3, false );
-      addAsm( "PHA" );
-      signed_comparison_is_needed = true;
-      addAsm( "JSR SIGNEDCMP", 3, false );
- 
+      //addComment( "It's an Address" );
+      //addAsm( string( "LDA " ) + $3.name, 3, false );
+      //addAsm( "PHA" );
+      //signed_comparison_is_needed = true;
+      //addAsm( "JSR SIGNEDCMP", 3, false );
+      //addAsm( "PLP" );
+
 
     }
-  else if( getTypeOf($1.name)==2 && isAddress($1.name) && isWord($3.name))
+  else if( isWordID($1.name) && isWordIMM($3.name))
     {
-      addComment( "*word vs. word" );
-      addComment( string( $1.name ) + string($2.name) + string($3.name) );
+      addCommentSection( "WORD MEM  vs.  WORD IMM" );
+      addComment( string( $1.name ) + string( " v. " ) + string( $3.name ) );
+
       addAsm( "TXA" );
       addAsm( "CMP #$00", 2, false );
       addAsm( "BNE +4", 2, false );
@@ -2297,19 +2482,27 @@ if( getTypeOf( $1.name ) == 1 && string( $2.name ) == string( "<=" ) && atoi(str
     }
   else   // otherwise
     {
-      addCompilerMessage( string( "error in for loop initialization: ") + string($1.name) + string(" ") + string($3.name), 2 );
+      //addComment( "otherwise" );
+      //addCompilerMessage( string( "error in for loop initialization: ") + string($1.name) + string(" ") + string($3.name), 2 );
       if( getTypeOf( $1.name )  !=  getTypeOf( $3.name ) )
 	{
-	  addCompilerMessage( "type mismatch", 2 );
+	  //addCompilerMessage( "type mismatch", 2 );
 	}
-      addAsm( string( "LDA $" ) + toHex(getAddressOf( $3.name )), 3, false );
-      addAsm( "PHA" );
-      signed_comparison_is_needed = true;
-      addAsm( "JSR SIGNEDCMP", 3, false );
+      //addAsm( string( "LDA $" ) + toHex(getAddressOf( $3.name )), 3, false );
+      //addAsm( "PHA" );
+      //signed_comparison_is_needed = true;
+      //addAsm( "JSR SIGNEDCMP", 3, false );
+      //addAsm( "PLP" );
  
     }
-  if( getTypeOf( $1.name ) != 0 ) addAsm( "PLP" );
+  
+  if( getTypeOf( $1.name ) != 0 && getTypeOf( $1.name ) != 2)
+    {
+      //addComment( "If OP1 is NOT a uint, pop from the stack" );
+      //addAsm( "PLP" );
+    }
 
+  // ====================================================================================================================
   if( scope_stack.top() == "FOR" ) 
     {
       if( string( $2.name ) == string( "<=" ) )
@@ -2550,7 +2743,7 @@ statement: datatype ID init
       addAsm( string( "LDY #$" ) + toHex(get_word_H(current_variable_base_address) ), 2, false );
       addAsm( "JSR $BBD4; FAC -> RAM", 3, false );
     }
-  else if( isFloat( $3.name ) )
+  else if( isFloatIMM( $3.name ) )
     {
       inlineFloat( $3.name, current_variable_base_address );
     }
@@ -2566,7 +2759,7 @@ statement: datatype ID init
       // then it's an address
       addAsm( string("LDA ") + string($3.name), 3, false );
     }
-  else if( isUint($3.name) )
+  else if( isUintIMM($3.name) )
     {
       addParserComment( string( "UINT: " ) + string( $2.name ) + string( " " ) + string( $3.name ) );
       // then it's an unsigned integer (type 0 - 8 bits)
@@ -2586,19 +2779,19 @@ statement: datatype ID init
       //addAsm( string( "STA $" ) + toHex( current_variable_base_address ), 3, false );
       //addAsm( string( "STX $" ) + toHex( current_variable_base_address + 1), 3, false ); 
     }
-  else if( isWord($3.name ))
+  else if( isWordIMM($3.name ))
     {
-      addDebugComment( "datatype ID init (isWord)" );
+      addDebugComment( "datatype ID init (isWordIMM)" );
       int v = atoi( string( $3.name ).substr( 1, 6 ).c_str());
-      addComment( "else if( isWord($3.name) )" );
+      addComment( "else if( isWordIMM($3.name) )" );
       addComment( string( "$" ) + toHex( v ) );
       addAsm( string( "LDA #$" ) + toHex(get_word_L(v)), 2, false  );
       addAsm( string( "LDX #$" ) + toHex(get_word_H(v)), 2, false  );
     }
-  else if( isInteger($3.name) )
+  else if( isIntIMM($3.name) )
     {
       // this must be a literal
-      addDebugComment( " else if( isInteger($3.name) ) - Line 2772" );
+      addDebugComment( " else if( isIntIMM($3.name) ) - Line 2772" );
       addAsm( string( "LDA #$" ) + toHex( atoi( stripFirst($3.name).c_str() ) ), 2, false);
     }
   else if( isMob( $3.name ))
@@ -2745,12 +2938,25 @@ statement: datatype ID init
   if( a < 256 ) size_of_instruction = 2;
   addAsm( string( "INC $") +  toHex( a ), size_of_instruction, false );
 };
+| tDEC '(' ID ',' NUMBER ')'
+{
+  addCommentSection( "dec( ID, IMM )");
+  int a = getAddressOf( $3.name );
+  int size_of_instruction = 3;
+  if( a < 256 ) size_of_instruction = 2;
+  int l = atoi($5.name);
+  for( int i = 0; i < l; i++ )
+    {
+      addAsm( string( "DEC $") +  toHex( a ), size_of_instruction, false );
+    }
+};
 | tINC '(' ID ',' NUMBER ')'
 {
   addCommentSection( "inc( ID, IMM )");
   int a = getAddressOf( $3.name );
   int size_of_instruction = 3;
   if( a < 256 ) size_of_instruction = 2;
+  
   int l = atoi($5.name);
   for( int i = 0; i < l; i++ )
     {
@@ -2765,6 +2971,14 @@ statement: datatype ID init
   if( a < 256 ) size_of_instruction = 2;
   addAsm( string( "INC $") +  toHex( a ), size_of_instruction, false );
 };
+| tDEC '(' ID ')'
+{
+  addCommentSection( "dec(ID)");
+  int a = getAddressOf( $3.name );
+  int size_of_instruction = 3;
+  if( a < 256 ) size_of_instruction = 2;
+  addAsm( string( "DEC $") +  toHex( a ), size_of_instruction, false );
+};
 | ID '[' expression ']' init
 {
   addParserComment( "RULE: statement: ID '[' expression ']' init" );
@@ -2777,7 +2991,7 @@ statement: datatype ID init
    
       addAsm( string("LDX ") + string($3.name), 3, false );
     }
-  else //if( isInteger($3.name ) )
+  else //if( isIntIMM($3.name ) )
     {
       addAsm( string("LDX #$") + toHex(atoi(stripFirst($3.name).c_str())), 2, false );
 
@@ -2801,7 +3015,7 @@ statement: datatype ID init
     {
       addDebugComment( "FLOAT v. MEM FLOAT" );
     }
-  if( isFloat( $2.name) )
+  if( isFloatIMM( $2.name) )
     {
       addDebugComment( string("FLOAT v. IMM FLOAT) [") + string( $1.name ) + string(":") + string($2.name) + string( "]" ) );
       int base_address = getAddressOf( $1.name );
@@ -2824,7 +3038,7 @@ statement: datatype ID init
     {
       //addAsm( string("LDA ") + string( $2.name ), 3, false );
     }
-  else if( isInteger( $2.name ))
+  else if( isIntIMM( $2.name ))
     {
       addDebugComment( string( $1.name ) + string( " = " ) + string( $2.name ) );
       addAsm( string("LDA #$") + toHex( atoi($2.name) ), 2, false );
@@ -2865,46 +3079,6 @@ statement: datatype ID init
       /* unknown type */
       break;
     }
-}
-| ID { addParserComment( "RULE: statement: ID {} relop expression" ); } relop expression
-{
-  $1.nd = mknode(NULL, NULL, $1.name);
-  $$.nd = mknode($1.nd, $4.nd, $3.name);
-
-};
-| ID
-{
-  addParserComment( "RULE: statement: ID {} UNARY" ); check_declaration($1.name);
-} UNARY
-{ 
-    $1.nd = mknode(NULL, NULL, $1.name); 
-    $3.nd = mknode(NULL, NULL, $3.name); 
-    $$.nd = mknode($1.nd, $3.nd, "ITERATOR");  
-    if(!strcmp($3.name, "++"))
-      {
-	sprintf(buff, "t%d = %s + 1\n%s = t%d\n// 503", temp_var, $1.name, $1.name, temp_var++);
-      }
-    else
-      {
-
-	sprintf(buff, "t%d = %s + 1\n%s = t%d\n// 469", temp_var, $1.name, $1.name, temp_var++);
-      }
-    strcpy( $$.name, toHex(getAddressOf( $1.name )).c_str() );
-};
-| UNARY ID
-{
-    check_declaration($2.name); 
-    $1.nd = mknode(NULL, NULL, $1.name); 
-    $2.nd = mknode(NULL, NULL, $2.name); 
-    $$.nd = mknode($1.nd, $2.nd, "ITERATOR"); 
-    if(!strcmp($1.name, "++"))
-      {
-	sprintf(buff, "t%d = %s + 1\n%s = t%d\n// 479", temp_var, $2.name, $2.name, temp_var++);
-      }
-    else
-      {
-	sprintf(buff, "t%d = %s - 1\n%s = t%d\n// 482", temp_var, $2.name, $2.name, temp_var++);
-      }
 };
 init: '=' expression
 {
@@ -2935,7 +3109,7 @@ init: '=' expression
       // of the expression is stored in A
       strcpy( $$.name, "A" );
     }
-  else if( isFloat( $2.name ) )
+  else if( isFloatIMM( $2.name ) )
     {
       strcpy( $$.name, $2.name );
     }
@@ -2943,13 +3117,13 @@ init: '=' expression
     {
       strcpy( $$.name, $2.name );
     }
-  else if( isWord( $2.name ))
+  else if( isWordIMM( $2.name ))
     {
       strcpy( $$.name, $2.name );
     }
-  else if( isInteger( $2.name ) || isUint( $2.name ) )
+  else if( isIntIMM( $2.name ) || isUintIMM( $2.name ) )
     {
-      addDebugComment( string( "else if( isInteger(") + string($2.name) + string( ")) - line 2263" ));
+      addDebugComment( string( "else if( isIntIMM(") + string($2.name) + string( ")) - line 2263" ));
 
       if( current_variable_type == 0 )
 	{
@@ -3059,7 +3233,7 @@ expression: expression arithmetic expression
 	}
       FAC=1;
     }
-    else if( type1 == 8 && isFloat( $3.name ) )
+  else if( type1 == 8 && isFloatIMM( $3.name ) )
     {
       addDebugComment( "FLOAT_MEM arithmetic FLOAT_IMM" );
 
@@ -3089,7 +3263,7 @@ expression: expression arithmetic expression
 	}
       FAC = 1;
     }
-    else if( type2 == 8 && isFloat( $1.name ) )
+  else if( type2 == 8 && isFloatIMM( $1.name ) )
     {
       inlineFloat( $1.name );
 
@@ -3125,7 +3299,7 @@ expression: expression arithmetic expression
 	}
       FAC = 1;
     }
-    else if( isFloat( $1.name ) && isFloat( $3.name ) )
+  else if( isFloatIMM( $1.name ) && isFloatIMM( $3.name ) )
     {
 
       addDebugComment( "FLOAT_IMM arithmetic FLOAT_IMM" );
@@ -3161,70 +3335,70 @@ expression: expression arithmetic expression
       inlineFloat( string( "f" ) + to_string(result), 105);
       FAC = 1;
     }
-    else if( type1 == 2 && type2 == 2 && isAddress( $3.name ) && isAddress( $1.name ) )
-      {
+  else if( type1 == 2 && type2 == 2 && isAddress( $3.name ) && isAddress( $1.name ) )
+    {
 	
-	addDebugComment( "WORD_mem arith WORD_mem" );
+      addDebugComment( "WORD_mem arith WORD_mem" );
 
-	int addr1 = getAddressOf( $1.name );
-	int addr2 = getAddressOf( $3.name );
+      int addr1 = getAddressOf( $1.name );
+      int addr2 = getAddressOf( $3.name );
 
-	if( string( $2.name ) == string( "+" ) )
-	  {
-	    addAsm( string("LDA $") + toHex(addr1), 3, false );
-	    addAsm( string("ADC $") + toHex(addr2), 3, false );
-	    addAsm( "TAX" );
-	    addAsm( string("LDA $") + toHex(addr1 + 1), 3, false );
-	    addAsm( string("ADC $") + toHex(addr2 + 1), 3, false );
-	  }
-	if( string( $2.name ) == string( "i" ) )
-	  {
-	    addAsm( string("LDA $") + toHex(addr1), 3, false );
-	    addAsm( string("SBC $") + toHex(addr2), 3, false );
-	    addAsm( "TAX" );
-	    addAsm( string("LDA $") + toHex(addr1 + 1), 3, false );
-	    addAsm( string("SBC $") + toHex(addr2 + 1), 3, false );
-	  }
-	strcpy( $$.name, "XA" );
-      }
-    else if( type1 == 0 && type2 == 0 && isAddress( $3.name ) && isAddress( $1.name ) )
-      {
-	addDebugComment( "UINT_mem arith UINT_mem" );
+      if( string( $2.name ) == string( "+" ) )
+	{
+	  addAsm( string("LDA $") + toHex(addr1), 3, false );
+	  addAsm( string("ADC $") + toHex(addr2), 3, false );
+	  addAsm( "TAX" );
+	  addAsm( string("LDA $") + toHex(addr1 + 1), 3, false );
+	  addAsm( string("ADC $") + toHex(addr2 + 1), 3, false );
+	}
+      if( string( $2.name ) == string( "i" ) )
+	{
+	  addAsm( string("LDA $") + toHex(addr1), 3, false );
+	  addAsm( string("SBC $") + toHex(addr2), 3, false );
+	  addAsm( "TAX" );
+	  addAsm( string("LDA $") + toHex(addr1 + 1), 3, false );
+	  addAsm( string("SBC $") + toHex(addr2 + 1), 3, false );
+	}
+      strcpy( $$.name, "XA" );
+    }
+  else if( type1 == 0 && type2 == 0 && isAddress( $3.name ) && isAddress( $1.name ) )
+    {
+      addDebugComment( "UINT_mem arith UINT_mem" );
 
 
-	if( !previousAsm( string( "STA ") +  string($1.name)) )
-	  {
-	    addAsm( string( "LDA ") +  string($1.name), 3, false); // 
-	  }
-	else
-	  {
-	    addAsm( string( "; commented out by optimizer"), 0, false); // 
-	    addAsm( string( "; LDA ") +  string($1.name), 3, false); // 
-	  }
-	if( string( $2.name ) == string("+"))
-	  {
-	    addAsm( "CLC" );
-	    addAsm( string( "ADC " ) + string($3.name), 3, false );
-	  }
-	else if( string( $2.name ) == string("-"))
-	  {
-	    addAsm( "SEC" );
-	    addAsm( string( "SBC " ) + string($3.name), 3, false );
-	  }
-	else if( string( $2.name ) == string("*"))
-	  {
-	    umul_is_needed = true;
-	    addAsm( "STA $02", 2, false );
-	    addAsm( string( "LDA " ) + string( $3.name ), 3, false );
-	    addAsm( "STA $03", 2, false );
-	    addAsm( "JSR UMUL", 3, false );
-	    addAsm( "LDA $03", 2, false );
-	  }
-	strcpy( $$.name, "A" );
-      }
-    else if( type1 == 0 && type2 == 0 && isAddress( $1.name ) && isInteger( $3.name ) )
-      {
-	addAsm( "; ****** <--- HERE **** ", 0, false );
+      if( !previousAsm( string( "STA ") +  string($1.name)) )
+	{
+	  addAsm( string( "LDA ") +  string($1.name), 3, false); // 
+	}
+      else
+	{
+	  addAsm( string( "; commented out by optimizer"), 0, false); // 
+	  addAsm( string( "; LDA ") +  string($1.name), 3, false); // 
+	}
+      if( string( $2.name ) == string("+"))
+	{
+	  addAsm( "CLC" );
+	  addAsm( string( "ADC " ) + string($3.name), 3, false );
+	}
+      else if( string( $2.name ) == string("-"))
+	{
+	  addAsm( "SEC" );
+	  addAsm( string( "SBC " ) + string($3.name), 3, false );
+	}
+      else if( string( $2.name ) == string("*"))
+	{
+	  umul_is_needed = true;
+	  addAsm( "STA $02", 2, false );
+	  addAsm( string( "LDA " ) + string( $3.name ), 3, false );
+	  addAsm( "STA $03", 2, false );
+	  addAsm( "JSR UMUL", 3, false );
+	  addAsm( "LDA $03", 2, false );
+	}
+      strcpy( $$.name, "A" );
+    }
+  else if( type1 == 0 && type2 == 0 && isAddress( $1.name ) && isIntIMM( $3.name ) )
+    {
+      addAsm( "; ****** <--- HERE **** ", 0, false );
       addAsm( string( "LDA ") +  string($1.name), 3, false); // 
       if( string( $2.name ) == string("+"))
 	{
@@ -3250,9 +3424,9 @@ expression: expression arithmetic expression
 	  addAsm( "JSR UMUL", 3, false );
 	  addAsm( "LDA $03", 2, false );
 	}
-      	strcpy( $$.name, "A" );
-      }
-    else if( type1 == 1 && type2 == 1 && isAddress( $3.name ) && isAddress( $1.name ) )
+      strcpy( $$.name, "A" );
+    }
+  else if( type1 == 1 && type2 == 1 && isAddress( $3.name ) && isAddress( $1.name ) )
     {
       addAsm( string( "LDA ") +  string($1.name), 3, false); // 
       if( string( $2.name ) == string("+"))
@@ -3277,7 +3451,7 @@ expression: expression arithmetic expression
       strcpy( $$.name, "A" );
       
     }
-  else if( isAddress( $3.name ) && isInteger( $1.name ) )
+  else if( isAddress( $3.name ) && isIntIMM( $1.name ) )
     {
       addAsm( string( "LDA ") +  string($3.name), 3, false); //
       
@@ -3302,7 +3476,7 @@ expression: expression arithmetic expression
 	    }
 	  addAsm( string( "SBC #$" ) + toHex(tmp_int), 2, false );
 	}
-     else if( string( $2.name ) == string("*"))
+      else if( string( $2.name ) == string("*"))
 	{
 	  int tmp_int = atoi(stripFirst($1.name).c_str());
 	  if( tmp_int < 0 )
@@ -3318,14 +3492,14 @@ expression: expression arithmetic expression
 	  addAsm( "LDA $03", 2, false );
 
 	}
-     else if( string( $2.name ) == string("/"))
+      else if( string( $2.name ) == string("/"))
 	{
 	  addAsm( "; SIGNED integer division (IMM / MEM) not yet implemented", 3, false );
 	}
       
       strcpy( $$.name, "A" );
     }
-  else if( isAddress( $1.name ) && isInteger( $3.name ) )     // MEM vs. IMM
+  else if( isAddress( $1.name ) && isIntIMM( $3.name ) )     // MEM vs. IMM
     {
       addAsm( string( "LDA ") +  string($1.name), 3, false); // 
       if( string( $2.name ) == string("+"))
@@ -3364,7 +3538,7 @@ expression: expression arithmetic expression
 	  addAsm( "JSR UMUL", 3, false );
 	  addAsm( "LDA $03", 2, false );
 	}
-     else if( string( $2.name ) == string("/"))
+      else if( string( $2.name ) == string("/"))
 	{
 	  addAsm( "; SIGNED integer division (MEM / IMM) not yet implemented", 3, false );
 	}
@@ -3505,7 +3679,7 @@ expression: expression arithmetic expression
       FAC=1;
     }
   /* if they're BOTH IMM's */
-  else if( isInteger( $1.name ) && isInteger( $3.name ))
+  else if( isIntIMM( $1.name ) && isIntIMM( $3.name ))
     {
       addParserComment( string( "IMM" ) + string( $2.name ) + string( "IMM (1)") );
       
@@ -3710,7 +3884,7 @@ expression: expression arithmetic expression
 
 	      strcpy( $$.name, string(string("A") + string($3.name)).c_str() );
 	    }
-	  else if( isInteger( $1.name ) && isAddress( $3.name ))
+	  else if( isIntIMM( $1.name ) && isAddress( $3.name ))
 	    {
 	      addAsm( string( "LDA " ) + string( $3.name ), 3, false );
 	      addAsm( "CLC" );
@@ -3733,7 +3907,7 @@ expression: expression arithmetic expression
 	      
 	      strcpy( $$.name, "A" );
 	    }
-	  else if(  isAddress( $1.name ) && isInteger( $3.name ))
+	  else if(  isAddress( $1.name ) && isIntIMM( $3.name ))
 	    {
 	      addAsm( string( "LDA " ) + string( $1.name ), 3, false );
 	      addAsm( "CLC" );
@@ -3758,14 +3932,14 @@ expression: expression arithmetic expression
 	      
 	      strcpy( $$.name, "A" );
 	    }
-	  else if( isAddress( $1.name ) && isUint( $3.name ) )
+	  else if( isAddress( $1.name ) && isUintIMM( $3.name ) )
 	    {
 	      addAsm( string( "LDA " ) + string( $1.name ), 3, false );
 	      addAsm( "CLC" );
 	      addAsm( string("ADC #$") + toHex(atoi(stripFirst($3.name).c_str())),2, false);
 	      strcpy( $$.name, "A" );
 	    }
-	  else if( isAddress( $1.name ) && isInteger( $3.name ) )
+	  else if( isAddress( $1.name ) && isIntIMM( $3.name ) )
 	    {
 	      addAsm( string( "LDA " ) + string( $1.name ), 3, false );
 	      addAsm( "CLC" );
@@ -3793,7 +3967,7 @@ expression: expression arithmetic expression
 		}
 	      
 	    }
-	  else if( isInteger( $1.name ) && isAddress( $3.name ))
+	  else if( isIntIMM( $1.name ) && isAddress( $3.name ))
 	    {
 	      addAsm( string( "LDA " ) + string( $3.name ), 3, false );
 	      addAsm( "SEC" );
@@ -3817,7 +3991,7 @@ expression: expression arithmetic expression
 	      
 	      strcpy( $$.name, "A" );
 	    }
-	  else if(  isAddress( $1.name ) && isInteger( $3.name ))
+	  else if(  isAddress( $1.name ) && isIntIMM( $3.name ))
 	    {
 	      addAsm( string( "LDA " ) + string( $1.name ), 3, false );
 	      addAsm( "SEC" );
@@ -3841,14 +4015,14 @@ expression: expression arithmetic expression
 	      
 	      strcpy( $$.name, "A" );
 	    }
-	  else if( isAddress( $1.name ) && isUint( $3.name ) )
+	  else if( isAddress( $1.name ) && isUintIMM( $3.name ) )
 	    {
 	      addAsm( string( "LDA " ) + string( $1.name ), 3, false );
 	      addAsm( "SEC" );
 	      addAsm( string("SBC #$") + toHex(atoi(stripFirst($3.name).c_str())),2, false);
 	      strcpy( $$.name, "A" );
 	    }
-	  else if( isAddress( $1.name ) && isInteger( $3.name ) )
+	  else if( isAddress( $1.name ) && isIntIMM( $3.name ) )
 	    {
 	      addAsm( string( "LDA " ) + string( $1.name ), 3, false );
 	      addAsm( "SEC" );
@@ -3857,13 +4031,9 @@ expression: expression arithmetic expression
 	    }
 	  else
 	    {
-
 	      addCompilerMessage( "math error", 3);
 	    }
-
 	}
-      
-      
     }
   if( FAC == 1 )
     {
@@ -3884,7 +4054,7 @@ expression: expression arithmetic expression
     {
       addAsm( "TAX" );
     }
-  else if( isInteger( $3.name ) || isUint( $3.name ) || isByte( $3.name ) )
+  else if( isIntIMM( $3.name ) || isUintIMM( $3.name ) || isByte( $3.name ) )
     {
       if( atoi($3.name) > 255 || atoi($3.name) < 0 ) addCompilerMessage( "Index Out of Range", 3 );
       addAsm( string( "LDX #$") + toHex( atoi( stripFirst($3.name).c_str() ) ), 2, false );
@@ -4080,7 +4250,7 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
   addComment( "                 sine");
   addComment( "=========================================================");
   addParserComment( "RULE: expression: sin( expression );" );
-  if( isFloat( $3.name ) )
+  if( isFloatIMM( $3.name ) )
     {
       // IMM float
       inlineFloat( $3.name );
@@ -4121,7 +4291,7 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
   addComment( "                 cosine");
   addComment( "=========================================================");
   addParserComment( "RULE: expression: cos( expression );" );
-  if( isFloat( $3.name ) )
+  if( isFloatIMM( $3.name ) )
     {
       // IMM float
       inlineFloat( $3.name );
@@ -4162,7 +4332,7 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
   addComment( "                 tangent");
   addComment( "=========================================================");
   addParserComment( "RULE: expression: tan( expression );" );
-  if( isFloat( $3.name ) )
+  if( isFloatIMM( $3.name ) )
     {
       // IMM float
       inlineFloat( $3.name );
@@ -4239,7 +4409,7 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
     {
       addAsm( string("LDA $") + toHex(atoi( $3.name )), 3, false );
     }
-    strcpy( $$.name, "A" );
+  strcpy( $$.name, "A" );
 }
 |
 ;
@@ -4311,7 +4481,7 @@ FLOAT_NUM
     }
   else
     {
-       strcpy($$.name, string( string("i") + string($1.name)).c_str());
+      strcpy($$.name, string( string("i") + string($1.name)).c_str());
     }
 }
 | tWORD
@@ -4458,7 +4628,7 @@ int main(int argc, char *argv[])
       //printf("Semantic analysis completed with no errors");
     }
 
-   if( signed_comparison_is_needed )
+  if( signed_comparison_is_needed )
     {
       return_addresses_needed = true;
       addAsm( "SIGNEDCMP:\t\t;Signed Comparison", 0, true );
@@ -4492,41 +4662,79 @@ int main(int argc, char *argv[])
       addAsm( "PHA" );
       addAsm( "RTS" );
     }
-   if( umul_is_needed )
-     {
-       // unsigned int multiplication
-       // =================================================================================
-       addAsm( "UMUL:", 0, true );
-       addAsm( "LDA #$00", 2, false );
-       addAsm( "LDX #$08", 2, false );
-       addAsm( "UMULTOP:", 0, true );
-       addAsm( "LSR $03", 2, false );
-       addAsm( "BCC UMULSKIP", 2, false );
-       addAsm( "CLC" );
-       addAsm( "ADC $02", 2, false );
-       addAsm( "UMULSKIP:", 0, true );
-       addAsm( "ASL $02", 2, false );
-       addAsm( "CLC" );
-       addAsm( "DEX" );
-       addAsm( "BNE UMULTOP", 2, false );
-       addAsm( "STA $03", 2, false ); // 8 bit result in $0042
-       // =================================================================================
-       addAsm( "RTS" );
+  if( unsigned_signed_cmp_is_needed )
+    {
+      return_addresses_needed = true;
+      addAsm( "USCMP:\t\t;Uint/Int Comparison", 0, true );
+      addAsm( "PLA" );
+      addAsm( string( "STA $" ) + toHex(getAddressOf( "return_address_1" )), 3, false );
+      addAsm( "PLA" );
+      addAsm( string( "STA $" ) + toHex(getAddressOf( "return_address_2" )), 3, false );
+      // ==================================================================================
+      addAsm( "PLA" ); // pull the signed value off the stack
+      addAsm( "STA $05",2,false ); // save the signed byte in Zeropage ($0005)
+      addAsm( "AND #$80", 2, false );
+      addAsm( "CMP #$80", 2, false );
+      addAsm( "PLA" ); // get the unsigned byte
+      addAsm( ".BYTE #$D0, #$10", 2, false ); // branch to USCMPS1 if bit 7 is NOT set
+      addAsm( "STA $2A",2,false ); // save the unsigned byte in Zeropage ($002A)
+      addAsm( "AND #$80", 2, false );
+      addAsm( "CMP #$80", 2, false );
+      addAsm( ".BYTE #$D0, #$08", 2, false ); // branch to USCMPS1 if bit 7 is NOT set
+      addAsm( "LDA $05", 2, false );
+      addAsm( "CMP $2A", 2, false );
+      addAsm( ".BYTE #$B0, #$06", 2, false ); // to USCMPS2
+      addAsm( ".BYTE #$90, #$04", 2, false ); // to USCMPS2
+      // now skip to the return part of this function
+      // the Compare results are on the stack
+      //addAsm( "USCMPS1:", 0, true );
+      addAsm( "LDA #$01", 2, false );
+      addAsm( "CMP #$00", 2, false );
+      //addAsm( "USCMPS2:", 0, true );
+      addAsm( "PHP" );      
+      // ==================================================================================
+      addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_2" ) ), 3, false );
+      addAsm( "PHA" );
+      addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_1" ) ), 3, false );
+      addAsm( "PHA" );
+      addAsm( "RTS" );
 
-     }
-   if( sidrnd_is_needed )
-     {
-       addAsm( "SIDRND:", 0, true );
-       addAsm( "PHA" );
-       addAsm( "LDA #$FF", 2, false );
-       addAsm( "STA $D40E", 3, false );
-       addAsm( "STA $D40F", 3, false );
-       addAsm( "LDA #$80", 2, false );
-       addAsm( "STA $D412", 3, false );
-       addAsm( "PLA" );
-       addAsm( "RTS" );       
-     }
-   if( byte2hex_is_needed )
+    }
+  if( umul_is_needed )
+    {
+      // unsigned int multiplication
+      // =================================================================================
+      addAsm( "UMUL:", 0, true );
+      addAsm( "LDA #$00", 2, false );
+      addAsm( "LDX #$08", 2, false );
+      addAsm( "UMULTOP:", 0, true );
+      addAsm( "LSR $03", 2, false );
+      addAsm( "BCC UMULSKIP", 2, false );
+      addAsm( "CLC" );
+      addAsm( "ADC $02", 2, false );
+      addAsm( "UMULSKIP:", 0, true );
+      addAsm( "ASL $02", 2, false );
+      addAsm( "CLC" );
+      addAsm( "DEX" );
+      addAsm( "BNE UMULTOP", 2, false );
+      addAsm( "STA $03", 2, false ); // 8 bit result in $0042
+      // =================================================================================
+      addAsm( "RTS" );
+
+    }
+  if( sidrnd_is_needed )
+    {
+      addAsm( "SIDRND:", 0, true );
+      addAsm( "PHA" );
+      addAsm( "LDA #$FF", 2, false );
+      addAsm( "STA $D40E", 3, false );
+      addAsm( "STA $D40F", 3, false );
+      addAsm( "LDA #$80", 2, false );
+      addAsm( "STA $D412", 3, false );
+      addAsm( "PLA" );
+      addAsm( "RTS" );       
+    }
+  if( byte2hex_is_needed )
     {
       return_addresses_needed = true;
 
@@ -4765,7 +4973,7 @@ int main(int argc, char *argv[])
       addAsm( "PHA" );  
       addAsm( "RTS" );
     }
-    if( modulus_is_needed )
+  if( modulus_is_needed )
     {
       // MODULUS ROUTIUNE
       return_addresses_needed = true;
