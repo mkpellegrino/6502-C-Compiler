@@ -2345,15 +2345,19 @@ condition: expression relop expression
     }
   else if( isUintID($1.name) && isA($3.name) )  // mismatch
     {
+      addComment( "value to compare is" );
+      addComment( "already in A" );
       addAsm( string("CMP ") + string($3.name), 3, false );
     }
   else if( isIntID($1.name) && isA($3.name) )  // mismatch
     {
+      addComment( "value to compare is" );
+      addComment( "already in A" );
       addAsm( string("CMP ") + string($3.name), 3, false );
     }
   else if( isA($1.name) && isA($3.name) )
     {
-      cerr << "???" << endl;
+      addComment( "both values to compare are in A" );
     }
   else if( isUintID($1.name) && isUintID($3.name))
     {
@@ -2448,6 +2452,8 @@ condition: expression relop expression
       addAsm( "LDA #$69", 2, false );
       addAsm( "LDY #$00", 2, false );
       addAsm( "JSR $BC5B; CMP(FAC, RAM)", 3, false );
+      addAsm( "PHA" );
+
     }
   else if( isWordID($1.name) && isUintID($3.name) )
     {
@@ -2472,6 +2478,8 @@ condition: expression relop expression
       addAsm( string("LDA #$") + toHex( get_word_L( current_variable_base_address )), 2, false );
       addAsm( string("LDY #$") + toHex( get_word_H( current_variable_base_address )), 2, false );   
       addAsm( "JSR $BC5B", 3, false );
+      addAsm( "PHA" );
+
     }
   else if( string($1.name) == "XA" )
     {
