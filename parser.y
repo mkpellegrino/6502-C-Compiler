@@ -3320,6 +3320,7 @@ init: '=' expression
     {
       int v = atoi( stripFirst($2.name).c_str() );
       addAsm( string("LDA #$") + toHex(v), 2, false );
+      strcpy( $$.name, "A" );
     }
   else if( isAddress($2.name) || isByte($2.name))
     {
