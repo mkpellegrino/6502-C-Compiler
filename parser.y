@@ -2033,6 +2033,7 @@ body: WHILE
     }
   else if( isWordID($3.name) )
     {
+      pushScope("PRINTF(WORD)");
       word2dec_is_needed = true;
       byte2hex_is_needed = true;
       current_variable_base_address = getAddressOf($3.name);
@@ -2045,22 +2046,26 @@ body: WHILE
       addAsm( "STA HTD_IN+1", 3, false );
       addAsm( "JSR WORD2DEC", 3, false );
 
-      // find the 1st non-30 byte
+      // find the 1st non-30 ('0') byte
       addAsm( "LDX #$00", 2, false );
-      addAsm( "FZTOP:", 0, true );
+      //addAsm( "FZTOP:", 0, true );
+      addAsm( generateNewLabel(), 0, true );
       addAsm( "LDA HTD_STR,X", 3, false );
       addAsm( "CMP #$30", 2, false );
       addAsm( ".BYTE #$D0, #$04", 2, false );
       addAsm( "INX" );
-      addAsm( "JMP FZTOP", 3, false);
-      addAsm( "FXTOP2:", 0, true );
+      //addAsm( "JMP FZTOP", 3, false);
+      addAsm( string( "JMP " ) + getLabel( label_vector[label_major]-1,false), 3, false );
+      //addAsm( "FXTOP2:", 0, true );
+      addAsm( generateNewLabel(), 0, true );
       addAsm( "LDA HTD_STR,X", 3, false );
       addAsm( "CMP #$00", 2, false );
       addAsm( ".BYTE #$F0 #$07", 2, false );
       addAsm( "INX" );
       addAsm( "JSR $FFD2", 3, false );
-      addAsm( "JMP FXTOP2", 3, false );
-            
+      addAsm( string( "JMP " ) + getLabel( label_vector[label_major]-1,false), 3, false );
+      //addAsm( "JMP FXTOP2", 3, false );
+      popScope();
       // addAsm( "LDA HTD_OUT+2", 3, false );
       //addAsm( "PHA" );
       //addAsm( "JSR BYTE2HEX", 3, false );
