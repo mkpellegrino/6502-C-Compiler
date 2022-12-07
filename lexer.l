@@ -3,12 +3,16 @@
  int countn=0;
 %}
 %option yylineno
-
+halpha[a-fA-F]
 alpha [a-zA-Z]
 digit [0-9]
 frmt  [{\t}|{\n}]
 
 %%
+"rol"               { strcpy(yylval.nd_obj.name,(yytext)); return tROL; }
+"ror"               { strcpy(yylval.nd_obj.name,(yytext)); return tROR; }
+"asl"               { strcpy(yylval.nd_obj.name,(yytext)); return tASL; }
+"lsr"               { strcpy(yylval.nd_obj.name,(yytext)); return tLSR; }
 "dec"               { strcpy(yylval.nd_obj.name,(yytext)); return tDEC; }
 "inc"               { strcpy(yylval.nd_obj.name,(yytext)); return tINC; }
 "mob"               { strcpy(yylval.nd_obj.name,(yytext)); return tMOB; }
@@ -60,6 +64,7 @@ frmt  [{\t}|{\n}]
 ^"#include"[ ]*<.+\.h>      { strcpy(yylval.nd_obj.name,(yytext)); return INCLUDE; }
 "true"                      { strcpy(yylval.nd_obj.name,(yytext)); return TRUE; }
 "false"                     { strcpy(yylval.nd_obj.name,(yytext)); return FALSE; }
+"0x"({digit}|{halpha})+      { strcpy(yylval.nd_obj.name,(yytext)); return HEX_NUM; }
 [-]?{digit}+\.{digit}+      { strcpy(yylval.nd_obj.name,(yytext)); return FLOAT_NUM; }
 [-]?{digit}+                { strcpy(yylval.nd_obj.name,(yytext)); return NUMBER; }
 {alpha}({alpha}|{digit})*   { strcpy(yylval.nd_obj.name,(yytext)); return ID; }

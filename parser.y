@@ -28,6 +28,7 @@
 
 
   // compiler internal flags
+  bool word2dec_is_needed=true;
   bool unsigned_signed_cmp_is_needed=false;
   bool split_byte_is_needed=false;
   bool decimal_digit_is_needed=false;
@@ -1335,7 +1336,7 @@
 
 //%parse-param { FILE* fp }
 %token VOID 
-%token <nd_obj> tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tTOFLOAT tTOUINT tDEC tINC tJSR tLDA tASL tLSR tSPRITESET tSPRITEON tSPRITEOFF tSPRITETOGGLE tRND tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER PRINTFF SCANFF INT FLOAT CHAR WHILE FOR IF ELSE TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT AND OR STR ADD SUBTRACT MULTIPLY DIVIDE  UNARY INCLUDE RETURN
+%token <nd_obj> tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tTOFLOAT tTOUINT tDEC tINC tROL tROR tASL tLSR tJSR tLDA tASL tSPRITESET tSPRITEON tSPRITEOFF tSPRITETOGGLE tRND tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER PRINTFF SCANFF INT FLOAT CHAR WHILE FOR IF ELSE TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT AND OR STR ADD SUBTRACT MULTIPLY DIVIDE  UNARY INCLUDE RETURN
 %type <nd_obj> headers main body return function datatype statement arithmetic relop program else
    %type <nd_obj2> init value expression
       %type <nd_obj3> condition
@@ -2032,25 +2033,59 @@ body: WHILE
     }
   else if( isWordID($3.name) )
     {
+      word2dec_is_needed = true;
+      byte2hex_is_needed = true;
       current_variable_base_address = getAddressOf($3.name);
       int base_address_op1 = hexToDecimal($3.name);
-      addComment( toHex( base_address_op1 ) );
       int inst_size = 3;
       if( base_address_op1 < 256 ) inst_size = 2;
-      // store the word  as a float
-      addAsm( string("LDY $") + toHex( ( base_address_op1 )), inst_size, false );
-      if( (base_address_op1+1) >= 256 ) inst_size = 3;
+      addAsm( string("LDA $") + toHex( ( base_address_op1 )), inst_size, false );
+      addAsm( "STA HTD_IN", 3, false );
       addAsm( string("LDA $") + toHex( ( base_address_op1+1 )), inst_size, false );
-      addAsm( "JSR $B391", 3, false );
+      addAsm( "STA HTD_IN+1", 3, false );
+      addAsm( "JSR WORD2DEC", 3, false );
+
+      // find the 1st non-30 byte
+      addAsm( "LDX #$00", 2, false );
+      addAsm( "FZTOP:", 0, true );
+      addAsm( "LDA HTD_STR,X", 3, false );
+      addAsm( "CMP #$30", 2, false );
+      addAsm( ".BYTE #$D0, #$04", 2, false );
+      addAsm( "INX" );
+      addAsm( "JMP FZTOP", 3, false);
+      addAsm( "FXTOP2:", 0, true );
+      addAsm( "LDA HTD_STR,X", 3, false );
+      addAsm( "CMP #$00", 2, false );
+      addAsm( ".BYTE #$F0 #$07", 2, false );
+      addAsm( "INX" );
+      addAsm( "JSR $FFD2", 3, false );
+      addAsm( "JMP FXTOP2", 3, false );
+            
+      // addAsm( "LDA HTD_OUT+2", 3, false );
+      //addAsm( "PHA" );
+      //addAsm( "JSR BYTE2HEX", 3, false );
+      //addAsm( "LDA HTD_OUT+1", 3, false );
+      //addAsm( "PHA" );
+      //addAsm( "JSR BYTE2HEX", 3, false );
+      //addAsm( "LDA HTD_OUT", 3, false );
+      //addAsm( "PHA" );
+      //addAsm( "JSR BYTE2HEX", 3, false );
+      
+      
+      // store the word  as a float
+      //addAsm( string("LDY $") + toHex( ( base_address_op1 )), inst_size, false );
+      //if( (base_address_op1+1) >= 256 ) inst_size = 3;
+      //addAsm( string("LDA $") + toHex( ( base_address_op1+1 )), inst_size, false );
+      //addAsm( "JSR $B391", 3, false );
 
       // print out the float in FAC
       //addAsm( "JSR $AABC; FAC -> CRT", 3, false );
-      addAsm( "JSR $BDDD; FAC -> PETSCII ($0100)", 3, false );
-      addAsm( "LDA #$00", 2, false );
-      addAsm( "STA $02", 2, false );
-      addAsm( "LDA #$01", 2, false );
-      addAsm( "STA $03", 2, false );
-      addAsm( "JSR PRN", 3, false ); printf_is_needed = true;
+      //addAsm( "JSR $BDDD; FAC -> PETSCII ($0100)", 3, false );
+      //addAsm( "LDA #$00", 2, false );
+      //addAsm( "STA $02", 2, false );
+      //addAsm( "LDA #$01", 2, false );
+      //addAsm( "STA $03", 2, false );
+      //addAsm( "JSR PRN", 3, false ); printf_is_needed = true;
     }
   else
     {
@@ -2591,43 +2626,28 @@ condition: expression relop expression
       addAsm( "JSR SIGNEDCMP", 3, false );
       addAsm( "PLP" );
     }
-  /* else if( string($1.name) == "XA" ) */
-  /*   { */
-  /*     addCommentSection( "WORD  vs.  ???" ); */
-  /*     addComment( string($1.name) + string( " v. " ) + string($3.name) ); */
-  /*     addParserComment( "XA" ); */
-  /*     // do nothing - the values are already in X and A */
-  /*   } */
-  /* else if( string($1.name) == "A" ) */
-  /*   { */
-  /*     addCommentSection( "??? (A)  vs.  ???" ); */
-  /*     addComment( string($1.name) + string( " v. " ) + string($3.name) ); */
-  /*     addParserComment( "A" ); */
-  /*     // do nothing - the value is already in A */
-  /*   } */
-  /* else if( isByte($1.name)) */
-  /*   { */
-  /*     addCommentSection( "??? (Byte)  vs.  ???" ); */
-  /*     addComment( string($1.name) + string( " v. " ) + string($3.name) ); */
-  /*     addParserComment( "Byte v." ); */
-
-  /*     addAsm( string( "LDA " ) + string($1.name), 2, false); */
-  /*   } */
-  /* else if( isIntIMM($1.name)) */
-  /*   { */
-  /*     addCommentSection( "??? (Integer)  vs.  ???" ); */
-  /*     addComment( string($1.name) + string( " v. " ) + string($3.name) ); */
-
-  /*     addParserComment( "Integer v." ); */
-  /*     addAsm( string( "LDA #$" ) + toHex(atoi($1.name)), 2, false); */
-  /*   } */
   else if( isWordID($1.name) && isWordID($3.name))
     {
       addCommentSection( "WORD ID vs. WORD ID" );
       addComment( "Not Yet Implemented" );
-      int OP1 = getAddressOf( $1.name );
-      int OP2 = getAddressOf( $3.name );
-      cerr << "OP1: " << OP1 << "\tOP2: " << OP2 << endl;
+      int OP1L = getAddressOf( $1.name );
+      int OP2L = getAddressOf( $3.name );
+      cerr << "OP1L: " << OP1L << "\tOP2L: " << OP2L << endl;
+
+      // compare the Hi bytes first
+      int OP1H = OP1L+1;
+      int OP2H = OP2L+1;
+
+      addAsm(string("LDA $") + toHex(OP1H), 3, false );
+      addAsm("PHA");
+      addAsm(string("LDA $") + toHex(OP2H), 3, false );
+      addAsm("PHA");
+      signed_comparison_is_needed = true;
+      addAsm("JSR SIGNEDCMP", 3, false );
+      addAsm("PLP");
+      
+      // 
+      
     }
     else if( isWordID($1.name) && isWordIMM($3.name))
     {
@@ -2640,15 +2660,6 @@ condition: expression relop expression
       addAsm( "PLA" );
       addAsm( string( "CMP #$") + toHex( atoi(stripFirst($3.name).c_str()) ), 2, false );
     }
-  /* if( isByte($3.name))  */
-  /*   { */
-  /*     addAsm( string( "LDA " ) + string($3.name), 2, false ); */
-  /*     addAsm( "PHA" ); */
-  /*     signed_comparison_is_needed = true; */
-  /*     addAsm( "JSR SIGNEDCMP", 3, false ); */
-  /*     addAsm( "PLP" ); */
-
-  /*   } */
     else
       {
 	addCompilerMessage( "Comparing of these two types is not yet handled", 3 );
@@ -3040,23 +3051,6 @@ statement: datatype ID init
 	}
     }
 };
-| tLSR '(' ID ')'
-{
-  addCommentSection( "lsr(ID)");
-  int x = getAddressOf($3.name);
-  int size_of_instruction = 3;
-  if( x < 256 ) size_of_instruction = 2;
-  addAsm( string( "LSR $") + toHex( x ), size_of_instruction, false );
-  
-};
-| tASL '(' ID ')'
-{
-  addCommentSection( "asl(ID)");  
-  int x = getAddressOf($3.name);
-  int size_of_instruction = 3;
-  if( x < 256 ) size_of_instruction = 2;
-  addAsm( string( "ASL $") + toHex( x ), size_of_instruction, false );  
-};
 | ID tMINUSMINUS
 {
   addCommentSection( "ID--");
@@ -3152,11 +3146,75 @@ statement: datatype ID init
 | tDEC '(' ID ')'
 {
   addCommentSection( "dec(ID)");
+  /* int a = getAddressOf($3.name); */
+  /* int size_of_instruction = 3; */
+  /* if( a < 256 ) size_of_instruction = 2; */
+  /* addAsm( string( "DEC $") +  toHex( a ), size_of_instruction, false ); */
   int a = getAddressOf($3.name);
   int size_of_instruction = 3;
   if( a < 256 ) size_of_instruction = 2;
-  addAsm( string( "DEC $") +  toHex( a ), size_of_instruction, false );
+  if( isWordID($3.name ) )
+    {
+      /* Words must use SBC so that Carry can get set if > 0xFF */
+      addAsm( "SEC" );
+      addAsm( string( "LDA $" ) + toHex(a), size_of_instruction, false );
+      addAsm( "SBC #$01", 2, false );
+      addAsm( string( "STA $" ) + toHex(a), size_of_instruction, false );
+      a++;
+      if( a < 256 )
+	{
+	  size_of_instruction = 2;
+	}
+      else
+	{
+	  size_of_instruction = 3;
+	}
+      addAsm( string( "LDA $" ) + toHex(a), size_of_instruction, false );
+      addAsm( "SBC #$00", 2, false );
+      addAsm( string( "STA $" ) + toHex(a), size_of_instruction, false );
+    }
+  else if( isUintID($3.name) || isIntID($3.name) )
+    {
+      addAsm( string( "DEC $") +  toHex( a ), size_of_instruction, false );
+    }
 };
+| tROL '(' ID ')'
+{
+  // ID can ONLY BE AN INT or UINT
+  addCommentSection( "rol(ID)");
+  int a = getAddressOf($3.name);
+  int size_of_instruction = 3;
+  if( a < 256 ) size_of_instruction = 2;
+  addAsm( string("ROL $") + toHex(a), size_of_instruction, false );
+};
+| tROR '(' ID ')'
+{
+  // ID can ONLY BE AN INT or UINT
+  addCommentSection( "ror(ID)");
+  int a = getAddressOf($3.name);
+  int size_of_instruction = 3;
+  if( a < 256 ) size_of_instruction = 2;
+  addAsm( string("ROR $") + toHex(a), size_of_instruction, false );
+};
+| tLSR '(' ID ')'
+{
+  // ID can ONLY BE AN INT or UINT
+  addCommentSection( "lsr(ID)");
+  int a = getAddressOf($3.name);
+  int size_of_instruction = 3;
+  if( a < 256 ) size_of_instruction = 2;
+  addAsm( string("LSR $") + toHex(a), size_of_instruction, false );
+};
+| tASL '(' ID ')'
+{
+  // ID can ONLY BE AN INT or UINT
+  addCommentSection( "asl(ID)");
+  int a = getAddressOf($3.name);
+  int size_of_instruction = 3;
+  if( a < 256 ) size_of_instruction = 2;
+  addAsm( string("ASL $") + toHex(a), size_of_instruction, false );
+};
+
 | ID '[' expression ']' init
 {
   addParserComment( "RULE: statement: ID '[' expression ']' init" );
@@ -5116,6 +5174,116 @@ int main(int argc, char *argv[])
       addAsm( "LDA $02; <== SGNCMPSKIP", 2, false );
       addAsm( "CMP $03", 2, false );
       addAsm( "PHP" );// push the status register to the stack with the correct values after cmp
+      // ==================================================================================
+      addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_2" ) ), 3, false );
+      addAsm( "PHA" );
+      addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_1" ) ), 3, false );
+      addAsm( "PHA" );
+      addAsm( "RTS" );
+    }
+  if( word2dec_is_needed )
+    {
+      addAsm( "HTD_STR:", 0, true );
+      addAsm( ".BYTE #$00, #$00, #$00, #$00, #$00, #$00, #$00", 7, false );
+      addComment( "------------------------------------------------------------" );
+      addComment( "This chunk of code is by: Andrew Jacobs, 28-Feb-2004" );
+      addComment( "Taken from: http://6502.org/source/integers/hex2dec-more.htm" );
+      addComment( "------------------------------------------------------------" );
+      addAsm( "HTD_IN:", 0, true );
+      addAsm( ".BYTE #$00, #$00", 2, false );
+      addAsm( "HTD_OUT:", 0, true );
+      addAsm( ".BYTE #$00, #$00, #$00", 3, false );
+      return_addresses_needed = true;
+      addAsm( "WORD2DEC:\t\t;2 Byte Word to Decimal", 0, true );
+      addAsm( "PLA" );
+      addAsm( string( "STA $" ) + toHex(getAddressOf( "return_address_1" )), 3, false );
+      addAsm( "PLA" );
+      addAsm( string( "STA $" ) + toHex(getAddressOf( "return_address_2" )), 3, false );
+      // ==================================================================================
+
+      addAsm( "SED" );
+      addAsm( "LDA #$00", 2, false );
+      addAsm( "STA HTD_OUT", 3, false );
+      addAsm( "STA HTD_OUT+1", 3, false );
+      addAsm( "STA HTD_OUT+2", 3, false );
+      addAsm( "LDX #$10", 2, false );
+      addAsm( "CNVBIT:",0,true );
+      addAsm( "ASL HTD_IN", 3, false );
+      addAsm( "ROL HTD_IN+1", 3, false );
+      addAsm( "LDA HTD_OUT", 3, false );
+      addAsm( "ADC HTD_OUT", 3, false );
+      addAsm( "STA HTD_OUT", 3, false );
+      addAsm( "LDA HTD_OUT+1", 3, false );
+      addAsm( "ADC HTD_OUT+1", 3, false );
+      addAsm( "STA HTD_OUT+1", 3, false );
+      addAsm( "LDA HTD_OUT+2", 3, false );
+      addAsm( "ADC HTD_OUT+2", 3, false );
+      addAsm( "STA HTD_OUT+2", 3, false );
+      addAsm( "DEX" );
+      addAsm( "BNE CNVBIT", 2, false );
+      addAsm( "CLD" );
+      addComment( "------------------------------------------------------------" );
+      addAsm( "LDA HTD_OUT", 3, false);
+      addAsm( "PHA" );
+      addAsm( "LSR" );
+      addAsm( "LSR" );
+      addAsm( "LSR" );
+      addAsm( "LSR" );
+      addAsm( "ORA #$30", 2, false);
+      addAsm( "STA HTD_STR+4", 3, false);
+      addAsm( "PLA" );
+      addAsm( "AND #$0F", 2, false);
+      addAsm( "ORA #$30", 2, false);
+      addAsm( "STA HTD_STR+5", 3, false);
+      
+
+      addAsm( "LDA HTD_OUT+1", 3, false);
+      addAsm( "PHA" );
+      addAsm( "LSR" );
+      addAsm( "LSR" );
+      addAsm( "LSR" );
+      addAsm( "LSR" );
+      addAsm( "ORA #$30", 2, false);
+      addAsm( "STA HTD_STR+2", 3, false);
+      addAsm( "PLA" );
+      addAsm( "AND #$0F", 2, false);
+      addAsm( "ORA #$30", 2, false);
+      addAsm( "STA HTD_STR+3", 3, false);
+
+      addAsm( "LDA HTD_OUT+2", 3, false);
+      addAsm( "PHA" );
+      addAsm( "LSR" );
+      addAsm( "LSR" );
+      addAsm( "LSR" );
+      addAsm( "LSR" );
+      addAsm( "ORA #$30", 2, false);
+      addAsm( "STA HTD_STR", 3, false);
+      addAsm( "PLA" );
+      addAsm( "AND #$0F", 2, false);
+      addAsm( "ORA #$30", 2, false);
+      addAsm( "STA HTD_STR+1", 3, false);
+
+      
+      // now put it into a 7 byte buffer
+      // (6 bytes for digits and a null termination)
+      //       00 00 03 04 05 06 00
+      // then convert them to petcii
+      //       30 30 33 34 35 36 00
+      // find first non 30 from the left
+      //       30 30 33 34 35 36 00
+      //             ^^
+      // return this memory location in stack
+      // low  then   high
+      
+      // far left - no need fpr high byte
+      /* addAsm( "LDA HTD_OUT+1", 3, false ); */
+      /* addAsm( "CMP #$00", 2, false ); */
+      /* addAsm( "BEQ BYTE_2", 2, false ); */
+      /* addAsm( "AND #$0F", 2, false ); */
+      /* addAsm( "CLC" ); */
+      /* addAsm( "ADC #$30", 2, false ); */
+      
+
       // ==================================================================================
       addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_2" ) ), 3, false );
       addAsm( "PHA" );
