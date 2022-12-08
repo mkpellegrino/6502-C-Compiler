@@ -2267,8 +2267,8 @@ body: WHILE
   int tmp_s = toHex(atoi($3.name)).length();
   if( tmp_s == 4 ) tmp_s = 3;
   addAsm( string( "STA $" ) + toHex(atoi($3.name)) + string( "; ") + getNameOf( hexToDecimal($3.name) ), tmp_s, false );
-
 };
+
 | tPOKE '(' NUMBER ',' NUMBER ')' ';'
 {
   addCommentSection( string("poke ") + string($3.name) + string( ", ") + string($5.name)  );
@@ -2286,6 +2286,24 @@ body: WHILE
   if( tmp_s == 4 ) tmp_s = 3;
   addAsm( string( "STA $" ) + toHex(atoi($3.name)) + string( "; ") + getNameOf( hexToDecimal($3.name) ), tmp_s, false );
 };
+/* | tPOKE '(' ID ',' NUMBER ')' ';' */
+/* { */
+/*   addCommentSection( string("poke ") + string($3.name) + string( ", ") + string($5.name)  ); */
+/*   pushScope( "POKE" ); */
+/*   int addr = getAddressOf($3.name); */
+/*   int addr2 = getAddressOf($5.name); */
+/*   addAsm( string( "LDA $" ) + toHex(addr),  3, false ); */
+/*   addAsm( string( "STA " ) + getLabel( label_vector[label_major],false), 3, false ); */
+/*   addAsm( string( "LDA $" ) + toHex(addr+1),  3, false ); */
+/*   addAsm( string( "STA " ) + getLabel( label_vector[label_major]+1,false), 3, false ); */
+/*   addAsm( string( "LDA $" ) + toHex( addr2 ) + string( "; ") + getNameOf( addr2 ) , 3, false ); */
+/*   addAsm( ".BYTE #$8D;\t  <-- STA absolute", 1, false ); */
+/*   addAsm( generateNewLabel() + string( "\t\t\t; <-- low byte"), 0, true ); */
+/*   addAsm( ".BYTE #$00", 1, false ); */
+/*   addAsm( generateNewLabel() + string( "\t\t\t; <-- hi byte"), 0, true ); */
+/*   addAsm( ".BYTE #$00", 1, false ); */
+/*   popScope(); */
+/* }; */
 | tPOKE '(' ID ',' ID ')' ';'
 {
   addCommentSection( string("poke ") + string($3.name) + string( ", ") + string($5.name)  );
@@ -2634,7 +2652,6 @@ condition: expression relop expression
   else if( isWordID($1.name) && isWordID($3.name))
     {
       addCommentSection( "WORD ID vs. WORD ID" );
-      addComment( "Not Yet Implemented" );
       int OP1L = getAddressOf( $1.name );
       int OP2L = getAddressOf( $3.name );
       cerr << "OP1L: " << OP1L << "\tOP2L: " << OP2L << endl;
@@ -2644,15 +2661,10 @@ condition: expression relop expression
       int OP2H = OP2L+1;
 
       addAsm(string("LDA $") + toHex(OP1H), 3, false );
-      addAsm("PHA");
-      addAsm(string("LDA $") + toHex(OP2H), 3, false );
-      addAsm("PHA");
-      signed_comparison_is_needed = true;
-      addAsm("JSR SIGNEDCMP", 3, false );
-      addAsm("PLP");
-      
-      // 
-      
+      addAsm(string("CMP $") + toHex(OP2H), 3, false );
+      addAsm(string(".BYTE #$D0, #$06"), 2, false ); // if they're not equal then the CMP should do!
+      addAsm(string("LDA $") + toHex(OP1L), 3, false );
+      addAsm(string("CMP $") + toHex(OP2L), 3, false );
     }
     else if( isWordID($1.name) && isWordIMM($3.name))
     {
