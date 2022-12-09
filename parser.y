@@ -84,6 +84,7 @@
   vector <int> mob_vector;
   vector <string> mobs;
 
+  
   int getDataTypeValue( string s )
   {
     if( s == string("UINT")) return 0;
@@ -483,6 +484,13 @@
   class asm_function
   {
   public:
+    asm_function( string identifier, string l, int t )
+      {
+	name=identifier;
+	label = l;
+	address=0000;
+	type=t;
+      }
     asm_function( string identifier, string l )
       {
 	name=identifier;
@@ -547,9 +555,27 @@
     return 0;
   }
 
+  int getTypeOfFunction( string s )
+  {
+    for( int i=0; i<asm_functions.size(); i++ )
+      {
+	if( asm_functions[i]->getIdentifier() == s )
+	  {
+	    return asm_functions[i]->getType();
+	  }
+      }
+    return 0;
+  }
+
   void addFunction( string s, string l )
   {
     asm_function * ptr_function = new asm_function( s, l );
+    asm_functions.push_back( ptr_function );
+  }
+
+  void addFunction( string s, string l, int t )
+  {
+    asm_function * ptr_function = new asm_function( s, l, t);
     asm_functions.push_back( ptr_function );
   }
 
@@ -1061,7 +1087,7 @@
     cerr << "\tFunctions" << endl;
     for( int i=0; i<asm_functions.size(); i++ )
       {
-	cerr << "\t\t" << asm_functions[i]->getIdentifier() << " : " << asm_functions[i]->getLabel() << " : " <<  asm_functions[i]->getAddress() << endl;
+	cerr << "\t\t" << asm_functions[i]->getIdentifier() << " : " << asm_functions[i]->getLabel() << " : " <<  asm_functions[i]->getAddress() << asm_functions[i]->getType() << endl;
       }
     cerr << "\tVariables" << endl;
     for( int i=0; i<asm_variables.size(); i++ )
@@ -1358,16 +1384,21 @@ main: datatype ID
 {
   addAsm( string( ".org $" ) + toHex( code_start ), 0, true );
   addCommentSection( "main()" );
-  //addComment( "======================== main() =========================" );
 };
 
 function: function function
-| datatype ID '(' ')' '{' { addComment( string("======================== ") + string($2.name) + string(" ========================")); addAsm( generateNewLabel(), 0, true );    addFunction( string($2.name), getLabel( label_vector[label_major]-1 ));  } body return '}'
+| datatype ID '(' ')' '{' { addComment( string("======================== ") + string($2.name) + string(" ========================")); addAsm( generateNewLabel(), 0, true );    addFunction( string($2.name), getLabel( label_vector[label_major]-1 ), getDataTypeValue($1.name));  } body return '}'
   {
     // add this label to the list of functions and their addresses
     // any time we come across the function with this ID
     // we can JSR to it
-    if( !previousAsm("RTS") ){addAsm("RTS");}
+    if( !previousAsm("RTS") )
+      {
+	//             // we may want to consider
+	//             // adding a return value here
+	addAsm("RTS"); // add a return statement
+      } 
+    
   };
 
 | datatype ID '(' ')' '{' { addComment( string("======================== ") + string($2.name) + string(" ========================")); addAsm( generateNewLabel(), 0, true );     addFunction( string($2.name), getLabel( label_vector[label_major] )); } body '}'
@@ -2286,24 +2317,25 @@ body: WHILE
   if( tmp_s == 4 ) tmp_s = 3;
   addAsm( string( "STA $" ) + toHex(atoi($3.name)) + string( "; ") + getNameOf( hexToDecimal($3.name) ), tmp_s, false );
 };
-/* | tPOKE '(' ID ',' NUMBER ')' ';' */
-/* { */
-/*   addCommentSection( string("poke ") + string($3.name) + string( ", ") + string($5.name)  ); */
-/*   pushScope( "POKE" ); */
-/*   int addr = getAddressOf($3.name); */
-/*   int addr2 = getAddressOf($5.name); */
-/*   addAsm( string( "LDA $" ) + toHex(addr),  3, false ); */
-/*   addAsm( string( "STA " ) + getLabel( label_vector[label_major],false), 3, false ); */
-/*   addAsm( string( "LDA $" ) + toHex(addr+1),  3, false ); */
-/*   addAsm( string( "STA " ) + getLabel( label_vector[label_major]+1,false), 3, false ); */
-/*   addAsm( string( "LDA $" ) + toHex( addr2 ) + string( "; ") + getNameOf( addr2 ) , 3, false ); */
-/*   addAsm( ".BYTE #$8D;\t  <-- STA absolute", 1, false ); */
-/*   addAsm( generateNewLabel() + string( "\t\t\t; <-- low byte"), 0, true ); */
-/*   addAsm( ".BYTE #$00", 1, false ); */
-/*   addAsm( generateNewLabel() + string( "\t\t\t; <-- hi byte"), 0, true ); */
-/*   addAsm( ".BYTE #$00", 1, false ); */
-/*   popScope(); */
-/* }; */
+| tPOKE '(' ID ',' NUMBER ')' ';'
+{
+  addCommentSection( string("poke ") + string($3.name) + string( ", ") + string($5.name)  );
+  pushScope( "POKE" );
+  int addr = getAddressOf($3.name);
+  int value = atoi( $5.name );
+  
+  addAsm( string( "LDA $" ) + toHex(addr), 3, false );
+  addAsm( string( "STA " ) + getLabel( label_vector[label_major],false), 3, false );
+  addAsm( string( "LDA $" ) + toHex(addr+1), 3, false );
+  addAsm( string( "STA " ) + getLabel( label_vector[label_major]+1,false), 3, false );
+  addAsm( string( "LDA #$" ) + toHex( value ), 2, false );
+  addAsm( ".BYTE #$8D;\t  <-- STA absolute", 1, false );
+  addAsm( generateNewLabel() + string( "\t\t\t; <-- low byte"), 0, true );
+  addAsm( ".BYTE #$00", 1, false );
+  addAsm( generateNewLabel() + string( "\t\t\t; <-- hi byte"), 0, true );
+  addAsm( ".BYTE #$00", 1, false );
+  popScope();
+};
 | tPOKE '(' ID ',' ID ')' ';'
 {
   addCommentSection( string("poke ") + string($3.name) + string( ", ") + string($5.name)  );
@@ -2315,7 +2347,7 @@ body: WHILE
   addAsm( string( "LDA $" ) + toHex(addr+1),  3, false );
   addAsm( string( "STA " ) + getLabel( label_vector[label_major]+1,false), 3, false );
   addAsm( string( "LDA $" ) + toHex( addr2 ) + string( "; ") + getNameOf( addr2 ) , 3, false );
-  addAsm( ".BYTE #$8D;\t  <-- STA absolute", 1, false );
+  addAsm( ".BYTE #$8D", 1, false );
   addAsm( generateNewLabel() + string( "\t\t\t; <-- low byte"), 0, true );
   addAsm( ".BYTE #$00", 1, false );
   addAsm( generateNewLabel() + string( "\t\t\t; <-- hi byte"), 0, true );
@@ -2341,6 +2373,18 @@ body: WHILE
 | ID '(' expression ')' ';'
 {
   addAsm( string( "###") + string($1.name), 3, false);
+  if( getTypeOfFunction($1.name) == 32 )
+    {
+      addAsm( "; VOID functions do NOT return a value", 0, false );
+    }
+  else if( getTypeOfFunction($1.name) == 0 )
+    {
+      //addAsm( "PLA" ); // get the return value  (this will need to change for different function types
+    }
+  else if( getTypeOfFunction($1.name) == 1 )
+    {
+      //addAsm( "PLA" ); // get the return value  (this will need to change for different function types
+    }
 };
 
  else: ELSE
@@ -2671,11 +2715,15 @@ condition: expression relop expression
       addCommentSection( "WORD ID vs. WORD IMM" );
       addComment( string($1.name) + string( " v. " ) + string($3.name) );
 
-      addAsm( "TXA" );
-      addAsm( "CMP #$00", 2, false );
-      addAsm( "BNE +4", 2, false );
-      addAsm( "PLA" );
-      addAsm( string( "CMP #$") + toHex( atoi(stripFirst($3.name).c_str()) ), 2, false );
+      int OP1L = getAddressOf( $1.name );
+      int OP1H = OP1L+1;
+
+      addAsm(string("LDA $") + toHex(OP1H), 3, false );
+      addAsm(string("CMP #$") + toHex(atoi(stripFirst($3.name).c_str())).substr(0,2), 2, false );
+      addAsm(string(".BYTE #$D0, #$05"), 2, false ); // if they're not equal then the CMP should do!
+      addAsm(string("LDA $") + toHex(OP1L), 3, false );
+      addAsm(string("CMP #$") + toHex(atoi(stripFirst($3.name).c_str())).substr(2,2), 2, false );
+      
     }
     else
       {
@@ -5050,11 +5098,55 @@ return: RETURN ';'
   }
 | RETURN {} expression ';'
 {
+
+  /* addComment("Trying to return the value:"); */
+  /* addComment($3.name); */
+
+  /* /\* save the return address *\/ */
+  /* addAsm("PLA"); */
+  /* addAsm("TAX"); */
+  /* addAsm("PLA"); */
+  /* addAsm("TAY"); */
+  
+  /* addAsm(string("LDA ") + string($3.name), 3, false ); */
+  /* addAsm("PHA"); */
+
+  /* /\* restore the return address *\/ */
+  /* addAsm("TYA"); */
+  /* addAsm("PHA"); */
+  /* addAsm("TXA"); */
+  /* addAsm("PHA"); */
+
   addAsm("RTS");
+
+  /* return value store can go here ? */
+  /* but that wouldn't allow recursion */
+
+  /* strcpy( $$.name, "STACK"); */
 }
 | RETURN {} value ';'
 {
+  /* addComment("Trying to return the value:"); */
+  /* addComment($3.name); */
+
+  /* /\* save the return address *\/ */
+  /* addAsm("PLA"); */
+  /* addAsm("TAX"); */
+  /* addAsm("PLA"); */
+  /* addAsm("TAY"); */
+  
+  /* addAsm(string("LDA ") + string($3.name), 3, false ); */
+  /* addAsm("PHA"); */
+
+  /* /\* restore the return address *\/ */
+  /* addAsm("TYA"); */
+  /* addAsm("PHA"); */
+  /* addAsm("TXA"); */
+  /* addAsm("PHA"); */
+
+  
   addAsm("RTS");
+  /* strcpy( $$.name, "STACK"); */
 }
 |
 {
