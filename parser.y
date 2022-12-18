@@ -1403,7 +1403,7 @@
 
 //%parse-param { FILE* fp }
 %token VOID 
-%token <nd_obj> tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tTOFLOAT tTOUINT tDEC tINC tROL tROR tASL tLSR tJSR tLDA tASL tSPRITESET tSPRITEON tSPRITEOFF tSPRITETOGGLE tRND tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER PRINTFF SCANFF INT FLOAT CHAR WHILE FOR IF ELSE TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE  UNARY INCLUDE RETURN
+%token <nd_obj> tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tTOFLOAT tTOUINT tDEC tINC tROL tROR tASL tLSR tJSR tLDA tASL tSPRITESET tSPRITEON tSPRITEOFF tSPRITETOGGLE tRND tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER PRINTFF SCANFF INT FLOAT CHAR WHILE FOR IF ELSE TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE  UNARY INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL
 %type <nd_obj> headers main body return function datatype statement arithmetic relop program else
    %type <nd_obj2> init value expression
       %type <nd_obj3> condition
@@ -1718,6 +1718,28 @@ body: WHILE
       addAsm( string( "LDA #$" ) + toHex( y_coord) , 2, false );
       addAsm( string( "STA $" ) + toHex( sprite_address+1 ), 3, false );
     }
+  else if((isIntIMM($3.name) && isWordID($5.name) && isIntID($7.name)) ||
+	  (isIntIMM($3.name) && isWordID($5.name) && isUintID($7.name)) ||
+	  (isUintIMM($3.name) && isWordID($5.name) && isIntID($7.name)) ||
+	  (isUintIMM($3.name) && isWordID($5.name) && isUintID($7.name)))
+    {
+      sprite_address = atoi( stripFirst($3.name).c_str() );
+      sprite_address*=2;
+      sprite_address+=base_address;
+
+      int addr = hexToDecimal($5.name);
+
+      addAsm( string( "LDA $" ) + toHex(addr) , 3, false );
+      addAsm( string( "STA $" ) + toHex( sprite_address ), 3, false );
+      // need to put the high byte
+      // in 0xD010 as a bit
+      addAsm( string( "LDA $" ) + toHex(addr+1), 3, false );
+      addAsm( "STA $D010", 3, false );
+      
+      addAsm( string( "LDA " ) + string($7.name) , 3, false );
+      addAsm( string( "STA $" ) + toHex( sprite_address+1 ), 3, false );
+    }
+
   else if((isIntIMM($3.name) && isIntIMM($5.name) && isIntID($7.name)) ||
 	  (isIntIMM($3.name) && isIntIMM($5.name) && isUintID($7.name)) ||
 	  (isIntIMM($3.name) && isUintIMM($5.name) && isIntID($7.name)) ||
@@ -2742,10 +2764,20 @@ condition: expression relop expression
       int OP1H = OP1L+1;
 
       addAsm(string("LDA $") + toHex(OP1H), 3, false );
-      addAsm(string("CMP #$") + toHex(atoi(stripFirst($3.name).c_str())).substr(0,2), 2, false );
+
+      // we need to get just the High Byte here.
+      // we could use the length... OR use math.
+      
+      int HB = 0xFF00 & atoi( stripFirst($3.name).c_str());
+      HB/=256;
+      int LB = 0x00FF & atoi( stripFirst($3.name).c_str());
+      //cerr << "HB: " << HB << "\tLB: " << LB << endl;
+      addAsm(string("CMP #$") + toHex(HB), 2, false );
       addAsm(string(".BYTE #$D0, #$05"), 2, false ); // if they're not equal then the CMP should do!
       addAsm(string("LDA $") + toHex(OP1L), 3, false );
-      addAsm(string("CMP #$") + toHex(atoi(stripFirst($3.name).c_str())).substr(2,2), 2, false );
+      //addAsm(string("CMP #$") + toHex(atoi(stripFirst($3.name).c_str())).substr(2,2), 2, false );
+      //addAsm(string("CMP #$") + toHex(atoi(stripFirst($3.name).c_str())).substr(2,2), 2, false );
+      addAsm(string("CMP #$") + toHex(LB), 2, false );
       
     }
     else
@@ -5297,9 +5329,46 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
 };
 | tSPRITECOLLISION '(' expression ')'
 {
-  addAsm( "LDA $D01E;\t\t\tMOB Collision Register", 3, false );
-  addAsm( string( "AND " ) + string($3.name), 3, false );
+  addAsm( "LDA $D01E;\t\t\tMOB-MOB Collision Register", 3, false );
+  addAsm( string( "AND #$" ) + string($3.name), 3, false );
   strcpy($$.name, "A" );
+};
+| tMOBBKGCOLLISION '(' expression ')'
+{
+  addAsm( "LDA $D01F;\t\t\tMOB-Background Collision Register", 3, false );
+  addAsm( string( "AND " ) + toHex(atoi(stripFirst($3.name).c_str())), 3, false );
+  strcpy($$.name, "A" );
+};
+| tGETH '(' ID ')'
+{
+  addComment( "Get the High-Byte of the Word" );
+  if( isWordID( $3.name ) )
+    {
+      int addr = getAddressOf( $3.name );
+      int inst_size = 3;
+      if( addr+1 < 256 ) inst_size = 2;
+      addAsm( string("LDA $") + string( toHex( addr+1) ), inst_size, false );
+      strcpy( $$.name, "A" );
+    }
+  else
+    {
+      addCompilerMessage( "Cannot return 'hi-byte' of specified type", 3 );
+    }
+};
+| tGETL '(' ID ')'
+{
+  if( isWordID( $3.name ) )
+    {
+      int addr = getAddressOf( $3.name );
+      int inst_size = 3;
+      if( addr < 256 ) inst_size = 2;
+      addAsm( string("LDA $") + string( toHex(addr) ), inst_size, false );
+      strcpy( $$.name, "A" );
+    }
+  else
+    {
+      addCompilerMessage( "Cannot return 'lo-byte' of specified type", 3 );
+    }
 };
 | tPEEK '(' HEX_NUM ')'
 {
