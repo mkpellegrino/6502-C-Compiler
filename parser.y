@@ -1739,7 +1739,6 @@ body: WHILE
       addAsm( string( "LDA " ) + string($7.name) , 3, false );
       addAsm( string( "STA $" ) + toHex( sprite_address+1 ), 3, false );
     }
-
   else if((isIntIMM($3.name) && isIntIMM($5.name) && isIntID($7.name)) ||
 	  (isIntIMM($3.name) && isIntIMM($5.name) && isUintID($7.name)) ||
 	  (isIntIMM($3.name) && isUintIMM($5.name) && isIntID($7.name)) ||
@@ -1859,6 +1858,19 @@ body: WHILE
       addAsm( string( "LDA #$" ) + toHex( x_coord) , 2, false );
       addAsm( string( "STA $" ) + toHex( sprite_address ), 3, false );
     }
+  else if(isUintIMM($3.name) && isWordID($5.name))
+    {
+      sprite_address = atoi( stripFirst($3.name).c_str() );
+      sprite_address*=2;
+      sprite_address+=base_address;
+      int addr = hexToDecimal($5.name);
+      addAsm( string( "LDA $" ) + toHex(addr) , 3, false );
+      addAsm( string( "STA $" ) + toHex( sprite_address ), 3, false );
+      // need to put the high byte
+      // in 0xD010 as a bit
+      addAsm( string( "LDA $" ) + toHex(addr+1), 3, false );
+      addAsm( "STA $D010", 3, false );
+    }
   else if( (isIntIMM($3.name) && isIntID($5.name)) ||
 	   (isIntIMM($3.name) && isUintID($5.name)) ||
 	   (isUintIMM($3.name) && isIntID($5.name)) ||
@@ -1903,12 +1915,12 @@ body: WHILE
 | tSPRITEY '(' expression ',' expression ')' ';'
 {
   addComment( string( "spritey( ") + string($3.name) + string(", ") + string($5.name) + string( " );" ) );
+
   int base_address = 53248;
   int sprite_address = 0;
   int x_coord = 0;
   int y_coord = 0;
-  if(
-     (isIntIMM($3.name) && isIntIMM($5.name))   ||
+  if((isIntIMM($3.name) && isIntIMM($5.name))   ||
      (isUintIMM($3.name) && isUintIMM($5.name)) ||
      (isIntIMM($3.name) && isUintIMM($5.name))  ||
      (isUintIMM($3.name) && isIntIMM($5.name)) )
@@ -1920,11 +1932,10 @@ body: WHILE
       addAsm( string( "LDA #$" ) + toHex( x_coord) , 2, false );
       addAsm( string( "STA $" ) + toHex( sprite_address + 1 ), 3, false );
     }
-  else if(
-	  (isIntIMM($3.name) && isIntID($5.name))    ||
+  else if((isIntIMM($3.name) && isIntID($5.name))    ||
 	  (isIntIMM($3.name) && isUintID($5.name))   ||
 	  (isUintIMM($3.name) && isIntID($5.name))   ||
-	  (isUintIMM($3.name) && isUintIMM($5.name)) )
+	  (isUintIMM($3.name) && isUintID($5.name)) )
     {
       sprite_address = atoi( stripFirst($3.name).c_str() );
       sprite_address*=2;
@@ -1932,10 +1943,10 @@ body: WHILE
       addAsm( string( "LDA " ) + string($5.name) , 3, false );
       addAsm( string( "STA $" ) + toHex( sprite_address +1 ), 3, false );
     }
-  else if( (isUintID($3.name) && isUintID($5.name)) ||
-	   (isUintID($3.name) && isIntID($5.name)) ||
-	   (isIntID($3.name) && isUintID($5.name)) ||
-	   (isIntID($3.name) && isIntID($5.name)) )
+  else if((isUintID($3.name) && isUintID($5.name)) ||
+	  (isUintID($3.name) && isIntID($5.name)) ||
+	  (isIntID($3.name) && isUintID($5.name)) ||
+	  (isIntID($3.name) && isIntID($5.name)) )
     {
       addAsm( string( "LDA " ) + string($3.name), 3, false );
       addAsm( "CLC" );
@@ -1959,7 +1970,7 @@ body: WHILE
     }
   else
     {
-      addCompilerMessage( "spritex error - invalid type", 1 );
+      addCompilerMessage( "spritey error - invalid type", 1 );
     }
 };
 | tSPRITECOLOUR '(' expression ',' expression ')' ';'
@@ -1993,9 +2004,34 @@ body: WHILE
       addAsm( string( "STA $D027,X" ), 3, false );
     } 
 };
+| SCANFF '(' ID ')' ';'
+{
+  addCommentSection("scanf(ID)");
+  getkey_is_needed=true;
+  scanf_is_needed=true;
+  memcpy_is_needed=true;
+  addAsm( "JSR SCANF", 3, false );  
+  addAsm( "LDA #<SCANFBUF-2", 2, false );
+  addAsm( "STA $FB", 2, false );
+  addAsm( "LDA #>SCANFBUF-2", 2, false );
+  addAsm( "STA $FC", 2, false );
+
+  int addr = getAddressOf($3.name);
+
+  addAsm( string("LDA #$") + toHex( get_word_L( addr-1 )), 2, false );
+  addAsm( "STA $FD", 2, false );
+  addAsm( string("LDA #$") + toHex( get_word_H( addr-1 )), 2, false );
+  addAsm( "STA $FE", 2, false );
+
+  addAsm( "LDA #$0F", 2, false );
+  addAsm( "PHA" );
+  //addAsm( string("LDY #$") + toHex( get_word_H( addr )), 2, false );
+  addAsm( "JSR MEMCPY", 3, false );
+  
+};
 | SCANFF '(' STR ')' ';'
 {
-  addCommentSection("scanf()");
+  addCommentSection("scanf(STR)");
   getkey_is_needed=true;
   scanf_is_needed=true;
   addAsm( "JSR SCANF", 3, false );  
@@ -2344,7 +2380,6 @@ body: WHILE
   if( tmp_s == 4 ) tmp_s = 3;
   addAsm( string( "STA $" ) + toHex(atoi($3.name)) + string( "; ") + getNameOf( hexToDecimal($3.name) ), tmp_s, false );
 };
-
 | tPOKE '(' NUMBER ',' NUMBER ')' ';'
 {
   addCommentSection( string("poke ") + string($3.name) + string( ", ") + string($5.name)  );
@@ -2383,6 +2418,7 @@ body: WHILE
 };
 | tPOKE '(' ID ',' ID ')' ';'
 {
+
   addCommentSection( string("poke ") + string($3.name) + string( ", ") + string($5.name)  );
   pushScope( "POKE" );
   int addr = getAddressOf($3.name);
@@ -2448,6 +2484,8 @@ condition: expression relop expression
   addDebugComment( string( "condition in ") + string( scope_stack.top() ));
   addParserComment( scope_stack.top() + string(" ")  + string($1.name) + string($2.name) + string($3.name) );
   addDebugComment( "=========================================================");
+  if( isXA($1.name ) ) addComment( "RegXA" );
+  if( isA($1.name ) ) addComment( "RegA" );
   if( isUintID($1.name) ) addComment( "UintID" );
   if( isIntID($1.name) ) addComment( "IntID" );
   if( isWordID($1.name) ) addComment( "WordID" );
@@ -2460,6 +2498,8 @@ condition: expression relop expression
   if( isFloatIMM($1.name) ) addComment( "FloatIMM" );
   addComment($1.name);
   addComment( " vs. " );
+  if( isA($3.name ) ) addComment( "RegA" );
+  if( isXA($3.name ) ) addComment( "RegXA" );
   if( isUintID($3.name) ) addComment( "UintID" );
   if( isIntID($3.name) ) addComment( "IntID" );
   if( isWordID($3.name) ) addComment( "WordID" );
@@ -2501,7 +2541,6 @@ condition: expression relop expression
       addCompilerMessage( "INTs can ONLY be between -127 and +128... this line of code will lead to an infinite loop", 3 );
     }
 
-
   // ====================================================================================================================
   //                 COMPARISONS START HERE
   // ====================================================================================================================
@@ -2517,6 +2556,26 @@ condition: expression relop expression
       addAsm( "LDY #$00", 2, false );
       addAsm( "JSR $BC5B; CMP(FAC, RAM)", 3, false );
       addAsm( "PHA" );
+    }
+  else if( isXA($1.name) && isWordIMM($3.name))  // mismatch
+    {
+      addAsm( "PHA" );
+      addAsm( "TXA" );
+      int HB = 0xFF00 & atoi( stripFirst($3.name).c_str());
+      HB/=256;
+      int LB = 0x00FF & atoi( stripFirst($3.name).c_str());
+      //cerr << "HB: " << HB << "\tLB: " << LB << endl;
+      addAsm(string("CMP #$") + toHex(HB), 2, false );
+      addAsm(string(".BYTE #$D0, #$05"), 2, false ); // if they're not equal then the CMP should do!
+      //addAsm(string("LDA $") + toHex(OP1L), 3, false );
+      addAsm( "PLA" );
+      //addAsm(string("CMP #$") + toHex(atoi(stripFirst($3.name).c_str())).substr(2,2), 2, false );
+      //addAsm(string("CMP #$") + toHex(atoi(stripFirst($3.name).c_str())).substr(2,2), 2, false );
+      addAsm(string("CMP #$") + toHex(LB), 2, false );
+    }
+  else if( isA($1.name) && isIntID($3.name))  // mismatch
+    {
+      addAsm( string("CMP ") + string( $3.name ), 3, false );
     }
   else if( isUintID($1.name) && isIntID($3.name))  // mismatch
     {
@@ -2743,7 +2802,7 @@ condition: expression relop expression
       addCommentSection( "WORD ID vs. WORD ID" );
       int OP1L = getAddressOf( $1.name );
       int OP2L = getAddressOf( $3.name );
-      cerr << "OP1L: " << OP1L << "\tOP2L: " << OP2L << endl;
+      //cerr << "OP1L: " << OP1L << "\tOP2L: " << OP2L << endl;
 
       // compare the Hi bytes first
       int OP1H = OP1L+1;
@@ -6290,48 +6349,102 @@ int main(int argc, char *argv[])
   
   if( scanf_is_needed )
     {
-      /* a WICKED Simple Scanf */
-      addAsm( "SCANF:", 0, true );
-      
-      addAsm( "LDX #$00", 2, false );
-      addAsm( "STX $CFDE", 3, false ); // initialise the # of bytes read
 
-      addAsm( "SCANFTOP:", 0, true );
-      addAsm( "JSR $FF9F", 3, false );
-      addAsm( "JSR $FFE4", 3, false );
-      addAsm( "BEQ SCANFTOP", 2, false );
-      addAsm( "CMP #$0D", 2, false ); // compare acc with a carriage return
-      addAsm( "BEQ SCANFEND", 2, false);
-      addAsm( "CMP #$14", 2, false ); // compare acc with delete
-      addAsm( "BEQ BKSPC", 2, false );
-      addAsm( "JSR $FFD2", 3, false );
-      addAsm( "LDX $CFDE", 3, false ); // 
-      addAsm( "STA $CFE0,X", 3, false );
-      addAsm( "INX" );
+      //return_addresses_needed = true;
 
-      /* $CFDE cas chosen to store */
-      /* the # of bytes read because */
-      /* it's right before the getkey */
-      /* byte that gets read */
-      addAsm( "STX $CFDE", 3, false );
+      addAsm( "SCANF:\t\t;Robust Scanf", 0, true );
+      addAsm( ";;; Taken from: https://codebase64.org/doku.php?id=base:robust_string_input", 0, true );
+      addAsm( ";;; Code by: Schema", 0, true );
+      addAsm( "lda #>TEXT", 2, false );
+      addAsm( "ldx #<TEXT", 2, false );
+      addAsm( "ldy #38", 2, false );
 
-      addAsm( "CPX #$10", 2, false ); // only a 16 byte kbd buffer!
-      addAsm( "BEQ SCANFEND", 2, false );
-      addAsm( "JMP SCANFTOP", 3, false );
+      addAsm( "FINPUT:", 0, true );
+      addAsm( "sty MAXCHARS", 3, false );
+      addAsm( "stx CHECKALLOWED+1", 3, false ); // maybe these should be 3 byte instructions?
+      addAsm( "sta CHECKALLOWED+2", 3, false );
 
-      addAsm( "SCANFEND:", 0, true );
-      addAsm( "RTS", 1, false );
+      addAsm("lda #$00", 2, false );
+      addAsm("sta INPUTY", 3, false );
 
-      /* if backspace/delete was pressed */
-      addAsm( "BKSPC:", 0, true );
-      addAsm( "LDX $CFDF", 3, false );
-      addAsm( "DEX" );
-      addAsm( "STX $CFDF", 3, false );
+      addAsm("INPUTGET:", 0, true );
+      addAsm("jsr $FFE4", 3, false );
+      //addAsm("beq INPUTGET", 2, false );
+      addAsm(".BYTE #$F0, #$FB", 2, false );
+      addAsm("sta LASTCHAR", 3, false );
 
-      /* TODO: we probably need to read the cursor position, */
-      /* move it to the left one, and then clear that spot */
-      
-      addAsm( "JMP SCANFTOP", 3, false );
+      addAsm("cmp #$14; Delete", 2, false );
+      addAsm(".BYTE #$F0, #$38", 2, false );
+      //addAsm("beq DELETE", 2, false );
+      addAsm("cmp #$0d ;Return", 2, false );
+      //addAsm("beq INPUTDONE", 2, false );
+      addAsm(".BYTE #$F0, #$2A", 2, false );
+      addAsm("ldx #$00", 2, false );
+      addAsm("CHECKALLOWED:", 0, true );
+      addAsm("lda $FFFF,x ;Overwritten", 3, false );
+      addAsm("beq INPUTGET;Reached end of list (NULL)", 2, false );
+
+      addAsm("cmp LASTCHAR", 3, false );
+      //addAsm("beq INPUTOK;Match found", 2, false );
+      addAsm(".BYTE #$F0, #$04", 2, false );
+      addAsm("INX");
+      addAsm("jmp CHECKALLOWED", 3, false );
+
+      addAsm("INPUTOK:", 0, true );
+      addAsm("lda LASTCHAR;Get the char back", 3, false );
+      addAsm("ldy INPUTY", 3, false );
+      addAsm("sta GOTINPUT,y        ;Add it to string", 3, false );
+      addAsm("jsr $ffd2             ;Print it", 3, false );
+
+      addAsm("inc INPUTY           ;Next character", 3, false );
+
+      addAsm("lda INPUTY", 3, false );
+      addAsm("cmp MAXCHARS", 3, false );
+      //addAsm("beq INPUTDONE", 2, false );
+      addAsm(".BYTE #$F0, #$03", 2, false );
+     
+      addAsm("jmp INPUTGET", 3, false );
+
+      //addAsm("INPUTDONE:", 0, true );
+      addAsm("ldy INPUTY", 3, false );
+      addAsm("lda #$00", 2, false );
+      addAsm("sta GOTINPUT,y   ;Zero-terminate", 3, false );
+
+      addAsm("RTS" );	
+      addAsm("DELETE:", 0, true );
+      addAsm("lda INPUTY", 3, false );
+      addAsm("bne DELETEOK", 2, false );
+      addAsm("jmp INPUTGET", 3, false );
+      addAsm("DELETEOK:", 0, true );
+      addAsm("dec INPUTY", 3, false );
+      addAsm("ldy INPUTY", 3, false );
+      addAsm("lda #$00", 2, false );
+      addAsm("sta GOTINPUT,y:", 3, false );
+      addAsm("lda #$14", 2, false );
+      addAsm("jsr $ffd2", 3, false );
+      addAsm("jmp INPUTGET", 3, false );
+
+
+      addAsm("TEXT:", 0, true );
+      //             123456789 123456789 123456789 123456789 123456789 
+      addAsm(".BYTE \" ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890.,-+!#$%&()*\"", 49, false );
+      addAsm(".BYTE 0", 1, false );
+      addAsm("MAXCHARS:", 0, true );
+      addAsm(".BYTE $00", 1, false );
+
+      addAsm("LASTCHAR:", 0, true );
+      addAsm(".BYTE $00", 1, false );
+      addAsm("INPUTY:", 0, true );
+      addAsm(".BYTE $00", 1, false );
+
+      addAsm("GOTINPUT:", 0, true );
+      addAsm(".BYTE #39", 1, false );
+      addAsm("SCANFBUF:", 0, true );
+      addAsm(".BYTE \"                \"", 16, false );
+      addAsm(".BYTE #$00", 1, false );
+
+
+      addAsm(";;; -------------------------------------------------", 0, true );
       
     }
   if( getkey_is_needed )
