@@ -28,7 +28,7 @@
 
 
   // compiler internal flags
-  bool word2dec_is_needed=true;
+  bool word2dec_is_needed=false;
   bool unsigned_signed_cmp_is_needed=false;
   bool split_byte_is_needed=false;
   bool decimal_digit_is_needed=false;
@@ -1403,7 +1403,7 @@
 
 //%parse-param { FILE* fp }
 %token VOID 
-%token <nd_obj> tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tTOFLOAT tTOUINT tDEC tINC tROL tROR tASL tLSR tJSR tLDA tASL tSPRITESET tSPRITEON tSPRITEOFF tSPRITETOGGLE tRND tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER PRINTFF SCANFF INT FLOAT CHAR WHILE FOR IF ELSE TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE  UNARY INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL
+%token <nd_obj> tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tSTRTOFLOAT tTOFLOAT tTOUINT tDEC tINC tROL tROR tASL tLSR tJSR tLDA tASL tSPRITESET tSPRITEON tSPRITEOFF tSPRITETOGGLE tRND tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER tPRINTS PRINTFF SCANFF INT FLOAT CHAR WHILE FOR IF ELSE TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE  UNARY INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL
 %type <nd_obj> headers main body return function datatype statement arithmetic relop program else
    %type <nd_obj2> init value expression
       %type <nd_obj3> condition
@@ -2036,6 +2036,34 @@ body: WHILE
   scanf_is_needed=true;
   addAsm( "JSR SCANF", 3, false );  
 };
+| tPRINTS '(' ID ')' ';'
+{
+  addCommentSection( string("prints(") + string($3.name) + string( ");") );
+  if( isUintID($3.name) )
+    {
+      pushScope( "PRINTS" );
+      int addr = getAddressOf( $3.name );
+      addAsm( "LDX #$00", 2, false );
+      addAsm( generateNewLabel() + string( ";\t\t\ttop of prints"), 0, true ); // LABEL BB
+
+      addAsm( string("LDA $") + toHex( addr ) + string(",X"), 3, false );
+      addAsm( "CMP #$00", 2, false );
+      //addAsm( ".BYTE #$F0, #$07", 2, false );
+      addAsm( string( "BEQ " ) + getLabel( label_vector[label_major],false), 2, false ); 
+      addAsm( "JSR $FFD2", 3, false );
+      addAsm( "INX" );
+      addAsm( string( "JMP " ) + getLabel( label_vector[label_major]-1,false), 3, false ); 
+      addAsm( generateNewLabel() + string( ";\t\t\tbottom of prints"), 0, true ); // LABEL BB
+
+      popScope();
+    }
+  else
+    {
+      addCompilerMessage( "prints of unknown type", 3 );
+    }
+
+
+};
 | PRINTFF '(' expression ')' ';'
 {
   addCommentSection( string("printf(") + string($3.name) + string( ");") );
@@ -2136,12 +2164,22 @@ body: WHILE
   else if( string($3.name) == string("FAC") )
     {
       addAsm( "JSR $BDDD; FAC -> PETSCII ($0100)", 3, false );
-      
-      addAsm( "LDA #$00", 2, false );
-      addAsm( "STA $02", 2, false );
-      addAsm( "LDA #$01", 2, false );
-      addAsm( "STA $03", 2, false );
-      addAsm( "JSR PRN", 3, false); printf_is_needed = true;
+      pushScope("PRINTFFAC" );
+      addAsm( "LDX #$00", 2, false );
+      addAsm( generateNewLabel(), 0, true ); 
+
+      addAsm( "LDA $0100,X", 3, false );
+      addAsm( "CMP #$00", 2, false );
+      addAsm( "BEQ #$06", 2, false );
+      addAsm( "JSR $FFD2", 3, false );
+      addAsm( string( "JMP " ) + getLabel( label_vector[label_major]-1,false), 3, false );
+
+      popScope();
+      //addAsm( "LDA #$00", 2, false );
+      ////addAsm( "STA $02", 2, false );
+      //addAsm( "LDA #$01", 2, false );
+      //addAsm( "STA $03", 2, false );
+      //addAsm( "JSR PRN", 3, false); printf_is_needed = true;
     }
   else if( isFloatID($3.name) )
     {
@@ -2206,7 +2244,7 @@ body: WHILE
     }
   else
     {
-      addCompilerMessage( "printf of unknown type", 0 );
+      addCompilerMessage( "printf of unknown type", 3 );
     }
 };
 | PRINTFF '(' STR ')' ';'
@@ -3641,29 +3679,30 @@ init: '=' expression
     }
   else if( string($2.name) == "ARG" )
     {
-      addComment( "ARG" );
+      addComment( "initializing a float with ARG" );
       strcpy($$.name, "ARG" );
     }
-  else if( string($2.name) == "XA" )
+  else if( string($2.name) == "initializing a word with XA" )
     {
       addComment( "XA" );
       strcpy($$.name, "XA" );
     }
   else if( string($2.name) == "FAC" )
     {
-      addComment( "FAC" );
+      addComment( "initializing a float with FAC" );
       strcpy($$.name, "FAC" );
     }  
   else if( string($2.name) == "MOB" )
     {
-      addComment( "MOB" );
+      addComment( "initializing a sprite with MOB" );
       strcpy($$.name, "MOB" );
     }  
   else if( isA($2.name) )
     {
-      addComment( "A" );
+      addComment( "initializing an unknown with A" );
       // then it's the result
       // of the expression is stored in A
+      addCompilerMessage( "initializing an unknown type with accumulator", 0 );
       strcpy($$.name, "A" );
     }
   else
@@ -5104,6 +5143,46 @@ expression: expression arithmetic expression
     }
   strcpy($$.name, "A" );
 };
+| tSTRTOFLOAT '(' ID ')'
+{
+  if( isUintID($3.name) )
+    {
+      addParserComment( "expression: tSTRTOFLOAT '(' ID ')'" );
+      int addr = getAddressOf($3.name);
+
+      // save 7A and 7B
+      addAsm( "LDA $7A", 2, false );
+      addAsm( "PHA" );
+      addAsm( "LDA $7B", 2, false );
+      addAsm( "PHA" );
+
+      // point chrget to buffer
+      addAsm( string( "LDA #$" ) + toHex(get_word_L(addr)), 2, false  );
+      addAsm( "STA $7A", 2, false );
+      addAsm( string( "LDA #$" ) + toHex(get_word_H(addr)), 2, false  );
+      addAsm( "STA $7B", 2, false );
+
+
+      //addAsm( string( "LDA $" ) + toHex(addr), 3, false ); 
+      //addAsm( "CLC" );
+      // JSR CHRGET
+      addAsm( "JSR $79", 3, false );
+      addAsm( "JSR $BCF3; STR -> FAC", 3, false );
+
+      // restore 7A and 7B
+      addAsm( "PLA" );
+      addAsm( "STA $7B", 2, false );
+      addAsm( "PLA" );
+      addAsm( "STA $7A", 2, false );
+      
+      //addAsm( "JSR $AABC; FAC -> CRT (for debugging purposes)", 3, false );
+    }
+  else
+    {
+      addCompilerMessage( "only UINT buffers can be strings", 3 );
+    }
+  strcpy($$.name, "FAC" );
+};
 | tTOFLOAT '(' expression ')'
 {
   int t = getTypeOf($3.name);
@@ -5727,8 +5806,8 @@ int main(int argc, char *argv[])
   
   if( scanf_is_needed)
     {
-      addAsmVariable( "buffer_tmp_l", 0 );
-      addAsmVariable( "buffer_tmp_h", 0 );
+      //addAsmVariable( "buffer_tmp_l", 0 );
+      //addAsmVariable( "buffer_tmp_h", 0 );
     }
   if( return_addresses_needed )
     {
@@ -6349,19 +6428,18 @@ int main(int argc, char *argv[])
   
   if( scanf_is_needed )
     {
-
-      //return_addresses_needed = true;
-
       addAsm( "SCANF:\t\t;Robust Scanf", 0, true );
       addAsm( ";;; Taken from: https://codebase64.org/doku.php?id=base:robust_string_input", 0, true );
       addAsm( ";;; Code by: Schema", 0, true );
+      addAsm( ";;; I modified it _slightly_ to make the naming conventions of the labels", 0, true );
+      addAsm( ";;; consistent with the rest of the code.", 0, true );
       addAsm( "lda #>TEXT", 2, false );
       addAsm( "ldx #<TEXT", 2, false );
       addAsm( "ldy #38", 2, false );
 
-      addAsm( "FINPUT:", 0, true );
+      //addAsm( "FINPUT:", 0, true );
       addAsm( "sty MAXCHARS", 3, false );
-      addAsm( "stx CHECKALLOWED+1", 3, false ); // maybe these should be 3 byte instructions?
+      addAsm( "stx CHECKALLOWED+1", 3, false ); 
       addAsm( "sta CHECKALLOWED+2", 3, false );
 
       addAsm("lda #$00", 2, false );
@@ -6369,12 +6447,14 @@ int main(int argc, char *argv[])
 
       addAsm("INPUTGET:", 0, true );
       addAsm("jsr $FFE4", 3, false );
+
+      
       //addAsm("beq INPUTGET", 2, false );
       addAsm(".BYTE #$F0, #$FB", 2, false );
       addAsm("sta LASTCHAR", 3, false );
 
       addAsm("cmp #$14; Delete", 2, false );
-      addAsm(".BYTE #$F0, #$38", 2, false );
+      addAsm(".BYTE #$F0, #$39", 2, false );
       //addAsm("beq DELETE", 2, false );
       addAsm("cmp #$0d ;Return", 2, false );
       //addAsm("beq INPUTDONE", 2, false );
@@ -6382,8 +6462,9 @@ int main(int argc, char *argv[])
       addAsm("ldx #$00", 2, false );
       addAsm("CHECKALLOWED:", 0, true );
       addAsm("lda $FFFF,x ;Overwritten", 3, false );
-      addAsm("beq INPUTGET;Reached end of list (NULL)", 2, false );
 
+      //addAsm("beq INPUTGET;Reached end of list (NULL)", 2, false );
+      addAsm(".BYTE #$F0, #$E8", 2, false );
       addAsm("cmp LASTCHAR", 3, false );
       //addAsm("beq INPUTOK;Match found", 2, false );
       addAsm(".BYTE #$F0, #$04", 2, false );
@@ -6405,7 +6486,7 @@ int main(int argc, char *argv[])
      
       addAsm("jmp INPUTGET", 3, false );
 
-      //addAsm("INPUTDONE:", 0, true );
+      addAsm("INPUTDONE:", 0, true );
       addAsm("ldy INPUTY", 3, false );
       addAsm("lda #$00", 2, false );
       addAsm("sta GOTINPUT,y   ;Zero-terminate", 3, false );
@@ -6413,20 +6494,24 @@ int main(int argc, char *argv[])
       addAsm("RTS" );	
       addAsm("DELETE:", 0, true );
       addAsm("lda INPUTY", 3, false );
-      addAsm("bne DELETEOK", 2, false );
+      addAsm(".BYTE #$D0, #$03", 2, false );
+      //addAsm("bne DELETEOK", 2, false );
       addAsm("jmp INPUTGET", 3, false );
-      addAsm("DELETEOK:", 0, true );
+
+      
+      //addAsm("DELETEOK:", 0, true );
       addAsm("dec INPUTY", 3, false );
       addAsm("ldy INPUTY", 3, false );
       addAsm("lda #$00", 2, false );
-      addAsm("sta GOTINPUT,y:", 3, false );
+      addAsm("sta GOTINPUT,y", 3, false );
       addAsm("lda #$14", 2, false );
       addAsm("jsr $ffd2", 3, false );
       addAsm("jmp INPUTGET", 3, false );
 
 
       addAsm("TEXT:", 0, true );
-      //             123456789 123456789 123456789 123456789 123456789 
+      // these are the acceptable characters for scanf
+      //              123456789 123456789 123456789 123456789 123456789 
       addAsm(".BYTE \" ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890.,-+!#$%&()*\"", 49, false );
       addAsm(".BYTE 0", 1, false );
       addAsm("MAXCHARS:", 0, true );
