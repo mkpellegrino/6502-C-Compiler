@@ -1403,7 +1403,7 @@
 
 //%parse-param { FILE* fp }
 %token VOID 
-%token <nd_obj> tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tSTRTOFLOAT tTOFLOAT tTOUINT tDEC tINC tROL tROR tASL tLSR tJSR tLDA tASL tSPRITESET tSPRITEON tSPRITEOFF tSPRITETOGGLE tRND tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER tPRINTS PRINTFF SCANFF INT FLOAT CHAR WHILE FOR IF ELSE TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE  UNARY INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL
+%token <nd_obj> tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tSTRTOFLOAT tSTRTOWORD tTOFLOAT tTOUINT tDEC tINC tROL tROR tASL tLSR tJSR tLDA tASL tSPRITESET tSPRITEON tSPRITEOFF tSPRITETOGGLE tRND tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER tPRINTS PRINTFF SCANFF INT FLOAT CHAR WHILE FOR IF ELSE TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE tSQRT UNARY INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL
 %type <nd_obj> headers main body return function datatype statement arithmetic relop program else
    %type <nd_obj2> init value expression
       %type <nd_obj3> condition
@@ -2175,11 +2175,6 @@ body: WHILE
       addAsm( string( "JMP " ) + getLabel( label_vector[label_major]-1,false), 3, false );
 
       popScope();
-      //addAsm( "LDA #$00", 2, false );
-      ////addAsm( "STA $02", 2, false );
-      //addAsm( "LDA #$01", 2, false );
-      //addAsm( "STA $03", 2, false );
-      //addAsm( "JSR PRN", 3, false); printf_is_needed = true;
     }
   else if( isFloatID($3.name) )
     {
@@ -3099,7 +3094,7 @@ statement: datatype ID init
       addAsm( string( "LDY #$" ) + toHex(get_word_H(current_variable_base_address)) + string("; ADDR_H" ), 2, false );
       addAsm( "JSR $BBD4; FAC -> MEM", 3, false );
     }
-  if(isFloatDT($1.name) && isFloatID($2.name) && isXA($3.name))
+  else if(isFloatDT($1.name) && isFloatID($2.name) && isXA($3.name))
     {
       int src_addr_L = get_word_L(hexToDecimal(stripFirst($3.name)));
       int src_addr_H = get_word_H(hexToDecimal(stripFirst($3.name)));
@@ -3116,7 +3111,7 @@ statement: datatype ID init
       addAsm( string("LDY #$") + toHex(dst_addr_H), 3, false );
       addAsm( "JSR $BBD4; FAC -> MEM", 3, false );
     }
-  if(isFloatDT($1.name) && isFloatID($2.name) && isFloatID($3.name))
+  else if(isFloatDT($1.name) && isFloatID($2.name) && isFloatID($3.name))
     {
       int src_addr_L = get_word_L(hexToDecimal(stripFirst($3.name)));
       int src_addr_H = get_word_H(hexToDecimal(stripFirst($3.name)));
@@ -3337,9 +3332,9 @@ statement: datatype ID init
     }
   else
     {
-      cerr << getTypeOf( $2.name ) << endl;
+      //cerr << getTypeOf( $2.name ) << endl;
       string msg = string( "Undefined variable: ") + string( $1.name ) + string(" ") +  string( $2.name ) + string("=") + string( $3.name );
-      //addCompilerMessage( msg, 3);
+      addCompilerMessage( msg, 3);
     }
 };
 | datatype ID '[' NUMBER ']'
@@ -5143,6 +5138,47 @@ expression: expression arithmetic expression
     }
   strcpy($$.name, "A" );
 };
+| tSTRTOWORD '(' ID ')'
+{
+  if( isUintID($3.name) )
+    {
+      addParserComment( "expression: tSTRTOWORD '(' ID ')'" );
+      int addr = getAddressOf($3.name);
+
+      // save 7A and 7B
+      addAsm( "LDA $7A", 2, false );
+      addAsm( "PHA" );
+      addAsm( "LDA $7B", 2, false );
+      addAsm( "PHA" );
+
+      // point chrget to buffer
+      addAsm( string( "LDA #$" ) + toHex(get_word_L(addr)), 2, false  );
+      addAsm( "STA $7A", 2, false );
+      addAsm( string( "LDA #$" ) + toHex(get_word_H(addr)), 2, false  );
+      addAsm( "STA $7B", 2, false );
+
+      addAsm( "JSR $79", 3, false );
+      addAsm( "JSR $BCF3; STR -> FAC", 3, false );
+
+      // restore 7A and 7B
+      addAsm( "PLA" );
+      addAsm( "STA $7B", 2, false );
+      addAsm( "PLA" );
+      addAsm( "STA $7A", 2, false );
+
+      // Now turn the FAC -> Word
+      addAsm( "JSR $B1AA", 3, false );
+      addAsm( "TAX" );
+      addAsm( "TYA" );
+      //addAsm( "JSR $AABC; FAC -> CRT (for debugging purposes)", 3, false );
+    }
+  else
+    {
+      addCompilerMessage( "only UINT buffers can be strings", 3 );
+    }
+  strcpy($$.name, "XA" );
+
+};
 | tSTRTOFLOAT '(' ID ')'
 {
   if( isUintID($3.name) )
@@ -5507,6 +5543,22 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
     {
       addCompilerMessage( "Cannot return 'lo-byte' of specified type", 3 );
     }
+};
+| tSQRT '(' ID ')'
+{
+  int addr = getAddressOf( $3.name );
+  if( isFloatID( $3.name ) )
+    {
+      addAsm( string( "LDA #$" ) + toHex(get_word_L(addr)), 2, false  );
+      addAsm( string( "LDY #$" ) + toHex(get_word_H(addr)), 2, false  );
+      addAsm( "JSR $BBA2; MEM -> FAC", 3, false ); // FP ->FAC
+      addAsm( "JSR $BF71; SQRT(FAC) -> FAC", 3, false ); // sqrt
+    }
+  else
+    {
+      addCompilerMessage( "sqrt takes a float as its argument", 3 );
+    }
+  strcpy($$.name, "FAC");
 };
 | tPEEK '(' HEX_NUM ')'
 {
