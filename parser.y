@@ -1868,7 +1868,59 @@ body: WHILE
       addAsm( string( "STA $" ) + toHex( sprite_address ), 3, false );
       // need to put the high byte
       // in 0xD010 as a bit
-      addAsm( string( "LDA $" ) + toHex(addr+1), 3, false );
+      // 2023 01 01 - mkpellegrino
+      //we should _really_ OR the sprite number's bit with the current value
+      //addAsm( string("LDX $") + toHex(addr+1), 3, false );
+      //addAsm( "CPX #$00", 2, false );
+      //addAsm( ".BYTE #$F0, #$08", 2, false );
+      
+      // load the Hibyte into A
+      addAsm( string("LDA $") + toHex(addr+1), 3, false );
+      addAsm( "STA $2A", 2, false );
+      addAsm( "LDA #$01", 2, false );
+      // find out which sprite number we're talking about
+      int sprite_number = atoi( stripFirst($3.name).c_str() );
+      switch( sprite_number )
+	{
+	case 7:
+	  addAsm( "ASL" );
+	  addAsm( "ASL $2A", 2, false );
+	case 6:
+	  addAsm( "ASL" );
+	  addAsm( "ASL $2A", 2, false );
+	case 5:
+	  addAsm( "ASL" );
+	  addAsm( "ASL $2A", 2, false );
+	case 4:
+	  addAsm( "ASL" );
+	  addAsm( "ASL $2A", 2, false );
+	case 3:
+	  addAsm( "ASL" );
+	  addAsm( "ASL $2A", 2, false );
+	case 2:
+	  addAsm( "ASL" );
+	  addAsm( "ASL $2A", 2, false );
+	case 1:
+	  addAsm( "ASL" );
+	  addAsm( "ASL $2A", 2, false );
+	case 0:
+	  break;
+	default:
+	  addCompilerMessage( "Non-sprite number used as IMMEDIATE value\nRange is: 0 to 7", 3 );
+	  break;
+	}
+
+      // now A contains the correct bit
+      //addAsm( "PHA" );
+      
+      addAsm( "EOR #$FF", 2, false );
+      addAsm( "AND $D010", 3, false );
+      addAsm( "STA $A7", 2, false );  // Zero Page 0xA7 is used during RS232 comms
+      //addAsm( "PLA" );
+      //addAsm( string("LDA $") + toHex(addr+1), 3, false );
+      addAsm( "LDA $2A", 2, false );
+      addAsm( "CLC" );
+      addAsm( "ADC $A7", 2, false );
       addAsm( "STA $D010", 3, false );
     }
   else if( (isIntIMM($3.name) && isIntID($5.name)) ||
@@ -3466,6 +3518,10 @@ statement: datatype ID init
     {
       addAsm( string( "INC $") +  toHex( a ), size_of_instruction, false );
     }
+  else
+    {
+      addCompilerMessage( "inc(ID) error - invalid argument type", 3 );
+    } 
 };
 | tDEC '(' ID ')'
 {
@@ -3501,6 +3557,11 @@ statement: datatype ID init
     {
       addAsm( string( "DEC $") +  toHex( a ), size_of_instruction, false );
     }
+  else
+    {
+      addCompilerMessage( "dec(ID) error - invalid argument type", 3 );
+    } 
+
 };
 | tROL '(' ID ')'
 {
@@ -3524,7 +3585,6 @@ statement: datatype ID init
       if( a+1 > 255 ) size_of_instruction = 3;
       addAsm( string("ROL $") + toHex(a+1), size_of_instruction, false );
     }
-
   else addCompilerMessage( "ROL of type not permitted... yet", 3 );
 };
 | tROR '(' ID ')'
@@ -3656,7 +3716,12 @@ statement: datatype ID init
     {
       addDebugComment( string($1.name) + string( " = " ) + string($2.name) );
       addAsm( string("LDA #$") + toHex( atoi($2.name) ), 2, false );
-    }  
+    }
+  else
+    {
+      addCompilerMessage( "ID initialisation error - invalid initialiser", 3 );
+    } 
+
 };
 
 
@@ -3884,6 +3949,8 @@ expression: expression arithmetic expression
       else if( string($2.name) == string("/"))
 	{
 	  addComment( "If Y is ZERO at this point, we'll be dividing by 0 (or at least attempting to)" );
+	  float f = atof( stripFirst($3.name).c_str() );
+	  if( f == 0 ) addCompilerMessage( "error - division by 0", 3 );
 	  addAsm( "JSR $BB0F; RAM/FAC", 3, false );
 	}
       FAC = 1;
@@ -5113,7 +5180,7 @@ expression: expression arithmetic expression
     }
   else
     {
-      addCompilerMessage( "Bitwise AND (&) not implemented for type", 3 );
+      addCompilerMessage( "Bitwise AND (&) not implemented for type (yet)", 3 );
     }
 };
 | tTOUINT '(' expression ')'
@@ -6801,3 +6868,20 @@ void yyerror(const char* msg)
 /* poke V+39+sprite#, colour */
 /* poke V+2*SPRITE#, X  -- x position */
 /* poke V+(2*SPRITE#)+1, Y -- y position */
+
+/* multicolout hi-res screen  */
+
+/* setup */
+
+/* poke( 0xD011, 59 ); */
+/* poke( 0xD016, 24 ); */
+/* poke( 0xD018, 24 ); */
+
+/* multicolours: */
+/* 0xD021  = 00 */ 
+/* 0x0400H = 01 */
+/* 0x0400L = 10 */
+/* 0xD800  = 11 */
+
+/* bit data */
+/* 0x2000 */
