@@ -36,6 +36,7 @@
   bool div10_is_needed=false;
   bool return_addresses_needed=true;
   bool umul_is_needed=false;
+  bool mul16_is_needed=false;
   bool cls_is_needed=false;
   bool memcpy_is_needed=false;
   bool mobcpy_is_needed=false;
@@ -1733,6 +1734,7 @@ body: WHILE
       addAsm( string( "STA $" ) + toHex( sprite_address ), 3, false );
       // need to put the high byte
       // in 0xD010 as a bit
+      addCompilerMessage( "Use spritex( UintIMM, Word ) instead", 0 );
       addAsm( string( "LDA $" ) + toHex(addr+1), 3, false );
       addAsm( "STA $D010", 3, false );
       
@@ -3608,6 +3610,7 @@ statement: datatype ID init
       addAsm( string("ROR $") + toHex(a+1), size_of_instruction, false );
       if( a > 255 ) size_of_instruction = 3;
       addAsm( string("ROR $") + toHex(a), size_of_instruction, false );
+      addAsm( "CLC" ); // 1/2/23
     }
   else addCompilerMessage( "ROR of type not permitted... yet", 3 );
   
@@ -4054,7 +4057,7 @@ expression: expression arithmetic expression
 	  addAsm( "TAX" );
 	  addAsm( "PLA" );
 	}
-      if( string($2.name) == string( "-" ) )
+      else if( string($2.name) == string( "-" ) )
 	{
 	  addComment( "WordID - (IntIMM || UintIMM)" );      
 	  int size_of_instruction = 3;
@@ -4077,6 +4080,38 @@ expression: expression arithmetic expression
 	  addAsm( "TAX" );
 	  addAsm( "PLA" );
 	}
+      else if( string($2.name) == string("*") )
+	{
+	  int addr_op1 = hexToDecimal($1.name);      
+	  int addr_op2 = hexToDecimal($3.name);
+      
+	  addComment( "WordID * (IntIMM || UintIMM)" );
+	  mul16_is_needed = true;
+	  
+	  addAsm( string("LDA $") + toHex(addr_op1), 3, false );
+	  addAsm( "STA $FC", 2, false );
+	  addAsm( string("LDA $") + toHex(addr_op1+1), 3, false );
+	  addAsm( "STA $FB", 2, false );
+
+	  addAsm( string("LDA #$") + toHex(atoi(stripFirst($3.name).c_str())), 2, false );
+	  addAsm( "STA $FE", 2, false );
+	  addAsm( string("LDA #$00"), 2, false );
+	  addAsm( "STA $FD", 2, false );
+
+	  addAsm( "JSR MUL16", 3, false );
+	  addAsm( "LDA MUL16R", 3, false );
+	  addAsm( "LDX MUL16R+1", 3, false );
+	  
+	}
+      else if( string($2.name) == string("/") )
+	{
+	  addComment( "WordID / (IntIMM || UintIMM)" );
+	}
+      else 
+	{
+	  addCompilerMessage( "WORD/(IntIMM || UintIMM) not yet implemented", 3 );
+	}
+
       strcpy($$.name, "XA" );
     }
   else if( isWordID($1.name) && isWordID($3.name) )
@@ -5578,6 +5613,10 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
 {
   addAsm( "LDA $D01F;\t\t\tMOB-Background Collision Register", 3, false );
   addAsm( string( "AND " ) + toHex(atoi(stripFirst($3.name).c_str())), 3, false );
+  //addAsm( "PHA" );
+  //addAsm( "LDA #$00", 2, false );
+  //addAsm( "STA $D01F", 3, false );
+  //addAsm( "PLA" );
   strcpy($$.name, "A" );
 };
 | tGETH '(' ID ')'
@@ -6125,6 +6164,42 @@ int main(int argc, char *argv[])
       addAsm( "PHA" );
       addAsm( "RTS" );
 
+    }
+  if( mul16_is_needed )
+    {
+      // 16-bit multiplication
+      // NUM1  * NUM2  = RESULT
+      // FC/FB * FE/FD = 03/02
+      addAsm( "MUL16R:", 0, true );
+      addAsm( ".BYTE #$00, #$00, #$00, #$00" );
+      addAsm( "MUL16:", 0, true );
+      addAsm( "LDA #$00", 2, false );
+      addAsm( "STA MUL16R", 3, false );
+      addAsm( "STA MUL16R+1", 3, false );
+      addAsm( "STA MUL16R+2", 3, false );
+      addAsm( "STA MUL16R+3", 3, false );
+      addAsm( "LDX #$10", 2, false );
+      // label 1
+      addAsm( "LSR $FD", 2, false );
+      addAsm( "ROR $FE", 2, false );
+      addAsm( ".BYTE #$90, #$0D", 2, false ); // BCC Label 2
+      addAsm( "TAY" );
+      addAsm( "CLC" );
+      addAsm( "LDA $FC", 2, false );
+      addAsm( "ADC MUL16R+2", 3, false );
+      addAsm( "STA MUL16R+2", 3, false );
+      addAsm( "TYA" );
+      addAsm( "ADC $FB", 2, false );
+      // label 2
+      addAsm( "ROR A", 1, false );
+      addAsm( "ROR MUL16R+2", 3, false );
+      addAsm( "ROR MUL16R+1", 3, false );
+      addAsm( "ROR MUL16R", 3, false );
+      addAsm( "DEX" );
+      addAsm( ".BYTE #$D0, #$E0", 2, false ); // BNE Label 1
+      addAsm( "STA MUL16R+3", 3, false );
+      addAsm( "RTS" );
+      
     }
   if( umul_is_needed )
     {
