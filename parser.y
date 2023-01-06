@@ -37,6 +37,7 @@
   bool return_addresses_needed=true;
   bool umul_is_needed=false;
   bool mul16_is_needed=false;
+  bool div16_is_needed=false;
   bool cls_is_needed=false;
   bool memcpy_is_needed=false;
   bool mobcpy_is_needed=false;
@@ -1404,7 +1405,7 @@
 
 //%parse-param { FILE* fp }
 %token VOID 
-%token <nd_obj> tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tSTRTOFLOAT tSTRTOWORD tTOFLOAT tTOUINT tDEC tINC tROL tROR tASL tLSR tJSR tLDA tASL tSPRITESET tSPRITEON tSPRITEOFF tSPRITETOGGLE tRND tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER tPRINTS PRINTFF SCANFF INT FLOAT CHAR WHILE FOR IF ELSE TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE tSQRT UNARY INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL
+%token <nd_obj> tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tSTRTOFLOAT tSTRTOWORD tTOFLOAT tTOUINT tDEC tINC tROL tROR tASL tLSR tGETXY tPLOT tJSR tLDA tASL tSPRITESET tSPRITEON tSPRITEOFF tSPRITETOGGLE tRND tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER tPRINTS PRINTFF SCANFF INT FLOAT CHAR WHILE FOR IF ELSE TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE tSQRT UNARY INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL
 %type <nd_obj> headers main body return function datatype statement arithmetic relop program else
    %type <nd_obj2> init value expression
       %type <nd_obj3> condition
@@ -2524,19 +2525,25 @@ body: WHILE
 };
 | tPOKE '(' HEX_NUM ',' NUMBER ')' ';'
 {
-  if( atoi(stripFirst(stripFirst($3.name)).c_str()) > 65535 ) addCompilerMessage( "memory location out of range", 2 );
-  if( atoi(stripFirst(stripFirst($3.name)).c_str()) < 0 ) addCompilerMessage( "memory location out of range", 2 );
+  int instr_size = 2;
+  if( hexToDecimal(stripFirst(stripFirst($3.name)).c_str()) > 255 ) instr_size = 3;
+  if( hexToDecimal(stripFirst(stripFirst($3.name)).c_str()) > 65535 ) addCompilerMessage( "memory location out of range", 2 );
+  if( hexToDecimal(stripFirst(stripFirst($3.name)).c_str()) < 0 ) addCompilerMessage( "memory location out of range", 2 );
   addAsm(string("LDA #$") + toHex(atoi($5.name)) , 2, false );
-  addAsm(string("STA $") + stripFirst(stripFirst($3.name)), 3, false );
+  addAsm(string("STA $") + stripFirst(stripFirst($3.name)), instr_size, false );
 }
 
 | tPOKE '(' HEX_NUM ',' ID ')' ';'
 {
+
+  int instr_size = 2;
+  if( hexToDecimal(stripFirst(stripFirst($3.name)).c_str()) > 255 ) instr_size = 3;
+  if( hexToDecimal(stripFirst(stripFirst($3.name)).c_str()) > 65535 ) addCompilerMessage( "memory location out of range", 2 );
+  if( hexToDecimal(stripFirst(stripFirst($3.name)).c_str()) < 0 ) addCompilerMessage( "memory location out of range", 2 );
+
   int addr2 = getAddressOf($5.name);
-  if( atoi(stripFirst(stripFirst($3.name)).c_str()) > 65535 ) addCompilerMessage( "memory location out of range", 2 );
-  if( atoi(stripFirst(stripFirst($3.name)).c_str()) < 0 ) addCompilerMessage( "memory location out of range", 2 );
   addAsm( string( "LDA $" ) + toHex( addr2 ) + string( "; ") + getNameOf( addr2 ) , 3, false );
-  addAsm(string("STA $") + stripFirst(stripFirst($3.name)), 3, false );
+  addAsm(string("STA $") + stripFirst(stripFirst($3.name)), instr_size, false );
 };
 | ID '(' expression ')' ';'
 {
@@ -3150,6 +3157,7 @@ statement: datatype ID init
     }
   else if(isFloatDT($1.name) && isFloatID($2.name) && isXA($3.name))
     {
+      addComment( "FLOAT FloatID XA" );
       int src_addr_L = get_word_L(hexToDecimal(stripFirst($3.name)));
       int src_addr_H = get_word_H(hexToDecimal(stripFirst($3.name)));
 
@@ -3167,6 +3175,8 @@ statement: datatype ID init
     }
   else if(isFloatDT($1.name) && isFloatID($2.name) && isFloatID($3.name))
     {
+      addComment( "FLOAT FloatID FLoatID" );
+
       int src_addr_L = get_word_L(hexToDecimal(stripFirst($3.name)));
       int src_addr_H = get_word_H(hexToDecimal(stripFirst($3.name)));
 
@@ -3182,17 +3192,21 @@ statement: datatype ID init
     }
   else if(isFloatDT($1.name) && isFloatID($2.name) && isFAC($3.name))
     {
-      addComment( "datatype ID init (FAC)" );
+      addComment( "FLOAT FloatID FAC" );
       addAsm( string( "LDX #$" ) + toHex(get_word_L(current_variable_base_address) ), 2, false );
       addAsm( string( "LDY #$" ) + toHex(get_word_H(current_variable_base_address) ), 2, false );
       addAsm( "JSR $BBD4; FAC -> RAM", 3, false );
     }
   else if(isFloatDT($1.name) && isFloatID($2.name) && isFloatIMM($3.name))
     {
+      addComment( "FLOAT FloatID FLoatIMM" );
+
       inlineFloat($3.name, current_variable_base_address );
     }
   else if(isIntDT($1.name) && isIntID($2.name) && isIntIMM($3.name))
     {
+      addComment( "INT IntID IntIMM" );
+
       int v = atoi( stripFirst($3.name).c_str() );
       if( v < 0 ) v = twos_complement(v);
       addAsm(string("LDA #$") + toHex(v), 2, false );
@@ -3200,34 +3214,46 @@ statement: datatype ID init
     }
   else if(isUintDT($1.name) && isUintID($2.name) && isA($3.name))
     {
-      addAsm(string("STA $") + toHex( current_variable_base_address) + string("; ") + string( getNameOf( getIndexOf($3.name))), 3, false );
+      addComment( "UINT UintID A" );
+      addAsm(string("STA $") + toHex( current_variable_base_address), 3, false );
     }
   else if(isUintDT($1.name) && isUintID($2.name) && isUintID($3.name))
     {
-      addAsm(string("LDA ") + string($3.name) + string("; ") + string( getNameOf( getIndexOf($3.name))), 3, false );
-      addAsm(string("STA $") + toHex( current_variable_base_address) + string("; ") + string( getNameOf( getIndexOf($3.name))), 3, false );
+      addComment( "UINT UintID UintID" );
+      addAsm(string("LDA ") + string($3.name), 3, false );
+      addAsm(string("STA $") + toHex( current_variable_base_address), 3, false );
     }
   else if(isUintDT($1.name) && isUintID($2.name) && isIntID($3.name))
     {
-      addAsm(string("LDA ") + string($3.name) + string("; ") + string( getNameOf( getIndexOf($3.name))), 3, false );
-      addAsm(string("STA $") + toHex( current_variable_base_address) + string("; ") + string( getNameOf( getIndexOf($3.name))), 3, false );
+      addComment( "UINT UintID IntID" );
+
+      addAsm(string("LDA ") + string($3.name), 3, false );
+      addAsm(string("STA $") + toHex( current_variable_base_address), 3, false );
     }
     else if(isIntDT($1.name) && isIntID($2.name) && isUintID($3.name))
     {
-      addAsm(string("LDA ") + string($3.name) + string("; ") + string( getNameOf( getIndexOf($3.name))), 3, false );
-      addAsm(string("STA $") + toHex( current_variable_base_address) + string("; ") + string( getNameOf( getIndexOf($3.name))), 3, false );
+      addComment( "INT IntID UintID" );
+
+      addAsm(string("LDA ") + string($3.name), 3, false );
+      addAsm(string("STA $") + toHex( current_variable_base_address), 3, false );
     }
   else if(isIntDT($1.name) && isIntID($2.name) && isA($3.name))
     {
-      addAsm(string("STA $") + toHex( current_variable_base_address) + string("; ") + string( getNameOf( getIndexOf($3.name))), 3, false );
+      addComment( "INT IntID A" );
+
+      addAsm(string("STA $") + toHex( current_variable_base_address), 3, false );
     }
   else if((isUintDT($1.name)||isIntDT($1.name)) && (isUintID($2.name)||isIntID($2.name)) && isXA($3.name))
     {
+      addComment( "UINT|INT IntID|UintID XA" );
+
       addCompilerMessage("Initialising a 1 byte value to a 2 byte value... losing High Byte",0);
-      addAsm( string("STA $") + toHex( current_variable_base_address) + string("; ") + string( getNameOf( getIndexOf($3.name))), 3, false );
+      addAsm( string("STA $") + toHex( current_variable_base_address), 3, false );
     }
   else if(isUintDT($1.name) && isUintID($2.name) && isUintIMM($3.name) )
     {
+      addComment( "UINT UintID UintIMM" );
+
       int v = atoi( stripFirst($3.name).c_str() );
       if( v < 0 )
 	{
@@ -3239,12 +3265,16 @@ statement: datatype ID init
     }
   else if( isUintDT($1.name) && isUintID($2.name) && isUintIMM($3.name))
     {
+      addComment( "UINT UintID UintIMM" );
+
       int v = atoi( stripFirst($3.name).c_str() );
       addAsm(string("LDA #$") + toHex(v), 2, false );
       addAsm(string("STA $") + toHex( current_variable_base_address) + string("; ") + string( getNameOf( getIndexOf($3.name))), 3, false );
     }
   else if(isUintDT($1.name) && (isUintID($2.name)||isIntID($2.name)) && isIntIMM($3.name) )
     {
+      addComment( "UINT UintID||IntID IntIMM" );
+
       int v = atoi( stripFirst($3.name).c_str() );
       if( v < 0 ) v = twos_complement(v);      
       addAsm( string("LDA #$") + toHex(v) , 2, false );
@@ -3615,6 +3645,51 @@ statement: datatype ID init
   else addCompilerMessage( "ROR of type not permitted... yet", 3 );
   
 };
+| tPLOT '(' expression ',' expression ')'
+{
+
+
+  if( isWordID( $3.name ) && (isWordID( $5.name )||isUintID($5.name) ) )
+    {
+      int x_addr = getAddressOf($3.name);
+      int y_addr = getAddressOf($5.name);
+      
+      // X Low
+      addAsm( string("LDA $") + toHex(x_addr), 3, false );
+      addAsm( "STA $FA", 2, false );
+      
+      // X High
+      addAsm( string("LDA $") + toHex(x_addr+1), 3, false );
+      addAsm( "STA $FB", 2, false );
+
+      // Y
+      addAsm( string("LDA $") + toHex(y_addr), 3, false );
+      addAsm( "STA $FC", 2, false );
+      addAsm( "JSR PLOT", 3, false );
+    }
+  else if( isUintID( $3.name ) && (isWordID( $5.name )||isUintID($5.name) ) )
+    {
+      int x_addr = getAddressOf($3.name);
+      int y_addr = getAddressOf($5.name);
+      
+      // X Low
+      addAsm( string("LDA $") + toHex(x_addr), 3, false );
+      addAsm( "STA $FA", 2, false );
+      
+      // X High
+      addAsm( string("LDA #$00"), 2, false );
+      addAsm( "STA $FB", 2, false );
+
+      // Y
+      addAsm( string("LDA $") + toHex(y_addr), 3, false );
+      addAsm( "STA $FC", 2, false );
+      addAsm( "JSR PLOT", 3, false );
+    }
+  else
+    {
+      addCompilerMessage( "OOPS!" );
+    }
+};
 | tLSR '(' ID ')'
 {
   if( isUintID($3.name) || isIntID($3.name)  )
@@ -3768,6 +3843,11 @@ init: '=' expression
       addCompilerMessage( "initializing an unknown type with accumulator", 0 );
       strcpy($$.name, "A" );
     }
+  else if( isFloatIMM($2.name) )
+    {
+      addComment( "FloatIMM" );
+      strcpy($$.name, $2.name);
+    }
   else
     {
       strcpy($$.name, $2.name);
@@ -3778,13 +3858,7 @@ init: '=' expression
 
   
   /*else */
-  if( isFloatIMM($2.name) )
-    {
-      addComment( "FloatIMM" );
-
-      strcpy($$.name, $2.name);
-    }
-  else if( isUintIMM($2.name) )
+  if( isUintIMM($2.name) )
     {
       addDebugComment( "else if( isUintIMM($2.name) )");
       int v = atoi( stripFirst($2.name).c_str() );
@@ -4030,6 +4104,76 @@ expression: expression arithmetic expression
       inlineFloat( string( "f" ) + to_string(result), 105);
       FAC = 1;
     }
+  else if( isWordID($1.name) && (isIntID($3.name) || isUintID($3.name)) )
+    {
+
+      if( string($2.name) == string("*") )
+	{
+	  int addr_op1 = hexToDecimal($1.name);
+	  int addr_op2 = hexToDecimal($3.name);
+	  
+	  addComment( "WordID * IntID|UintID" );
+	  mul16_is_needed = true;
+	  
+	  addAsm( string("LDA $") + toHex(addr_op1), 3, false );
+	  addAsm( "STA $FB", 2, false );
+	  addAsm( string("LDA $") + toHex(addr_op1+1), 3, false );
+	  addAsm( "STA $FC", 2, false );
+	  
+	  addAsm( string("LDA $") + toHex(addr_op2), 3, false );
+	  addAsm( "STA $FD", 2, false );
+	  addAsm( string("LDA #$00"), 2, false );
+	  addAsm( "STA $FE", 2, false );
+
+	  addAsm( "JSR MUL16", 3, false );
+	  addAsm( "LDA MUL16R", 3, false );
+	  addAsm( "LDX MUL16R+1", 3, false );
+	  
+	}
+      else if( string($2.name) == string("/") )
+	{
+	  addComment( "WordID / IntID|UintID" );
+	  int addr_op1 = hexToDecimal($1.name);
+	  int addr_op2 = hexToDecimal($3.name);
+
+	  div16_is_needed = true;
+	  
+	  addAsm( string("LDA $") + toHex(addr_op1), 3, false );
+	  addAsm( "STA $FB", 2, false );
+	  addAsm( string("LDA $") + toHex(addr_op1+1), 3, false );
+	  addAsm( "STA $FC", 2, false );
+	  
+	  addAsm( string("LDA #$00"), 2, false );
+	  addAsm( "STA $FE", 2, false );
+	  addAsm( string("LDA $") + toHex(addr_op2), 3, false );
+	  addAsm( "STA $FD", 2, false );
+
+	  addAsm( "JSR DIV16", 3, false );
+	  addAsm( "LDA $FB", 2, false );
+	  addAsm( "LDX $FC", 2, false );
+	}
+      else if( string($2.name) == string("+") )
+	{
+	  int addr_op1 = hexToDecimal($1.name);
+	  int addr_op2 = hexToDecimal($3.name);
+	  addComment( "WordID + IntID|UintID" );
+
+	  addAsm( string("LDA $") + toHex(addr_op2), 3, false );
+	  addAsm( string("ADC $") + toHex(addr_op1), 3, false );
+	  addAsm( "TAY" );
+	  addAsm( string("LDA #$00"), 2, false );
+	  addAsm( string("ADC $") + toHex(addr_op1+1), 3, false );
+	  addAsm( "TAX" );
+	  addAsm( "TYA" );
+	}
+      else
+	{
+	  addCompilerMessage("- is not yet implemented for these types.", 3 );
+	}
+
+      strcpy($$.name, "XA" );
+
+    }
   else if( isWordID($1.name) && (isIntIMM($3.name)||isUintIMM($3.name)) )
     {
       int a = getAddressOf($1.name);
@@ -4082,21 +4226,20 @@ expression: expression arithmetic expression
 	}
       else if( string($2.name) == string("*") )
 	{
-	  int addr_op1 = hexToDecimal($1.name);      
-	  int addr_op2 = hexToDecimal($3.name);
-      
+	  int addr_op1 = hexToDecimal($1.name);
+	  
 	  addComment( "WordID * (IntIMM || UintIMM)" );
 	  mul16_is_needed = true;
 	  
 	  addAsm( string("LDA $") + toHex(addr_op1), 3, false );
-	  addAsm( "STA $FC", 2, false );
-	  addAsm( string("LDA $") + toHex(addr_op1+1), 3, false );
 	  addAsm( "STA $FB", 2, false );
+	  addAsm( string("LDA $") + toHex(addr_op1+1), 3, false );
+	  addAsm( "STA $FC", 2, false );
 
 	  addAsm( string("LDA #$") + toHex(atoi(stripFirst($3.name).c_str())), 2, false );
-	  addAsm( "STA $FE", 2, false );
-	  addAsm( string("LDA #$00"), 2, false );
 	  addAsm( "STA $FD", 2, false );
+	  addAsm( string("LDA #$00"), 2, false );
+	  addAsm( "STA $FE", 2, false );
 
 	  addAsm( "JSR MUL16", 3, false );
 	  addAsm( "LDA MUL16R", 3, false );
@@ -4123,19 +4266,71 @@ expression: expression arithmetic expression
 
       if( string($2.name) == string( "+" ) )
 	{
+	  addComment( "WordID + WordID" );
+
 	  addAsm( string("LDA $") + toHex(addr1), 3, false );
 	  addAsm( string("ADC $") + toHex(addr2), 3, false );
-	  addAsm( "TAX" );
+	  addAsm( "TAY" );
 	  addAsm( string("LDA $") + toHex(addr1 + 1), 3, false );
 	  addAsm( string("ADC $") + toHex(addr2 + 1), 3, false );
+	  addAsm( "TAX" );
+	  addAsm( "TYA" );
 	}
-      if( string($2.name) == string( "-" ) )
+      else if( string($2.name) == string( "-" ) )
 	{
+	  addComment( "WordID - WordID" );
 	  addAsm( string("LDA $") + toHex(addr1), 3, false );
 	  addAsm( string("SBC $") + toHex(addr2), 3, false );
-	  addAsm( "TAX" );
+	  addAsm( "TAY" );
 	  addAsm( string("LDA $") + toHex(addr1 + 1), 3, false );
 	  addAsm( string("SBC $") + toHex(addr2 + 1), 3, false );
+	  addAsm( "TAX" );
+	  addAsm( "TYA" );
+	}
+      else if( string($2.name) == string("*") )
+	{
+	  int addr_op1 = hexToDecimal($1.name);
+	  int addr_op2 = hexToDecimal($3.name);
+	  
+	  addComment( "WordID * WordID" );
+	  mul16_is_needed = true;
+	  
+	  addAsm( string("LDA $") + toHex(addr_op1), 3, false );
+	  addAsm( "STA $FB", 2, false );
+	  addAsm( string("LDA $") + toHex(addr_op1+1), 3, false );
+	  addAsm( "STA $FC", 2, false );
+	  
+	  addAsm( string("LDA $") + toHex(addr_op2), 3, false );
+	  addAsm( "STA $FD", 2, false );
+	  addAsm( string("LDA $") + toHex(addr_op2+1), 3, false );
+	  addAsm( "STA $FE", 2, false );
+
+	  addAsm( "JSR MUL16", 3, false );
+	  addAsm( "LDA MUL16R", 3, false );
+	  addAsm( "LDX MUL16R+1", 3, false );
+	  
+	}
+      else if( string($2.name) == string("/") )
+	{
+	  int addr_op1 = hexToDecimal($1.name);
+	  int addr_op2 = hexToDecimal($3.name);
+
+	  addComment( "WordID / WordID" );
+	  div16_is_needed = true;
+	  
+	  addAsm( string("LDA $") + toHex(addr_op1), 3, false );
+	  addAsm( "STA $FB", 2, false );
+	  addAsm( string("LDA $") + toHex(addr_op1+1), 3, false );
+	  addAsm( "STA $FC", 2, false );
+	  
+	  addAsm( string("LDA $") + toHex(addr_op2), 3, false );
+	  addAsm( "STA $FD", 2, false );
+	  addAsm( string("LDA $") + toHex(addr_op2+1), 3, false );
+	  addAsm( "STA $FE", 2, false );
+
+	  addAsm( "JSR DIV16", 3, false );
+	  addAsm( "LDA $FB", 2, false );
+	  addAsm( "LDX $FC", 2, false );
 	}
       strcpy($$.name, "XA" );
     }
@@ -4171,6 +4366,29 @@ expression: expression arithmetic expression
 	  addAsm( "JSR UMUL", 3, false );
 	  addAsm( "LDA $03", 2, false );
 	}
+      else if( string($2.name) == string("/") )
+	{
+	  int addr_op1 = hexToDecimal($1.name);
+	  int addr_op2 = hexToDecimal($3.name);
+
+	  addComment( "UintID / UintID" );
+	  div16_is_needed = true;
+	  
+	  addAsm( string("LDA $") + toHex(addr_op1), 3, false );
+	  addAsm( "STA $FB", 2, false );
+	  addAsm( "LDA #$00", 2, false ); 
+	  addAsm( "STA $FC", 2, false );
+	  
+	  addAsm( string("LDA $") + toHex(addr_op2), 3, false );
+	  addAsm( "STA $FD", 2, false );
+	  addAsm( "LDA #$00", 2, false ); 
+	  addAsm( "STA $FE", 2, false );
+
+	  addAsm( "JSR DIV16", 3, false );
+	  addAsm( "LDA $FB", 2, false );
+	  addAsm( "LDX $FC", 2, false );
+	}
+
       strcpy($$.name, "A" );
     }
   else if( isUintID( $1.name ) && isIntIMM($3.name) )
@@ -4202,6 +4420,28 @@ expression: expression arithmetic expression
 	  addAsm( "JSR UMUL", 3, false );
 	  addAsm( "LDA $03", 2, false );
 	}
+      else if( string($2.name) == string("/") )
+	{
+	  int addr_op1 = hexToDecimal($1.name);
+	  int op2 = atoi(stripFirst($3.name).c_str());
+
+	  addComment( "UintID / IntIMM" );
+	  div16_is_needed = true;
+	  
+	  addAsm( string("LDA $") + toHex(addr_op1), 3, false );
+	  addAsm( "STA $FB", 2, false );
+	  addAsm( "LDA #$00", 2, false ); 
+	  addAsm( "STA $FC", 2, false );
+	  
+	  addAsm( string("LDA #$") + toHex(op2), 2, false );
+	  addAsm( "STA $FD", 2, false );
+	  addAsm( "LDA #$00", 2, false ); 
+	  addAsm( "STA $FE", 2, false );
+
+	  addAsm( "JSR DIV16", 3, false );
+	  addAsm( "LDA $FB", 2, false );
+	}
+
       strcpy($$.name, "A" );
     }
   else if( isIntID( $1.name ) && isIntID( $3.name ) )
@@ -4315,9 +4555,26 @@ expression: expression arithmetic expression
 	  addAsm( "JSR UMUL", 3, false );
 	  addAsm( "LDA $03", 2, false );
 	}
-      else if( string($2.name) == string("/"))
+            else if( string($2.name) == string("/") )
 	{
-	  addAsm( "; SIGNED integer division (MEM / IMM) not yet implemented", 3, false );
+	  int addr_op1 = hexToDecimal($1.name);
+	  int op2 = atoi(stripFirst($3.name).c_str());
+
+	  addComment( "UintID / IntIMM" );
+	  div16_is_needed = true;
+	  
+	  addAsm( string("LDA $") + toHex(addr_op1), 3, false );
+	  addAsm( "STA $FB", 2, false );
+	  addAsm( "LDA #$00", 2, false ); 
+	  addAsm( "STA $FC", 2, false );
+	  
+	  addAsm( string("LDA #$") + toHex(op2), 2, false );
+	  addAsm( "STA $FD", 2, false );
+	  addAsm( "LDA #$00", 2, false ); 
+	  addAsm( "STA $FE", 2, false );
+
+	  addAsm( "JSR DIV16", 3, false );
+	  addAsm( "LDA $FB", 2, false );
 	}
       strcpy($$.name, "A" );
     }
@@ -4349,10 +4606,28 @@ expression: expression arithmetic expression
 	  addAsm( "JSR UMUL", 3, false );
 	  addAsm( "LDA $03", 2, false );
 	}
-      else if( string($2.name) == string("/"))
+            else if( string($2.name) == string("/") )
 	{
-	  addAsm( "; SIGNED integer division (MEM / IMM) not yet implemented", 3, false );
+	  int addr_op1 = hexToDecimal($1.name);
+	  int op2 = atoi(stripFirst($3.name).c_str());
+
+	  addComment( "UintID / IntIMM" );
+	  div16_is_needed = true;
+	  
+	  addAsm( string("LDA $") + toHex(addr_op1), 3, false );
+	  addAsm( "STA $FB", 2, false );
+	  addAsm( "LDA #$00", 2, false ); 
+	  addAsm( "STA $FC", 2, false );
+	  
+	  addAsm( string("LDA #$") + toHex(op2), 2, false );
+	  addAsm( "STA $FD", 2, false );
+	  addAsm( "LDA #$00", 2, false ); 
+	  addAsm( "STA $FE", 2, false );
+
+	  addAsm( "JSR DIV16", 3, false );
+	  addAsm( "LDA $FB", 2, false );
 	}
+
       strcpy($$.name, "A" );
     }
 
@@ -4396,9 +4671,26 @@ expression: expression arithmetic expression
 	  addAsm( "JSR UMUL", 3, false );
 	  addAsm( "LDA $03", 2, false );
 	}
-      else if( string($2.name) == string("/"))
+      else if( string($2.name) == string("/") )
 	{
-	  addAsm( "; SIGNED integer division (MEM / IMM) not yet implemented", 3, false );
+	  int addr_op1 = hexToDecimal($1.name);
+	  int op2 = atoi(stripFirst($3.name).c_str());
+
+	  addComment( "UintID / IntIMM" );
+	  div16_is_needed = true;
+	  
+	  addAsm( string("LDA $") + toHex(addr_op1), 3, false );
+	  addAsm( "STA $FB", 2, false );
+	  addAsm( "LDA #$00", 2, false ); 
+	  addAsm( "STA $FC", 2, false );
+	  
+	  addAsm( string("LDA #$") + toHex(op2), 2, false );
+	  addAsm( "STA $FD", 2, false );
+	  addAsm( "LDA #$00", 2, false ); 
+	  addAsm( "STA $FE", 2, false );
+
+	  addAsm( "JSR DIV16", 3, false );
+	  addAsm( "LDA $FB", 2, false );
 	}
 
       strcpy($$.name, "A" );
@@ -5218,6 +5510,42 @@ expression: expression arithmetic expression
       addCompilerMessage( "Bitwise AND (&) not implemented for type (yet)", 3 );
     }
 };
+| tGETXY '(' expression ',' expression ')'
+{
+  int x_addr = getAddressOf($3.name);
+  int y_addr = getAddressOf($5.name);
+
+  // change one of the bytes in plot to an RTS just before the actual plotting of the coordinate
+  addAsm( "LDA #$60", 2, false );
+  addAsm( "STA PLOTRTS", 3, false );
+  
+  // X Low
+  addAsm( string("LDA $") + toHex(x_addr), 3, false );
+  addAsm( "STA $FA", 2, false );
+
+  if( isWordID( $3.name ) )
+    {
+      // X High
+      addAsm( string("LDA $") + toHex(x_addr+1), 3, false );
+    }
+  else
+    {
+      addAsm( string("LDA #$00"), 2, false );
+    }
+  addAsm( "STA $FB", 2, false );
+
+  // Y
+  addAsm( string("LDA $") + toHex(y_addr), 3, false );
+  addAsm( "STA $FC", 2, false );
+  addAsm( "JSR PLOT", 3, false );
+  
+  addAsm( "LDA #$A0", 2, false ); // change the byte back to an LDY IMM
+  addAsm( "STA PLOTRTS", 3, false );
+  addAsm( "LDY #$00", 2, false );
+  addAsm( "LDA ($02),Y", 2, false );
+  strcpy( $$.name, "A" );  
+
+}
 | tTOUINT '(' expression ')'
 {
   int t = getTypeOf($3.name);
@@ -5233,6 +5561,15 @@ expression: expression arithmetic expression
       addAsm( "JSR $BBA2; MEM -> FAC", 3, false ); // MEM ->FAC
       addAsm( "JSR $B1AA; FAC -> AY (int)", 3, false ); // FAC -> INT
       addAsm( "TYA" );
+    }
+  else if( isWordID($3.name) )
+    {
+      int base_address = hexToDecimal( string($3.name) );
+      addAsm( string( "LDA $" ) + toHex(base_address), 2, false  );
+    }
+  else if( isXA($3.name) )
+    {
+      // do nothing - low byte is in A already
     }
   else
     {
@@ -5668,20 +6005,28 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
 };
 | tPEEK '(' HEX_NUM ')'
 {
-  if( atoi(stripFirst(stripFirst($3.name)).c_str()) > 65535 ) addCompilerMessage( "memory location out of range", 2 );
-  if( atoi(stripFirst(stripFirst($3.name)).c_str()) < 0 ) addCompilerMessage( "memory location out of range", 2 );
-  addAsm(string("LDA $") + stripFirst(stripFirst($3.name)), 3, false );
+  addComment( "tPEEK '(' HEX_NUM ')' ");
+  int instr_size = 2;
+  if( hexToDecimal(stripFirst(stripFirst($3.name)).c_str()) > 255 ) instr_size = 3;
+  if( hexToDecimal(stripFirst(stripFirst($3.name)).c_str()) > 65535 ) addCompilerMessage( "memory location out of range", 2 );
+  if( hexToDecimal(stripFirst(stripFirst($3.name)).c_str()) < 0 ) addCompilerMessage( "memory location out of range", 2 );
+  addAsm(string("LDA $") + stripFirst(stripFirst($3.name)), instr_size, false );
   strcpy($$.name, "A" );
 };
 | tPEEK '(' NUMBER ')'
 {
+  addComment( "tPEEK '(' NUMBER ')' ");
+  int instr_size = 2;
+  if( atoi($3.name) > 255 ) instr_size=3;
   if( atoi($3.name) > 65535 ) addCompilerMessage( "memory location out of range", 2 );
   if( atoi($3.name) < 0 ) addCompilerMessage( "memory location out of range", 2 );
-  addAsm(string("LDA $") + toHex(atoi($3.name)), 3, false );
+  addAsm(string("LDA $") + toHex(atoi($3.name)), instr_size, false );
   strcpy($$.name, "A" );
 };
 | tPEEK '(' expression ')'
 {
+  addComment( "tPEEK '(' expression ')' " );
+
   if( string($3.name) == string("ARG") || string($3.name) == string("FAC" ))
     {
       addCompilerMessage( "peek argument type conflict (value must be word)", 3 );
@@ -6165,13 +6510,208 @@ int main(int argc, char *argv[])
       addAsm( "RTS" );
 
     }
+  if( div16_is_needed )
+    {
+      // 16-bit division
+      // NUM1  * NUM2  = RESULT + REMAINDER 
+      // FC/FB * FE/FD = FC/FB     03/02
+      addAsm( "DIV16:", 0, true );
+      addAsm( "LDA #$00", 2, false );
+      addAsm( "STA $02", 2, false );
+      addAsm( "STA $03", 2, false );
+      addAsm( "LDX #$10", 2, false );
+      // Label 1
+      addAsm( "ASL $FB", 2, false );
+      addAsm( "ROL $FC", 2, false );
+      addAsm( "ROL $02", 2, false );
+      addAsm( "ROL $03", 2, false );
+      addAsm( "LDA $02", 2, false );
+      addAsm( "SEC" );
+      addAsm( "SBC $FD", 2, false );
+      addAsm( "TAY" );
+      addAsm( "LDA $03", 2, false );
+      addAsm( "SBC $FE", 2, false );
+      addAsm( ".BYTE #$90, #$06", 2, false ); // BCC Label 2
+      addAsm( "STA $03", 2, false );
+      addAsm( "STY $02", 2, false );
+      addAsm( "INC $FB", 2, false );
+      // Label 2
+      addAsm( "DEX" );
+      addAsm( ".BYTE #$D0, #$E3", 2, false ); // BNE Label 1
+      addAsm( "RTS" );
+
+    }
+  if( 1 )
+    {
+      // from p155 of Advanced Machine Code Programming for the Commodore 64 
+      addComment( "vvv-------------------------------------vvv" );
+      addComment( "vvv  from p155 of Advanced Machine Code vvv" );
+      addComment( "vvv   Programming for the Commodore 64  vvv" );
+      addComment( "vvv-------------------------------------vvv" );
+      addAsm( ";       L    H", 0, true );
+      addAsm( "; x = ($FA, $FB), y = $FC", 0, true );
+      addAsm( "PLOT:", 0, true );
+      
+      addAsm( "LDA $FA", 2, false );
+      addAsm( "AND #$07", 2, false );
+      addAsm( "TAX" );
+      addAsm( "SEC" );
+      addAsm( "LDA #$00", 2, false );
+      addAsm( "STA $02", 2, false );
+      // SHIFT
+      addAsm( "ROR" );
+      addAsm( "DEX" );
+      addAsm( ".BYTE #$10, #$FC", 2, false );  // BPL tPLOT
+      addAsm( "STA $59", 2, false ); // now PLOTSTR+4 has the Mask
+
+      addAsm( "LDA $FA", 2, false );    //   XL -> A
+      addAsm( "AND #$F8", 2, false ); // AND #$F8 with the Lowbyte of the X
+      addAsm( "STA $5C", 2, false ); // ->    X-> $5C
+
+      addAsm( "LDA $FC", 2, false );
+      addAsm( "LSR" );
+      addAsm( "LSR" );
+      addAsm( "LSR" );
+      addAsm( "STA $03", 2, false );
+      addAsm( "LSR" );
+      addAsm( "ROR $02", 2, false );
+      addAsm( "LSR" );      
+      addAsm( "ROR $02", 2, false );
+      addAsm( "ADC $03", 2, false );
+      addAsm( "STA $03", 2, false );
+
+      addAsm( "LDA $FC", 2, false );
+      addAsm( "AND #$07", 2, false );
+      addAsm( "ADC $02", 2, false );
+      addAsm( "ADC $5C", 2, false );
+      addAsm( "STA $02", 2, false );
+
+      addAsm( "LDA $03", 2, false );
+      addAsm( "ADC $FB", 2, false );
+      addAsm( "ADC $FF", 2, false );
+      addAsm( "STA $03", 2, false );
+      addAsm( "PLOTRTS:", 0, false );
+      addAsm( "LDY #$00", 2, false );
+      addAsm( "LDA ($02),Y", 2, false );
+      addAsm( "ORA $59", 2, false );
+      addAsm( "STA ($02),Y", 2, false );
+      addAsm( "RTS" );
+      addComment( "^^^-------------------------------------^^^" );
+      addComment( "^^^  from p155 of Advanced Machine Code ^^^" );
+      addComment( "^^^   Programming for the Commodore 64  ^^^" );
+      addComment( "^^^-------------------------------------^^^" );
+
+    }
+  if( 0 )
+    {
+      // My Homegrown Routine that is Way too slow!
+      addAsm( "PLOTSTR:", 0, false );
+      addAsm( ";     y&7    y&F8   XL    XH  MASK  OLDX", 0 , true );
+      addAsm( ".BYTE #$00, #$00, #$00, #$00, #$00, #$00", 6, false );
+      mul16_is_needed = true;
+      addAsm( ";       L    H", 0, true );
+      addAsm( "; x = ($FA, $FB), y = $FC", 0, true );
+      
+      addAsm( "PLOT:", 0, true );
+
+      
+      addAsm( "LDA $FA", 2, false );    //   XL -> A
+      addAsm( "STA PLOTSTR+5", 3, false ); // save it for later
+      addAsm( "AND #$F8", 2, false ); // AND #$F8 with the Lowbyte of the X
+      addAsm( "STA $FA", 2, false ); // ->    X-> $FA
+      
+      addAsm( "LDA $FC", 2, false );  // Y -> A
+      addAsm( "AND #$07", 2, false ); // A & #$07 -> A
+      addAsm( "STA PLOTSTR", 3, false ); //  A -> PLOTSTR
+
+      
+      addAsm( "LDA $FC", 2, false  ); // Y -> A
+      addAsm( "AND #$F8", 2, false );  // A & #$F8 -> A
+      addAsm( "STA PLOTSTR+1", 3, false );  // A -> PLOTSTR+1
+
+
+      
+      addAsm( "LDA $FA", 2, false ); //XL
+      addAsm( "STA PLOTSTR+2", 3, false );
+      addAsm( "LDA $FB", 2, false ); // XH
+      addAsm( "STA PLOTSTR+3", 3, false ); 
+
+      // multiplication 1  -- 0x140 * ( Y & 0xF8 )
+      addAsm( "LDA PLOTSTR+1", 3, false );
+      addAsm( "STA $FD", 2, false );
+      addAsm( "LDA #$00", 2, false ); // 
+      addAsm( "STA $FE", 2, false ); // High Byte of Y (is Zero) -> $FD
+
+      
+      addAsm( "LDA #$28", 2, false );  // 40
+      addAsm( "STA $FB", 2, false );
+      addAsm( "LDA #$00", 2, false ); // Store 0x0140 in $FB/$FC  (01)
+      addAsm( "STA $FC", 2, false );
+
+      addAsm( "JSR MUL16", 3, false );
+
+      addAsm( "LDA MUL16R", 3, false );
+      addAsm( "STA $02", 2, false );
+      addAsm( "LDA MUL16R+1", 3, false );
+      addAsm( "STA $03", 2, false );
+
+      // result is in 02 and 03
+      addAsm( "LDA #$20", 2, false ); // add 0x2000 to result
+      addAsm( "CLC" );
+      addAsm( "ADC $03", 2, false ); // (just the high byte)
+      addAsm( "STA $03", 2, false );
+
+      addAsm( "LDA PLOTSTR", 3, false ); // y&7 + RESULT LOW
+      addAsm( "ADC $02", 2, false );
+      addAsm( "STA $02", 2, false );
+      
+      addAsm( "LDA #$00", 2, false ); // put a ZERO back into A
+      addAsm( "ADC $03", 2, false );  // add with carry into High Byte
+      addAsm( "STA $03", 2, false );  // of result
+      
+      addAsm( "LDA PLOTSTR+2", 3, false ); // load x low into A
+      addAsm( "ADC $02", 2, false ); // add it to low of result
+      addAsm( "STA $02", 2, false );
+
+      
+      addAsm( "LDA PLOTSTR+3", 3, false ); // get the X High Byte
+      addAsm( "ADC $03", 2, false ); // add it to result
+      addAsm( "STA $03", 2, false );
+
+      // from p155 of Advanced Machine Code Programming for the Commodore 64 
+      addAsm( string("LDA PLOTSTR+5"), 3, false );
+      addAsm( "AND #$07", 2, false );
+      addAsm( "TAX" );
+      addAsm( "SEC" );
+      addAsm( "LDA #$00", 2, false );
+      //tPLOT LABEL
+      addAsm( "ROR" );
+      addAsm( "DEX" );
+      addAsm( ".BYTE #$10, #$FC", 2, false );  // BPL tPLOT
+      addAsm( "STA PLOTSTR+4", 3, false ); // now PLOTSTR+4 has the Mask
+      // ===================================================================
+      
+      addAsm( "LDX #$00", 2, false );
+      addAsm( "LDA ($02,X)", 2, false );
+      addAsm( "ORA PLOTSTR+4", 3, false );
+      addAsm( "STA ($02,X)", 2, false );
+
+      
+      // plot some data
+      //addAsm( "LDX #$00", 2, false  );
+      //addAsm( "LDA #$FF", 2, false );
+      //addAsm( "STA ($02,X)", 2, false );  // put a short 8 bit line at location
+
+      addAsm( "RTS" );
+    }
   if( mul16_is_needed )
     {
       // 16-bit multiplication
       // NUM1  * NUM2  = RESULT
-      // FC/FB * FE/FD = 03/02
+      // L  H    L  H    L  H
+      // FB/FC * FD/FE = 02/03
       addAsm( "MUL16R:", 0, true );
-      addAsm( ".BYTE #$00, #$00, #$00, #$00" );
+      addAsm( ".BYTE #$00, #$00, #$00, #$00", 4, false);
       addAsm( "MUL16:", 0, true );
       addAsm( "LDA #$00", 2, false );
       addAsm( "STA MUL16R", 3, false );
@@ -6180,16 +6720,16 @@ int main(int argc, char *argv[])
       addAsm( "STA MUL16R+3", 3, false );
       addAsm( "LDX #$10", 2, false );
       // label 1
-      addAsm( "LSR $FD", 2, false );
-      addAsm( "ROR $FE", 2, false );
+      addAsm( "LSR $FE", 2, false );
+      addAsm( "ROR $FD", 2, false );
       addAsm( ".BYTE #$90, #$0D", 2, false ); // BCC Label 2
       addAsm( "TAY" );
       addAsm( "CLC" );
-      addAsm( "LDA $FC", 2, false );
+      addAsm( "LDA $FB", 2, false );
       addAsm( "ADC MUL16R+2", 3, false );
       addAsm( "STA MUL16R+2", 3, false );
       addAsm( "TYA" );
-      addAsm( "ADC $FB", 2, false );
+      addAsm( "ADC $FC", 2, false );
       // label 2
       addAsm( "ROR A", 1, false );
       addAsm( "ROR MUL16R+2", 3, false );
