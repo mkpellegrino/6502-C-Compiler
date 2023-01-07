@@ -29,6 +29,9 @@
 
   // compiler internal flags
   bool word2dec_is_needed=false;
+  bool plot_is_needed=false;
+  bool multicolour_plot_is_needed=false;
+  bool getplot_is_needed=false;
   bool unsigned_signed_cmp_is_needed=false;
   bool split_byte_is_needed=false;
   bool decimal_digit_is_needed=false;
@@ -3645,45 +3648,54 @@ statement: datatype ID init
   else addCompilerMessage( "ROR of type not permitted... yet", 3 );
   
 };
-| tPLOT '(' expression ',' expression ')'
+| tPLOT '(' expression ',' expression ',' expression ')'
 {
+  multicolour_plot_is_needed = true;
 
-
-  if( isWordID( $3.name ) && (isWordID( $5.name )||isUintID($5.name) ) )
+  if( isWordID($3.name) && (isWordID( $5.name )||isUintID($5.name)) && isUintID($7.name) )
     {
+      addComment( "MC PLOT" );
       int x_addr = getAddressOf($3.name);
       int y_addr = getAddressOf($5.name);
+      int c_addr = getAddressOf($7.name);
+
+      // colour
+      addAsm( string("LDA $") + toHex(c_addr), 3, false );
+      addAsm( "STA $FD", 2, false );
+      
       
       // X Low
       addAsm( string("LDA $") + toHex(x_addr), 3, false );
       addAsm( "STA $FA", 2, false );
       
       // X High
-      addAsm( string("LDA $") + toHex(x_addr+1), 3, false );
-      addAsm( "STA $FB", 2, false );
+      //addAsm( string("LDA #$00"), 2, false ); // High Byte not needed
+      //addAsm( "STA $FB", 2, false );
 
       // Y
       addAsm( string("LDA $") + toHex(y_addr), 3, false );
       addAsm( "STA $FC", 2, false );
-      addAsm( "JSR PLOT", 3, false );
+      addAsm( "JSR MCPLOT", 3, false );
     }
-  else if( isUintID( $3.name ) && (isWordID( $5.name )||isUintID($5.name) ) )
+  else if( isUintID( $3.name ) && (isWordID( $5.name )||isUintID($5.name)) && isUintID($7.name) )
     {
+      addComment( "MC PLOT" );
       int x_addr = getAddressOf($3.name);
       int y_addr = getAddressOf($5.name);
-      
+      int c_addr = getAddressOf($7.name);
+
+      // colour
+      addAsm( string("LDA $") + toHex(c_addr), 3, false );
+      addAsm( "STA $FD", 2, false );
+
       // X Low
       addAsm( string("LDA $") + toHex(x_addr), 3, false );
       addAsm( "STA $FA", 2, false );
       
-      // X High
-      addAsm( string("LDA #$00"), 2, false );
-      addAsm( "STA $FB", 2, false );
-
       // Y
       addAsm( string("LDA $") + toHex(y_addr), 3, false );
       addAsm( "STA $FC", 2, false );
-      addAsm( "JSR PLOT", 3, false );
+      addAsm( "JSR MCPLOT", 3, false );
     }
   else
     {
@@ -4104,6 +4116,24 @@ expression: expression arithmetic expression
       inlineFloat( string( "f" ) + to_string(result), 105);
       FAC = 1;
     }
+  else if( isWordID($1.name) && (isA($3.name) ))
+    {
+      addComment( "WordID + Accumulator" );
+      
+      int addr_op1 = hexToDecimal($1.name);
+      int addr_op2 = hexToDecimal($3.name);
+      if( string($2.name) == string("+") )
+	{  
+	  addComment( "WordID + IntID|UintID" );      
+	  addAsm( string("ADC $") + toHex(addr_op1), 3, false );
+	  addAsm( "TAY" );
+	  addAsm( string("LDA #$00"), 2, false );
+	  addAsm( string("ADC $") + toHex(addr_op1+1), 3, false );
+	  addAsm( "TAX" );
+	  addAsm( "TYA" );
+	}
+
+    }
   else if( isWordID($1.name) && (isIntID($3.name) || isUintID($3.name)) )
     {
 
@@ -4347,6 +4377,8 @@ expression: expression arithmetic expression
 	  addAsm( string( "; commented out by optimizer"), 0, false); // 
 	  addAsm( string( "; LDA ") +  string($1.name), 3, false); // 
 	}
+
+      
       if( string($2.name) == string("+"))
 	{
 	  addAsm( "CLC" );
@@ -4389,6 +4421,21 @@ expression: expression arithmetic expression
 	  addAsm( "LDX $FC", 2, false );
 	}
 
+      strcpy($$.name, "A" );
+    }
+  else if( isUintID( $1.name ) && isA($3.name) )
+    {
+      
+      if( string($2.name) == string("+"))
+	{
+	  addAsm( "CLC" );
+	  addAsm( string( "ADC " ) + string($1.name), 3, false );
+	}
+      else if( string($2.name) == string("-"))
+	{
+	  addAsm( "SEC" );
+	  addAsm( string( "SBC " ) + string($1.name), 3, false );
+	}
       strcpy($$.name, "A" );
     }
   else if( isUintID( $1.name ) && isIntIMM($3.name) )
@@ -5512,12 +5559,10 @@ expression: expression arithmetic expression
 };
 | tGETXY '(' expression ',' expression ')'
 {
+  getplot_is_needed = true;
   int x_addr = getAddressOf($3.name);
   int y_addr = getAddressOf($5.name);
 
-  // change one of the bytes in plot to an RTS just before the actual plotting of the coordinate
-  addAsm( "LDA #$60", 2, false );
-  addAsm( "STA PLOTRTS", 3, false );
   
   // X Low
   addAsm( string("LDA $") + toHex(x_addr), 3, false );
@@ -5537,10 +5582,8 @@ expression: expression arithmetic expression
   // Y
   addAsm( string("LDA $") + toHex(y_addr), 3, false );
   addAsm( "STA $FC", 2, false );
-  addAsm( "JSR PLOT", 3, false );
+  addAsm( "JSR GETPLOT", 3, false );
   
-  addAsm( "LDA #$A0", 2, false ); // change the byte back to an LDY IMM
-  addAsm( "STA PLOTRTS", 3, false );
   addAsm( "LDY #$00", 2, false );
   addAsm( "LDA ($02),Y", 2, false );
   strcpy( $$.name, "A" );  
@@ -6541,7 +6584,133 @@ int main(int argc, char *argv[])
       addAsm( "RTS" );
 
     }
-  if( 1 )
+  if( multicolour_plot_is_needed )
+    {
+      // from p155 of Advanced Machine Code Programming for the Commodore 64 
+      addComment( "vvv-------------------------------------vvv" );
+      addComment( "vvv  from p164 of Advanced Machine Code vvv" );
+      addComment( "vvv   Programming for the Commodore 64  vvv" );
+      addComment( "vvv-------------------------------------vvv" );
+      addAsm( ";", 0, true );
+      addAsm( "; x = $FA, y = $FC, colour = $FD", 0, true );
+      addAsm( "MCPLOT:", 0, true );      
+      addAsm( "LDA $FA", 2, false );
+      addAsm( "AND #$03", 2, false );
+      addAsm( "STA $5C", 2, false );
+      addAsm( "LDA #$00", 2, false );
+      addAsm( "STA $02", 2, false );
+      addAsm( "STA $5D", 2, false );
+      addAsm( "LDA $FD", 2, false );
+      addAsm( "CLC" );
+      addAsm( "ROR" );
+      // loop here
+      addAsm( "ROR" );
+      addAsm( "ROR" );
+      addAsm( "DEC $5C", 2, false );
+      addAsm( ".BYTE #$10, #$FA", 2, false );  // BPL "loop here"
+
+      addAsm( "STA $50", 2, false );
+      addAsm( "LDA $FA", 2, false );
+      addAsm( "AND #$FC", 2, false );
+      addAsm( "ASL" );
+      addAsm( "ROL $5D", 2, false );
+      addAsm( "STA $5C", 2, false );
+      addAsm( "LDA $FC", 2, false );
+      addAsm( "LSR" );
+      addAsm( "LSR" );
+      addAsm( "LSR" );
+      addAsm( "STA $03", 2, false );
+      addAsm( "LSR" );
+      addAsm( "ROR $02", 2, false );
+      addAsm( "LSR" );
+      addAsm( "ROR $02", 2, false );
+      addAsm( "CLC" );
+      
+      addAsm( "ADC $03", 2, false );
+      addAsm( "STA $03", 2, false );
+      addAsm( "LDA $FC", 2, false );
+      addAsm( "AND #$07", 2, false );
+      addAsm( "ADC $02", 2, false );
+      addAsm( "ADC $5C", 2, false );
+      addAsm( "STA $02", 2, false );
+      addAsm( "LDA $03", 2, false );
+      addAsm( "ADC $5D", 2, false );
+      addAsm( "ADC #$20", 2, false ); 
+      addAsm( "STA $03", 2, false );
+      addAsm( "LDY #$00", 2, false );
+      addAsm( "LDA ($02),Y", 2, false );
+      addAsm( "ORA $50", 2, false );
+      addAsm( "STA ($02),Y", 2, false );
+      addAsm( "RTS" );
+      addComment( "^^^-------------------------------------^^^" );
+      addComment( "^^^  from p164 of Advanced Machine Code ^^^" );
+      addComment( "^^^   Programming for the Commodore 64  ^^^" );
+      addComment( "^^^-------------------------------------^^^" );
+
+    }
+  if( 0 )  // plot a single pixel at an x,y
+    {
+      // from p155 of Advanced Machine Code Programming for the Commodore 64 
+      addComment( "vvv-------------------------------------vvv" );
+      addComment( "vvv  from p155 of Advanced Machine Code vvv" );
+      addComment( "vvv   Programming for the Commodore 64  vvv" );
+      addComment( "vvv modified with colour - mkpellegrino vvv" );
+      addComment( "vvv-------------------------------------vvv" );
+      addAsm( "PLOTCOLOUR:", 0, true );
+      addAsm( ".BYTE #$00", 1, false );
+      addAsm( ";       L    H", 0, true );
+      addAsm( "; x = ($FA, $FB), y = $FC", 0, true );
+      addAsm( "PLOT:", 0, true );
+      
+      addAsm( "LDA $FA", 2, false );
+      addAsm( "AND #$07", 2, false );
+      addAsm( "TAX" );
+      addAsm( "SEC" );
+      addAsm( "LDA #$00", 2, false );
+      addAsm( "STA $02", 2, false );
+      // SHIFT
+      addAsm( "ROR" );
+      addAsm( "DEX" );
+      addAsm( ".BYTE #$10, #$FC", 2, false );  // BPL tPLOT
+      addAsm( "STA $59", 2, false ); // now $59 has the Mask
+
+      addAsm( "LDA $FA", 2, false );    //   XL -> A
+      addAsm( "AND #$F8", 2, false ); // AND #$F8 with the Lowbyte of the X
+      addAsm( "STA $5C", 2, false ); // ->    X-> $5C
+
+      addAsm( "LDA $FC", 2, false );
+      addAsm( "LSR" );
+      addAsm( "LSR" );
+      addAsm( "LSR" );
+      addAsm( "STA $03", 2, false );
+      addAsm( "LSR" );
+      addAsm( "ROR $02", 2, false );
+      addAsm( "LSR" );      
+      addAsm( "ROR $02", 2, false );
+      addAsm( "ADC $03", 2, false );
+      addAsm( "STA $03", 2, false );
+
+      addAsm( "LDA $FC", 2, false );
+      addAsm( "AND #$07", 2, false );
+      addAsm( "ADC $02", 2, false );
+      addAsm( "ADC $5C", 2, false );
+      addAsm( "STA $02", 2, false );
+
+      addAsm( "LDA $03", 2, false );
+      addAsm( "ADC $FB", 2, false );
+      addAsm( "ADC $FF", 2, false );
+      addAsm( "STA $03", 2, false );
+      addAsm( "LDY #$00", 2, false );
+      addAsm( "LDA ($02),Y", 2, false );
+      addAsm( "ORA $59", 2, false );
+      addAsm( "STA ($02),Y", 2, false );
+      addAsm( "RTS" );
+      addComment( "^^^-------------------------------------^^^" );
+      addComment( "^^^  from p155 of Advanced Machine Code ^^^" );
+      addComment( "^^^   Programming for the Commodore 64  ^^^" );
+      addComment( "^^^-------------------------------------^^^" );
+    }
+  if( getplot_is_needed )
     {
       // from p155 of Advanced Machine Code Programming for the Commodore 64 
       addComment( "vvv-------------------------------------vvv" );
@@ -6550,7 +6719,7 @@ int main(int argc, char *argv[])
       addComment( "vvv-------------------------------------vvv" );
       addAsm( ";       L    H", 0, true );
       addAsm( "; x = ($FA, $FB), y = $FC", 0, true );
-      addAsm( "PLOT:", 0, true );
+      addAsm( "GETPLOT:", 0, true );
       
       addAsm( "LDA $FA", 2, false );
       addAsm( "AND #$07", 2, false );
@@ -6590,11 +6759,6 @@ int main(int argc, char *argv[])
       addAsm( "ADC $FB", 2, false );
       addAsm( "ADC $FF", 2, false );
       addAsm( "STA $03", 2, false );
-      addAsm( "PLOTRTS:", 0, false );
-      addAsm( "LDY #$00", 2, false );
-      addAsm( "LDA ($02),Y", 2, false );
-      addAsm( "ORA $59", 2, false );
-      addAsm( "STA ($02),Y", 2, false );
       addAsm( "RTS" );
       addComment( "^^^-------------------------------------^^^" );
       addComment( "^^^  from p155 of Advanced Machine Code ^^^" );
