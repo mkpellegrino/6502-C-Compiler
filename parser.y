@@ -2472,49 +2472,57 @@ body: WHILE
   if( isA( $3.name ) || isXA( $3.name ) )
     {
       addComment( "bank( expression );" );
-      
-      addAsm( "LDA $DD02", 3, false );
-      addAsm( "ORA #$03", 2, false );
 
+      addAsm( "PHA" );
+      addAsm( "LDA #$03", 2, false );
+      addAsm( "ORA $DD02", 3, false );
+      addAsm( "STA $DD02", 3, false );
+      addAsm( "PLA" );
+      
       addAsm( "EOR #$FF", 2, false );
       addAsm( "AND #$03", 2, false );
       addAsm( "STA $02", 2, false );
-      addAsm( "LDA $DD00", 3, false );
-      addAsm( "AND #$FC", 2, false );
+
+      addAsm( "LDA #$FC", 2, false );
+      addAsm( "AND $DD00", 3, false );
       addAsm( "ORA $02", 2, false );
       addAsm( "STA $DD00", 3, false );
     }
   else if( isUintID( $3.name ) || isIntID( $3.name ) || isWordID( $3.name ) )
     {
       addComment( "bank( expression );" );
-      
-      addAsm( "LDA $DD02", 3, false );
-      addAsm( "ORA #$03", 2, false );
+      addAsm( "LDA #$03", 2, false );
+      addAsm( "ORA $DD02", 3, false );
+      addAsm( "STA $DD02", 3, false );
 
       int addr = getAddressOf( $3.name );
       addAsm( string( "LDA $" ) + toHex( addr ), 3, false );
       addAsm( "EOR #$FF", 2, false );
       addAsm( "AND #$03", 2, false );
       addAsm( "STA $02", 2, false );
-      addAsm( "LDA $DD00", 3, false );
-      addAsm( "AND #$FC", 2, false );
+      
+      addAsm( "LDA #$FC", 2, false );
+      addAsm( "AND $DD00", 3, false );
       addAsm( "ORA $02", 2, false );
       addAsm( "STA $DD00", 3, false );
+
+      
     }
   else if( isUintIMM( $3.name ) || isIntIMM( $3.name ) )
     {
       addComment( "bank( IMM );" );
-      
-      addAsm( "LDA $DD02", 3, false );
-      addAsm( "ORA #$03", 2, false );
+      addAsm( "LDA #$03", 2, false );
+      addAsm( "ORA $DD02", 3, false );
+      addAsm( "STA $DD02", 3, false );
 
       int v = atoi( stripFirst( $3.name ).c_str());
       addAsm( string("LDA #$") + toHex( v ), 2, false );      
       addAsm( "EOR #$FF", 2, false );
       addAsm( "AND #$03", 2, false );
       addAsm( "STA $02", 2, false );
-      addAsm( "LDA $DD00", 3, false );
-      addAsm( "AND #$FC", 2, false );
+
+      addAsm( "LDA #$FC", 2, false );
+      addAsm( "AND $DD00", 3, false );
       addAsm( "ORA $02", 2, false );
       addAsm( "STA $DD00", 3, false );
     }
@@ -3497,7 +3505,6 @@ statement: datatype ID init
       addAsm( "PLA" );
 
       //addAsm( "STA $0400; for debugging only - take this out later", 3, false );
-      
       // add the location of screen memory to the address
       addAsm( string( "ADC " ) + getLabel( ((int)label_vector[label_major]), false ) + string("+1"), 3, false );
       addAsm( string( "STA " ) + getLabel( ((int)label_vector[label_major]), false ) + string("+1"), 3, false );
@@ -3523,7 +3530,7 @@ statement: datatype ID init
 
       string BA_L = toHex(get_word_L(sprite_base_address)); 
       string BA_H = toHex(get_word_H(sprite_base_address));
-      
+      //cerr << "mob_vector[2] = " << mob_vector[2] << endl;
       string byte_string = string($2.name) + string( ":\n\t.BYTE " );
       for( int i=2; i<mob_vector.size(); i++ )
 	{
@@ -3539,7 +3546,16 @@ statement: datatype ID init
       addAsm( "STA $FB", 2, false );
       addAsm( "PLA" );
       addAsm( "STA $FC", 2, false );
-
+      // we need to subtract one from $FB/$FC
+      // and take care of a borrow if necessary
+      /* addAsm( "SEC" ); */
+      /* addAsm( "LDA $FB", 2, false ); */
+      /* addAsm( "SBC #$01", 2, false ); */
+      /* addAsm( "STA $FB", 2, false ); */
+      /* addAsm( "LDA $FC", 2, false ); */
+      /* addAsm( "SBC #$00", 2, false ); */
+      /* addAsm( "STA $FC", 2, false ); */
+      
       addAsm( string("LDA #$") + BA_L, 2, false );
       addAsm( "STA $FD", 2, false );
       
@@ -3801,13 +3817,8 @@ statement: datatype ID init
       int x_addr = getAddressOf($3.name);
       int y_addr = getAddressOf($5.name);
       int c_addr = getAddressOf($7.name);
-
-      // colour
-      addAsm( string("LDA $") + toHex(c_addr), 3, false );
-      addAsm( "STA $FD", 2, false );
       
-      
-      // X Low
+      // X Low - because this is Multicolour - the X coordinate fites into 1 byte
       addAsm( string("LDA $") + toHex(x_addr), 3, false );
       addAsm( "STA $FA", 2, false );
       
@@ -3819,6 +3830,12 @@ statement: datatype ID init
       addAsm( string("LDA $") + toHex(y_addr), 3, false );
       addAsm( "STA $FC", 2, false );
       addAsm( "JSR MCPLOT", 3, false );
+
+
+      // colour
+      addAsm( string("LDA $") + toHex(c_addr), 3, false );
+      addAsm( "STA $FD", 2, false );
+
     }
   else if( isUintID( $3.name ) && (isWordID( $5.name )||isUintID($5.name)) && isUintID($7.name) )
     {
@@ -3827,11 +3844,7 @@ statement: datatype ID init
       int y_addr = getAddressOf($5.name);
       int c_addr = getAddressOf($7.name);
 
-      // colour
-      addAsm( string("LDA $") + toHex(c_addr), 3, false );
-      addAsm( "STA $FD", 2, false );
-
-      // X Low
+      // X Low - because this is Multicolour - the X coordinate fites into 1 byte
       addAsm( string("LDA $") + toHex(x_addr), 3, false );
       addAsm( "STA $FA", 2, false );
       
@@ -3839,6 +3852,10 @@ statement: datatype ID init
       addAsm( string("LDA $") + toHex(y_addr), 3, false );
       addAsm( "STA $FC", 2, false );
       addAsm( "JSR MCPLOT", 3, false );
+
+      // colour
+      addAsm( string("LDA $") + toHex(c_addr), 3, false );
+      addAsm( "STA $FD", 2, false );
     }
   else if(   (isUintIMM($3.name)||isIntIMM($3.name)) && (isUintIMM($5.name)||isIntIMM($5.name)) && (isUintIMM($7.name)||isIntIMM($7.name)) )
     {
@@ -3847,11 +3864,11 @@ statement: datatype ID init
       int x = atoi(stripFirst($3.name).c_str());
       int y = atoi(stripFirst($5.name).c_str());
       int c = atoi(stripFirst($7.name).c_str());
-      addAsm( string("LDA $") + toHex(x), 2, false );
+      addAsm( string("LDA #$") + toHex(x), 2, false );
       addAsm( "STA $FA", 2, false );
-      addAsm( string("LDA $") + toHex(y), 2, false );
+      addAsm( string("LDA #$") + toHex(y), 2, false );
       addAsm( "STA $FC", 2, false );
-      addAsm( string("LDA $") + toHex(c), 2, false );
+      addAsm( string("LDA #$") + toHex(c), 2, false );
       addAsm( "STA $FD", 2, false );
       addAsm( "JSR MCPLOT", 3, false );
 
@@ -6934,12 +6951,25 @@ int main(int argc, char *argv[])
       addAsm( "CLC" );
       //addAsm( "LDA #$20", 2, false );
       addAsm( "ADC $22; tmpstore", 2, false );
-      addAsm( "ADC $03; loc + 1", 2, false );
-      addAsm( "; =========================", 0, true );
+      //addAsm( "ADC $03; loc + 1", 2, false );
+      //addAsm( "; =========================", 0, true );
 
 
       addAsm( "STA $03; loc + 1", 2, false );
 
+      /* vvvvv FOR DEBUGGING ONLY! vvvvv */
+      /* byte2hex_is_needed = true; */
+      /* addAsm( "LDA $03", 2, false ); */
+      /* addAsm( "PHA" ); */
+      /* addAsm( "JSR BYTE2HEX", 3, false ); */
+      /* addAsm( "LDA $02", 2, false ); */
+      /* addAsm( "PHA" ); */
+      /* addAsm( "JSR BYTE2HEX", 3, false ); */
+      /* addAsm( "LDA #$20", 2, false ); */
+      /* addAsm( "JSR $FFD2", 3, false ); */
+      /* ^^^^^ FOR DEBUGGING ONLY! ^^^^^ */
+
+      
       addAsm( "LDY #$00", 2, false );
       addAsm( "LDA ($02),Y", 2, false );
       addAsm( "ORA $50; mask", 2, false );
@@ -7513,51 +7543,6 @@ int main(int argc, char *argv[])
       addAsm( "RTS" );
 
     }
-  if( false )
-    {
-      // I know this is slower than using the Zero page operations or indirect operations
-      // but it's an initialiser... it doesn't need to be fast!
-      addComment( "Copy 63 bytes from MOBCPYSL/MOBCPYSH to MOBCPYDL/MOBCPYDH" );
-      addAsm( "MOBCPY:", 0, true );
-
-
-      // THIS IS ONLY FOR MOB CPY BECAUSE OF THE WAY
-      // THE MOBS ARE INLINE IN THE CODE
-      addAsm( "CLC" );
-      addAsm( "LDA #$01", 2, false );
-      addAsm( "ADC MOBCPYSL", 3, false );
-      addAsm( "STA MOBCPYSL", 3, false );
-      addAsm( "LDA #$00", 2, false );
-      addAsm( "ADC MOBCPYSH", 3, false );
-      addAsm( "STA MOBCPYSH", 3, false );
-      addAsm( "SEI" );
-      // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-      addAsm( "LDY #$3F", 2, false ); // 63 bytes
-
-      addComment( "top-of-loop" );
-      addAsm( "MOBCPTOP:", 0, true );
-      addAsm( "CPY #$00", 2, false );
-      addAsm( ".BYTE #$F0, #$0A; BEQ RELATIVE", 2, false ); // BEQ bottom-of-loop
-      
-      addAsm( ".BYTE #$B9; LDA absolute,Y", 1, false );
-      addAsm( "MOBCPYSL:", 0, true );
-      addAsm( ".BYTE #$00", 1, false );
-      addAsm( "MOBCPYSH:", 0, true );
-      addAsm( ".BYTE #$00", 1, false );
-
-      addAsm( ".BYTE #$99; STA absolute,Y", 1, false );
-      addAsm( "MOBCPYDL:", 0, true );
-      addAsm( ".BYTE #$00", 1, false );
-      addAsm( "MOBCPYDH:", 0, true );
-      addAsm( ".BYTE #$00", 1, false );
-
-      addAsm( "DEY" );
-      addAsm( "JMP MOBCPTOP", 3, false );
-      addComment( "bottom-of-loop" );
-      addAsm( "CLI" );
-      addAsm( "RTS" );
-    }
-  
   if( mobcpy_is_needed  )
     {
       // a QUICK and DIRTY MEMCPY of 63 BYTES
@@ -7565,6 +7550,15 @@ int main(int argc, char *argv[])
       addAsm( "SEI" );
       // THIS IS ONLY FOR MOB CPY BECAUSE OF THE WAY
       // THE MOBS ARE INLINE IN THE CODE
+
+      /* addAsm( "SEC" ); */
+      /* addAsm( "LDA $FB", 2, false ); */
+      /* addAsm( "SBC #$01", 2, false ); */
+      /* addAsm( "STA $FB", 2, false ); */
+      /* addAsm( "LDA $FC", 2, false ); */
+      /* addAsm( "SBC #$00", 2, false ); */
+      /* addAsm( "STA $FC", 2, false ); */
+
       addAsm( "CLC" );
       addAsm( "LDA #$01", 2, false );
       addAsm( "ADC $FB", 2, false );
@@ -7576,7 +7570,7 @@ int main(int argc, char *argv[])
       addAsm( "LDY #$3F", 2, false );
       addComment( "top-of-loop" );
       addAsm( "MOBCPTOP:", 0, true );
-      addAsm( "CPY #$00", 2, false );
+      addAsm( "CPY #$FF", 2, false );
       addAsm( ".BYTE #$F0, #$08", 2, false ); // BEQ bottom-of-loop
       addAsm( "LDA ($FB),Y", 2, false );
       addAsm( "STA ($FD),Y", 2, false );
