@@ -1408,7 +1408,7 @@
 
 //%parse-param { FILE* fp }
 %token VOID 
-%token <nd_obj> tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tSTRTOFLOAT tSTRTOWORD tTOFLOAT tTOUINT tDEC tINC tROL tROR tASL tLSR tGETXY tPLOT tJSR tLDA tASL tSPRITESET tSPRITEON tSPRITEOFF tSPRITETOGGLE tRND tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER tPRINTS PRINTFF SCANFF INT FLOAT CHAR WHILE FOR IF ELSE TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE tSQRT UNARY INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL
+%token <nd_obj> tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tSTRTOFLOAT tSTRTOWORD tTOFLOAT tTOUINT tDEC tINC tROL tROR tASL tLSR tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJSR tROMOUT tROMIN tLDA tASL tSPRITESET tSPRITEON tSPRITEOFF tSPRITETOGGLE tRND tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER tPRINTS PRINTFF SCANFF INT FLOAT CHAR WHILE FOR IF ELSE TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE tSQRT UNARY INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL
 %type <nd_obj> headers main body return function datatype statement arithmetic relop program else
    %type <nd_obj2> init value expression
       %type <nd_obj3> condition
@@ -2434,6 +2434,27 @@ body: WHILE
   addAsm( "JSR $FF81; kernal cls()", 3, false );
 
 };
+| tROMOUT '(' ')' ';'
+{
+  addComment( "Switch out the ROM" );
+  addAsm( "SEI" );
+  addAsm( "LDA $01", 2, false );
+  addAsm( "AND #$FE", 2, false );
+  addAsm( "STA $01", 2, false );
+  addAsm( "CLI" );
+  addComment( "------------------" );
+}
+| tROMIN '(' ')' ';'
+{
+  addComment( "Switch the ROM back in" );
+  addAsm( "SEI" );
+  addAsm( "LDA $01", 2, false );
+  addAsm( "ORA #$01", 2, false );
+  addAsm( "STA $01", 2, false );
+  addAsm( "CLI" );
+  addComment( "------------------" );
+
+}
 | tJSR '(' NUMBER ')' ';'
 {
   addCommentSection( "jsr(NUMBER)");
@@ -2443,6 +2464,64 @@ body: WHILE
 {
   addCommentSection( "jsr(HEX_NUM)");
   addAsm(string( "JSR $") + stripFirst(stripFirst($3.name)), 3, false );
+};
+| tBANK '(' expression ')' ';'
+{
+  // see the commodore 64 programmers manual
+  // for a way more efficient routine
+  if( isA( $3.name ) || isXA( $3.name ) )
+    {
+      addComment( "bank( expression );" );
+      
+      addAsm( "LDA $DD02", 3, false );
+      addAsm( "ORA #$03", 2, false );
+
+      addAsm( "EOR #$FF", 2, false );
+      addAsm( "AND #$03", 2, false );
+      addAsm( "STA $02", 2, false );
+      addAsm( "LDA $DD00", 3, false );
+      addAsm( "AND #$FC", 2, false );
+      addAsm( "ORA $02", 2, false );
+      addAsm( "STA $DD00", 3, false );
+    }
+  else if( isUintID( $3.name ) || isIntID( $3.name ) || isWordID( $3.name ) )
+    {
+      addComment( "bank( expression );" );
+      
+      addAsm( "LDA $DD02", 3, false );
+      addAsm( "ORA #$03", 2, false );
+
+      int addr = getAddressOf( $3.name );
+      addAsm( string( "LDA $" ) + toHex( addr ), 3, false );
+      addAsm( "EOR #$FF", 2, false );
+      addAsm( "AND #$03", 2, false );
+      addAsm( "STA $02", 2, false );
+      addAsm( "LDA $DD00", 3, false );
+      addAsm( "AND #$FC", 2, false );
+      addAsm( "ORA $02", 2, false );
+      addAsm( "STA $DD00", 3, false );
+    }
+  else if( isUintIMM( $3.name ) || isIntIMM( $3.name ) )
+    {
+      addComment( "bank( IMM );" );
+      
+      addAsm( "LDA $DD02", 3, false );
+      addAsm( "ORA #$03", 2, false );
+
+      int v = atoi( stripFirst( $3.name ).c_str());
+      addAsm( string("LDA #$") + toHex( v ), 2, false );      
+      addAsm( "EOR #$FF", 2, false );
+      addAsm( "AND #$03", 2, false );
+      addAsm( "STA $02", 2, false );
+      addAsm( "LDA $DD00", 3, false );
+      addAsm( "AND #$FC", 2, false );
+      addAsm( "ORA $02", 2, false );
+      addAsm( "STA $DD00", 3, false );
+    }
+  else  
+    {
+      addCompilerMessage( "Error setting VIC-II - unknown type", 3 );
+    }
 };
 | tJMP '(' HEX_NUM ')' ';'
 {
@@ -3140,7 +3219,7 @@ condition: expression relop expression
 
 statement: datatype ID init
 {
-  //addComment( "RULE: statement: datatype ID init" );
+  addComment( "RULE: statement: datatype ID init" );
   addComment( string($1.name) + " " + string($2.name) + "=" + string($3.name) + string( " datatype#: ") + toHex( current_variable_type ));
   
   current_variable_type = getDataTypeValue( $1.name );
@@ -3380,19 +3459,71 @@ statement: datatype ID init
     }
   else if(isMob($3.name))
     {
+      addComment( "MOB Detected" );
+
+      // check to make sure the first 2 values are in the proper range
       if( mob_vector[0] > 7 || mob_vector[0] < 0 ) addCompilerMessage( "MOB # out of range (must be 0-7)", 3 );
       if( mob_vector[1] > 255 || mob_vector[1] < 0 ) addCompilerMessage( "MOB Pointer out of range", 3 );
       pushScope("MOB");
 
       // first 2 bytes are: sprite # and sprite location
       int sprite_number = mob_vector[0]; // 0-7
-      int sprite_location = mob_vector[1]; // 192, 193... etc
-      int sprite_pointer = 2040 + sprite_number;
-      addAsm( string( "LDA #$") + toHex( sprite_location + sprite_number ), 2, false );
-      addAsm( string( "STA $") + toHex( sprite_pointer ), 3, false );
-      int sprite_base_address = (sprite_number + sprite_location)*64;
-      string BA_L = toHex(get_word_L(sprite_base_address));
+      int sprite_area = mob_vector[1]; // 192, 193... etc
+
+
+      // calculate where the pointer is so we can store the 192, 193, 194...
+      // sprite pointer = bank_mem + screen_mem + 0x07F8 + sprite_number
+      // 0x07f8 is the screen size (2040);
+      
+      // when using the default VIC bank it's the last 8 bytes of screen memory -- 2040 through 2047
+
+      // sprite pointer = bank_mem + screen_mem + 0x03F7 + sprite_number
+      
+      // 0x03F7 -> into Address
+      addAsm( "LDA #$F7", 2, false );
+      addAsm( string( "STA " ) + getLabel( ((int)label_vector[label_major]), false ), 3, false );
+      addAsm( "LDA #$03", 2, false );
+      addAsm( string( "STA " ) + getLabel( ((int)label_vector[label_major]), false )+ string("+1"), 3, false );
+      
+      // Add the Sprite Number to Address
+      addAsm( string( "LDA #$") + toHex( sprite_number ) + string("; <- Sprite #"), 2, false );
+      addAsm( string( "ADC " ) + getLabel( ((int)label_vector[label_major]), false ), 3, false );
+      addAsm( string( "STA " ) + getLabel( ((int)label_vector[label_major]), false ), 3, false );
+
+      // get the location of the screen memory -> A
+      // I checked the value in "A" after the pop off the stack
+      // and it is correct for (at least) bank 1
+      addAsm( "JSR SCRMEM", 3, false );
+      addAsm( "PLA" );
+
+      //addAsm( "STA $0400; for debugging only - take this out later", 3, false );
+      
+      // add the location of screen memory to the address
+      addAsm( string( "ADC " ) + getLabel( ((int)label_vector[label_major]), false ) + string("+1"), 3, false );
+      addAsm( string( "STA " ) + getLabel( ((int)label_vector[label_major]), false ) + string("+1"), 3, false );
+
+      // get the location of the bank
+      addAsm( "JSR BNKMEM", 3, false );   
+      addAsm( "PLA" );
+
+      //addAsm( "STA $0401; for debugging only - take this out later", 3, false );
+
+      // add the location of the bank to the address
+      addAsm( string( "ADC " ) + getLabel( ((int)label_vector[label_major]), false ) + string("+1"), 3, false );
+      addAsm( string( "STA " ) + getLabel( ((int)label_vector[label_major]), false ) + string("+1"), 3, false );
+
+      // Load the sprite area and store it at the address
+      addAsm( string( "LDA #$") + toHex( mob_vector[1] ), 2, false );
+      addAsm( ".BYTE #$8D", 1, false ); // STA
+      addAsm( generateNewLabel(), 0, true );
+      addAsm( ".BYTE #$00, #$00", 2, false );
+
+      
+      int sprite_base_address = sprite_area*64;
+
+      string BA_L = toHex(get_word_L(sprite_base_address)); 
       string BA_H = toHex(get_word_H(sprite_base_address));
+      
       string byte_string = string($2.name) + string( ":\n\t.BYTE " );
       for( int i=2; i<mob_vector.size(); i++ )
 	{
@@ -3408,11 +3539,22 @@ statement: datatype ID init
       addAsm( "STA $FB", 2, false );
       addAsm( "PLA" );
       addAsm( "STA $FC", 2, false );
-      addAsm( "INC $FB", 2, false );
+
       addAsm( string("LDA #$") + BA_L, 2, false );
       addAsm( "STA $FD", 2, false );
-      addAsm( string("LDA #$") + BA_H, 2, false );
+      
+      // Load the (sprite area)*64 and store it at the address
+      addAsm( string( "LDA #$" ) + BA_H, 2, false );
+      
       addAsm( "STA $FE", 2, false );
+
+      // this will get the bank offset
+      addAsm( "JSR BNKMEM", 3, false );
+      addAsm( "PLA" ); // <<- A should now be #$00, #$20, #$40, 
+      addAsm( "CLC" );
+      addAsm( "ADC $FE", 2, false );
+      addAsm( "STA $FE", 2, false );
+      
       addAsm( "JSR MOBCPY", 3, false );
       mobcpy_is_needed = true;
       popScope();
@@ -3650,11 +3792,12 @@ statement: datatype ID init
 };
 | tPLOT '(' expression ',' expression ',' expression ')'
 {
+  /*    x, y, colour    */
   multicolour_plot_is_needed = true;
 
   if( isWordID($3.name) && (isWordID( $5.name )||isUintID($5.name)) && isUintID($7.name) )
     {
-      addComment( "MC PLOT" );
+      addComment( "MC PLOT [WORD  WORD|UINT  UINT]" );
       int x_addr = getAddressOf($3.name);
       int y_addr = getAddressOf($5.name);
       int c_addr = getAddressOf($7.name);
@@ -3679,7 +3822,7 @@ statement: datatype ID init
     }
   else if( isUintID( $3.name ) && (isWordID( $5.name )||isUintID($5.name)) && isUintID($7.name) )
     {
-      addComment( "MC PLOT" );
+      addComment( "MCPLOT [uint   word|uint   uintT" );
       int x_addr = getAddressOf($3.name);
       int y_addr = getAddressOf($5.name);
       int c_addr = getAddressOf($7.name);
@@ -3697,20 +3840,47 @@ statement: datatype ID init
       addAsm( "STA $FC", 2, false );
       addAsm( "JSR MCPLOT", 3, false );
     }
+  else if(   (isUintIMM($3.name)||isIntIMM($3.name)) && (isUintIMM($5.name)||isIntIMM($5.name)) && (isUintIMM($7.name)||isIntIMM($7.name)) )
+    {
+      addComment( "MCPLOT [IMM   IMM  IMM" ); 
+      //cerr << "HERE: plot(" << $3.name << ", " << $5.name << ", " << $7.name << ");" << endl;
+      int x = atoi(stripFirst($3.name).c_str());
+      int y = atoi(stripFirst($5.name).c_str());
+      int c = atoi(stripFirst($7.name).c_str());
+      addAsm( string("LDA $") + toHex(x), 2, false );
+      addAsm( "STA $FA", 2, false );
+      addAsm( string("LDA $") + toHex(y), 2, false );
+      addAsm( "STA $FC", 2, false );
+      addAsm( string("LDA $") + toHex(c), 2, false );
+      addAsm( "STA $FD", 2, false );
+      addAsm( "JSR MCPLOT", 3, false );
+
+    }
   else
     {
-      addCompilerMessage( "OOPS!" );
+      addCompilerMessage( "type not implemented yet for plot" );
     }
 };
 | tLSR '(' ID ')'
 {
   if( isUintID($3.name) || isIntID($3.name)  )
     {    
-      addCommentSection( "lsr(ID)");
+      addCommentSection( "lsr(ID) [uint|int]");
       int a = getAddressOf($3.name);
       int size_of_instruction = 3;
       if( a < 256 ) size_of_instruction = 2;
       addAsm( string("LSR $") + toHex(a), size_of_instruction, false );
+    }
+  else if( isWordID($3.name) )
+    {
+      addCommentSection( "lsr(ID) [word]");
+      int a = getAddressOf($3.name);
+      int size_of_instruction = 3;
+      if( a+1 < 256 ) size_of_instruction = 2;
+      addAsm( string("LSR $") + toHex(a+1), size_of_instruction, false );
+      if( a < 256 ) size_of_instruction = 2;
+      addAsm( string("ROR $") + toHex(a), size_of_instruction, false );
+
     }
   else addCompilerMessage( "LSR of type not permitted... yet", 3 );
 };
@@ -3723,6 +3893,16 @@ statement: datatype ID init
       int size_of_instruction = 3;
       if( a < 256 ) size_of_instruction = 2;
       addAsm( string("ASL $") + toHex(a), size_of_instruction, false );
+    }
+  else if( isWordID($3.name) )
+    {
+      addCommentSection( "asl(ID)");
+      int a = getAddressOf($3.name);
+      int size_of_instruction = 3;
+      if( a < 256 ) size_of_instruction = 2;
+      addAsm( string("ASL $") + toHex(a), size_of_instruction, false );
+      if( a+1 > 255 ) size_of_instruction = 3;
+      addAsm( string("ROL $") + toHex(a+1), size_of_instruction, false );
     }
   else addCompilerMessage( "ASL of type not permitted... yet", 3 );
 };
@@ -3832,9 +4012,9 @@ init: '=' expression
       addComment( "initializing a float with ARG" );
       strcpy($$.name, "ARG" );
     }
-  else if( string($2.name) == "initializing a word with XA" )
+  else if( string($2.name) == "XA" )
     {
-      addComment( "XA" );
+      addComment( "initializing a word with XA" );
       strcpy($$.name, "XA" );
     }
   else if( string($2.name) == "FAC" )
@@ -5557,6 +5737,96 @@ expression: expression arithmetic expression
       addCompilerMessage( "Bitwise AND (&) not implemented for type (yet)", 3 );
     }
 };
+| tGETBANK '(' ')'
+{
+  addAsm( "JSR BNKMEM", 3, false );
+  addAsm( "PLA" );
+  addAsm( "TAX" );
+  addAsm( "LDA #$00", 2, false );
+  strcpy( $$.name, "XA" );
+}
+| tGETSCR '(' ')'
+{
+  addAsm( "LDA #$00", 2, false );
+  addAsm( "STA $03", 2, false );
+  addAsm( "JSR SCRMEM", 3, false );
+  addAsm( "PLA" );
+  addAsm( "CLC" );
+  
+  addAsm( "ADC $03", 2, false );
+  addAsm( "STA $03", 2, false );
+  
+  addAsm( "JSR BNKMEM", 3, false );
+  addAsm( "PLA" );
+  addAsm( "ADC $03", 2, false );
+  addAsm( "TAX" );
+  addAsm( "LDA #$00", 2, false );
+  strcpy( $$.name, "XA" );
+}
+| tGETBMP '(' ')'
+{
+  // getBMP
+  addAsm( "SEI" );
+  addAsm( "LDA $D018", 3, false );
+  addAsm( "AND #$08", 2, false );
+  addAsm( "CLC" );
+  addAsm( "ASL" );
+  addAsm( "ASL" );      
+  
+  addAsm( "STA $FF", 2, false );
+
+  // get BNK
+  addAsm( "LDA $DD00", 3, false );
+  addAsm( "EOR #$FF", 2, false );
+  addAsm( "AND #$03", 2, false );
+  addAsm( "CLC" );
+  addAsm( "ASL" );
+  addAsm( "ASL" );
+  addAsm( "ASL" );
+  addAsm( "ASL" );	
+  addAsm( "ASL" );
+  addAsm( "ASL" );
+  
+  addAsm( "ADC $FF", 2, false );
+  addAsm( "TAX" );
+  addAsm( "LDA #$00", 2, false );
+  addAsm( "CLI" );
+  strcpy( $$.name, "XA" );
+}
+
+| tGETADDR '(' expression ',' expression ')'
+{
+  getplot_is_needed = true;
+
+  int x_addr = getAddressOf($3.name);
+  int y_addr = getAddressOf($5.name);
+
+  
+  // X Low
+  addAsm( string("LDA $") + toHex(x_addr), 3, false );
+  addAsm( "STA $FA", 2, false );
+
+  if( isWordID( $3.name ) )
+    {
+      // X High
+      addAsm( string("LDA $") + toHex(x_addr+1), 3, false );
+    }
+  else
+    {
+      addAsm( string("LDA #$00"), 2, false );
+    }
+  addAsm( "STA $FB", 2, false );
+
+  // Y
+  addAsm( string("LDA $") + toHex(y_addr), 3, false );
+  addAsm( "STA $FC", 2, false );
+  addAsm( "JSR GETPLOT", 3, false );
+  addAsm( "LDA $02", 2, false );
+  addAsm( "LDX $03", 2, false );
+  strcpy( $$.name, "XA" );  
+
+  
+}
 | tGETXY '(' expression ',' expression ')'
 {
   getplot_is_needed = true;
@@ -5589,6 +5859,13 @@ expression: expression arithmetic expression
   strcpy( $$.name, "A" );  
 
 }
+| tBANK '(' ')'
+{
+  addAsm( "LDA $DD00", 3, false );
+  addAsm( "EOR #$FF", 2, false );
+  addAsm( "AND #$03", 2, false );
+  strcpy( $$.name, "A" );  
+};
 | tTOUINT '(' expression ')'
 {
   int t = getTypeOf($3.name);
@@ -5608,7 +5885,9 @@ expression: expression arithmetic expression
   else if( isWordID($3.name) )
     {
       int base_address = hexToDecimal( string($3.name) );
-      addAsm( string( "LDA $" ) + toHex(base_address), 2, false  );
+      int inst_size = 3;
+      if( base_address < 256 ) inst_size = 2;
+      addAsm( string( "LDA $" ) + toHex(base_address), inst_size, false  );
     }
   else if( isXA($3.name) )
     {
@@ -5736,8 +6015,8 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
       addCompilerMessage( "invalid MOB number: should be 0-7", 3 );
     }
 
-  int sprite_location = atoi($4.name);
-  if( sprite_location > 255 || sprite_location < 0 )
+  int sprite_area = atoi($4.name);
+  if( sprite_area > 255 || sprite_area < 0 )
     {
       addCompilerMessage( "invalid MOB location: should be 0-255", 3 );
     }
@@ -6063,6 +6342,8 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
   if( atoi($3.name) > 255 ) instr_size=3;
   if( atoi($3.name) > 65535 ) addCompilerMessage( "memory location out of range", 2 );
   if( atoi($3.name) < 0 ) addCompilerMessage( "memory location out of range", 2 );
+
+  cerr << "peek( " << $3.name << ")" << endl;
   addAsm(string("LDA $") + toHex(atoi($3.name)), instr_size, false );
   strcpy($$.name, "A" );
 };
@@ -6586,14 +6867,104 @@ int main(int argc, char *argv[])
     }
   if( multicolour_plot_is_needed )
     {
-      // from p155 of Advanced Machine Code Programming for the Commodore 64 
-      addComment( "vvv-------------------------------------vvv" );
-      addComment( "vvv  from p164 of Advanced Machine Code vvv" );
-      addComment( "vvv   Programming for the Commodore 64  vvv" );
-      addComment( "vvv-------------------------------------vvv" );
+      // from p164 of Advanced Machine Code Programming for the Commodore 64
+      addComment( "vvv------------------------------------vvv" );
+      addComment( "vvv from p164 of Advanced Machine Code vvv" );
+      addComment( "vvv  Programming for the Commodore 64  vvv" );
+      addComment( "vvv w/ some changes to deal with banks vvv" );
+      addComment( "vvv------------------------------------vvv" );
       addAsm( ";", 0, true );
       addAsm( "; x = $FA, y = $FC, colour = $FD", 0, true );
-      addAsm( "MCPLOT:", 0, true );      
+      addAsm( "; STORE is at $FE(l), $FF(h)", 0, true);
+      addAsm( "; LOC is at $02(l), $03(h)", 0, true);
+      addAsm( "MCPLOT:", 0, true );
+      addAsm( "SEI" );
+      addAsm( "LDA $FA; xcoord", 2, false );
+      addAsm( "AND #$03", 2, false );
+      addAsm( "STA $FE; store", 2, false );
+      addAsm( "LDA #$00", 2, false );
+      addAsm( "STA $02; loc", 2, false );
+      addAsm( "STA $FF; store + 1", 2, false );
+      addAsm( "LDA $FD; colcode", 2, false );
+      addAsm( "CLC" );
+      addAsm( "ROR" );
+      // loop here
+      addAsm( "ROR" );
+      addAsm( "ROR" );
+      addAsm( "DEC $FE; store", 2, false );
+      addAsm( ".BYTE #$10, #$FA", 2, false );  // BPL "loop here"
+      addAsm( "STA $50; mask", 2, false );
+      addAsm( "LDA $FA; xcoord", 2, false );
+      addAsm( "AND #$FC", 2, false );
+      addAsm( "ASL" );
+      addAsm( "ROL $FF; store + 1", 2, false );
+      addAsm( "STA $FE; store", 2, false );
+      addAsm( "LDA $FC; ycoord", 2, false );
+      addAsm( "LSR" );
+      addAsm( "LSR" );
+      addAsm( "LSR" );
+      addAsm( "STA $03; loc + 1", 2, false );
+      addAsm( "LSR" );
+      addAsm( "ROR $02; loc", 2, false );
+      addAsm( "LSR" );
+      addAsm( "ROR $02; loc", 2, false );
+      addAsm( "CLC" );
+      
+      addAsm( "ADC $03; loc + 1", 2, false );
+      addAsm( "STA $03; loc + 1", 2, false );
+      addAsm( "LDA $FC; ycoord", 2, false );
+      addAsm( "AND #$07", 2, false );
+      addAsm( "ADC $02; loc", 2, false );
+      addAsm( "ADC $FE; store ", 2, false );
+      addAsm( "STA $02; loc", 2, false );      
+      addAsm( "LDA $03; loc + 1", 2, false );
+      addAsm( "ADC $FF; store + 1", 2, false );
+      
+
+      addAsm( "STA $22; tmpstore", 2, false );
+      addAsm( "; These subroutines I added to calculate the addresses based on VICII settings", 0, true );
+      addAsm( "JSR BNKMEM", 3, false );
+      addAsm( "PLA" ); // <<- A should now be #$00, #$40, #$80, #$C0 based on Bank #      
+      addAsm( "CLC" );
+      addAsm( "ADC $22;", 2, false );
+      addAsm( "STA $22; tmpstore", 2, false );
+
+      addAsm( "JSR BMPMEM", 3, false );
+      addAsm( "PLA" ); // <<- A should now be #$00 or a #$20
+      addAsm( "CLC" );
+      //addAsm( "LDA #$20", 2, false );
+      addAsm( "ADC $22; tmpstore", 2, false );
+      addAsm( "ADC $03; loc + 1", 2, false );
+      addAsm( "; =========================", 0, true );
+
+
+      addAsm( "STA $03; loc + 1", 2, false );
+
+      addAsm( "LDY #$00", 2, false );
+      addAsm( "LDA ($02),Y", 2, false );
+      addAsm( "ORA $50; mask", 2, false );
+      addAsm( "STA ($02),Y", 2, false );
+      addAsm( "CLI" );
+      addAsm( "RTS" );
+      addComment( "^^^------------------------------------^^^" );
+      addComment( "^^^ from p164 of Advanced Machine Code ^^^" );
+      addComment( "^^^  Programming for the Commodore 64  ^^^" );
+      addComment( "^^^ w/ some changes to deal with banks ^^^" );
+      addComment( "^^^------------------------------------^^^" );
+
+    }
+  if( getplot_is_needed )
+    {
+      // from p164 of Advanced Machine Code Programming for the Commodore 64 
+      addComment( "vvv------------------------------------vvv" );
+      addComment( "vvv from p164 of Advanced Machine Code vvv" );
+      addComment( "vvv  Programming for the Commodore 64  vvv" );
+      addComment( "vvv w/ some changes to deal with banks vvv" );
+      addComment( "vvv------------------------------------vvv" );
+      addAsm( ";       L    H", 0, true );
+      addAsm( "; x = ($FA, $FB), y = $FC", 0, true );
+      addAsm( "GETPLOT:", 0, true );
+      addAsm( "SEI" );
       addAsm( "LDA $FA", 2, false );
       addAsm( "AND #$03", 2, false );
       addAsm( "STA $5C", 2, false );
@@ -6632,242 +7003,54 @@ int main(int argc, char *argv[])
       addAsm( "AND #$07", 2, false );
       addAsm( "ADC $02", 2, false );
       addAsm( "ADC $5C", 2, false );
-      addAsm( "STA $02", 2, false );
+      addAsm( "STA $02", 2, false );      
+
+
       addAsm( "LDA $03", 2, false );
       addAsm( "ADC $5D", 2, false );
-      addAsm( "ADC #$20", 2, false ); 
       addAsm( "STA $03", 2, false );
-      addAsm( "LDY #$00", 2, false );
-      addAsm( "LDA ($02),Y", 2, false );
-      addAsm( "ORA $50", 2, false );
-      addAsm( "STA ($02),Y", 2, false );
-      addAsm( "RTS" );
-      addComment( "^^^-------------------------------------^^^" );
-      addComment( "^^^  from p164 of Advanced Machine Code ^^^" );
-      addComment( "^^^   Programming for the Commodore 64  ^^^" );
-      addComment( "^^^-------------------------------------^^^" );
-
-    }
-  if( 0 )  // plot a single pixel at an x,y
-    {
-      // from p155 of Advanced Machine Code Programming for the Commodore 64 
-      addComment( "vvv-------------------------------------vvv" );
-      addComment( "vvv  from p155 of Advanced Machine Code vvv" );
-      addComment( "vvv   Programming for the Commodore 64  vvv" );
-      addComment( "vvv modified with colour - mkpellegrino vvv" );
-      addComment( "vvv-------------------------------------vvv" );
-      addAsm( "PLOTCOLOUR:", 0, true );
-      addAsm( ".BYTE #$00", 1, false );
-      addAsm( ";       L    H", 0, true );
-      addAsm( "; x = ($FA, $FB), y = $FC", 0, true );
-      addAsm( "PLOT:", 0, true );
       
-      addAsm( "LDA $FA", 2, false );
-      addAsm( "AND #$07", 2, false );
-      addAsm( "TAX" );
-      addAsm( "SEC" );
-      addAsm( "LDA #$00", 2, false );
-      addAsm( "STA $02", 2, false );
-      // SHIFT
-      addAsm( "ROR" );
-      addAsm( "DEX" );
-      addAsm( ".BYTE #$10, #$FC", 2, false );  // BPL tPLOT
-      addAsm( "STA $59", 2, false ); // now $59 has the Mask
-
-      addAsm( "LDA $FA", 2, false );    //   XL -> A
-      addAsm( "AND #$F8", 2, false ); // AND #$F8 with the Lowbyte of the X
-      addAsm( "STA $5C", 2, false ); // ->    X-> $5C
-
-      addAsm( "LDA $FC", 2, false );
-      addAsm( "LSR" );
-      addAsm( "LSR" );
-      addAsm( "LSR" );
-      addAsm( "STA $03", 2, false );
-      addAsm( "LSR" );
-      addAsm( "ROR $02", 2, false );
-      addAsm( "LSR" );      
-      addAsm( "ROR $02", 2, false );
+      addAsm( "JSR BNKMEM", 3, false );
+      addAsm( "PLA" ); // <<- A should now be #$00, #$40, #$80, #$C0 based on Bank #
+      addAsm( "CLC" ); 
       addAsm( "ADC $03", 2, false );
       addAsm( "STA $03", 2, false );
 
-      addAsm( "LDA $FC", 2, false );
-      addAsm( "AND #$07", 2, false );
-      addAsm( "ADC $02", 2, false );
-      addAsm( "ADC $5C", 2, false );
-      addAsm( "STA $02", 2, false );
+      addAsm( "JSR BMPMEM", 3, false );
+      addAsm( "PLA" ); // <<- A should now be #$00 or a #$20
+      addAsm( "CLC" );      
 
-      addAsm( "LDA $03", 2, false );
-      addAsm( "ADC $FB", 2, false );
-      addAsm( "ADC $FF", 2, false );
-      addAsm( "STA $03", 2, false );
-      addAsm( "LDY #$00", 2, false );
-      addAsm( "LDA ($02),Y", 2, false );
-      addAsm( "ORA $59", 2, false );
-      addAsm( "STA ($02),Y", 2, false );
-      addAsm( "RTS" );
-      addComment( "^^^-------------------------------------^^^" );
-      addComment( "^^^  from p155 of Advanced Machine Code ^^^" );
-      addComment( "^^^   Programming for the Commodore 64  ^^^" );
-      addComment( "^^^-------------------------------------^^^" );
-    }
-  if( getplot_is_needed )
-    {
-      // from p155 of Advanced Machine Code Programming for the Commodore 64 
-      addComment( "vvv-------------------------------------vvv" );
-      addComment( "vvv  from p155 of Advanced Machine Code vvv" );
-      addComment( "vvv   Programming for the Commodore 64  vvv" );
-      addComment( "vvv-------------------------------------vvv" );
-      addAsm( ";       L    H", 0, true );
-      addAsm( "; x = ($FA, $FB), y = $FC", 0, true );
-      addAsm( "GETPLOT:", 0, true );
-      
-      addAsm( "LDA $FA", 2, false );
-      addAsm( "AND #$07", 2, false );
-      addAsm( "TAX" );
-      addAsm( "SEC" );
-      addAsm( "LDA #$00", 2, false );
-      addAsm( "STA $02", 2, false );
-      // SHIFT
-      addAsm( "ROR" );
-      addAsm( "DEX" );
-      addAsm( ".BYTE #$10, #$FC", 2, false );  // BPL tPLOT
-      addAsm( "STA $59", 2, false ); // now PLOTSTR+4 has the Mask
-
-      addAsm( "LDA $FA", 2, false );    //   XL -> A
-      addAsm( "AND #$F8", 2, false ); // AND #$F8 with the Lowbyte of the X
-      addAsm( "STA $5C", 2, false ); // ->    X-> $5C
-
-      addAsm( "LDA $FC", 2, false );
-      addAsm( "LSR" );
-      addAsm( "LSR" );
-      addAsm( "LSR" );
-      addAsm( "STA $03", 2, false );
-      addAsm( "LSR" );
-      addAsm( "ROR $02", 2, false );
-      addAsm( "LSR" );      
-      addAsm( "ROR $02", 2, false );
       addAsm( "ADC $03", 2, false );
       addAsm( "STA $03", 2, false );
+      
+      
+      /* /\* for debugging only *\/ */
+      /* addAsm( "LDA #$FF", 2, false ); */
+      /* addAsm( "LDX #$00", 2, false ); */
+      /* addAsm( "STA ($02,X)", 2, false ); */
 
-      addAsm( "LDA $FC", 2, false );
-      addAsm( "AND #$07", 2, false );
-      addAsm( "ADC $02", 2, false );
-      addAsm( "ADC $5C", 2, false );
-      addAsm( "STA $02", 2, false );
+      /* byte2hex_is_needed = true; */
+      /* addAsm( "LDA $03", 2, false ); */
+      /* addAsm( "PHA" ); */
+      /* addAsm( "JSR BYTE2HEX", 3, false ); */
+      /* addAsm( "LDA $02", 2, false ); */
+      /* addAsm( "PHA" ); */
+      /* addAsm( "JSR BYTE2HEX", 3, false ); */
+      /* addAsm( "LDA #$20", 2, false ); */
+      /* addAsm( "JSR $FFD2", 3, false ); */
+      /* /\* for debugging only *\/ */
 
-      addAsm( "LDA $03", 2, false );
-      addAsm( "ADC $FB", 2, false );
-      addAsm( "ADC $FF", 2, false );
-      addAsm( "STA $03", 2, false );
+      addAsm( "CLI" );
+      // -----------------------------------
       addAsm( "RTS" );
-      addComment( "^^^-------------------------------------^^^" );
-      addComment( "^^^  from p155 of Advanced Machine Code ^^^" );
-      addComment( "^^^   Programming for the Commodore 64  ^^^" );
-      addComment( "^^^-------------------------------------^^^" );
+      addComment( "^^^------------------------------------^^^" );
+      addComment( "^^^ from p164 of Advanced Machine Code ^^^" );
+      addComment( "^^^  Programming for the Commodore 64  ^^^" );
+      addComment( "^^^ w/ some changes to deal with banks ^^^" );
+      addComment( "^^^------------------------------------^^^" );
 
     }
-  if( 0 )
-    {
-      // My Homegrown Routine that is Way too slow!
-      addAsm( "PLOTSTR:", 0, false );
-      addAsm( ";     y&7    y&F8   XL    XH  MASK  OLDX", 0 , true );
-      addAsm( ".BYTE #$00, #$00, #$00, #$00, #$00, #$00", 6, false );
-      mul16_is_needed = true;
-      addAsm( ";       L    H", 0, true );
-      addAsm( "; x = ($FA, $FB), y = $FC", 0, true );
-      
-      addAsm( "PLOT:", 0, true );
-
-      
-      addAsm( "LDA $FA", 2, false );    //   XL -> A
-      addAsm( "STA PLOTSTR+5", 3, false ); // save it for later
-      addAsm( "AND #$F8", 2, false ); // AND #$F8 with the Lowbyte of the X
-      addAsm( "STA $FA", 2, false ); // ->    X-> $FA
-      
-      addAsm( "LDA $FC", 2, false );  // Y -> A
-      addAsm( "AND #$07", 2, false ); // A & #$07 -> A
-      addAsm( "STA PLOTSTR", 3, false ); //  A -> PLOTSTR
-
-      
-      addAsm( "LDA $FC", 2, false  ); // Y -> A
-      addAsm( "AND #$F8", 2, false );  // A & #$F8 -> A
-      addAsm( "STA PLOTSTR+1", 3, false );  // A -> PLOTSTR+1
-
-
-      
-      addAsm( "LDA $FA", 2, false ); //XL
-      addAsm( "STA PLOTSTR+2", 3, false );
-      addAsm( "LDA $FB", 2, false ); // XH
-      addAsm( "STA PLOTSTR+3", 3, false ); 
-
-      // multiplication 1  -- 0x140 * ( Y & 0xF8 )
-      addAsm( "LDA PLOTSTR+1", 3, false );
-      addAsm( "STA $FD", 2, false );
-      addAsm( "LDA #$00", 2, false ); // 
-      addAsm( "STA $FE", 2, false ); // High Byte of Y (is Zero) -> $FD
-
-      
-      addAsm( "LDA #$28", 2, false );  // 40
-      addAsm( "STA $FB", 2, false );
-      addAsm( "LDA #$00", 2, false ); // Store 0x0140 in $FB/$FC  (01)
-      addAsm( "STA $FC", 2, false );
-
-      addAsm( "JSR MUL16", 3, false );
-
-      addAsm( "LDA MUL16R", 3, false );
-      addAsm( "STA $02", 2, false );
-      addAsm( "LDA MUL16R+1", 3, false );
-      addAsm( "STA $03", 2, false );
-
-      // result is in 02 and 03
-      addAsm( "LDA #$20", 2, false ); // add 0x2000 to result
-      addAsm( "CLC" );
-      addAsm( "ADC $03", 2, false ); // (just the high byte)
-      addAsm( "STA $03", 2, false );
-
-      addAsm( "LDA PLOTSTR", 3, false ); // y&7 + RESULT LOW
-      addAsm( "ADC $02", 2, false );
-      addAsm( "STA $02", 2, false );
-      
-      addAsm( "LDA #$00", 2, false ); // put a ZERO back into A
-      addAsm( "ADC $03", 2, false );  // add with carry into High Byte
-      addAsm( "STA $03", 2, false );  // of result
-      
-      addAsm( "LDA PLOTSTR+2", 3, false ); // load x low into A
-      addAsm( "ADC $02", 2, false ); // add it to low of result
-      addAsm( "STA $02", 2, false );
-
-      
-      addAsm( "LDA PLOTSTR+3", 3, false ); // get the X High Byte
-      addAsm( "ADC $03", 2, false ); // add it to result
-      addAsm( "STA $03", 2, false );
-
-      // from p155 of Advanced Machine Code Programming for the Commodore 64 
-      addAsm( string("LDA PLOTSTR+5"), 3, false );
-      addAsm( "AND #$07", 2, false );
-      addAsm( "TAX" );
-      addAsm( "SEC" );
-      addAsm( "LDA #$00", 2, false );
-      //tPLOT LABEL
-      addAsm( "ROR" );
-      addAsm( "DEX" );
-      addAsm( ".BYTE #$10, #$FC", 2, false );  // BPL tPLOT
-      addAsm( "STA PLOTSTR+4", 3, false ); // now PLOTSTR+4 has the Mask
-      // ===================================================================
-      
-      addAsm( "LDX #$00", 2, false );
-      addAsm( "LDA ($02,X)", 2, false );
-      addAsm( "ORA PLOTSTR+4", 3, false );
-      addAsm( "STA ($02,X)", 2, false );
-
-      
-      // plot some data
-      //addAsm( "LDX #$00", 2, false  );
-      //addAsm( "LDA #$FF", 2, false );
-      //addAsm( "STA ($02,X)", 2, false );  // put a short 8 bit line at location
-
-      addAsm( "RTS" );
-    }
+ 
   if( mul16_is_needed )
     {
       // 16-bit multiplication
@@ -6938,6 +7121,103 @@ int main(int argc, char *argv[])
       addAsm( "STA $D412", 3, false );
       addAsm( "PLA" );
       addAsm( "RTS" );       
+    }
+    if( true )
+    {
+      addAsm( "BMPMEM:\t\t; Get the bitmap mem location from the vic II", 0, true );
+      return_addresses_needed = true;
+      addAsm( "PLA" );
+      addAsm( string( "STA $" ) + toHex(getAddressOf( "return_address_1" ) ), 3, false );
+      addAsm( "PLA" );
+      addAsm( string( "STA $" ) + toHex(getAddressOf( "return_address_2" ) ), 3, false );
+      // =================================================================================
+      addAsm( "LDA $D018", 3, false );
+      addAsm( "AND #$08", 2, false );
+      addAsm( "CLC" );
+      addAsm( "ASL" );
+      addAsm( "ASL" );
+      addAsm( "PHA" );
+      // =================================================================================
+      addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_2" ) ), 3, false );
+      addAsm( "PHA" );
+      addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_1" ) ), 3, false );
+      addAsm( "PHA" );
+      addAsm( "RTS" );
+    }
+
+  if( true )
+    {
+      addAsm( "CHRMEM:\t\t; Get the character mem location from the vic II", 0, true );
+      return_addresses_needed = true;
+      addAsm( "PLA" );
+      addAsm( string( "STA $" ) + toHex(getAddressOf( "return_address_1" ) ), 3, false );
+      addAsm( "PLA" );
+      addAsm( string( "STA $" ) + toHex(getAddressOf( "return_address_2" ) ), 3, false );
+      // =================================================================================
+      addAsm( "LDA $D018", 3, false );
+      addAsm( "AND #$0E", 2, false );
+      addAsm( "CLC" );
+      addAsm( "ASL" );
+      addAsm( "ASL" );
+      addAsm( "PHA" );
+      // =================================================================================
+      addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_2" ) ), 3, false );
+      addAsm( "PHA" );
+      addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_1" ) ), 3, false );
+      addAsm( "PHA" );
+      addAsm( "RTS" );
+    }
+
+  if( true )
+    {
+      addAsm( "SCRMEM:\t\t; Get the screen mem location from the vic II", 0, true );
+      return_addresses_needed = true;
+      addAsm( "PLA" );
+      addAsm( string( "STA $" ) + toHex(getAddressOf( "return_address_1" ) ), 3, false );
+      addAsm( "PLA" );
+      addAsm( string( "STA $" ) + toHex(getAddressOf( "return_address_2" ) ), 3, false );
+      // =================================================================================
+      addAsm( "LDA $D018", 3, false );
+      addAsm( "AND #$F0", 2, false );
+      addAsm( "CLC" );
+      addAsm( "LSR" );
+      addAsm( "LSR" );
+      addAsm( "PHA" );
+      // =================================================================================
+      addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_2" ) ), 3, false );
+      addAsm( "PHA" );
+      addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_1" ) ), 3, false );
+      addAsm( "PHA" );
+      addAsm( "RTS" );
+    }
+  if( true )
+    {
+      addAsm( "BNKMEM:\t\t; Get the bank memory from the vic II", 0, true );
+      return_addresses_needed = true;    
+      addAsm( "PLA" );
+      addAsm( string( "STA $" ) + toHex(getAddressOf( "return_address_1" ) ), 3, false );
+      addAsm( "PLA" );
+      addAsm( string( "STA $" ) + toHex(getAddressOf( "return_address_2" ) ), 3, false );
+      // =================================================================================
+      addAsm( "LDA $DD00", 3, false );
+      addAsm( "EOR #$FF", 2, false );
+      addAsm( "AND #$03", 2, false );
+      addAsm( "CLC" );
+      addAsm( "ASL" );
+      addAsm( "ASL" );
+      addAsm( "ASL" );
+      addAsm( "ASL" );	
+      addAsm( "ASL" );
+      addAsm( "ASL" );
+      addAsm( "PHA" );
+      // =================================================================================
+      addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_2" ) ), 3, false );
+      addAsm( "PHA" );
+      addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_1" ) ), 3, false );
+      addAsm( "PHA" );
+      addAsm( "RTS" );
+
+
     }
   if( byte2hex_is_needed )
     {
@@ -7221,30 +7501,91 @@ int main(int argc, char *argv[])
       addAsm( "CLS:\t\t; Clear Screen Routine", 0, true );
       addAsm( "LDA #$20", 2, false ); // space
       addAsm( "LDX #$00", 2, false ); // (essentially 256)
-      addAsm( "CLSLOOP:", 0, true );
+      //addAsm( "CLSLOOP:", 0, true );
+      addComment( "top-of-loop" );
       addAsm( "STA $0400,X", 3, false );
       addAsm( "STA $0500,X", 3, false );
       addAsm( "STA $0600,X", 3, false );
       addAsm( "STA $06E8,X", 3, false );
       addAsm( "DEX" );
-      addAsm( "BNE CLSLOOP", 2, false );
+      //addAsm( "BNE CLSLOOP", 2, false );
+      addAsm( ".BYTE #$D0, #$F1", 2, false ); // BNE top-of-loop
       addAsm( "RTS" );
 
     }
-  if( mobcpy_is_needed )
+  if( false )
+    {
+      // I know this is slower than using the Zero page operations or indirect operations
+      // but it's an initialiser... it doesn't need to be fast!
+      addComment( "Copy 63 bytes from MOBCPYSL/MOBCPYSH to MOBCPYDL/MOBCPYDH" );
+      addAsm( "MOBCPY:", 0, true );
+
+
+      // THIS IS ONLY FOR MOB CPY BECAUSE OF THE WAY
+      // THE MOBS ARE INLINE IN THE CODE
+      addAsm( "CLC" );
+      addAsm( "LDA #$01", 2, false );
+      addAsm( "ADC MOBCPYSL", 3, false );
+      addAsm( "STA MOBCPYSL", 3, false );
+      addAsm( "LDA #$00", 2, false );
+      addAsm( "ADC MOBCPYSH", 3, false );
+      addAsm( "STA MOBCPYSH", 3, false );
+      addAsm( "SEI" );
+      // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      addAsm( "LDY #$3F", 2, false ); // 63 bytes
+
+      addComment( "top-of-loop" );
+      addAsm( "MOBCPTOP:", 0, true );
+      addAsm( "CPY #$00", 2, false );
+      addAsm( ".BYTE #$F0, #$0A; BEQ RELATIVE", 2, false ); // BEQ bottom-of-loop
+      
+      addAsm( ".BYTE #$B9; LDA absolute,Y", 1, false );
+      addAsm( "MOBCPYSL:", 0, true );
+      addAsm( ".BYTE #$00", 1, false );
+      addAsm( "MOBCPYSH:", 0, true );
+      addAsm( ".BYTE #$00", 1, false );
+
+      addAsm( ".BYTE #$99; STA absolute,Y", 1, false );
+      addAsm( "MOBCPYDL:", 0, true );
+      addAsm( ".BYTE #$00", 1, false );
+      addAsm( "MOBCPYDH:", 0, true );
+      addAsm( ".BYTE #$00", 1, false );
+
+      addAsm( "DEY" );
+      addAsm( "JMP MOBCPTOP", 3, false );
+      addComment( "bottom-of-loop" );
+      addAsm( "CLI" );
+      addAsm( "RTS" );
+    }
+  
+  if( mobcpy_is_needed  )
     {
       // a QUICK and DIRTY MEMCPY of 63 BYTES
-      addAsm( "MOBCPY:\t\t; Copy 63 bytes from $FB/$FC to $FD/$FE", 0, true ); 
+      addAsm( "MOBCPY:\t\t; Copy 63 bytes from $FB/$FC to $FD/$FE", 0, true );
+      addAsm( "SEI" );
+      // THIS IS ONLY FOR MOB CPY BECAUSE OF THE WAY
+      // THE MOBS ARE INLINE IN THE CODE
+      addAsm( "CLC" );
+      addAsm( "LDA #$01", 2, false );
+      addAsm( "ADC $FB", 2, false );
+      addAsm( "STA $FB", 2, false );
+      addAsm( "LDA #$00", 2, false );
+      addAsm( "ADC $FC", 2, false );
+      addAsm( "STA $FC", 2, false );
+
       addAsm( "LDY #$3F", 2, false );
-      addAsm( "MOBCPL1:", 0, true );
+      addComment( "top-of-loop" );
+      addAsm( "MOBCPTOP:", 0, true );
       addAsm( "CPY #$00", 2, false );
-      addAsm( "BEQ MOBCPL2", 2, false );
+      addAsm( ".BYTE #$F0, #$08", 2, false ); // BEQ bottom-of-loop
       addAsm( "LDA ($FB),Y", 2, false );
       addAsm( "STA ($FD),Y", 2, false );
-      addAsm( "DEY", 1, false );
-      addAsm( "JMP MOBCPL1", 3, false );
-      addAsm( "MOBCPL2:", 0, true );
+      addAsm( "DEY" );
+      addAsm( "JMP MOBCPTOP", 3, false );
+      addComment( "bottom-of-loop" );
+      addAsm( "CLI" );
       addAsm( "RTS" );
+
     }
   if( memcpy_is_needed )
     {

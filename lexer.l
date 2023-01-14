@@ -9,6 +9,9 @@ digit [0-9]
 frmt  [{\t}|{\n}]
 
 %%
+"romout"               { strcpy(yylval.nd_obj.name,(yytext)); return tROMOUT; }
+"romin"               { strcpy(yylval.nd_obj.name,(yytext)); return tROMIN; }
+"bank"               { strcpy(yylval.nd_obj.name,(yytext)); return tBANK; }
 "rol"               { strcpy(yylval.nd_obj.name,(yytext)); return tROL; }
 "ror"               { strcpy(yylval.nd_obj.name,(yytext)); return tROR; }
 "asl"               { strcpy(yylval.nd_obj.name,(yytext)); return tASL; }
@@ -17,6 +20,10 @@ frmt  [{\t}|{\n}]
 "inc"               { strcpy(yylval.nd_obj.name,(yytext)); return tINC; }
 "mob"               { strcpy(yylval.nd_obj.name,(yytext)); return tMOB; }
 "plot"              { strcpy(yylval.nd_obj.name,(yytext)); return tPLOT; }
+"getbmp_addr"            { strcpy(yylval.nd_obj.name,(yytext)); return tGETBMP; }
+"getscr_addr"            { strcpy(yylval.nd_obj.name,(yytext)); return tGETSCR; }
+"getbank_addr"            { strcpy(yylval.nd_obj.name,(yytext)); return tGETBANK; }
+"getaddr"             { strcpy(yylval.nd_obj.name,(yytext)); return tGETADDR; }
 "getxy"             { strcpy(yylval.nd_obj.name,(yytext)); return tGETXY; }
 "spritexy"               { strcpy(yylval.nd_obj.name,(yytext)); return tSPRITEXY; }
 "spritex"               { strcpy(yylval.nd_obj.name,(yytext)); return tSPRITEX; }
