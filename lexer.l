@@ -9,6 +9,8 @@ digit [0-9]
 frmt  [{\t}|{\n}]
 
 %%
+"data"                { strcpy(yylval.nd_obj.name,(yytext)); return tDATA; }
+"tobit"               { strcpy(yylval.nd_obj.name,(yytext)); return tTOBIT; }
 "romout"               { strcpy(yylval.nd_obj.name,(yytext)); return tROMOUT; }
 "romin"               { strcpy(yylval.nd_obj.name,(yytext)); return tROMIN; }
 "bank"               { strcpy(yylval.nd_obj.name,(yytext)); return tBANK; }
