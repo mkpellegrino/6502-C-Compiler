@@ -1,5 +1,23 @@
 #include <stdio.h>
 
+// Colours
+// 0 - Black
+// 1 - White
+// 2 - Red
+// 3 - Cyan
+// 4 - Purple
+// 5 - Green
+// 6 - Dark Blue
+// 7 - Yellow
+// 8 - Orange
+// 9 - Brown
+// 10 - Pink
+// 11 - Dark Grey
+// 12 - Grey
+// 13 - Bright Green
+// 14 - Light Blue
+// 15 - Light Grey
+
 void main()
 {
   cls();
@@ -7,10 +25,24 @@ void main()
   pause();
   romout();
   saveregs();
+  data jt = { 0x00, 0xFC, 0xFC, 0xFD, 0xFD, 0xFD, 0xFE, 0xFE, 0xFE, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x01, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
-  data jt = { 0xF8, 0xF9, 0xF9, 0xFA, 0xFB, 0xFC, 0xFC, 0xFD, 0xFD, 0xFD, 0xFE, 0xFF, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 1, 0, 0 };
+
+  //{ 0x00, 0x04, 0x04, 0x03, 0x03, 0x03, 0x02, 0x02, 0x02, 0x01, 0x01, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFE, 0xFE, 0xFE, 0xFD, 0xFD, 0xFD, 0xFC, 0xFC, 0xFB, 0xFB, 0xFB};
+
+
+  //{ 0x00, 0xF8, 0xF9, 0xF9, 0xF9, 0xF9, 0xFA, 0xFA, 0xFB, 0xFA, 0xFB, 0xFC, 0xFB, 0xFC, 0xFD, 0xFC, 0xFD, 0xFE, 0xFD, 0xFE, 0xFE, 0xFF, 0xFE, 0x00, 0xFF, 0x00, 0x00};
+
+  
+  //{ 0xFC, 0xFD, 0xFD, 0xFE, 0xFD, 0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x01, 0x01, 0x01, 0x01, 0x02, 0x03, 0x02, 0x03, 0x03, 0x04, 0x01, 0x01, 0x01 };
+
+  //data jt = { 0xF8, 0xF9, 0xF9, 0xFA, 0xFB, 0xFC, 0xFC, 0xFD, 0xFD, 0xFD, 0xFE, 0xFF, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 1, 0, 0 };
     
   uint midjump = 0;
+
+  // a timer to slow down the leg movement
+  uint subtimer = 0;
+  // parameters for floor building
   uint p1;
   uint p2;
   uint p3;
@@ -26,11 +58,16 @@ void main()
 
   uint lastdirectiontaken=0;
   uint standing=0;
+  uint jerrystanding=0;
+  
   uint whichsprite = 1;
   word delay = 0x00CC;
 
   word x = 0x0020;
   uint y = 100;
+
+  word jx = 0x012C;
+  uint jy = 100;
 
   poke( 0xD011, 59 );
   poke( 0xD016, 24 );
@@ -46,6 +83,12 @@ void main()
 
   mob treasurechest = { 2, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 192, 0, 14, 176, 0, 58, 172, 0, 234, 172, 3, 170, 171, 14, 234, 171, 58, 186, 175, 58, 186, 187, 234, 174, 235, 234, 175, 171, 234, 174, 187, 234, 174, 235, 234, 174, 171, 234, 174, 171, 234, 174, 172, 234, 174, 176, 234, 174, 192, 255, 255, 0 };
 
+  mob Jerry1 = { 3, 4, 0, 255, 0, 3, 255, 192, 15, 247, 240, 15, 213, 240, 15, 85, 112, 13, 255, 240, 13, 247, 240, 15, 85, 112, 3, 255, 195, 0, 255, 11, 0, 170, 58, 2, 186, 250, 10, 159, 232, 41, 87, 160, 233, 87, 128, 218, 94, 128, 214, 122, 128, 53, 122, 128, 15, 226, 128, 2, 162, 160, 10, 162, 168};
+
+  // Jerry Walking
+  mob Jerry2 = { 4, 5, 0, 255, 0, 3, 255, 192, 15, 247, 240, 15, 213, 240, 15, 85, 112, 13, 255, 240, 13, 247, 240, 15, 85, 112, 3, 255, 195, 0, 255, 11, 0, 170, 58, 2, 186, 250, 10, 159, 232, 41, 87, 160, 234, 87, 128, 218, 94, 128, 213, 122, 128, 53, 122, 160, 15, 224, 162, 10, 128, 170, 2, 160, 40};
+
+
   
   // the hat dude
   //mob sprite1 = { 0, 6, 0, 0, 0, 0, 15, 0, 0, 63, 240, 0, 63, 0, 0, 234, 0, 0, 10, 0, 0, 8, 0, 0, 21, 0, 0, 85, 64, 1, 93, 80, 1, 85, 20, 1, 29, 6, 1, 21, 0, 1, 42, 0, 2, 42, 0, 0, 34, 0, 0, 34, 0, 0, 34, 0, 0, 34, 0, 0, 162, 128, 0, 162, 128 };
@@ -55,28 +98,35 @@ void main()
   spritey( 0, y );
   spritex( 1, x );
   spritey( 1, y );
-  
-  spritexy( 2, 210, 175 );
 
-  // multicolour sprite mode for all 3 sprites  %00000111
-  poke( 0xD01C, 7 );
+  // Jerry
+  spritexy( 3, 160, 190 );
 
-  // turns on 1 and 3  %00000101
-  spriteon( 5 );
+  // multicolour sprite mode for all 4 sprites  %00001111
+  poke( 0xD01C, 15 );
+
+  // turns on 1 and 4  %00001001
+  spriteon( 9 );
   
-  // 01 = White for all sprites
-  poke( 0xD025, 1 );
+  // 01 = Yellow for all sprites
+  poke( 0xD025, 7 );
 
   // 11 = black for all sprites
   poke( 0xD026, 0 );
   
-  // 11 = light blue
+  // 10 = light blue
+  // sprite one
   poke( 0xD027, 3 );
+  
+  // 10 = light blue
+  // sprite two
   poke( 0xD028, 3 );
 
-  // 11 = brown
+  // 10 = brown
   poke( 0xD029, 9 );
 
+  // 10 = brown for Jerry
+  poke( 0xD02A, 9 );
 
   // the main loop
   
@@ -87,13 +137,22 @@ void main()
       if( timer == 0 )
 	{
 	  checkIfStanding();
+	  if( jerrystanding == 0 )
+	    {
+	      jy = jy + 1;
+	    }
+	  calculateai();
+	  positionai();
 	  if( standing == 0 )
 	    {
 	      if( midjump != 0 )
 		{
 		  calculatejump();
 		}
-	      y = y + 1;	      
+	      else
+		{
+		  y = y + 1;
+		}
 	    }
 	  else
 	    {
@@ -119,6 +178,31 @@ void main()
   restoreregs();
   bank(0);
   romin();
+  return;
+}
+
+void calculateai()
+{
+  if( jerrystanding > 0 )
+    {
+      if( x < jx )
+	{
+	  jx = jx - 1;
+	}
+      else
+	{
+	  jx = jx + 1;
+	}
+    }
+  
+  return;
+}
+
+void positionai()
+{
+  spritey( 3, jy );
+  spritex( 3, jx );
+
   return;
 }
 
@@ -245,17 +329,23 @@ void checkJump()
 // animate the legs during movement
 void moveLegs()
 {
-  if( whichsprite == 1 )
+  inc( subtimer );
+
+  if( subtimer == 10 )
     {
-      whichsprite = 2;
-      spriteoff( 1 );
-      spriteon( 2 );
-    }
-  else
-    {
-      whichsprite = 1;
-      spriteoff( 2 );
-      spriteon( 1 );
+      if( whichsprite == 1 )
+	{
+	  whichsprite = 2;
+	  spriteoff( 1 );
+	  spriteon( 2 );
+	}
+      else
+	{
+	  whichsprite = 1;
+	  spriteoff( 2 );
+	  spriteon( 1 );
+	}
+      subtimer = 0;
     }
   return;
 
@@ -284,6 +374,19 @@ void checkIfStanding()
   if( standing != 20 )
     {
       standing = 0;
+    }
+
+  myX = jx;
+  uint jmyY = jy;
+  lsr( myX );
+  XXX = touint(myX);
+  XXX = XXX - 6;
+  jmyY = jmyY - 29;
+  jerrystanding = getxy( XXX, jmyY );
+  jerrystanding = jerrystanding & 0x3C;
+  if( jerrystanding != 20 )
+    {
+      jerrystanding = 0;
     }
   return;
 }
@@ -391,36 +494,41 @@ void createplatforms()
 
   // A
   p1 = 0;
-  p2 = 160;
-  p3 = 40;
-  p4 = 161;
+  p2 = 170;
+  p3 = 70;
+  p4 = 171;
   //p5 = 1;
   rect();
 
   // B
-  p1 = 40;
+  p1 = 20;
   p2 = 150;
-  p3 = 41;
-  p4 = 160;
+  p3 = 40;
+  p4 = 151;
   //p5 = 1;
   rect();
 
   // C
-  //p1 = 40;
-  p2 = 150;
-  p3 = 80;
-  p4 = 151;
+  p1 = 40;
+  p2 = 130;
+  p3 = 60;
+  p4 = 131;
   //p5 = 1;
   rect();
 
   // D
-  p1 = 90;
-  p2 = 150;
-  p3 = 120;
-  p4 = 151;
+  p1 = 20;
+  p2 = 110;
+  p3 = 40;
+  p4 = 111;
   //p5 = 1;
   rect();
 
+  p1 = 40;
+  p2 = 90;
+  p3 = 60;
+  p4 = 91;
+  rect();
   
   return;
 }

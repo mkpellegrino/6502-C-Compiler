@@ -20,6 +20,9 @@ compiler: y.tab.c
 	$(CC) $(LIBRARIES) -w y.tab.c -o compiler
 
 
+poke2:
+	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./poke2.c > poke2.asm
+
 data:
 	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./data.c > data.asm
 

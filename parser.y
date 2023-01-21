@@ -2717,89 +2717,124 @@ body: WHILE
 };
 | tPOKE '(' expression ',' expression ')' ';'
 {
-  addCommentSection( string("poke ") + string($3.name) + string( ", ") + string($5.name)  );
-  addAsm( string( "LDA #$" ) + toHex(atoi($5.name)) , 2, false );
-  int tmp_s = toHex(atoi($3.name)).length();
-  if( tmp_s == 4 ) tmp_s = 3;
-  addAsm( string( "STA $" ) + toHex(atoi($3.name)) + string( "; ") + getNameOf( hexToDecimal($3.name) ), tmp_s, false );
-};
-| tPOKE '(' NUMBER ',' NUMBER ')' ';'
-{
-  addCommentSection( string("poke ") + string($3.name) + string( ", ") + string($5.name)  );
-  addAsm( string( "LDA #$" ) + toHex(atoi($5.name)) , 2, false );
-  int tmp_s = toHex(atoi($3.name)).length();
-  if( tmp_s == 4 ) tmp_s = 3;
-  addAsm( string( "STA $" ) + toHex(atoi($3.name)) + string( "; ") + getNameOf( hexToDecimal($3.name) ), tmp_s, false );
-};
-| tPOKE '(' NUMBER ',' ID ')' ';'
-{
-  addCommentSection( string(" poke ") + string($3.name) + string( ", ") + string($5.name)  );
-  int addr = getAddressOf($5.name);
-  addAsm( string( "LDA $" ) + toHex(addr), 3, false );
-  int tmp_s = toHex(atoi($3.name)).length();
-  if( tmp_s == 4 ) tmp_s = 3;
-  addAsm( string( "STA $" ) + toHex(atoi($3.name)) + string( "; ") + getNameOf( hexToDecimal($3.name) ), tmp_s, false );
-};
-| tPOKE '(' ID ',' NUMBER ')' ';'
-{
-  addCommentSection( string("poke ") + string($3.name) + string( ", ") + string($5.name)  );
-  pushScope( "POKE" );
-  int addr = getAddressOf($3.name);
-  int value = atoi( $5.name );
-  
-  addAsm( string( "LDA $" ) + toHex(addr), 3, false );
-  addAsm( string( "STA " ) + getLabel( label_vector[label_major],false), 3, false );
-  addAsm( string( "LDA $" ) + toHex(addr+1), 3, false );
-  addAsm( string( "STA " ) + getLabel( label_vector[label_major]+1,false), 3, false );
-  addAsm( string( "LDA #$" ) + toHex( value ), 2, false );
-  addAsm( ".BYTE #$8D;\t  <-- STA absolute", 1, false );
-  addAsm( generateNewLabel() + string( "\t\t\t; <-- low byte"), 0, true );
-  addAsm( ".BYTE #$00", 1, false );
-  addAsm( generateNewLabel() + string( "\t\t\t; <-- hi byte"), 0, true );
-  addAsm( ".BYTE #$00", 1, false );
-  popScope();
-};
-| tPOKE '(' ID ',' ID ')' ';'
-{
+  addComment( "poke( expression, expression );" );
+  if( isWordID($3.name) && (isUintID($5.name) || isIntID($5.name)) )
+    {
+      pushScope("POKE( ID, ID)");
+      int addr_addr = getAddressOf($3.name);
+      int valu_addr = getAddressOf($5.name);
 
-  addCommentSection( string("poke ") + string($3.name) + string( ", ") + string($5.name)  );
-  pushScope( "POKE" );
-  int addr = getAddressOf($3.name);
-  int addr2 = getAddressOf($5.name);
-  addAsm( string( "LDA $" ) + toHex(addr),  3, false );
-  addAsm( string( "STA " ) + getLabel( label_vector[label_major],false), 3, false );
-  addAsm( string( "LDA $" ) + toHex(addr+1),  3, false );
-  addAsm( string( "STA " ) + getLabel( label_vector[label_major]+1,false), 3, false );
-  addAsm( string( "LDA $" ) + toHex( addr2 ) + string( "; ") + getNameOf( addr2 ) , 3, false );
-  addAsm( ".BYTE #$8D", 1, false );
-  addAsm( generateNewLabel() + string( "\t\t\t; <-- low byte"), 0, true );
-  addAsm( ".BYTE #$00", 1, false );
-  addAsm( generateNewLabel() + string( "\t\t\t; <-- hi byte"), 0, true );
-  addAsm( ".BYTE #$00", 1, false );
-  popScope();
-};
-| tPOKE '(' HEX_NUM ',' NUMBER ')' ';'
-{
-  int instr_size = 2;
-  if( hexToDecimal(stripFirst(stripFirst($3.name)).c_str()) > 255 ) instr_size = 3;
-  if( hexToDecimal(stripFirst(stripFirst($3.name)).c_str()) > 65535 ) addCompilerMessage( "memory location out of range", 2 );
-  if( hexToDecimal(stripFirst(stripFirst($3.name)).c_str()) < 0 ) addCompilerMessage( "memory location out of range", 2 );
-  addAsm(string("LDA #$") + toHex(atoi($5.name)) , 2, false );
-  cerr << instr_size << endl;
-  addAsm(string("STA $") + stripFirst(stripFirst($3.name)), instr_size, false );
-}
+      int instr_size = 3;
+      if( addr_addr < 256 ) instr_size = 2;
+      
+      /* get & store the low byte of the poke address */
+      addAsm( string( "LDA $" ) + toHex(addr_addr), instr_size, false );
+      addAsm( string( "STA " ) + getLabel( label_vector[label_major],false), 3, false );
+      /* get & store the high byte of the poke address */
+      instr_size = 3;
+      if( addr_addr+1 < 256 ) instr_size = 2;
+      addAsm( string( "LDA $" ) + toHex(addr_addr+1), instr_size, false );
+      addAsm( string( "STA " ) + getLabel( label_vector[label_major]+1,false), 3, false );
 
-| tPOKE '(' HEX_NUM ',' ID ')' ';'
-{
+      instr_size = 3;
+      if( valu_addr < 256 ) instr_size = 2;      
+      addAsm( string("LDA $") + toHex( valu_addr ), instr_size, false );
 
-  int instr_size = 2;
-  if( hexToDecimal(stripFirst(stripFirst($3.name)).c_str()) > 255 ) instr_size = 3;
-  if( hexToDecimal(stripFirst(stripFirst($3.name)).c_str()) > 65535 ) addCompilerMessage( "memory location out of range", 2 );
-  if( hexToDecimal(stripFirst(stripFirst($3.name)).c_str()) < 0 ) addCompilerMessage( "memory location out of range", 2 );
+      addAsm( ".BYTE #$8D;\t  <-- STA absolute", 1, false );
+      addAsm( generateNewLabel() + string( "\t\t\t; <-- low byte"), 0, true );
+      addAsm( ".BYTE #$00", 1, false );
+      addAsm( generateNewLabel() + string( "\t\t\t; <-- hi byte"), 0, true );
+      addAsm( ".BYTE #$00", 1, false );
+      popScope();
+    }
+  else if( isWordID($3.name) && (isUintIMM($5.name) || isIntIMM($5.name)) )
+    {
+      pushScope("POKE( ID, IMM )");
+      int addr_addr = getAddressOf($3.name);
+      int value = atoi( stripFirst($5.name).c_str() );
+      if( value < 0 || value > 255) addCompilerMessage( "value out of range [0,255]", 3 );
+      int instr_size = 3;
+      if( addr_addr < 256 ) instr_size = 2; // it's in Zero Page
+      
+      /* get & store the low byte of the poke address */
+      addAsm( string( "LDA $" ) + toHex(addr_addr), instr_size, false );
+      addAsm( string( "STA " ) + getLabel( label_vector[label_major],false), 3, false );
+      /* get & store the high byte of the poke address */
+      instr_size = 3;
+      if( addr_addr+1 < 256 ) instr_size = 2;
+      addAsm( string( "LDA $" ) + toHex(addr_addr+1), instr_size, false );
+      addAsm( string( "STA " ) + getLabel( label_vector[label_major]+1,false), 3, false );
 
-  int addr2 = getAddressOf($5.name);
-  addAsm( string( "LDA $" ) + toHex( addr2 ) + string( "; ") + getNameOf( addr2 ) , 3, false );
-  addAsm(string("STA $") + stripFirst(stripFirst($3.name)), instr_size, false );
+      /* load the value into acc */
+      addAsm( string( "LDA #$" ) + toHex( value ), 2, false );
+
+      /* store it in the instruction */
+      addAsm( ".BYTE #$8D;\t  <-- STA absolute", 1, false );
+      addAsm( generateNewLabel() + string( "\t\t\t; <-- low byte"), 0, true );
+      addAsm( ".BYTE #$00", 1, false );
+      addAsm( generateNewLabel() + string( "\t\t\t; <-- hi byte"), 0, true );
+      addAsm( ".BYTE #$00", 1, false );
+      popScope();
+    }
+  else if( isWordIMM($3.name) && (isUintID($5.name) || isIntID($5.name)) )
+    {
+      addComment("POKE(IMM,ID)" );
+      int addr = atoi( stripFirst($3.name).c_str() );
+      if( addr < 0 || addr > 65536 ) addCompilerMessage( "address out of range [0,65535]", 3 );
+      
+      int value_addr = getAddressOf($5.name);
+      
+      int instr_size = 3;
+      if( value_addr < 256 ) instr_size = 2;
+      
+      addAsm( string( "LDA $") + toHex(value_addr), instr_size, false );
+      instr_size = 3;
+      if( addr < 256 ) instr_size = 2;
+      addAsm( string( "STA $" ) + toHex( addr ), instr_size, false );
+    }
+  else if( isWordIMM($3.name) && (isUintIMM($5.name) || isIntIMM($5.name)) )
+    {
+      addComment("POKE(wIMM,IMM)");
+      int addr = atoi( stripFirst($3.name).c_str() );
+      if( addr < 0 || addr > 65536 ) addCompilerMessage( "address out of range [0,65535]", 3 );
+
+      int value = atoi( stripFirst($5.name).c_str() );
+      if( value < 0 || value > 255) addCompilerMessage( "value out of range [0,255]", 3 );
+
+      addAsm( string( "LDA #$") + toHex( value ), 2, false );
+      int instr_size = 3;
+      if( addr < 256 ) instr_size = 2;
+      addAsm( string( "STA $") + toHex( addr ), instr_size, false );
+    }
+  else if( isWordIMM($3.name) && isA($3.name) )
+    {
+      addComment("POKE(IMM,A)");
+      int addr = atoi( stripFirst($3.name).c_str() );
+      if( addr < 0 || addr > 65536 ) addCompilerMessage( "address out of range [0,65535]", 3 );
+      int instr_size = 3;
+      if( addr < 256 ) instr_size = 2;      
+      addAsm( string( "STA $") + toHex( addr ), instr_size, false );
+      
+    }
+  else if( (isUintIMM($3.name)||isIntIMM($3.name)) && (isUintIMM($5.name)||isIntIMM($5.name)))
+    {
+      addComment("POKE( <uint/int> IMM,IMM)");
+      int addr = atoi( stripFirst($3.name).c_str() );
+      if( addr < 0 || addr > 65536 ) addCompilerMessage( "address out of range [0,65535]", 3 );
+
+      int value = atoi( stripFirst($5.name).c_str() );
+      if( value < 0 || value > 255) addCompilerMessage( "value out of range [0,255]", 3 );
+
+      addAsm( string( "LDA #$") + toHex( value ), 2, false );
+      int instr_size = 3;
+      if( addr < 256 ) instr_size = 2;
+      addAsm( string( "STA $") + toHex( addr ), instr_size, false );
+    }
+  else
+    {
+      addCompilerMessage( "Invalid Poke Parameters", 3 );
+    }
+
 };
 | ID '(' expression ')' ';'
 {
