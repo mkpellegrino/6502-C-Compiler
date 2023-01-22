@@ -4181,7 +4181,46 @@ statement: datatype ID init
   current_variable_base_address = getAddressOf($1.name);
   if(current_variable_base_address == -1) addCompilerMessage( "Undeclared Variable", 3 );
   addComment( "RULE: statement: ID init" );
-  if( isA($2.name) )
+
+  if( isWordID($1.name) && isWordID($2.name) )
+    {
+      addComment("WordID = WordID" );
+      int addr1 = getAddressOf($1.name);
+      int addr2 = getAddressOf($2.name);
+      int instr_size = 3;
+      if( addr2 < 256 ) instr_size = 2;
+      addAsm( string("LDA $") + toHex( addr2 ), instr_size, false );
+      instr_size = 3;
+      if( addr1 < 256 ) instr_size = 2;
+      addAsm( string("STA $") + toHex( addr1 ), instr_size, false );
+      
+      instr_size = 3;
+      if( addr2+1 < 256 ) instr_size = 2;
+      addAsm( string("LDA $") + toHex( addr2+1 ), instr_size, false );
+      instr_size = 3;
+      if( addr1+1 < 256 ) instr_size = 2;
+      addAsm( string("STA $") + toHex( addr1+1 ), instr_size, false );
+    }
+  else if( isWordID($1.name) && (isUintID($2.name) || isIntID($2.name) ))
+    {
+      addComment("WordID = UintID||IntID" );
+      int addr1 = getAddressOf($1.name);
+      int addr2 = getAddressOf($2.name);
+      int instr_size = 3;
+      if( addr2 < 256 ) instr_size = 2;
+      addAsm( string("LDA $") + toHex( addr2 ), instr_size, false );
+      instr_size = 3;
+      if( addr1 < 256 ) instr_size = 2;
+      addAsm( string("STA $") + toHex( addr1 ), instr_size, false );
+
+      // high byte
+      addAsm( "LDA #$00" , 2, false );
+      instr_size = 3;
+      if( addr1+1 < 256 ) instr_size = 2;
+      addAsm( string("STA $") + toHex( addr1+1 ), instr_size, false );
+
+    }
+  else if( isA($2.name) )
     {
       addAsm( string( "STA $" ) + toHex(current_variable_base_address), 3, false);
     }
@@ -4227,9 +4266,12 @@ statement: datatype ID init
       if( current_variable_base_address < 256 ) instr_size=2; 
       addAsm( string( "STA $" ) + toHex(current_variable_base_address), instr_size, false);
     }
-  else if( isWordID($1.name) )
+  else if( isWordID($1.name) && isXA($2.name))
     {
-      addComment( "(word) ID init" );
+      addComment( "WordID = XA" );
+      
+
+      
     }
   else if( isIntIMM($2.name))
     {
