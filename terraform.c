@@ -75,11 +75,12 @@ void main()
 
   clearhires();
   createplatforms();
+  createbackground();
   
   // the blue dude walking
   mob blueguy1 = { 0, 1, 0, 255, 0, 3, 170, 192, 14, 170, 176, 14, 170, 172, 14, 170, 172, 14, 170, 172, 58, 251, 235, 58, 186, 235, 58, 170, 171, 58, 171, 171, 58, 170, 171, 58, 186, 187, 58, 175, 235, 14, 170, 171, 15, 170, 172, 14, 234, 188, 14, 186, 176, 58, 190, 172, 58, 195, 171, 59, 0, 235, 63, 0, 63};
 
-  mob blueguy2 = { 1, 2, 0, 255, 0, 3, 170, 192, 14, 170, 176, 14, 170, 172, 14, 170, 172, 14, 170, 172, 58, 251, 235, 58, 186, 235, 58, 170, 171, 58, 171, 171, 58, 170, 171, 58, 186, 187, 58, 175, 235, 14, 170, 171, 15, 170, 172, 14, 170, 188, 58, 175, 240, 58, 179, 172, 58, 195, 171, 59, 0, 235, 63, 0, 63};
+  mob blueguy2 = { 0, 2, 0, 255, 0, 3, 170, 192, 14, 170, 176, 14, 170, 172, 14, 170, 172, 14, 170, 172, 58, 251, 235, 58, 186, 235, 58, 170, 171, 58, 171, 171, 58, 170, 171, 58, 186, 187, 58, 175, 235, 14, 170, 171, 15, 170, 172, 14, 170, 188, 58, 175, 240, 58, 179, 172, 58, 195, 171, 59, 0, 235, 63, 0, 63};
 
   mob treasurechest = { 2, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 192, 0, 14, 176, 0, 58, 172, 0, 234, 172, 3, 170, 171, 14, 234, 171, 58, 186, 175, 58, 186, 187, 234, 174, 235, 234, 175, 171, 234, 174, 187, 234, 174, 235, 234, 174, 171, 234, 174, 171, 234, 174, 172, 234, 174, 176, 234, 174, 192, 255, 255, 0 };
 
@@ -96,8 +97,6 @@ void main()
 
   spritex( 0, x );
   spritey( 0, y );
-  spritex( 1, x );
-  spritey( 1, y );
 
   // Jerry
   spritexy( 3, 160, 190 );
@@ -139,7 +138,7 @@ void main()
 	  checkIfStanding();
 	  if( jerrystanding == 0 )
 	    {
-	      jy = jy + 1;
+	      inc(jy);
 	    }
 	  calculateai();
 	  positionai();
@@ -151,7 +150,7 @@ void main()
 		}
 	      else
 		{
-		  y = y + 1;
+		  inc(y);
 		}
 	    }
 	  else
@@ -183,7 +182,7 @@ void main()
 
 void calculateai()
 {
-  if( jerrystanding > 0 )
+  if( jerrystanding != 0 )
     {
       if( x < jx )
 	{
@@ -218,10 +217,8 @@ void positionplayer()
     }
   
   spritey( 0, y );
-  spritey( 1, y );
   spritex( 0, x );
-  spritex( 1, x );
-
+  
   return;
 }
 
@@ -261,11 +258,6 @@ void clearhires()
       poke( mem1, 0 );
     }
 
-  poke( 0x6148, 40 );
-  poke( 0x6149, 170 );
-  poke( 0x614A, 170 );
-  poke( 0x614B, 40 );
-  poke( 0x4429, 125 );
   
   return;
 }
@@ -333,17 +325,11 @@ void moveLegs()
 
   if( subtimer == 10 )
     {
-      if( whichsprite == 1 )
-	{
-	  whichsprite = 2;
-	  spriteoff( 1 );
-	  spriteon( 2 );
-	}
-      else
+      poke( 0x47F8, whichsprite );
+      inc( whichsprite );
+      if( whichsprite == 3 )
 	{
 	  whichsprite = 1;
-	  spriteoff( 2 );
-	  spriteon( 1 );
 	}
       subtimer = 0;
     }
@@ -363,31 +349,32 @@ void delayfunction()
 
 void checkIfStanding()
 {
-  word myX = x;
-  uint myY = y;
+  word myX = x - 12;
+  uint myY = y - 29;
   lsr( myX );
-  uint XXX = touint(myX);
-  XXX = XXX - 6;
-  myY = myY - 29;
-  standing = getxy( XXX, myY );
+  //myX = myX - 6;
+  //myY = myY - 29;
+  
+  standing = getxy( myX, myY );
   standing = standing & 0x3C;
   if( standing != 20 )
     {
       standing = 0;
     }
-
-  myX = jx;
-  uint jmyY = jy;
+ 
+  myX = jx - 12;
+  myY = jy - 29;
   lsr( myX );
-  XXX = touint(myX);
-  XXX = XXX - 6;
-  jmyY = jmyY - 29;
-  jerrystanding = getxy( XXX, jmyY );
+  //myX = myX - 6;
+  //myY = myY - 29;
+  jerrystanding = getxy( myX, myY );
   jerrystanding = jerrystanding & 0x3C;
+
   if( jerrystanding != 20 )
     {
       jerrystanding = 0;
     }
+  
   return;
 }
 
@@ -455,11 +442,54 @@ void calculatejump()
     {
       midjump = 0;
     }
-  
-
   return;
 }
 
+void createbackground()
+{
+  // TEST
+  data testdata =
+    {
+      100, 100, 2,
+      101, 100, 2,
+      102, 100, 2,
+      103, 100, 2,
+      104, 100, 2,
+      106, 100, 2,
+      107, 100, 2,
+      108, 100, 2,
+      110, 100, 2,
+      111, 100, 2,
+      112, 100, 2,
+      113, 100, 2,
+      115, 100, 2,
+      116, 100, 2,
+      117, 100, 2,
+      118, 100, 2,
+      119, 100, 2,
+      102, 101, 2,
+      106, 101, 2,
+      110, 101, 2,
+      117, 101, 2,
+      102, 103, 2
+    };
+
+  for( uint loop = 0; loop < 66; loop = loop + 3 )
+    {
+      plot( (testdata)[loop], (testdata)[loop + 1], (testdata)[loop + 2] );
+    }
+
+
+  poke( 0x6148, 40 );
+  poke( 0x6149, 170 );
+  poke( 0x614A, 170 );
+  poke( 0x614B, 40 );
+
+  // the colour
+  poke( 0x4429, 125 ); 
+
+  return;
+}
 
 void createplatforms()
 {  
@@ -528,6 +558,12 @@ void createplatforms()
   p2 = 90;
   p3 = 60;
   p4 = 91;
+  rect();
+
+  p1 = 80;
+  p2 = 80;
+  p3 = 160;
+  p4 = 83;
   rect();
   
   return;
