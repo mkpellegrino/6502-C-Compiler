@@ -1043,6 +1043,7 @@
 
   bool addAsmVariable( string id, int t )
   {
+    bool return_value = false;
     string s;
 
     switch( t )
@@ -1077,16 +1078,18 @@
 	    addCompilerMessage( "you cannot re-declare variables", 3 );
 	  }
       }
-    if( t == 0 | t == 1 || t == 2 || t == 4 || t == 8 )
+    if( t == 0 || t == 1 || t == 2 || t == 4 || t == 8 )
       {
 	addDebugComment( string( "Adding: " ) + string(id) + string(" of type: ") + s  );
 	asm_variable * new_asm_variable = new asm_variable( id, t );
 	asm_variables.push_back( new_asm_variable ); // add the variable to the list of variables
+	return_value = true;
       }
     else
       {
 	addDebugComment( string( "NOT Adding: " ) + string(id) + string(" of type: ") + s  );
       }
+    return return_value;
   }
 
   void pushScope( string s )
@@ -1414,8 +1417,8 @@
 //%parse-param { FILE* fp }
 %token VOID 
 %token <nd_obj> tDATA tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tSTRTOFLOAT tSTRTOWORD tTOFLOAT tTOUINT tTOBIT tDEC tINC tROL tROR tLSR tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJSR tFOO tROMOUT tROMIN tLDA tASL tSPRITESET  tSPRITEOFF tSPRITETOGGLE tRND tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER tPRINTS PRINTFF SCANFF INT FLOAT CHAR WHILE FOR IF ELSE TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE tSQRT UNARY INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL
-%type <nd_obj> headers main body return function datatype statement arithmetic relop program else numberlist
-   %type <nd_obj2> init value expression
+%type <nd_obj> headers main body return function datatype statement arithmetic relop program else 
+   %type <nd_obj2> init value expression numberlist
       %type <nd_obj3> condition
 
       %%
@@ -1435,13 +1438,14 @@ numberlist: /* empty */
 |
 | value
 {
-  strcpy( $$.name, $1.name );
-};
-| value ',' numberlist
+  int v = atoi( stripFirst( $1.name ).c_str());
+  addAsm( string( ".BYTE #$" ) + toHex( v ), 1, false );
+  //strcpy( $$.name, $1.name );
+}
+| numberlist ',' value
 {
-
-  strcat($1.name, ",");
-  strcat($1.name, $3.name);
+  int v = atoi( stripFirst( $3.name ).c_str());
+  addAsm( string( ".BYTE #$" ) + toHex( v ), 1, false );
   strcpy($$.name, $1.name );
 };
 
@@ -1610,52 +1614,60 @@ body: WHILE
 {
   $$.nd = mknode($1.nd, $2.nd, "statements");
 };
-| tDATA ID '=' '{' numberlist '}' ';'
+| tDATA
 {
-  int bytesize=0;
-  
   pushScope( "DATA" );
-  addAsmVariable($2.name, 2);
-  int addr = getAddressOf( $2.name );
+}
+ID
+{
+  cerr << $3.name << endl;
+  addAsmVariable($3.name, 2);
+  int addr = getAddressOf( $3.name );
   addAsm( string("LDA #<") + getLabel( label_vector[label_major],false), 2, false );
   addAsm( string( "STA $" ) + toHex( addr ), 3, false );
   addAsm( string("LDA #>") + getLabel( label_vector[label_major],false), 2, false );
   addAsm( string( "STA $" ) + toHex( addr +1 ), 3, false );
   addAsm( string( "JMP !+"), 3, false );
   addAsm( generateNewLabel(), 0, true );
-  int byte_count = 0;
-  if( isIntIMM($5.name) || isUintIMM($5.name) )
-    {
-      string s = string($5.name);
-      string delimiter = ",";
-      size_t pos = 0;
-      std::string token;
-      while ((pos = s.find(delimiter)) != std::string::npos)
-	{
-	  token = s.substr(0, pos);
-	  int value = atoi( stripFirst(token.c_str()).c_str() );
-	  if( value < 0 )
-	    {
-	      value = twos_complement(value);
-	    }
-	  addAsm( string( ".BYTE #$" ) + toHex(value), 1, false );
+
+}
+'=' '{' numberlist '}' ';'
+{
+  int bytesize=0;
+  
+  /* int byte_count = 0; */
+  /* if( isIntIMM($5.name) || isUintIMM($5.name) ) */
+  /*   { */
+  /*     string s = string($5.name); */
+  /*     string delimiter = ","; */
+  /*     size_t pos = 0; */
+  /*     std::string token; */
+  /*     while ((pos = s.find(delimiter)) != std::string::npos) */
+  /* 	{ */
+  /* 	  token = s.substr(0, pos); */
+  /* 	  int value = atoi( stripFirst(token.c_str()).c_str() ); */
+  /* 	  if( value < 0 ) */
+  /* 	    { */
+  /* 	      value = twos_complement(value); */
+  /* 	    } */
+  /* 	  addAsm( string( ".BYTE #$" ) + toHex(value), 1, false ); */
 	  
-	  byte_count++;
-	  s.erase(0, pos + delimiter.length());
-	}
-      int value = atoi( stripFirst(token.c_str()).c_str() );
-      if( value < 0 )
-	{
-	  value = twos_complement(value);
-	}
-      addAsm( string( ".BYTE #$" ) + toHex(value), 1, false );
+  /* 	  byte_count++; */
+  /* 	  s.erase(0, pos + delimiter.length()); */
+  /* 	} */
+  /*     int value = atoi( stripFirst(token.c_str()).c_str() ); */
+  /*     if( value < 0 ) */
+  /* 	{ */
+  /* 	  value = twos_complement(value); */
+  /* 	} */
+  /*     addAsm( string( ".BYTE #$" ) + toHex(value), 1, false ); */
       
-      byte_count++;
-      if( byte_count > 255 )
-	{
-	  addCompilerMessage( "too many bytes of data.  there can only be upto 255 bytes.", 3 );
-	}
-    }
+  /*     byte_count++; */
+  /*     if( byte_count > 255 ) */
+  /* 	{ */
+  /* 	  addCompilerMessage( "too many bytes of data.  there can only be upto 255 bytes.", 3 ); */
+  /* 	} */
+  /*   } */
   addAsm( "!", 0, true );
   popScope();
 };
@@ -4568,7 +4580,7 @@ expression: expression {if(isA($1.name)){addAsm("PHA; ***", 1, false );}} arithm
   int type1 = getTypeOf($1.name);
   int type2 = getTypeOf($4.name);
 
-  addCompilerMessage( string($1.name) + string(" (") + string(itos(getTypeOf($1.name))) + string( ") ") + op + string( " " ) + string($4.name) + string( " (" ) + string( itos( getTypeOf($4.name) ) ) + string( ")" ), 0);
+  //addCompilerMessage( string($1.name) + string(" (") + string(itos(getTypeOf($1.name))) + string( ") ") + op + string( " " ) + string($4.name) + string( " (" ) + string( itos( getTypeOf($4.name) ) ) + string( ")" ), 0);
   addComment( string($1.name) + string(" (") + string(itos(getTypeOf($1.name))) + string( ") ") + op + string( " " ) + string($4.name) + string( " (" ) + string( itos( getTypeOf($4.name) ) ) + string( ")" )  );
 
   if( isA($1.name) && isUintID($4.name) )
@@ -5678,7 +5690,7 @@ expression: expression {if(isA($1.name)){addAsm("PHA; ***", 1, false );}} arithm
     }
   /* if they're BOTH Int or Uint IMM's */
   else if( (isIntIMM($1.name) && isIntIMM($4.name)) ||
-	   isUintIMM($1.name) && isUintIMM($4.name))
+	   (isUintIMM($1.name) && isUintIMM($4.name)) )
     {
       addComment( string( "(U)IntIMM" ) + op + string( "(U)IntIMM") );
       
@@ -7151,15 +7163,14 @@ relop: LT { current_state = string( "LT" );  }
 | NE { current_state = string( "NE" ); }
 ;
 
-value:
-FLOAT_NUM
+value: FLOAT_NUM
 {
   addDebugComment(string("RULE: value: FLOAT_NUM: (") + string($1.name) + string(")") );
   strcpy($$.name, string( string("f") + string($1.name)).c_str());
-}
+};
 | HEX_NUM
 {
-  addComment(string("RULE: value: NUM: (") + string($1.name) + string(")") );
+  addComment(string("RULE: value: HEX_NUM: (") + string($1.name) + string(")") );
   /* determine if it's a byte or a word */
   /* convert the hex number to decimal */
   string N = string($1.name);
@@ -7169,7 +7180,7 @@ FLOAT_NUM
       int val = hexToDecimal(N);
       string return_value = string("w") + toString(val);
       strcpy( $$.name, return_value.c_str() );
-      addComment(string("RULE: value: NUM: (") + string($1.name) + string(")->(") + return_value + string(")") );
+      addComment(string("RULE: value: HEX_NUM: (") + string($1.name) + string(")->(") + return_value + string(")") );
     }
   else
     {
@@ -7177,7 +7188,7 @@ FLOAT_NUM
       int val = hexToDecimal(N);
       string return_value = string("u") + toString(val);
       strcpy( $$.name, return_value.c_str() );
-      addComment(string("RULE: value: NUM: (") + string($1.name) + string(")->(") + return_value + string(")") );
+      addComment(string("RULE: value: HEX_NUM: (") + string($1.name) + string(")->(") + return_value + string(")") );
     }
 };
 | INT
@@ -7187,7 +7198,7 @@ FLOAT_NUM
 };
 | NUMBER
 {
-  addComment(string("RULE: value: NUMBER: (") + string($1.name) + string(")") );
+  //addComment(string("RULE: value: NUMBER: (") + string($1.name) + string(")") );
   int v = atoi($1.name);
 
   if( getTypeOf($1.name) != -1 ) current_variable_type = getTypeOf($1.name);
