@@ -2822,7 +2822,7 @@ ID
       if( addr < 256 ) instr_size = 2;
       addAsm( string( "STA $") + toHex( addr ), instr_size, false );
     }
-  else if( isWordIMM($3.name) && isA($3.name) )
+  else if( isWordIMM($3.name) && isA($5.name) )
     {
       addComment("POKE(IMM,A)");
       int addr = atoi( stripFirst($3.name).c_str() );
@@ -2830,6 +2830,43 @@ ID
       int instr_size = 3;
       if( addr < 256 ) instr_size = 2;      
       addAsm( string( "STA $") + toHex( addr ), instr_size, false );
+      
+    }
+  else if( isWordID($3.name) && isA($5.name) )
+    {
+      pushScope("POKE( WordID, A )");
+      //addComment( "POKE( WordID, A )");
+      addAsm( string( "STA " ) + getLabel( label_vector[label_major],false) + string( "-2" ), 3, false );
+
+      int addr_addr = getAddressOf($3.name);
+      int value = atoi( stripFirst($5.name).c_str() );
+      if( value < 0 || value > 255) addCompilerMessage( "value out of range [0,255]", 3 );
+      int instr_size = 3;
+      if( addr_addr < 256 ) instr_size = 2; // it's in Zero Page
+      
+      /* get & store the low byte of the poke address */
+      addAsm( string( "LDA $" ) + toHex(addr_addr), instr_size, false );
+      addAsm( string( "STA " ) + getLabel( label_vector[label_major],false), 3, false );
+      /* get & store the high byte of the poke address */
+      instr_size = 3;
+      if( addr_addr+1 < 256 ) instr_size = 2;
+      addAsm( string( "LDA $" ) + toHex(addr_addr+1), instr_size, false );
+      addAsm( string( "STA " ) + getLabel( label_vector[label_major]+1,false), 3, false );
+
+      /* load the value into acc */
+      addAsm( string( "LDA #$" ) + toHex( value ), 2, false );
+      addAsm( ".BYTE #$A9", 1, false );
+      addAsm( ".BYTE #$00", 1, false );
+      /* store it in the instruction */
+      addAsm( ".BYTE #$8D;\t  <-- STA absolute", 1, false );
+      addAsm( generateNewLabel() + string( "\t\t\t; <-- low byte"), 0, true );
+      addAsm( ".BYTE #$00", 1, false );
+      addAsm( generateNewLabel() + string( "\t\t\t; <-- hi byte"), 0, true );
+      addAsm( ".BYTE #$00", 1, false );
+      popScope();
+
+      ////
+      
       
     }
   else if( (isUintIMM($3.name)||isIntIMM($3.name)) && (isUintIMM($5.name)||isIntIMM($5.name)))
@@ -4155,6 +4192,7 @@ statement: datatype ID init
       int y_addr = getAddressOf($6.name);
       int c = atoi(stripFirst($9.name).c_str());
 
+      
       // X Low - because this is Multicolour - the X coordinate fites into 1 byte
       addAsm( string("LDA $") + toHex(x_addr), 3, false );
       addAsm( "STA $FA", 2, false );
@@ -4165,7 +4203,8 @@ statement: datatype ID init
       //addAsm( "JSR MCPLOT", 3, false );
 
       // colour
-      addAsm( string("LDA #$") + toHex(c), 2, false );
+      addAsm( "PLA" );
+      //addAsm( string("LDA #$") + toHex(c), 2, false );
       addAsm( "STA $FD", 2, false );
 
       addAsm( "JSR MCPLOT", 3, false );
