@@ -1614,63 +1614,26 @@ body: WHILE
 {
   $$.nd = mknode($1.nd, $2.nd, "statements");
 };
-| tDATA
+// 
+| tDATA {pushScope( "DATA" );} ID
 {
-  pushScope( "DATA" );
-}
-ID
-{
-  cerr << $3.name << endl;
   addAsmVariable($3.name, 2);
   int addr = getAddressOf( $3.name );
   addAsm( string("LDA #<") + getLabel( label_vector[label_major],false), 2, false );
   addAsm( string( "STA $" ) + toHex( addr ), 3, false );
   addAsm( string("LDA #>") + getLabel( label_vector[label_major],false), 2, false );
   addAsm( string( "STA $" ) + toHex( addr +1 ), 3, false );
-  addAsm( string( "JMP !+"), 3, false );
-  addAsm( generateNewLabel(), 0, true );
+  //addAsm( string( "JMP !+"), 3, false );
+  addAsm( string( "JMP " ) + getLabel( label_vector[label_major]+1,false), 3, false );
 
+  addAsm( generateNewLabel(), 0, true );
 }
 '=' '{' numberlist '}' ';'
 {
-  int bytesize=0;
-  
-  /* int byte_count = 0; */
-  /* if( isIntIMM($5.name) || isUintIMM($5.name) ) */
-  /*   { */
-  /*     string s = string($5.name); */
-  /*     string delimiter = ","; */
-  /*     size_t pos = 0; */
-  /*     std::string token; */
-  /*     while ((pos = s.find(delimiter)) != std::string::npos) */
-  /* 	{ */
-  /* 	  token = s.substr(0, pos); */
-  /* 	  int value = atoi( stripFirst(token.c_str()).c_str() ); */
-  /* 	  if( value < 0 ) */
-  /* 	    { */
-  /* 	      value = twos_complement(value); */
-  /* 	    } */
-  /* 	  addAsm( string( ".BYTE #$" ) + toHex(value), 1, false ); */
-	  
-  /* 	  byte_count++; */
-  /* 	  s.erase(0, pos + delimiter.length()); */
-  /* 	} */
-  /*     int value = atoi( stripFirst(token.c_str()).c_str() ); */
-  /*     if( value < 0 ) */
-  /* 	{ */
-  /* 	  value = twos_complement(value); */
-  /* 	} */
-  /*     addAsm( string( ".BYTE #$" ) + toHex(value), 1, false ); */
-      
-  /*     byte_count++; */
-  /*     if( byte_count > 255 ) */
-  /* 	{ */
-  /* 	  addCompilerMessage( "too many bytes of data.  there can only be upto 255 bytes.", 3 ); */
-  /* 	} */
-  /*   } */
-  addAsm( "!", 0, true );
-  popScope();
-};
+ addAsm( generateNewLabel(), 0, true ); addComment( "???NL" ); popScope();
+
+}
+
 | tLDA '(' expression ')' ';'
 {
   if( isA($3.name) )
@@ -2936,7 +2899,11 @@ condition: expression relop expression
   if( isFloatIMM($1.name) ) addComment( "FloatIMM" );
   addComment($1.name);
   addComment( " vs. " );
-  if( isA($3.name ) ) addComment( "RegA" );
+  if( isA($3.name ) )
+    {
+      addComment( "RegA" );
+      addAsm( "STA $02", 2, false );
+    }
   if( isXA($3.name ) ) addComment( "RegXA" );
   if( isUintID($3.name) ) addComment( "UintID" );
   if( isIntID($3.name) ) addComment( "IntID" );
@@ -3071,20 +3038,24 @@ condition: expression relop expression
     }
   else if( isUintID($1.name) && isA($3.name) )  // mismatch
     {
-      addComment( "value to compare is already in A" );
-      addAsm( "STA $02", 2, false );      
+      addComment( "value to compare is already in $02" );
+      //addAsm( "STA $02", 2, false );      
       addAsm( string("LDA ") + string($1.name), 3, false );
       addAsm( "CMP $02", 2, false );
+      
     }
   else if( isIntID($1.name) && isA($3.name) )  // mismatch
     {
-      addComment( "value to compare is" );
-      addComment( "already in A" );
-      addAsm( string("CMP ") + string($3.name), 3, false );
+      addComment( "value to compare is already in $02" );
+      addAsm( string("LDA ") + string($1.name), 3, false );
+      addAsm( "CMP $02", 2, false );
+      //addAsm( string("CMP ") + string($3.name), 3, false );
     }
   else if( isA($1.name) && isA($3.name) )
     {
       addComment( "both values to compare are in A" );
+      addCompilerMessage( "illegal compare ... LHS and RHS are both in accumulator.", 3  );
+			  
     }
   else if( isUintID($1.name) && isUintID($3.name))
     {
