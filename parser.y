@@ -1529,10 +1529,12 @@ body: WHILE
 
 | FOR
 {
+  addComment( "Preserve $02" );
+  addAsm( "LDA $02", 2, false);
+  addAsm( "PHA" );
   pushScope("FOR");
   addCommentSection( "FOR LOOP" );
   addAsm( generateNewLabel(), 0, true );
-  addParserComment( "              initialization goes here" );
   addAsm( "PHA" );
   addCommentBreak();
 }
@@ -1563,6 +1565,10 @@ body: WHILE
   else
     {
       popScope();
+      addComment( "Restore $02" );
+      addAsm( "PLA" );
+      addAsm( "STA $02", 2, false);
+
     }
 };
 | IF
@@ -2901,6 +2907,7 @@ condition: expression relop expression
   addComment( " vs. " );
   if( isA($3.name ) )
     {
+      
       addComment( "RegA" );
       addAsm( "STA $02", 2, false );
     }
@@ -3251,7 +3258,6 @@ condition: expression relop expression
     else
       {
 	addCompilerMessage( "Comparing of these two types is not yet handled", 3 );
-
       }
   
   // ====================================================================================================================
@@ -3441,6 +3447,7 @@ condition: expression relop expression
     {
       addComment( "           Unknown Conditional" );
     }
+
   addComment( "=========================================================");  
       
 };
@@ -4093,7 +4100,7 @@ statement: datatype ID init
 {
   multicolour_plot_is_needed = true;
 
-  if( isWordID($3.name) && (isWordID( $6.name )||isUintID($6.name)) && isUintID($9.name) )
+  if( isWordID($3.name) && (isWordID($6.name)||isUintID($6.name)) && isUintID($9.name) )
     {
       addComment( "MC PLOT [WORD  WORD|UINT  UINT]" );
       int x_addr = getAddressOf($3.name);
@@ -4119,6 +4126,33 @@ statement: datatype ID init
       addAsm( "STA $FD", 2, false );
 
     }
+  else if( isWordID($3.name) && (isWordID($6.name)||isUintID($6.name)) && isUintIMM($9.name) )
+    {
+      addComment( "MC PLOT [WORD  WORD|UINT  UINT]" );
+      int x_addr = getAddressOf($3.name);
+      int y_addr = getAddressOf($6.name);
+      int c_addr = getAddressOf($9.name);
+      
+      // X Low - because this is Multicolour - the X coordinate fites into 1 byte
+      addAsm( string("LDA $") + toHex(x_addr), 3, false );
+      addAsm( "STA $FA", 2, false );
+      
+      // X High
+      //addAsm( string("LDA #$00"), 2, false ); // High Byte not needed
+      //addAsm( "STA $FB", 2, false );
+
+      // Y
+      addAsm( string("LDA $") + toHex(y_addr), 3, false );
+      addAsm( "STA $FC", 2, false );
+      addAsm( "JSR MCPLOT", 3, false );
+
+
+
+      int c = atoi(stripFirst($9.name).c_str());
+      addAsm( string("LDA #$") + toHex(c), 2, false );
+      addAsm( "STA $FD", 2, false );
+
+    }
   else if( isA($3.name) && isA($6.name) && isA($9.name) )
     {
       addComment( "MCPLOT [A  A  A]" ); 
@@ -4136,7 +4170,7 @@ statement: datatype ID init
       
       addAsm( "JSR MCPLOT", 3, false );
     }		 
-  else if( isUintID( $3.name ) && (isWordID($6.name)||isUintID($6.name)) && isUintID($9.name) )
+  else if( isUintID($3.name) && (isWordID($6.name)||isUintID($6.name)) && isUintID($9.name) )
     {
       addComment( "MCPLOT [uint   word|uint   uintT" );
       int x_addr = getAddressOf($3.name);
@@ -4156,7 +4190,7 @@ statement: datatype ID init
       addAsm( string("LDA $") + toHex(c_addr), 3, false );
       addAsm( "STA $FD", 2, false );
     }
-  else if( isUintID( $3.name ) && (isWordID($6.name)||isUintID($6.name)) && isA($9.name) )
+  else if( isUintID($3.name) && (isWordID($6.name)||isUintID($6.name)) && isA($9.name) )
     {
       addComment( "MCPLOT [uint   word|uint   A" );
       int x_addr = getAddressOf($3.name);
@@ -4175,12 +4209,21 @@ statement: datatype ID init
 
       // colour
       addAsm( "PLA" );
+
+      addAsm( "TAY" );
+      addAsm( "LDA $02", 2, false );
+      addAsm( "PHA" );
+      addAsm( "TYA" );
+      
       //addAsm( string("LDA #$") + toHex(c), 2, false );
       addAsm( "STA $FD", 2, false );
 
       addAsm( "JSR MCPLOT", 3, false );
+      addAsm( "PLA" );
+      addAsm( "STA $02", 2, false );
+      
     }
-  else if(   (isUintIMM($3.name)||isIntIMM($3.name)) && (isUintIMM($6.name)||isIntIMM($6.name)) && (isUintIMM($9.name)||isIntIMM($9.name)) )
+  else if( (isUintIMM($3.name)||isIntIMM($3.name)) && (isUintIMM($6.name)||isIntIMM($6.name)) && (isUintIMM($9.name)||isIntIMM($9.name)) )
     {
       addComment( "MCPLOT [IMM   IMM  IMM" ); 
       //cerr << "HERE: plot(" << $3.name << ", " << $6.name << ", " << $9.name << ");" << endl;
@@ -4194,8 +4237,28 @@ statement: datatype ID init
       addAsm( string("LDA #$") + toHex(c), 2, false );
       addAsm( "STA $FD", 2, false );
       addAsm( "JSR MCPLOT", 3, false );
+    }
+  else if( (isWordID($3.name)||isUintID($3.name)) && (isUintIMM($6.name)||isIntIMM($6.name)) && (isUintIMM($9.name)||isIntIMM($9.name)) )
+    {
+      addComment( "MCPLOT [ID   IMM  IMM" );
+      int x_addr = getAddressOf($3.name);
+
+      
+      int y = atoi(stripFirst($6.name).c_str());
+      int c = atoi(stripFirst($9.name).c_str());
+
+      // X Low - because this is Multicolour - the X coordinate fites into 1 byte
+      addAsm( string("LDA $") + toHex(x_addr), 3, false );
+      addAsm( "STA $FA", 2, false );
+
+      addAsm( string("LDA #$") + toHex(y), 2, false );
+      addAsm( "STA $FC", 2, false );
+      addAsm( string("LDA #$") + toHex(c), 2, false );
+      addAsm( "STA $FD", 2, false );
+      addAsm( "JSR MCPLOT", 3, false );
 
     }
+
   else
     {
       addCompilerMessage( "type not implemented yet for plot" );
