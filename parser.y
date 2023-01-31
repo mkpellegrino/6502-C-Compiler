@@ -4304,6 +4304,9 @@ statement: datatype ID init
   else if( isWordID($3.name) )
     {
       addComment( "asl(ID)");
+
+      //addAsm( "CLC" );
+      
       int a = getAddressOf($3.name);
       int size_of_instruction = 3;
       if( a < 256 ) size_of_instruction = 2;
@@ -4505,8 +4508,9 @@ init: '=' expression
       addComment( "initializing a float with ARG" );
       strcpy($$.name, "ARG" );
     }
-  else if( string($2.name) == "XA" )
+  else if( isXA($2.name)  )
     {
+      addCompilerMessage( "initializing a word with XA", 0 );
       addComment( "initializing a word with XA" );
       strcpy($$.name, "XA" );
     }
@@ -4545,17 +4549,19 @@ init: '=' expression
   /*else */
   if( isUintIMM($2.name) )
     {
-      addDebugComment( "else if( isUintIMM($2.name) )");
+      addCompilerMessage( "else if( isUintIMM($2.name) )", 0);
       int v = atoi( stripFirst($2.name).c_str() );
       addAsm( string("LDA #$") + toHex(v), 2, false );
       strcpy( $$.name, "A" );
     }
   else if( isWordID($2.name) || isUintID($2.name) || isIntID($2.name) ) //isAddress($2.name) || isByte($2.name))
     {
+      addCompilerMessage( "isWordID($2.name) || isUintID($2.name) || isIntID($2.name)", 0 );
       strcpy($$.name, $2.name);
     }
   else if( (variable_type == 2 || current_variable_type == 2) && ( isUintIMM($2.name) || isIntIMM($2.name) ) )
     {
+      addCompilerMessage( "(variable_type == 2 || current_variable_type == 2) && ( isUintIMM($2.name) || isIntIMM($2.name)", 0 );
       int tmp_int = atoi( stripFirst($2.name).c_str() );
       
       if( tmp_int > 255  || tmp_int < 0 ) addCompilerMessage( "type overflow", 3 );
@@ -4566,7 +4572,9 @@ init: '=' expression
 
     }
   else if( (variable_type == 2) && (isWordIMM($2.name)) )
-    {      
+    {
+      /// *******
+      addCompilerMessage( "if( (variable_type == 2) && (isWordIMM($2.name)) )", 0 );
       int tmp_int = atoi( stripFirst($2.name).c_str() );
       
       addAsm( string( "LDA #$" ) + toHex( get_word_L(tmp_int) ), 2, false);
@@ -4579,6 +4587,7 @@ init: '=' expression
     }
   else if( (variable_type == 0 || variable_type == 1) && (isIntIMM($2.name) || isUintIMM($2.name)) )
     {
+      addCompilerMessage("(variable_type == 0 || variable_type == 1) && (isIntIMM($2.name) || isUintIMM($2.name))", 0);
       addComment("(IntID || UintID) = (IntIMM || UintIMM)");
       if( current_variable_type == 0 )
 	{
@@ -4621,6 +4630,7 @@ init: '=' expression
     }
   else if( isMob($2.name) )
     {
+      addCompilerMessage( "MOB", 0 );
       addComment( "MOB" );
       strcpy($$.name, $2.name);
     }
@@ -4643,6 +4653,7 @@ init: '=' expression
 expression: expression {if(isA($1.name)){addAsm("PHA; ***", 1, false );}} arithmetic expression {/*if(isA($1.name) && isA($4.name)){addAsm("PHA");}*/}
 {
   addParserComment( "RULE: expression: expression arithmetic expression" );
+  
   string op = string($3.name);
   addParserComment( string($1.name) + string( " " ) + op + string( " " ) + string($4.name) );
   
@@ -4656,6 +4667,8 @@ expression: expression {if(isA($1.name)){addAsm("PHA; ***", 1, false );}} arithm
   //addCompilerMessage( string($1.name) + string(" (") + string(itos(getTypeOf($1.name))) + string( ") ") + op + string( " " ) + string($4.name) + string( " (" ) + string( itos( getTypeOf($4.name) ) ) + string( ")" ), 0);
   addComment( string($1.name) + string(" (") + string(itos(getTypeOf($1.name))) + string( ") ") + op + string( " " ) + string($4.name) + string( " (" ) + string( itos( getTypeOf($4.name) ) ) + string( ")" )  );
 
+
+  addAsm( "CLC" );
   if( isA($1.name) && isUintID($4.name) )
     {
       addComment( "A arithmetic UintID" );
@@ -4948,7 +4961,45 @@ expression: expression {if(isA($1.name)){addAsm("PHA; ***", 1, false );}} arithm
       inlineFloat( string( "f" ) + to_string(result), 105);
       FAC = 1;
     }
-  else if( isWordID($1.name) && (isA($4.name) ))
+  else if( isWordID($1.name) && isWordIMM($4.name) )
+    {
+      int addr_op1 = getAddressOf( $1.name );
+      int OP2 = atoi( stripFirst($4.name).c_str() );
+      if( op == string("+"))
+	{
+	  addComment( "WordID + WordIMM -> XA" );
+
+	  addAsm( "CLC" );
+	  addAsm( string( "LDA $" ) + toHex(addr_op1), 3, false );
+	  addAsm( string( "ADC #$" ) + toHex(get_word_L( OP2 )), 2, false );	  
+	  addAsm( "TAY" );
+	  addAsm( string( "LDA $" ) + toHex(addr_op1+1), 3, false );
+	  addAsm( string( "ADC #$" ) + toHex(get_word_H( OP2 )), 2, false );
+	  addAsm( "TAX" );
+	  addAsm( "TYA" );
+
+	  strcpy($$.name, "XA" );
+
+	}
+      else if( op == string("-"))
+	{
+	  addComment( "WordID - WordIMM -> XA" );
+	  addAsm( "SEC" );
+	  addAsm( string( "LDA $" ) + toHex(addr_op1), 3, false );
+	  addAsm( string( "SBC #$" ) + toHex(get_word_L( OP2 )), 2, false );	  
+	  addAsm( "TAY" );
+	  addAsm( string( "LDA $" ) + toHex(addr_op1+1), 3, false );
+	  addAsm( string( "SBC #$" ) + toHex(get_word_H( OP2 )), 2, false );
+	  addAsm( "TAX" );
+	  addAsm( "TYA" );
+	  strcpy($$.name, "XA" );
+	}
+      else
+	{
+	  addCompilerMessage( "That specific math operation is not supported yet.", 3);
+	}
+    }
+  else if( isWordID($1.name) && isA($4.name) )
     {
       addComment( "WordID + Accumulator" );
       
@@ -4964,6 +5015,7 @@ expression: expression {if(isA($1.name)){addAsm("PHA; ***", 1, false );}} arithm
 	  addAsm( "TAX" );
 	  addAsm( "TYA" );
 	}
+      strcpy($$.name, "XA" );
 
     }
   else if( isWordID($1.name) && (isIntID($4.name) || isUintID($4.name)) )
@@ -6269,7 +6321,7 @@ expression: expression {if(isA($1.name)){addAsm("PHA; ***", 1, false );}} arithm
       addAsm( ".BYTE #$00", 1, false );
       addAsm( ".BYTE #$00", 1, false );
     }
-  else if( isUintID( $5.name ) || isA( $5.name ))
+  else if( isA( $5.name ) )
     {
       int addr = getAddressOf( $2.name );
       int index_addr = getAddressOf( $5.name );
@@ -6298,11 +6350,11 @@ expression: expression {if(isA($1.name)){addAsm("PHA; ***", 1, false );}} arithm
   addParserComment( "ID '[' expression ']'" );
   int type_of_variable = getTypeOf($1.name);
 
-  if( isAddress($3.name) )
+  if( isUintID($3.name) || isIntID($3.name))
     {
       addAsm( string( "LDX " ) + string($3.name), 3, false );
     }
-  else if( string($3.name) == string("A") )
+  else if(isA($3.name))
     {
       addAsm( "TAX" );
     }
@@ -6410,8 +6462,15 @@ expression: expression {if(isA($1.name)){addAsm("PHA; ***", 1, false );}} arithm
     }
   else if(  (isUintID($1.name)||isIntID($1.name)) && isUintIMM($3.name) )
     {
+      int OP1_addr = getAddressOf($1.name);
       int addr = atoi(stripFirst($3.name).c_str());
-      addAsm( string( "LDA #$" ) + toHex(get_word_L(addr)), 2, false  );      
+      addAsm( string( "LDA #$" ) + toHex(addr), 2, false  );      
+      addAsm( string("ORA $") + toHex(OP1_addr), 3, false);
+      strcpy( $$.name, "A" );
+    }
+  else if(  (isUintID($1.name)||isIntID($1.name)) && isA($3.name) )
+    {
+      // value is already in Accumulator
       addAsm( string("ORA $") + stripFirst($1.name), 3, false);
       strcpy( $$.name, "A" );
     }
@@ -6564,35 +6623,72 @@ expression: expression {if(isA($1.name)){addAsm("PHA; ***", 1, false );}} arithm
 }
 | tGETXY '(' expression ',' expression ')'
 {
-  getplot_is_needed = true;
-  int x_addr = getAddressOf($3.name);
-  int y_addr = getAddressOf($5.name);
-
-  
-  // X Low
-  addAsm( string("LDA $") + toHex(x_addr), 3, false );
-  addAsm( "STA $FA", 2, false );
-
-  if( isWordID( $3.name ) )
+  if(isWordID($3.name) && (isUintID($5.name)||isIntID($5.name)) )
     {
-      // X High
+      int x_addr = getAddressOf($3.name);
+      int y_addr = getAddressOf($5.name);
+      addAsm( string("LDA $") + toHex(x_addr), 3, false );
+      addAsm( "STA $FA", 2, false );
       addAsm( string("LDA $") + toHex(x_addr+1), 3, false );
+      addAsm( "STA $FB", 2, false );
+      addAsm( string("LDA $") + toHex(y_addr), 3, false );
+      addAsm( "STA $FC", 2, false );
+      addAsm( "JSR GETPLOT", 3, false );
+      addAsm( "LDY #$00", 2, false );
+      addAsm( "LDA ($02),Y", 2, false );
+      strcpy( $$.name, "A" );  
+      getplot_is_needed = true;
+    }
+  else if(isUintID($3.name) && (isUintID($5.name)||isIntID($5.name)) )
+    {
+      int x_addr = getAddressOf($3.name);
+      int y_addr = getAddressOf($5.name);
+      addAsm( string("LDA $") + toHex(x_addr), 3, false );
+      addAsm( "STA $FA", 2, false );
+      addAsm( string("LDA #$00"), 2, false );
+      addAsm( "STA $FB", 2, false );
+      addAsm( string("LDA $") + toHex(y_addr), 3, false );
+      addAsm( "STA $FC", 2, false );
+      addAsm( "JSR GETPLOT", 3, false );
+      addAsm( "LDY #$00", 2, false );
+      addAsm( "LDA ($02),Y", 2, false );
+      strcpy( $$.name, "A" );  
+      getplot_is_needed = true;
+    }
+  else if(isUintID($3.name) && isA($5.name))
+    {
+      addAsm( "STA $FC", 2, false );
+      int x_addr = getAddressOf($3.name);
+      int y_addr = getAddressOf($5.name);
+      addAsm( string("LDA $") + toHex(x_addr), 3, false );
+      addAsm( "STA $FA", 2, false );
+      addAsm( string("LDA #$00"), 2, false );
+      addAsm( "STA $FB", 2, false );
+      addAsm( "JSR GETPLOT", 3, false );
+      addAsm( "LDY #$00", 2, false );
+      addAsm( "LDA ($02),Y", 2, false );
+      strcpy( $$.name, "A" );  
+      getplot_is_needed = true;
+    }
+  else if(isWordID($3.name) && isA($5.name))
+    {
+      addAsm( "STA $FC", 2, false );
+      int x_addr = getAddressOf($3.name);
+      int y_addr = getAddressOf($5.name);
+      addAsm( string("LDA $") + toHex(x_addr), 3, false );
+      addAsm( "STA $FA", 2, false );
+      addAsm( string("LDA $") + toHex(x_addr+1), 3, false );
+      addAsm( "STA $FB", 2, false );
+      addAsm( "JSR GETPLOT", 3, false );
+      addAsm( "LDY #$00", 2, false );
+      addAsm( "LDA ($02),Y", 2, false );
+      strcpy( $$.name, "A" );  
+      getplot_is_needed = true;
     }
   else
     {
-      addAsm( string("LDA #$00"), 2, false );
+      addCompilerMessage( "Invalid arguments for getxy", 3 );
     }
-  addAsm( "STA $FB", 2, false );
-
-  // Y
-  addAsm( string("LDA $") + toHex(y_addr), 3, false );
-  addAsm( "STA $FC", 2, false );
-  addAsm( "JSR GETPLOT", 3, false );
-  
-  addAsm( "LDY #$00", 2, false );
-  addAsm( "LDA ($02),Y", 2, false );
-  strcpy( $$.name, "A" );  
-
 }
 | tBANK '(' ')'
 {
@@ -7238,12 +7334,12 @@ relop: LT { current_state = string( "LT" );  }
 
 value: FLOAT_NUM
 {
-  addDebugComment(string("RULE: value: FLOAT_NUM: (") + string($1.name) + string(")") );
+  //addDebugComment(string("RULE: value: FLOAT_NUM: (") + string($1.name) + string(")") );
   strcpy($$.name, string( string("f") + string($1.name)).c_str());
 };
 | HEX_NUM
 {
-  addComment(string("RULE: value: HEX_NUM: (") + string($1.name) + string(")") );
+  //addComment(string("RULE: value: HEX_NUM: (") + string($1.name) + string(")") );
   /* determine if it's a byte or a word */
   /* convert the hex number to decimal */
   string N = string($1.name);
@@ -7253,7 +7349,7 @@ value: FLOAT_NUM
       int val = hexToDecimal(N);
       string return_value = string("w") + toString(val);
       strcpy( $$.name, return_value.c_str() );
-      addComment(string("RULE: value: HEX_NUM: (") + string($1.name) + string(")->(") + return_value + string(")") );
+      //addComment(string("RULE: value: HEX_NUM: (") + string($1.name) + string(")->(") + return_value + string(")") );
     }
   else
     {
@@ -7261,12 +7357,12 @@ value: FLOAT_NUM
       int val = hexToDecimal(N);
       string return_value = string("u") + toString(val);
       strcpy( $$.name, return_value.c_str() );
-      addComment(string("RULE: value: HEX_NUM: (") + string($1.name) + string(")->(") + return_value + string(")") );
+      // addComment(string("RULE: value: HEX_NUM: (") + string($1.name) + string(")->(") + return_value + string(")") );
     }
 };
 | INT
 {
-  addDebugComment(string("RULE: value: INT :") +  string($1.name));
+  //addDebugComment(string("RULE: value: INT :") +  string($1.name));
   strcpy($$.name, $1.name);
 };
 | NUMBER
@@ -7308,12 +7404,12 @@ value: FLOAT_NUM
   /* 4 - double - 2 bytes */
   /* 8 - float - 5 bytes */
 
-  addDebugComment(string("RULE: value: WORD :") +  string($1.name));
+  //addDebugComment(string("RULE: value: WORD :") +  string($1.name));
   strcpy($$.name, $1.name);
 }
 | CHARACTER
 {
-  addDebugComment( "RULE: value: CHARACTER" );
+  //addDebugComment( "RULE: value: CHARACTER" );
   strcpy($$.name, $1.name);
   //$$.nd = mknode(NULL, NULL, $1.name);
 }
@@ -7789,19 +7885,6 @@ int main(int argc, char *argv[])
 
 
       addAsm( "STA $03; loc + 1", 2, false );
-
-      /* vvvvv FOR DEBUGGING ONLY! vvvvv */
-      /* byte2hex_is_needed = true; */
-      /* addAsm( "LDA $03", 2, false ); */
-      /* addAsm( "PHA" ); */
-      /* addAsm( "JSR BYTE2HEX", 3, false ); */
-      /* addAsm( "LDA $02", 2, false ); */
-      /* addAsm( "PHA" ); */
-      /* addAsm( "JSR BYTE2HEX", 3, false ); */
-      /* addAsm( "LDA #$20", 2, false ); */
-      /* addAsm( "JSR $FFD2", 3, false ); */
-      /* ^^^^^ FOR DEBUGGING ONLY! ^^^^^ */
-
       
       addAsm( "LDY #$00", 2, false );
       addAsm( "LDA ($02),Y", 2, false );
@@ -7886,23 +7969,6 @@ int main(int argc, char *argv[])
       addAsm( "ADC $03", 2, false );
       addAsm( "STA $03", 2, false );
       
-      
-      /* /\* for debugging only *\/ */
-      /* addAsm( "LDA #$FF", 2, false ); */
-      /* addAsm( "LDX #$00", 2, false ); */
-      /* addAsm( "STA ($02,X)", 2, false ); */
-
-      /* byte2hex_is_needed = true; */
-      /* addAsm( "LDA $03", 2, false ); */
-      /* addAsm( "PHA" ); */
-      /* addAsm( "JSR BYTE2HEX", 3, false ); */
-      /* addAsm( "LDA $02", 2, false ); */
-      /* addAsm( "PHA" ); */
-      /* addAsm( "JSR BYTE2HEX", 3, false ); */
-      /* addAsm( "LDA #$20", 2, false ); */
-      /* addAsm( "JSR $FFD2", 3, false ); */
-      /* /\* for debugging only *\/ */
-
       addAsm( "CLI" );
       // -----------------------------------
       addAsm( "RTS" );
@@ -8321,44 +8387,6 @@ int main(int argc, char *argv[])
       addAsm( "PHA" );  
       addAsm( "RTS" );
     }
-  if( modulus_is_needed )
-    {
-      // MODULUS ROUTIUNE
-      return_addresses_needed = true;
-
-      // this is the template to use for a built-in function
-      addAsm( "MOD:\t\tS1 % S2", 0, true );
-
-      // save return address from the stack
-      addAsm( "PLA" );
-      addAsm( string( "STA $" ) + toHex(getAddressOf(  "return_address_1" ) ), 3, false );
-      addAsm( "PLA" );
-      addAsm( string( "STA $" ) + toHex(getAddressOf(  "return_address_2" ) ), 3, false );
-      //==================================================================================
-      addAsm( "PLA" );
-      addAsm( "STA $2A", 2, false ); // S1
-      addAsm( "PLA" );
-      addAsm( "STA $52", 2, false ); // S2
-	
-      addAsm( "SEC" );
-      addAsm( "LDA $2A", 2, false );
-      addAsm( "SBC $52", 2, false );
-      addAsm( "ADC" );
-      addAsm( "" );
-      addAsm( "" );
-      addAsm( "" );
-      addAsm( "" );
-      addAsm( "" );
-      addAsm( "" );
-      addAsm( "" );
-      //==================================================================================
-      addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_2" )), 3, false );
-      addAsm( "PHA" );
-      addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_1" )) , 3, false );
-      addAsm( "PHA" );  
-      addAsm( "RTS" );
-    }
-
   if( cls_is_needed )
     {
       addAsm( "CLS:\t\t; Clear Screen Routine", 0, true );
@@ -8381,17 +8409,6 @@ int main(int argc, char *argv[])
       // a QUICK and DIRTY MEMCPY of 63 BYTES
       addAsm( "MOBCPY:\t\t; Copy 63 bytes from $FB/$FC to $FD/$FE", 0, true );
       addAsm( "SEI" );
-      // THIS IS ONLY FOR MOB CPY BECAUSE OF THE WAY
-      // THE MOBS ARE INLINE IN THE CODE
-
-      /* addAsm( "SEC" ); */
-      /* addAsm( "LDA $FB", 2, false ); */
-      /* addAsm( "SBC #$01", 2, false ); */
-      /* addAsm( "STA $FB", 2, false ); */
-      /* addAsm( "LDA $FC", 2, false ); */
-      /* addAsm( "SBC #$00", 2, false ); */
-      /* addAsm( "STA $FC", 2, false ); */
-
       addAsm( "CLC" );
       addAsm( "LDA #$01", 2, false );
       addAsm( "ADC $FB", 2, false );
@@ -8808,6 +8825,7 @@ void yyerror(const char* msg)
 
 
 /* BASIC 2.0 SPRITE ROUTINE */
+
 /* V = 53248  -- Base Sprite Address*/
 /* POKE V+21, 255  -- turn on all sprites */
 /* POKE 2040+SPRITE#, 192+SPRITE#  -- SPRITE# = 0-7 */
