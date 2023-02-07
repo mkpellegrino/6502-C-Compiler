@@ -17,7 +17,7 @@ lexer:	lexer.l
 	$(LEX) lexer.l
 
 compiler: y.tab.c
-	$(CC) $(LIBRARIES) -w y.tab.c -o compiler
+	$(CC) $(LIBRARIES) -w  y.tab.c -o compiler
 
 
 poke2:
@@ -33,7 +33,7 @@ example:
 	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./example.c > example.asm
 
 terra:
-	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./terraform.c > terra.asm
+	./compiler --code-segment 8192 --data-segment 820 --memory-locations --symbol-table < ./terraform.c > terra.asm
 
 hires:
 	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./hires.c > hires.asm

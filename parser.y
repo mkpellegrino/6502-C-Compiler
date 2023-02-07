@@ -28,6 +28,7 @@
 
 
   // compiler internal flags
+  bool sidirq_is_needed=false;
   bool bnkmem_is_needed=false;
   bool scrmem_is_needed=false;
   bool chrmem_is_needed=false;
@@ -86,7 +87,9 @@
 
 
   // helper functions
-  
+
+  int music_init_addr = 4096;
+  int music_play_addr = 4102; 
   stack <string> scope_stack;
   stack <string> var_scope_stack;
   stack <int> label_stack;
@@ -1416,7 +1419,7 @@
 
 //%parse-param { FILE* fp }
 %token VOID 
-%token <nd_obj> tDATA tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tSTRTOFLOAT tSTRTOWORD tTOFLOAT tTOUINT tTOBIT tDEC tINC tROL tROR tLSR tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJSR tFOO tROMOUT tROMIN tLDA tASL tSPRITESET  tSPRITEOFF tSPRITETOGGLE tRND tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER tPRINTS PRINTFF SCANFF INT FLOAT CHAR WHILE FOR IF ELSE TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE tSQRT UNARY INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL
+%token <nd_obj> tDATA tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tSIDIRQ tSTRTOFLOAT tSTRTOWORD tTOFLOAT tTOUINT tTOBIT tDEC tINC tROL tROR tLSR tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJSR tFOO tROMOUT tROMIN tLDA tASL tSPRITESET  tSPRITEOFF tSPRITETOGGLE tRND tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER tPRINTS PRINTFF SCANFF INT FLOAT CHAR WHILE FOR IF ELSE TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE tSQRT UNARY INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL
 %type <nd_obj> headers main body return function datatype statement arithmetic relop program else 
    %type <nd_obj2> init value expression numberlist
       %type <nd_obj3> condition
@@ -1620,7 +1623,6 @@ body: WHILE
 {
   $$.nd = mknode($1.nd, $2.nd, "statements");
 };
-// 
 | tDATA {pushScope( "DATA" );} ID
 {
   addAsmVariable($3.name, 2);
@@ -2605,6 +2607,55 @@ body: WHILE
   addComment( "------------------" );
 
 }
+| tSIDIRQ '(' expression ',' expression ')' ';'
+{
+  if( isWordIMM( $3.name ) && isWordIMM( $5.name ) )
+    {
+      music_init_addr = atoi( stripFirst( $3.name ).c_str() );
+      music_play_addr = atoi( stripFirst( $5.name ).c_str() );
+      sidirq_is_needed = true;
+      //int addr = getAddressOf($3.name);
+      //
+      addAsm( "LDA #$00", 2, false );
+      addAsm( "TAX" );
+      addAsm( "TAY" );
+      addAsm( string( "JSR $" ) + toHex( music_init_addr ) + string( "; initialise the SID music"), 3, false );
+      
+      //addAsm( "JSR $1000; initialize the sid music", 3, false );
+      //
+      addAsm( "SEI" );
+      
+      addAsm( "LDA #$7F", 2, false );
+      addAsm( "STA $DC0D", 3, false );
+      addAsm( "STA $DD0D", 3, false );
+
+      addAsm( "AND $D011", 3, false );
+      addAsm( "STA $D011", 3, false );
+
+      addAsm( "LDA $DC0D", 3, false );
+      addAsm( "LDA $DD0D", 3, false );
+    
+      addAsm( "LDY #$7E; raster line for trigger", 2, false );
+      addAsm( "STY $D012", 3, false );
+
+      addAsm( "LDA #<SIDIRQ", 2, false );
+      addAsm( "LDX #>SIDIRQ", 2, false );
+      addAsm( "STA $0314", 3, false );
+      addAsm( "STX $0315", 3, false );
+
+      
+      addAsm( "LDA #$01", 2, false );
+      addAsm( "STA $D01A", 3, false );
+
+      
+      addAsm( "CLI" );
+    }
+  else
+    {
+      addCompilerMessage( "invalid address of music routine", 3 );
+    }
+};
+
 | tJSR '(' NUMBER ')' ';'
 {
   addCommentSection( "jsr(NUMBER)");
@@ -7579,6 +7630,17 @@ int main(int argc, char *argv[])
       //printf("Semantic analysis completed with no errors");
     }
 
+  if( sidirq_is_needed )
+    {
+      //music_play_addr = atoi( stripFirst( $5.name ).c_str() );
+
+      addComment( "This is the SID Player Interrupt Routine" );
+      addAsm( "SIDIRQ:", 0, true );
+      addAsm( string( "JSR $" ) + toHex( music_play_addr ) + string( "; play_music routine" ), 3, false );
+      //addAsm( "JSR $1003", 3, false );
+      addAsm( "ASL $D019", 3, false );
+      addAsm( "JMP $EA31; return to normal operation", 3, false );
+    }
   if( bin2bit_is_needed )
     {
       return_addresses_needed = true;

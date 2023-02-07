@@ -1,41 +1,25 @@
 #include <stdio.h>
 
-// Colours
-// 0 - Black
-// 1 - White
-// 2 - Red
-// 3 - Cyan
-// 4 - Purple
-// 5 - Green
-// 6 - Dark Blue
-// 7 - Yellow
-// 8 - Orange
-// 9 - Brown
-// 10 - Pink
-// 11 - Dark Grey
-// 12 - Grey
-// 13 - Bright Green
-// 14 - Light Blue
-// 15 - Light Grey
-
 void main()
 {
-  cls();
-  printf( "O  :  MOVE RIGHT\nU  :  MOVE LEFT\nSPACE  :  JUMP" );
-  pause();
+  //cls();
+  //printf( "O  :  MOVE RIGHT\nU  :  MOVE LEFT\nSPACE  :  JUMP" );
+  //pause();
   romout();
   saveregs();
 
-  // building blocks
-  data bb =
-    {
-      0xFA, 0x0F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-      0xAA, 0xAA, 0xFA, 0x0F, 0x00, 0x00, 0x00, 0x00,
-      0xAA, 0xAA, 0xAA, 0xAA, 0xFF, 0x00, 0x00, 0x00,
-      0xAA, 0xAA, 0xAF, 0xF0, 0x00, 0x00, 0x00, 0x00,
-      0xAF, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    };
-    
+  uint plotshapeX;
+  uint plotshapeY;
+  uint plotshapeSize;
+  word plotshapeAddr;
+  uint plotshapeColourValue11;
+  uint plotshapeColourValue1001;
+
+  uint X0;
+  uint X1;
+  uint Y0;
+  uint Y1;
+  
   // jump table
   data jt = { 0x00, 0xFC, 0xFC, 0xFD, 0xFD, 0xFD, 0xFE, 0xFE, 0xFE, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x01, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
   uint midjump = 0;
@@ -74,7 +58,6 @@ void main()
 
   clearhires();
   createplatforms();
-  createbackground();
   
   // the blue dude walking
   //mob blueguy1 = { 0, 1, 0, 255, 0, 3, 170, 192, 14, 170, 176, 14, 170, 172, 14, 170, 172, 14, 170, 172, 58, 251, 235, 58, 186, 235, 58, 170, 171, 58, 171, 171, 58, 170, 171, 58, 186, 187, 58, 175, 235, 14, 170, 171, 15, 170, 172, 14, 234, 188, 14, 186, 176, 58, 190, 172, 58, 195, 171, 59, 0, 235, 63, 0, 63};
@@ -87,8 +70,6 @@ void main()
 
   // Jerry Walking
   //mob Jerry2 = { 4, 5, 0, 255, 0, 3, 255, 192, 15, 247, 240, 15, 213, 240, 15, 85, 112, 13, 255, 240, 13, 247, 240, 15, 85, 112, 3, 255, 195, 0, 255, 11, 0, 170, 58, 2, 186, 250, 10, 159, 232, 41, 87, 160, 234, 87, 128, 218, 94, 128, 213, 122, 128, 53, 122, 160, 15, 224, 162, 10, 128, 170, 2, 160, 40};
-
-
 
   //mob thinguy1 = { 0, 1, 0, 168, 0, 2, 170, 0, 3, 87, 0, 3, 119, 0, 0, 252, 0, 0, 32, 0, 0, 168, 0, 2, 34, 0, 2, 34, 0, 8, 32, 128, 8, 32, 128, 16, 48, 16, 0, 252, 0, 0, 252, 0, 0, 204, 0, 0, 204, 0, 0, 204, 0, 0, 204, 0, 0, 204, 0, 0, 204, 0, 3, 207, 0};
   mob twr1 = { 0, 1, 0, 168, 0, 2, 170, 0, 3, 213, 0, 3, 213, 0, 0, 252, 0, 0, 32, 0, 0, 168, 0, 2, 34, 0, 2, 34, 0, 8, 32, 128, 8, 32, 128, 16, 48, 16, 0, 48, 0, 0, 48, 0, 0, 48, 0, 0, 204, 0, 0, 195, 0, 3, 3, 0, 12, 3, 48, 48, 0, 192, 12, 0, 192};
@@ -140,8 +121,11 @@ mob twl3 = { 0, 8, 0, 168, 0, 2, 170, 0, 1, 95, 0, 1, 95, 0, 0, 252, 0, 0, 32, 0
   // 10 = brown for Jerry
   //poke( 0xD02B, 9 );
 
+  // start the music located at $1000 (4096)
+  sidirq( 0x1000, 0x1003 );
+
+
   // the main loop
-  
   uint timer = 0;
   uint c = getin();
   while( c != 62 )
@@ -190,7 +174,6 @@ mob twl3 = { 0, 8, 0, 168, 0, 2, 170, 0, 1, 95, 0, 1, 95, 0, 0, 252, 0, 0, 32, 0
 		    {
 		      whichsprite = 1;
 		    }
-		  
 		}
 	    }
 	  else
@@ -278,23 +261,24 @@ void clearkb()
 
 void clearhires()
 {
+
+  // Colours
+  // 0 - Black    1 - White     2 - Red     3 - Cyan    4 - Purple      5 - Green  6 - Dark Blue
+  // 7 - Yellow   8 - Orange    9 - Brown   A - Pink    B - Dark Grey   C - Grey   D - Bright Green
+  //                          E - Light Blue                F - Light Grey
+
   word mem1 = 0x0000;
   
   // this is for the single colour (11) -- this is ALWAYS at 0xD800
   for( mem1 = 0xD800; mem1 < 0xDBFF; mem1 = mem1 + 1 )
     {
-      poke( mem1, 8 );
+      poke( mem1, 0 );
     }
   
   // this is for the colours for 01 and 10 of the bitmap
-  for( mem1 = 0x4400; mem1 < 0x47C0; mem1 = mem1 + 1 )
+  for( mem1 = 0x4400; mem1 < 0x47FF; mem1 = mem1 + 1 )
     {
-      poke( mem1, 35 );
-    }
-
-  for( mem1 = 0x47C0; mem1 < 0x47FF; mem1 = mem1 + 1 )
-    {
-      poke( mem1, 97 );
+      poke( mem1, 0x26 );
     }
 
   // the pixels
@@ -382,15 +366,6 @@ void moveLegs()
 
 }
 
-void delayfunction()
-{
-  for( word ldx = 0; ldx < delay; ldx = ldx + 1 )
-    {
-      nop();
-    }
-  return;
-}
-
 void checkIfStanding()
 {
   word myX = x - 12;
@@ -407,10 +382,6 @@ void checkIfStanding()
   lsr( myX );
   jerstanding = getxy( myX, myY );
   jerstanding = jerstanding & 0x3C;
-  //if( jerstanding != 20 )
-  //  {
-  //    jerstanding = 0;
-  //  }
   return;
 }
 
@@ -444,20 +415,6 @@ void checkIfBelow()
   return;
 }
 
-void cr()
-{
-  lda( 0x0D );
-  jsr( 0xFFD2 );
-  return;
-}
-
-void sp()
-{
-  lda( 0x20 );
-  jsr( 0xFFD2 );
-  return;
-}
-
 void saveregs()
 {
   uint oldD011 = peek( 0xD011 );
@@ -480,10 +437,8 @@ void restoreregs()
   return;
 }
 
-
 void calculatejump()
 {
-  
   if( lastdirectiontaken == 2 )
     {
       x = x + 2;
@@ -536,14 +491,20 @@ void calculatejerjump()
 	  jx = 320;
 	}
     }
+  if( jx < 0x0017 )
+    {
+      jx = 0x0017;
+    }
+  if( jx > 320 )
+    {
+      jx = 320;
+    }
   
   jy = jy + (jt)[ jerjump ];
     
   checkIfStanding();
-
   inc( jerjump );
 
-  
   if( jerjump == 25 )
     {
       jerjump = 0;
@@ -558,274 +519,352 @@ void animatebg()
   return;
 }
 
-void createbackground()
-{
-  data cp =
-    {
-      0x00, 0x00, 0x00, 0x00, 0x00, 0x55, 0xDE, 0xFF
-    };
-
-  data cp2 =
-    {
-      0x7B, 0xFF, 0xDE, 0xFF, 0x00, 0x00, 0x00, 0x00
-    };
-  
-  uint cpi = 0;
-  for( word pa = 0x7CC0; pa < 0x7EE0; pa = pa + 1 )
-    {
-      poke( pa, (cp)[cpi] );
-      inc(cpi);
-      cpi = cpi & 7;
-    }
-  cpi = 0;
-  for( pa = 0x7E00; pa < 0x7F40; pa = pa + 1 )
-    {
-      poke( pa, (cp2)[cpi] );
-      inc(cpi);
-      cpi = cpi & 7;
-    }
-
-  // Colours
-// 0 - Black
-// 1 - White
-// 2 - Red
-// 3 - Cyan
-// 4 - Purple
-// 5 - Green
-// 6 - Dark Blue
-// 7 - Yellow
-// 8 - Orange
-// 9 - Brown
-// 10 - Pink
-// 11 - Dark Grey
-// 12 - Grey
-// 13 - Bright Green
-// 14 - Light Blue
-// 15 - Light Grey
-
-  for( pa = 0x4398; pa < 0x43C0; pa = pa + 1 )
-    {
-      poke( pa, 0x26 );
-    }
-  
-  // the colour
-  poke( 0x4429, 125 );
-
-
-  word bbx = 0x0081;
-
-  // for colour 11
-  word bbx1 = bbx + 0xD800;
-  // white
-  poke( bbx1, 1 );
-
-  bbx1 = bbx + 0x4400;
-  // blue and red
-  poke( bbx, 0x26 );
-
-  
-
-  // multiply it by 8
-  asl( bbx );
-  asl( bbx );
-  asl( bbx );
-
-  bbx = bbx + 0x6000;
-  
-  for( uint bi = 0; bi < 8; inc(bi) )
-    {
-      poke( bbx, (bb)[bi] );
-      bbx = bbx + 1;
-    }
-  
-  for( bi = 8; bi<16; inc(bi) )
-    {
-      poke( bbx, (bb)[bi] );
-      bbx = bbx + 1;
-    }
-  for( bi = 16; bi<24; inc(bi) )
-    {
-      poke( bbx, (bb)[bi] );
-      bbx = bbx + 1;
-    }
-  for( bi = 24; bi<32; inc(bi) )
-    {
-      poke( bbx, (bb)[bi] );
-      bbx = bbx + 1;
-    }
-
-  return;
-}
-
 void createplatforms()
 {
+  // Draw the "X"'s on the Scaffolding
+  data scafX = {192, 192, 48, 48, 12, 12, 3, 3 };
+  data scafX2 = { 3, 3, 12, 12, 48, 48, 192, 192 };
 
-  // Colours
-  // 0 - Black
-  // 1 - White
-  // 2 - Red
-  // 3 - Cyan
-  // 4 - Purple
-  // 5 - Green
-  // 6 - Dark Blue
-  // 7 - Yellow
-  // 8 - Orange
-  // 9 - Brown
-  // A - Pink
-  // B - Dark Grey
-  // C - Grey
-  // D - Bright Green
-  // E - Light Blue
-  // F - Light Grey
+  plotshapeAddr = scafX;
+  plotshapeSize = 1;
+  plotshapeColourValue1001 = 0xBF;
+  plotshapeColourValue11 = 0x02;  
+
+  plotshapeY = 1;
+  for( uint ppp = 0; ppp < 4; inc( ppp ))
+    {
+      plotshapeX = 0;
+      plotXLeft();
+    }
+
+  plotshapeAddr = scafX2;
+  plotshapeY = 1;
+  for( ppp = 0; ppp < 4; inc( ppp ))
+    {
+      plotshapeX = 5;
+      plotXRight();
+    }
 
   
+  // Colours
+  // 0 - Black    1 - White     2 - Red     3 - Cyan    4 - Purple      5 - Green  6 - Dark Blue
+  // 7 - Yellow   8 - Orange    9 - Brown   A - Pink    B - Dark Grey   C - Grey   D - Bright Green
+  //                          E - Light Blue                F - Light Grey
+
+  // floor data
+  // start X, start Y, end X, end Y, Color
   data fd =
     {
-      0, 190, 160, 200, 1, 
+      // Bottom
+      0, 190, 160, 200, 1,
+
+      // Left Wall
       0, 0, 1, 200, 1,
+
+      // Right Wall
       159, 0, 160, 200, 1, 
-      0, 170, 70, 171, 1,
-      20, 150, 40, 151, 1,
-      40, 130, 60, 131, 1,
-      20, 110, 40, 111, 1,
-      40, 90, 60, 91, 1,
-      80, 80, 160, 83, 1,
-      48, 101, 80, 102, 1
+
+      // Stage
+      //24, 168, 136, 200, 1,
+      24, 168, 136, 169, 1,
+      24, 169, 136, 192, 2,
+      
+      // Left Scaffolding Platforms
+      0, 8, 24, 9, 1,
+      0, 56, 24, 57, 1,
+      0, 104, 24, 105, 1,
+      0, 152, 24, 153, 1,
+
+      // Right Scaffolding Platforms
+      136, 8, 160, 9, 1,
+      136, 56, 160, 57, 1,
+      136, 104, 160, 105, 1,
+      136, 152, 160, 153, 1,
+
+      // casing and hangers for hanging speakers
+      68, 0, 69, 40, 3,
+      91, 0, 92, 40, 3,
+      64, 40, 96, 41, 3,
+      64, 40, 65, 72, 3,
+      95, 40, 96, 72, 3,
+
+      // center console
+      72, 112, 88, 168, 2,
+
+      // speaker platform 1
+      100, 136, 132, 137, 3
+      
+      //20, 150, 40, 151, 1,
+      //40, 130, 60, 131, 1,
+      //20, 110, 40, 111, 1,
+      //40, 90, 60, 91, 1,
+      //80, 80, 160, 83, 1,
+      //48, 101, 80, 102, 1
     };
 
+  // Create Objects in the background
 
-  poke( 0x45EF, 0x61 );
-  poke( 0x45F0, 0x54 );
+// steal your face logo
+  data steal1 = {0, 0, 0, 1, 1, 7, 7, 23,     0, 63, 122, 234, 234, 170, 170, 170,     0, 252, 174, 151, 183, 181, 253, 245,    0, 0, 0, 128, 128, 224, 224, 232};
+  data steal3 = {30, 30, 94, 94, 94, 94, 94, 94, 171, 171, 171, 171, 175, 191, 175, 191, 253, 245, 245, 245, 245, 213, 245, 213, 120, 122, 122, 122, 122, 122, 122, 122 };
+  data steal5 = {95, 87, 87, 87, 87, 87, 23, 23, 175, 175, 173, 253, 213, 245, 255, 235, 85, 85, 85, 87, 87, 95, 255, 235, 250, 234, 234, 234, 234, 234, 232, 232 };
+  data steal7 = {21, 5, 5, 1, 1, 0, 0, 0, 255, 255, 127, 95, 95, 95, 23, 0, 255, 255, 254, 250, 250, 250, 232, 0, 168, 160, 160, 128, 128, 0, 0, 0 };
+
+  plotshapeAddr = steal1;
+  plotshapeSize = 4;
+  plotshapeColourValue1001 = 0x62;
+  plotshapeColourValue11 = 0x01;
+  plotshapeX = 18;
+  plotshapeY = 0;
+  plotshape();
+
+  plotshapeY = 1;
+  plotshapeAddr = steal3;
+  plotshape();
+
+  plotshapeY = 2;
+  plotshapeAddr = steal5;
+  plotshape();
+
+  plotshapeY = 3;
+  plotshapeAddr = steal7;
+  plotshape();
+
+  data speaker =
+    {
+      63, 234, 235, 237, 237, 235, 234, 63,
+      252, 171, 235, 123, 123, 235, 171, 252
+    };
+
+  plotshapeAddr = speaker;
+  plotshapeSize = 2;
+  plotshapeColourValue1001 = 0xBF;
+  plotshapeColourValue11 = 0x00;
+
+  plotshapeX = 7;
+  Y0 = 1;
+  Y1 = 21;
+  plotYloop();
   
-  for( uint floorL = 0; floorL < 65; floorL = floorL + 5 )
+  plotshapeX = 9;
+  Y0 = 4;
+  Y1 = 21;
+  plotYloop();
+
+  plotshapeX = 11;
+  Y0 = 7;
+  Y1 = 21;
+  plotYloop();
+
+  plotshapeX = 27;
+  Y0 = 1;
+  Y1 = 21;
+  plotYloop();
+
+  plotshapeX = 29;
+  Y0 = 13;
+  Y1 = 21;
+  plotYloop();
+  
+  plotshapeX = 31;
+  Y0 = 10;
+  Y1 = 21;
+  plotYloop();
+  
+  for( plotshapeX = 16; plotshapeX < 23; inc(plotshapeX) )
+  {
+    for( plotshapeY = 7; plotshapeY < 9; inc(plotshapeY) )
+  	{
+  	  plotshape();
+  	}
+    inc(plotshapeX);
+  }
+
+  data tweeter =
+    {
+      85, 125, 235, 125, 85, 215, 190, 215
+    };
+
+  plotshapeAddr = tweeter;
+  plotshapeSize = 1;
+  plotshapeColourValue1001 = 0xFB;
+  plotshapeColourValue11 = 0x00;
+
+  Y0 = 5;
+  Y1 = 7;
+  X0 = 16;
+  X1 = 24;
+  plotXYloop();
+  
+  //plotshapeAddr = tweeter;
+  //plotshapeSize = 2;
+  //plotshapeColourValue1001 = 0xBF;
+  //plotshapeColourValue11 = 0x00;
+
+  //plotshapeX = 16;
+  //plotshapeY = 5;
+  //plotshape();
+
+  data woofertop = {255, 213, 215, 222, 222, 250, 251, 251, 255, 87, 215, 183, 183, 175, 239, 239};
+  data wooferbottom = {251, 251, 250, 222, 222, 215, 213, 255, 239, 239, 175, 183, 183, 215, 87, 255};
+
+  plotshapeAddr = woofertop;
+  plotshapeSize = 2;
+  plotshapeColourValue1001 = 0xBF;
+  plotshapeColourValue11 = 0x00;  
+  plotshapeX = 13;
+
+  Y0 = 11;
+  Y1 = 21;
+  plotYloopSkip();
+  
+  plotshapeX = 25;
+  Y0 = 11;
+  Y1 = 21;
+  plotYloopSkip();
+  
+  plotshapeAddr = wooferbottom;
+  plotshapeSize = 2;
+  plotshapeColourValue1001 = 0xBF;
+  plotshapeColourValue11 = 0x00;  
+  plotshapeX = 13;
+
+  Y0 = 12;
+  Y1 = 21;
+  plotYloopSkip();
+  
+  plotshapeX = 25;
+  Y0 = 12;
+  Y1 = 21;
+  plotYloopSkip();
+
+  // Draw the platforms
+  for( uint floorL = 0; floorL < 100; floorL = floorL + 5 )
     {
       for( uint fx = (fd)[floorL]; fx < (fd)[floorL+2]; inc(fx) )
 	{
 	  for( uint fy = (fd)[floorL+1]; fy < (fd)[floorL+3]; inc(fy) )
 	    {
 	      plot( fx, fy, (fd)[floorL+4] );
-
 	    }
 	}
-  
     }
-
-  putbits();
   
   return;
 }
 
-
-void putbits()
+void plotXLeft()
 {
-  data b =
+  for( uint plotXLeftIndex = 0; plotXLeftIndex < 6; inc(plotXLeftIndex) )
     {
-      0xFA, 0x0F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-      0xAA, 0xAA, 0xFA, 0x0F, 0x00, 0x00, 0x00, 0x00,
-      0xAA, 0xAA, 0xAA, 0xAA, 0xFA, 0x0F, 0x00, 0x00,
-      0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xFA, 0x0F,
-      0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
-      0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
-      0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAF, 0xF0,
-      0xAA, 0xAA, 0xAA, 0xAA, 0xAF, 0xF0, 0x00, 0x00,
-      0xAA, 0xAA, 0xAF, 0xF0, 0x00, 0x00, 0x00, 0x00,
-      0xAF, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-
-    };
-
-  
-  uint bindex = 0;
-  uint pbx = 20;
-  uint pby = 9;
-  word offset = 0x0000;
-  offset = pby;
-  offset = offset * 40;
-  offset = offset + pbx;
-
-  word color1 = offset + 0xD800;
-  word colors2and3 = offset + 0x4400;
-
-  asl( offset );
-  asl( offset );
-  asl( offset );
-
-  word pixels = offset + 0x6000;
-  
-  for( uint pbu = 0; pbu < 10; inc(pbu) )
-    {
-
-      poke( color1, 1 );
-      // 01:7 10:6
-      poke( colors2and3, 0x76 );
-
-      color1 = color1 + 1;
-      colors2and3 = colors2and3 + 1;
-      
-      for( uint i = 0; i < 8; inc( i ) )
-	{
-	  poke( pixels, (b)[bindex] );
-	  pixels = pixels + 1;
-	  inc( bindex );
-	}
+      plotshape();
+      plotshapeX = plotshapeX + 34;
+      plotshape();
+      plotshapeX = plotshapeX - 34;
+      inc(plotshapeX);  
+      inc(plotshapeY);
     }
 
 
-  data amp =
+  return;
+}
+
+void plotXRight()
+{
+  for( plotXLeftIndex = 0; plotXLeftIndex < 6; inc(plotXLeftIndex) )
     {
-      0x3F, 0xD5, 0xD5, 0xD5, 0xD5, 0xD5, 0xD5, 0xFF,
-      0xFC, 0x57, 0xF7, 0x57, 0x57, 0x57, 0x57, 0xFF
-    };
+      plotshape();
+      plotshapeX = plotshapeX + 34;
+      plotshape();
+      plotshapeX = plotshapeX - 34;
 
-
-  bindex = 0;
-  pbx = 33;
-  pby = 9;
-  offset = 0x0000;
-  offset = pby;
-  offset = offset * 40;
-  offset = offset + pbx;
-
-  color1 = offset + 0xD800;
-  colors2and3 = offset + 0x4400;
-
-  asl( offset );
-  asl( offset );
-  asl( offset );
-
-  pixels = offset + 0x6000;
-  
-  for( pbu = 0; pbu < 2; inc(pbu) )
-    {
-
-      poke( color1, 0 );
-      // 01:7 10:6
-      poke( colors2and3, 0x76 );
-
-      color1 = color1 + 1;
-      colors2and3 = colors2and3 + 1;
-      
-      for( i = 0; i < 8; inc( i ) )
-	{
-	  poke( pixels, (amp)[bindex] );
-	  pixels = pixels + 1;
-	  inc( bindex );
-	}
+      dec(plotshapeX);  
+      inc(plotshapeY);
     }
 
-  
-  
+
+  return;
+}
+
+void plotYloop()
+{
+  for( plotshapeY = Y0; plotshapeY < Y1; inc(plotshapeY) )
+    {
+      plotshape();
+    }
+  return;
+}
+
+void plotXloop()
+{
+  for( plotshapeX = X0; plotshapeX < X1; inc(plotshapeX) )
+    {
+      plotshape();
+    }
+  return;
+}
+
+void plotYloopSkip()
+{
+  for( plotshapeY = Y0; plotshapeY < Y1; inc(plotshapeY) )
+    {
+      plotshape();
+      inc(plotshapeY);
+    }
+  return;
+}
+
+void plotXloopSkip()
+{
+  for( plotshapeX = X0; plotshapeX < X1; inc(plotshapeX) )
+    {
+      plotshape();
+      inc(plotshapeX);
+    }
+  return;
+}
+
+void plotXYloop()
+{
+  for( plotshapeY = Y0; plotshapeY < Y1; inc( plotshapeY ) )
+    {
+      for( plotshapeX = X0; plotshapeX < X1; inc(plotshapeX) )
+	{
+	  plotshape();
+	}
+    }
   return;
 }
 
 
-//void rect()
-//{
-//  for( uint rx = p1; rx < p3; inc(rx) )
-//    {
-//      for( uint ry = p2; ry < p4; inc(ry) )
-//	{
-//	  plot( rx, ry, p5 );
-//	}
-//  }
-// return;
-//}
+void plotshape()
+{
+  uint plotshapeBindex = 0;
+  word plotshapeOffset = 0x0000;
+  plotshapeOffset = plotshapeY;
+  plotshapeOffset = plotshapeOffset * 40;
+  plotshapeOffset = plotshapeOffset + plotshapeX;
+
+  word plotshapeColor1 = plotshapeOffset + 0xD800;
+  // these TWO addresses might change
+  word plotshapeColors2And3 = plotshapeOffset + 0x4400;
+  asl( plotshapeOffset );
+  asl( plotshapeOffset );
+  asl( plotshapeOffset );
+  word plotshapePixels = plotshapeOffset + 0x6000;
+  
+  for( uint plotshapeJ = 0; plotshapeJ < plotshapeSize; inc(plotshapeJ) )
+    {
+      poke( plotshapeColor1, plotshapeColourValue11 );
+      poke( plotshapeColors2And3, plotshapeColourValue1001 );
+      plotshapeColor1 = plotshapeColor1 + 1;
+      plotshapeColors2And3 = plotshapeColors2And3 + 1;
+      for( uint plotshapeI = 0; plotshapeI < 8; inc( plotshapeI ) )
+	{
+	  poke( plotshapePixels, (plotshapeAddr)[plotshapeBindex] );
+	  plotshapePixels = plotshapePixels + 1;
+	  inc( plotshapeBindex );
+	}
+    }
+  return;
+}
