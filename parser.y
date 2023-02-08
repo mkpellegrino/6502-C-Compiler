@@ -96,7 +96,7 @@
   vector <int> label_vector;
   vector <int> mob_vector;
   vector <string> mobs;
-
+  vector <string> include_file_vector;
   
   int getDataTypeValue( string s )
   {
@@ -619,6 +619,11 @@
 	  }
       }
     return 0;
+  }
+
+  void addIncludeFile( string s )
+  {
+    include_file_vector.push_back( s );
   }
 
   void addFunction( string s, string l )
@@ -1433,8 +1438,22 @@
 ;
 
 
-headers: headers headers { $$.nd = mknode($1.nd, $2.nd, "headers"); }
-| INCLUDE { add('H'); } { $$.nd = mknode(NULL, NULL, $1.name); }
+headers: /* empty */
+| 
+| headers headers
+{
+  $$.nd = mknode($1.nd, $2.nd, "headers");
+}
+| INCLUDE
+{
+  string tmp_str = string( $1.name );
+  tmp_str.erase (tmp_str.begin(), tmp_str.begin()+10);
+  tmp_str.erase (tmp_str.end()-1, tmp_str.end());
+  cerr << "included filename: [" << tmp_str  << "]" << endl;
+  addIncludeFile( tmp_str );
+  // add the include file to an include-file vector - process them at the end
+  //yyin = fopen( tmp_str.c_str(), "rt" );
+}
 ;
 
 numberlist: /* empty */
@@ -4169,13 +4188,15 @@ statement: datatype ID init
       // Y
       addAsm( string("LDA $") + toHex(y_addr), 3, false );
       addAsm( "STA $FC", 2, false );
-      addAsm( "JSR MCPLOT", 3, false );
+      //addAsm( "JSR MCPLOT", 3, false );
 
 
       // colour
       addAsm( string("LDA $") + toHex(c_addr), 3, false );
       addAsm( "STA $FD", 2, false );
 
+      addAsm( "JSR MCPLOT", 3, false );
+      
     }
   else if( isWordID($3.name) && (isWordID($6.name)||isUintID($6.name)) && isUintIMM($9.name) )
     {
@@ -4195,13 +4216,15 @@ statement: datatype ID init
       // Y
       addAsm( string("LDA $") + toHex(y_addr), 3, false );
       addAsm( "STA $FC", 2, false );
-      addAsm( "JSR MCPLOT", 3, false );
+      //addAsm( "JSR MCPLOT", 3, false );
 
 
 
       int c = atoi(stripFirst($9.name).c_str());
       addAsm( string("LDA #$") + toHex(c), 2, false );
       addAsm( "STA $FD", 2, false );
+
+      addAsm( "JSR MCPLOT", 3, false );
 
     }
   else if( isA($3.name) && isA($6.name) && isA($9.name) )
@@ -4235,15 +4258,18 @@ statement: datatype ID init
       // Y
       addAsm( string("LDA $") + toHex(y_addr), 3, false );
       addAsm( "STA $FC", 2, false );
-      addAsm( "JSR MCPLOT", 3, false );
+      //addAsm( "JSR MCPLOT", 3, false );
 
       // colour
       addAsm( string("LDA $") + toHex(c_addr), 3, false );
       addAsm( "STA $FD", 2, false );
+
+      addAsm( "JSR MCPLOT", 3, false );
+
     }
   else if( isUintID($3.name) && (isWordID($6.name)||isUintID($6.name)) && isA($9.name) )
     {
-      addComment( "MCPLOT [uint   word|uint   A" );
+      addComment( "MCPLOT [uint   word|uint   A]" );
       int x_addr = getAddressOf($3.name);
       int y_addr = getAddressOf($6.name);
       int c = atoi(stripFirst($9.name).c_str());
@@ -4256,18 +4282,25 @@ statement: datatype ID init
       // Y
       addAsm( string("LDA $") + toHex(y_addr), 3, false );
       addAsm( "STA $FC", 2, false );
-      //addAsm( "JSR MCPLOT", 3, false );
 
       // colour
       addAsm( "PLA" );
 
-      addAsm( "TAY" );
+      // vv debug 
+      //addAsm( "LDA #$22" );
+      // ^^ debug
+      
+      addAsm( "STA $FD", 2, false );
+
+
+      // ZP $02 was getting destroyed, so we need to save it
+      //addAsm( "TAY" );
       addAsm( "LDA $02", 2, false );
       addAsm( "PHA" );
-      addAsm( "TYA" );
+      //addAsm( "TYA" );
       
       //addAsm( string("LDA #$") + toHex(c), 2, false );
-      addAsm( "STA $FD", 2, false );
+      //addAsm( "STA $FD", 2, false );
 
       addAsm( "JSR MCPLOT", 3, false );
       addAsm( "PLA" );
@@ -4291,7 +4324,7 @@ statement: datatype ID init
     }
   else if( (isWordID($3.name)||isUintID($3.name)) && (isUintIMM($6.name)||isIntIMM($6.name)) && (isUintIMM($9.name)||isIntIMM($9.name)) )
     {
-      addComment( "MCPLOT [ID   IMM  IMM" );
+      addComment( "MCPLOT [ID   IMM  IMM]" );
       int x_addr = getAddressOf($3.name);
 
       
@@ -4561,7 +4594,7 @@ init: '=' expression
     }
   else if( isXA($2.name)  )
     {
-      addCompilerMessage( "initializing a word with XA", 0 );
+      //addCompilerMessage( "initializing a word with XA", 0 );
       addComment( "initializing a word with XA" );
       strcpy($$.name, "XA" );
     }
@@ -4577,10 +4610,9 @@ init: '=' expression
     }  
   else if( isA($2.name) )
     {
-      addComment( "initializing an unknown with A" );
+      addComment( "initializing an unknown type with A" );
       // then it's the result
       // of the expression is stored in A
-      addCompilerMessage( "initializing an unknown type with accumulator", 0 );
       strcpy($$.name, "A" );
     }
   else if( isFloatIMM($2.name) )
@@ -4600,19 +4632,19 @@ init: '=' expression
   /*else */
   if( isUintIMM($2.name) )
     {
-      addCompilerMessage( "else if( isUintIMM($2.name) )", 0);
+      //addCompilerMessage( "else if( isUintIMM($2.name) )", 0);
       int v = atoi( stripFirst($2.name).c_str() );
       addAsm( string("LDA #$") + toHex(v), 2, false );
       strcpy( $$.name, "A" );
     }
   else if( isWordID($2.name) || isUintID($2.name) || isIntID($2.name) ) //isAddress($2.name) || isByte($2.name))
     {
-      addCompilerMessage( "isWordID($2.name) || isUintID($2.name) || isIntID($2.name)", 0 );
+      //addCompilerMessage( "isWordID($2.name) || isUintID($2.name) || isIntID($2.name)", 0 );
       strcpy($$.name, $2.name);
     }
   else if( (variable_type == 2 || current_variable_type == 2) && ( isUintIMM($2.name) || isIntIMM($2.name) ) )
     {
-      addCompilerMessage( "(variable_type == 2 || current_variable_type == 2) && ( isUintIMM($2.name) || isIntIMM($2.name)", 0 );
+      //addCompilerMessage( "(variable_type == 2 || current_variable_type == 2) && ( isUintIMM($2.name) || isIntIMM($2.name)", 0 );
       int tmp_int = atoi( stripFirst($2.name).c_str() );
       
       if( tmp_int > 255  || tmp_int < 0 ) addCompilerMessage( "type overflow", 3 );
@@ -4625,7 +4657,7 @@ init: '=' expression
   else if( (variable_type == 2) && (isWordIMM($2.name)) )
     {
       /// *******
-      addCompilerMessage( "if( (variable_type == 2) && (isWordIMM($2.name)) )", 0 );
+      //addCompilerMessage( "if( (variable_type == 2) && (isWordIMM($2.name)) )", 0 );
       int tmp_int = atoi( stripFirst($2.name).c_str() );
       
       addAsm( string( "LDA #$" ) + toHex( get_word_L(tmp_int) ), 2, false);
@@ -4638,7 +4670,7 @@ init: '=' expression
     }
   else if( (variable_type == 0 || variable_type == 1) && (isIntIMM($2.name) || isUintIMM($2.name)) )
     {
-      addCompilerMessage("(variable_type == 0 || variable_type == 1) && (isIntIMM($2.name) || isUintIMM($2.name))", 0);
+      //addCompilerMessage("(variable_type == 0 || variable_type == 1) && (isIntIMM($2.name) || isUintIMM($2.name))", 0);
       addComment("(IntID || UintID) = (IntIMM || UintIMM)");
       if( current_variable_type == 0 )
 	{
@@ -4681,7 +4713,6 @@ init: '=' expression
     }
   else if( isMob($2.name) )
     {
-      addCompilerMessage( "MOB", 0 );
       addComment( "MOB" );
       strcpy($$.name, $2.name);
     }
@@ -7885,7 +7916,7 @@ int main(int argc, char *argv[])
       addAsm( "; STORE is at $FE(l), $FF(h)", 0, true);
       addAsm( "; LOC is at $02(l), $03(h)", 0, true);
       addAsm( "MCPLOT:", 0, true );
-      addAsm( "SEI" );
+      //addAsm( "SEI" );
       addAsm( "LDA $FA; xcoord", 2, false );
       addAsm( "AND #$03", 2, false );
       addAsm( "STA $FE; store", 2, false );
@@ -7940,7 +7971,6 @@ int main(int argc, char *argv[])
       addAsm( "JSR BMPMEM", 3, false );
       addAsm( "PLA" ); // <<- A should now be #$00 or a #$20
       addAsm( "CLC" );
-      //addAsm( "LDA #$20", 2, false );
       addAsm( "ADC $22; tmpstore", 2, false );
       //addAsm( "ADC $03; loc + 1", 2, false );
       //addAsm( "; =========================", 0, true );
@@ -7951,8 +7981,8 @@ int main(int argc, char *argv[])
       addAsm( "LDY #$00", 2, false );
       addAsm( "LDA ($02),Y", 2, false );
       addAsm( "ORA $50; mask", 2, false );
-      addAsm( "STA ($02),Y", 2, false );
-      addAsm( "CLI" );
+      addAsm( "STA ($02),Y; what is @ $50?", 2, false );
+      //addAsm( "CLI" );
       addAsm( "RTS" );
       addComment( "^^^------------------------------------^^^" );
       addComment( "^^^ from p164 of Advanced Machine Code ^^^" );
@@ -8694,9 +8724,6 @@ int main(int argc, char *argv[])
       addAsm( "RTS" );
     }
   
-  /*  set all memory locations of code (according to instruction size) */
-  /* starting at the .org address */
-
   ProcessFunctions();
   ProcessMemoryLocationsOfCode();
   ProcessStrings();

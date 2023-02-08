@@ -21,25 +21,34 @@ compiler: y.tab.c
 
 
 poke2:
-	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./poke2.c > poke2.asm
+	cat ./poke2.c common.c > poke2.tmp
+	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./poke2.tmp > poke2.asm
 
 data:
-	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./data.c > data.asm
+	cat ./data.c common.c > data.tmp
+	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./data.tmp > data.asm
 
 banks:
-	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./banks.c > banks.asm
+	cat ./banks.c common.c > banks.tmp
+	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./banks.tmp > banks.asm
 
 example:
-	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./example.c > example.asm
+	cat ./example.c common.c > example.tmp
+	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./example.tmp > example.asm
 
 terra:
-	./compiler --code-segment 8192 --data-segment 820 --memory-locations --symbol-table < ./terraform.c > terra.asm
+	cat ./terraform.c common.c > terra.tmp
+	./compiler --code-segment 8192 --data-segment 820 --memory-locations --symbol-table < ./terra.tmp > terra.tmp.asm
+	cat terra.tmp.asm cj-sid.asm > terra.asm
+	rm ./terra.tmp
+	rm ./terra.tmp.asm
 
 hires:
 	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./hires.c > hires.asm
 
 quad:
-	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./quadratic.c > quadratic.asm
+	cat ./quad.c common.c > quad.tmp
+	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./quad.tmp > quadratic.asm
 
 driver8:
 	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./driver8.c > driver8.asm
@@ -48,8 +57,11 @@ collision:
 	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./collision.c > collision.asm
 
 math:
-	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./math.c > math.asm
-	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./division.c > division.asm
+	cat ./math.c common.c > math.tmp
+	cat ./division.c common.c > division.tmp
+
+	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./math.tmp > math.asm
+	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./division.tmp > division.asm
 
 input:
 	./compiler --code-segment 2100 --data-segment 820 --parser-comments --memory-locations --symbol-table < ./input.c > input.asm
@@ -99,8 +111,14 @@ sprite:
 sprite2:
 	./compiler --code-segment 2100 --data-segment 820 --parser-comments --memory-locations --symbol-table < ./sprite2.c > sprite2.asm
 
+
+
 plot:
-	./compiler --code-segment 2100 --data-segment 820 --no-asm-comments < ./plottest.c > plottest.asm
+	cat ./plottest.c common.c > plottest.tmp
+	./compiler --code-segment 2100 --data-segment 820 --no-asm-comments < ./plottest.tmp > plottest.asm
+	rm -f plottest.tmp
+
+
 decdig:
 	./compiler --code-segment 2100 --data-segment 820 --no-asm-comments < ./decdig.c > decdig.asm
 
@@ -114,7 +132,8 @@ float:
 	./compiler --code-segment 2100 --data-segment 820 --no-asm-comments --parser-comments --memory-locations --symbol-table < ./floatmath.c > floatmath.asm
 
 program:
-	./compiler --code-segment 2100 --data-segment 820 --symbol-table < ./poketest.c > poketest.asm
+	cat ./poketest.c common.c > poketest.tmp
+	./compiler --code-segment 2100 --data-segment 820 --symbol-table < ./poketest.tmp > poketest.asm
 
 arith:
 	./compiler --code-segment 2100 --data-segment 820  --memory-locations --no-asm-comments --symbol-table  < ./arithtests.c > arithtests.asm
@@ -146,3 +165,6 @@ clean:
 	rm -fR *.*~
 	rm -fR Makefile~
 	rm -fR ~/Downloads/*.prg
+	rm -fR *.tmp
+	rm -f ~/Downloads/*.prg
+	rm -f ~/Downloads/*.bin
