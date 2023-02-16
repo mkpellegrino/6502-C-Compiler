@@ -1702,7 +1702,7 @@ body: WHILE
 };
 | tSPRITEON '(' expression ')' ';'
 {
-  addParserComment( "statement: tSPRITEON '(' expression ')' ';' " );
+  addComment( "spriteon( exp );" );
   
   if( isIntIMM($3.name) || isUintIMM($3.name) )
     {
@@ -1724,7 +1724,8 @@ body: WHILE
 };
 | tSPRITEOFF '(' expression ')' ';'
 {
-  addParserComment( "statement: tSPRITEOFF '(' expression ')' ';' " );
+  addComment( "spriteoff( exp );" );
+
   if( isIntIMM($3.name) || isUintIMM($3.name) )
     {
       int x = atoi( stripFirst($3.name).c_str() );
@@ -1746,7 +1747,7 @@ body: WHILE
 };
 | tSPRITETOGGLE '(' expression ')' ';'
 {
-  addParserComment( "statement: tSPRITETOGGLE '(' expression ')' ';' " );
+  addComment( "spritetoggle( exp );" );
   if( isIntIMM($3.name) || isUintIMM($3.name) )
     {
       int x = atoi( stripFirst($3.name).c_str() );
@@ -1762,7 +1763,7 @@ body: WHILE
 };
 | tSPRITESET '(' expression ')' ';'
 {
-  addParserComment( "statement: tSPRITESET '(' expression ')' ';' " );
+  addComment( "spriteset( exp );" );
   if( isIntIMM($3.name) || isUintIMM($3.name) )
     {
       int x = atoi( stripFirst($3.name).c_str() );
@@ -1771,7 +1772,7 @@ body: WHILE
   else if( isA($3.name) )
     {
 
-      // nothing to be done - value is in A alrrady
+      // nothing to be done - value is in A already
     }
   else
     {
@@ -2375,6 +2376,15 @@ body: WHILE
     {
       byte2hex_is_needed = true;
       addAsm( "PHA" );
+      addAsm( "JSR BYTE2HEX", 3, false );
+    }
+  else if( isXA($3.name) )
+    {
+      byte2hex_is_needed = true;
+      addAsm( "PHA" );
+      addAsm( "TXA" );
+      addAsm( "PHA" );
+      addAsm( "JSR BYTE2HEX", 3, false );
       addAsm( "JSR BYTE2HEX", 3, false );
     }
   else if( isARG($3.name) )
@@ -3936,6 +3946,7 @@ statement: datatype ID init
 };
 | datatype ID '[' expression ']'
 {
+  cerr << "array of datatype: " << $1.name << endl;
   if( isUintIMM( $4.name ) || isIntIMM( $4.name ) )
     {
       addComment( "RULE: statement: datatype ID '[' (U)INTIMM ']'  <== ARRAY" );
@@ -4041,7 +4052,7 @@ statement: datatype ID init
   int l = atoi($5.name);
   for( int i = 0; i < l; i++ ) addAsm( string( "INC $") +  toHex( a ), size_of_instruction, false );
 };
-| tINC '(' ID ')'
+| tINC '(' expression ')'
 {
   addComment( "inc(ID)");
   int a = getAddressOf($3.name);
@@ -4070,6 +4081,11 @@ statement: datatype ID init
   else if( isUintID($3.name) || isIntID($3.name) )
     {
       addAsm( string( "INC $") +  toHex( a ), size_of_instruction, false );
+    }
+  else if( isWordIMM($3.name) )
+    {
+      // increase the value at a specific address
+      addAsm( string( "INC $" ) + stripFirst($3.name), 3, false);
     }
   else
     {
@@ -4407,26 +4423,100 @@ statement: datatype ID init
   else addCompilerMessage( "ASL of type not permitted... yet", 3 );
 };
 
-// THIS IS BROKEN
+// THIS IS BROKEN - mkpellegrino 2023 02 15
 | ID '[' expression ']' init
 {
   addParserComment( "RULE: statement: ID '[' expression ']' init" );
   current_variable_type=getTypeOf($1.name);
   current_variable_base_address = getAddressOf($1.name);
 
-  if( isAddress($3.name) )
+  if( isUintID( $1.name ) && (isUintID($3.name) || isIntID($3.name)) && isA($5.name) )
     {
       int addr_of_index = getAddressOf($3.name);
-   
       addAsm( string("LDX ") + string($3.name), 3, false );
+      addAsm( string("STA $") + toHex( current_variable_base_address ) + string( ",X" ), 3, false );
     }
-  else
+  else if( isWordID( $1.name ) && (isUintID($3.name) || isIntID($3.name)) && isXA($5.name) )
     {
-      addAsm( string("LDX #$") + toHex(atoi(stripFirst($3.name).c_str())), 2, false );
+      addAsm( "TAY" );
+      addAsm( "TXA" );
+      addAsm( "PHA" );
+      int tmp_i = getAddressOf( $3.name );
+      int tmp_v = getAddressOf( $1.name );
+      addAsm( string("LDA $") + toHex(tmp_i), 3, false ); 
+      addAsm( "ASL" );// 2* because it's a word array... not a byte array
+      addAsm( "TAX" );
+      addAsm( "TYA" );
+      addAsm( string("STA $") + toHex( tmp_v ) + string( ",X" ), 3, false );
+      addAsm( "PLA" );
+      addAsm( "INX" );
+      addAsm( string("STA $") + toHex( tmp_v ) + string( ",X" ), 3, false );
+    }
+  else if( isWordID( $1.name ) && (isUintID($3.name) || isIntID($3.name)) && isWordIMM($5.name) )
+    {
+      int tmp_base = getAddressOf( $1.name );
+      int tmp_i = getAddressOf($3.name);
+      int tmp_w = atoi( stripFirst($5.name).c_str() );
+      addAsm( string("LDA $") + toHex( tmp_i ), 3, false );
+      addAsm( "ASL" );  // 2* because it's a word array... not a byte array
+      addAsm( "TAX" );
+      addAsm( string("LDA #$" ) + toHex(get_word_L(tmp_w) ), 2, false );
+      addAsm( string("STA $") + toHex( tmp_base ) + string( ",X" ), 3, false );
+      addAsm( "INX" );
+      addAsm( string("LDA #$" ) + toHex(get_word_H(tmp_w) ), 2, false );
+      addAsm( string("STA $") + toHex( current_variable_base_address ) + string( ",X" ), 3, false );
+    }
+  else if( isWordID($1.name) && (isUintID($3.name) || isIntID($3.name)) && isWordID($5.name) )
+   {
+      int tmp_base = getAddressOf( $1.name );
+      int tmp_i = getAddressOf($3.name);
+      int tmp_w = getAddressOf($5.name);
+      addAsm( string("LDA $") + toHex( tmp_i ), 3, false ); 
+      addAsm( "ASL" ); // 2* because it's a word array... not a byte array
+      addAsm( "TAX" );
+      addAsm( string("LDA #$" ) + toHex(get_word_L(tmp_w) ), 2, false );
+      addAsm( string("STA $") + toHex( tmp_base ) + string( ",X" ), 3, false );
+      addAsm( "INX" );
+      addAsm( string("LDA #$" ) + toHex(get_word_H(tmp_w) ), 2, false );
+      addAsm( string("STA $") + toHex( current_variable_base_address ) + string( ",X" ), 3, false );
+     
+
+   }
+  else if( isWordID($1.name) && (isUintIMM($3.name) || isIntIMM($3.name)) && isWordID($5.name) )
+   {
+      int tmp_base = getAddressOf( $1.name );
+      int tmp_i = 2*atoi( stripFirst($3.name).c_str() );  // 2* because it's a word array... not a byte array
+      int tmp_w = getAddressOf($5.name);
+      addAsm( string("LDX #$") + toHex( tmp_i ), 2, false ); 
+      addAsm( string("LDA #$" ) + toHex(get_word_L(tmp_w) ), 2, false );
+      addAsm( string("STA $") + toHex( tmp_base ) + string( ",X" ), 3, false );
+      addAsm( "INX" );
+      addAsm( string("LDA #$" ) + toHex(get_word_H(tmp_w) ), 2, false );
+      addAsm( string("STA $") + toHex( current_variable_base_address ) + string( ",X" ), 3, false );
+     
+
+   }
+    else if( isWordID( $1.name ) && (isUintIMM($3.name) || isIntIMM($3.name)) && isWordIMM($5.name) )
+    {
+      int tmp_base = getAddressOf( $1.name );
+      int tmp_i = 2*atoi( stripFirst($3.name).c_str() );  // 2* because it's a word array... not a byte array
+
+      int tmp_w = atoi( stripFirst($5.name).c_str() );
+      addAsm( string("LDX #$") + toHex( tmp_i ), 2, false ); 
+
+      addAsm( string("LDA $") + toHex( tmp_i ), 3, false );
+      addAsm( string("LDA #$" ) + toHex(get_word_L(tmp_w) ), 2, false );
+      addAsm( string("STA $") + toHex( tmp_base ) + string( ",X" ), 3, false );
+      addAsm( "INX" );
+      addAsm( string("LDA #$" ) + toHex(get_word_H(tmp_w) ), 2, false );
+      addAsm( string("STA $") + toHex( current_variable_base_address ) + string( ",X" ), 3, false );
     }
 
-  addAsm( string("STA $") + toHex( current_variable_base_address ) + string( ",X" ), 3, false );
-};
+  else
+    {
+      addCompilerMessage( "Unable to initialise WORD ARRAY", 3 );
+    }
+}
 | ID init 
 {
   //  ASSIGNMENTS
@@ -4751,7 +4841,16 @@ expression: expression {if(isA($1.name)){addAsm("PHA; ***", 1, false );}} arithm
 
 
   addAsm( "CLC" );
-  if( isA($1.name) && isUintID($4.name) )
+  if( isWordID($1.name) && isXA($4.name) )
+    {
+      addCompilerMessage( "Here it is!", 0 );
+    }
+  else if( isXA($1.name) && isWordID($4.name) )
+    {
+      addCompilerMessage( "XA - WordID", 0 );
+
+    }
+  else if( isA($1.name) && isUintID($4.name) )
     {
       addComment( "A arithmetic UintID" );
       addAsm( "PLA" );
@@ -6131,6 +6230,8 @@ expression: expression {if(isA($1.name)){addAsm("PHA; ***", 1, false );}} arithm
     }
   else
     {
+      string tmpstr = string( $1.name ) + string( $3.name ) + string( $4.name );
+      addCompilerMessage( tmpstr, 0 );
       addCompilerMessage( "Unknown Math Operation (for the indicated types)", 3 );
       addComment( "?   arith   ? : 3945" );
       if( getTypeOf($1.name) == 8 && getTypeOf($4.name) == 8 )
@@ -6429,25 +6530,65 @@ expression: expression {if(isA($1.name)){addAsm("PHA; ***", 1, false );}} arithm
 }
 | ID '[' expression ']'
 {
-  addParserComment( "ID '[' expression ']'" );
-  int type_of_variable = getTypeOf($1.name);
+  addParserComment( "ID '[' expression ']' -> A" );
+  //int type_of_variable = getTypeOf($1.name);
 
-  if( isUintID($3.name) || isIntID($3.name))
+  if( (isUintID($1.name)||isIntID($1.name))  && (isUintID($3.name) || isIntID($3.name)))
     {
       addAsm( string( "LDX " ) + string($3.name), 3, false );
+      addAsm( string( "LDA $" ) + toHex(getAddressOf($1.name)) + string(",X"), 3, false );
+      strcpy($$.name, "A" );
+  
     }
-  else if(isA($3.name))
+  else if((isUintID($1.name)||isIntID($1.name))  && isA($3.name))
     {
       addAsm( "TAX" );
+      addAsm( string( "LDA $" ) + toHex(getAddressOf($1.name)) + string(",X"), 3, false );
+      strcpy($$.name, "A" );
+
     }
-  else if( isIntIMM($3.name) || isUintIMM($3.name) || isByte($3.name) )
+  else if( (isUintID($1.name)||isIntID($1.name))  && (isIntIMM($3.name) || isUintIMM($3.name)) )
     {
       if( atoi($3.name) > 255 || atoi($3.name) < 0 ) addCompilerMessage( "Index Out of Range", 3 );
       addAsm( string( "LDX #$") + toHex( atoi( stripFirst($3.name).c_str() ) ), 2, false );
+      addAsm( string( "LDA $" ) + toHex(getAddressOf($1.name)) + string(",X"), 3, false );
+      strcpy($$.name, "A" );
+    }
+  else if( isWordID( $1.name ) && (isUintIMM($3.name)||isIntIMM($3.name))  )
+    {
+      int tmp_i = atoi( stripFirst($3.name).c_str() );
+      tmp_i*=2; // *2 because a word is twice as long as a byte!
+      addAsm( string("LDX #$") + toHex(tmp_i), 2, false);
+      addAsm( string( "LDA $" ) + toHex(getAddressOf($1.name)) + string(",X"), 3, false );
+      addAsm( "PHA" );
+      addAsm( "INX" );
+      addAsm( string( "LDA $" ) + toHex(getAddressOf($1.name)) + string(",X"), 3, false );
+      addAsm( "TAX" );
+      addAsm( "PLA" );
+      strcpy($$.name, "XA" );
+    }
+  else if( isWordID( $1.name )  && (isUintID($3.name)||isIntID($3.name)))
+    {
+      addCompilerMessage( "WORD ARRAY INDEXED WITH INT_ID", 0 );
+
+      int tmp_i = getAddressOf( $3.name );
+
+      addAsm( string("LDX $") + toHex(tmp_i), 3, false );
+      addAsm( string( "LDA $" ) + toHex(getAddressOf($1.name)) + string(",X"), 3, false );
+      addAsm( "PHA" );
+      addAsm( "INX" );
+      addAsm( string( "LDA $" ) + toHex(getAddressOf($1.name)) + string(",X"), 3, false );
+      addAsm( "TAX" );
+      addAsm( "PLA" );
+
+      strcpy($$.name, "XA" );
+      
+    }
+  else
+    {
+      addCompilerMessage( "Unhandled word array", 3 );
     }
 
-  addAsm( string( "LDA $" ) + toHex(getAddressOf($1.name)) + string(",X"), 3, false );
-  strcpy($$.name, "A" );
 };
 | tRND '(' expression ')' 
 {
