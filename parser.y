@@ -3946,7 +3946,7 @@ statement: datatype ID init
 };
 | datatype ID '[' expression ']'
 {
-  cerr << "array of datatype: " << $1.name << endl;
+  //cerr << "array of datatype: " << $1.name << endl;
   if( isUintIMM( $4.name ) || isIntIMM( $4.name ) )
     {
       addComment( "RULE: statement: datatype ID '[' (U)INTIMM ']'  <== ARRAY" );
@@ -4436,6 +4436,28 @@ statement: datatype ID init
       addAsm( string("LDX ") + string($3.name), 3, false );
       addAsm( string("STA $") + toHex( current_variable_base_address ) + string( ",X" ), 3, false );
     }
+  else if( isUintID( $1.name ) && (isUintIMM($3.name) || isIntIMM($3.name)) && isA($5.name) )
+    {
+      int tmp_index = atoi(stripFirst($3.name).c_str());
+      addAsm( string("LDX #$") + toHex(tmp_index), 2, false );
+      addAsm( string("STA $") + toHex( current_variable_base_address ) + string( ",X" ), 3, false );
+    }
+  else if( isUintID( $1.name ) && (isUintIMM($3.name) || isIntIMM($3.name)) && isUintID($5.name) )
+    {
+      int tmp_v = getAddressOf($5.name);
+      int tmp_index = atoi(stripFirst($3.name).c_str());
+      addAsm( string("LDA $") + toHex(tmp_v), 3, false );
+      addAsm( string("LDX #$") + toHex(tmp_index), 2, false );
+      addAsm( string("STA $") + toHex( current_variable_base_address ) + string( ",X" ), 3, false );
+    }
+  else if( isUintID( $1.name ) && (isUintID($3.name) || isIntID($3.name)) && isUintID($5.name) )
+    {
+      int tmp_v = getAddressOf($5.name);
+      int tmp_index = getAddressOf($3.name);
+      addAsm( string("LDA $") + toHex(tmp_v), 3, false );
+      addAsm( string("LDX $") + toHex(tmp_index), 3, false );
+      addAsm( string("STA $") + toHex( current_variable_base_address ) + string( ",X" ), 3, false );
+    }
   else if( isWordID( $1.name ) && (isUintID($3.name) || isIntID($3.name)) && isXA($5.name) )
     {
       addAsm( "TAY" );
@@ -4504,7 +4526,7 @@ statement: datatype ID init
       int tmp_w = atoi( stripFirst($5.name).c_str() );
       addAsm( string("LDX #$") + toHex( tmp_i ), 2, false ); 
 
-      addAsm( string("LDA $") + toHex( tmp_i ), 3, false );
+      //addAsm( string("LDA $") + toHex( tmp_i ), 3, false );
       addAsm( string("LDA #$" ) + toHex(get_word_L(tmp_w) ), 2, false );
       addAsm( string("STA $") + toHex( tmp_base ) + string( ",X" ), 3, false );
       addAsm( "INX" );
@@ -4843,12 +4865,92 @@ expression: expression {if(isA($1.name)){addAsm("PHA; ***", 1, false );}} arithm
   addAsm( "CLC" );
   if( isWordID($1.name) && isXA($4.name) )
     {
-      addCompilerMessage( "Here it is!", 0 );
+      if( op == string("-") )
+	{
+	  int tmp_op1 = getAddressOf( $1.name );
+	  addAsm( "SEC" );
+	  addAsm( "TAY" );
+	  addAsm( "LDA $02", 2, false );
+	  addAsm( "PHA" );
+	  addAsm( "LDA $03", 2, false );
+	  addAsm( "PHA" );
+	  addAsm( "STY $02", 2, false );
+	  addAsm( "STX $03", 2, false );
+	  addAsm( string( "LDA $") + toHex(tmp_op1), 3, false  );
+	  addAsm( "SBC $02", 2, false );
+	  addAsm( "TAY" );
+	  addAsm( string( "LDA $") + toHex(tmp_op1+1), 3, false  );
+	  addAsm( "SBC $03", 2, false );
+	  addAsm( "TAX" );
+	  addAsm( "PLA" );
+	  addAsm( "STA $03", 2, false );
+	  addAsm( "PLA" );
+	  addAsm( "STA $02", 2, false );
+	  addAsm( "TYA" );
+	  strcpy($$.name, "XA" );
+	}
+      else if( op == string("-") )
+	{
+	  int tmp_op1 = getAddressOf( $1.name );
+	  addAsm( "CLC" );
+	  addAsm( "TAY" );
+	  addAsm( "LDA $02", 2, false );
+	  addAsm( "PHA" );
+	  addAsm( "LDA $03", 2, false );
+	  addAsm( "PHA" );
+	  addAsm( "STY $02", 2, false );
+	  addAsm( "STX $03", 2, false );
+	  addAsm( string( "LDA $") + toHex(tmp_op1), 3, false  );
+	  addAsm( "ADC $02", 2, false );
+	  addAsm( "TAY" );
+	  addAsm( string( "LDA $") + toHex(tmp_op1+1), 3, false  );
+	  addAsm( "ADC $03", 2, false );
+	  addAsm( "TAX" );
+	  addAsm( "PLA" );
+	  addAsm( "STA $03", 2, false );
+	  addAsm( "PLA" );
+	  addAsm( "STA $02", 2, false );
+	  addAsm( "TYA" );
+	  strcpy($$.name, "XA" );
+	}
+      else
+	{
+	  addCompilerMessage( "Math Operation not implemented yet", 3);
+	}
+	
     }
   else if( isXA($1.name) && isWordID($4.name) )
     {
-      addCompilerMessage( "XA - WordID", 0 );
-
+      if( op == string("-") )
+	{
+	  int tmp_base = getAddressOf( $4.name );
+	  //addCompilerMessage( "XA - WordID", 0 );
+	  addAsm( "SEC" );
+	  addAsm( string("SBC $") + toHex( tmp_base ), 3, false );
+	  addAsm( "PHA" );
+	  addAsm( "TXA" );
+	  addAsm( string("SBC $") + toHex( tmp_base + 1 ), 3, false );
+	  addAsm( "TAX" );
+	  addAsm( "PLA" );
+	  strcpy($$.name, "XA" );
+	}
+      else if( op == string("+") )
+	{
+	  int tmp_base = getAddressOf( $4.name );
+	  //addCompilerMessage( "XA - WordID", 0 );
+	  addAsm( "CLC" );
+	  addAsm( string("ADC $") + toHex( tmp_base ), 3, false );
+	  addAsm( "PHA" );
+	  addAsm( "TXA" );
+	  addAsm( string("ADC $") + toHex( tmp_base + 1 ), 3, false );
+	  addAsm( "TAX" );
+	  addAsm( "PLA" );
+	  strcpy($$.name, "XA" );
+	}
+      else
+	{
+	  addCompilerMessage( "Math operation not implemented yet.", 3 );
+	}
     }
   else if( isA($1.name) && isUintID($4.name) )
     {
@@ -6569,7 +6671,6 @@ expression: expression {if(isA($1.name)){addAsm("PHA; ***", 1, false );}} arithm
     }
   else if( isWordID( $1.name )  && (isUintID($3.name)||isIntID($3.name)))
     {
-      addCompilerMessage( "WORD ARRAY INDEXED WITH INT_ID", 0 );
 
       int tmp_i = getAddressOf( $3.name );
 
