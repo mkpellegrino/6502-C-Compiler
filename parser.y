@@ -5059,12 +5059,16 @@ init: '=' expression
   strcpy($$.name, "A");
 };
 
-expression: expression {if(isA($1.name)){addAsm("PHA; ***", 1, false );}} arithmetic expression {/*if(isA($1.name) && isA($4.name)){addAsm("PHA");}*/}
+expression: expression {
+  if(isA($1.name))
+    {addAsm("PHA");}
+  else if(isXA($1.name))
+    {addAsm("PHA");addAsm("TXA");addAsm("PHA");}} arithmetic expression {/*if(isA($1.name) && isA($4.name)){addAsm("PHA");}*/}
 {
   addParserComment( "RULE: expression: expression arithmetic expression" );
   
   string op = string($3.name);
-  addParserComment( string($1.name) + string( " " ) + op + string( " " ) + string($4.name) );
+  addComment( string($1.name) + string( " " ) + op + string( " " ) + string($4.name) );
   
   // here is where we should check to see if the
   // variable ($$.name) is already in use (in _this_ scope).
@@ -5072,8 +5076,6 @@ expression: expression {if(isA($1.name)){addAsm("PHA; ***", 1, false );}} arithm
   int FAC=0;
   int type1 = getTypeOf($1.name);
   int type2 = getTypeOf($4.name);
-
-  //addCompilerMessage( string($1.name) + string(" (") + string(itos(getTypeOf($1.name))) + string( ") ") + op + string( " " ) + string($4.name) + string( " (" ) + string( itos( getTypeOf($4.name) ) ) + string( ")" ), 0);
   addComment( string($1.name) + string(" (") + string(itos(getTypeOf($1.name))) + string( ") ") + op + string( " " ) + string($4.name) + string( " (" ) + string( itos( getTypeOf($4.name) ) ) + string( ")" )  );
 
 
@@ -5090,9 +5092,6 @@ expression: expression {if(isA($1.name)){addAsm("PHA; ***", 1, false );}} arithm
       if( op == string("-") )
 	{
 	  int tmp_op1 = getAddressOf( $1.name );
-	  
-	  
-	  //addAsm( "SEC" );
 	  
 	  addAsm( "TAY" );
 	  addAsm( "LDA $02", 2, false );
@@ -5252,6 +5251,44 @@ expression: expression {if(isA($1.name)){addAsm("PHA; ***", 1, false );}} arithm
 	}
 	
     }
+  else if( isXA($1.name) && isXA($4.name) )
+    {
+      if( op == string("+") )
+	{
+	  addComment( "XA + XA" );
+	  addAsm( "STA $FB", 2, false ); // the A in 
+	  addAsm( "STX $FC", 2, false );
+	  addAsm( "PLA" ); // the X in XA
+	  addAsm( "TAX" );
+	  addAsm( "PLA" ); // the A in XA
+	  addAsm( "ADC $FB", 2, false );
+	  addAsm( "TAY" );
+	  addAsm( "TXA" );
+	  addAsm( "ADC $FC", 2, false );
+	  addAsm( "TAX" );
+	  addAsm( "TYA" );
+	}
+      else if( op == string("-") )
+	{
+	  addComment( "XA - XA" );
+	  addAsm( "STA $FB", 2, false ); // the A in 
+	  addAsm( "STX $FC", 2, false );
+	  addAsm( "PLA" ); // the X in XA
+	  addAsm( "TAX" );
+	  addAsm( "PLA" ); // the A in XA
+	  addAsm( "SBC $FB", 2, false );
+	  addAsm( "TAY" );
+	  addAsm( "TXA" );
+	  addAsm( "SBC $FC", 2, false );
+	  addAsm( "TAX" );
+	  addAsm( "TYA" );
+	}
+      else
+	{
+	  addCompilerMessage("Math operation not implemented yet. (XA arith XA)", 3);
+	}
+      
+    }
   else if( isA($1.name) && isUintIMM($4.name) )
     {
       int tmp_v = atoi(stripFirst( $4.name ).c_str());
@@ -5389,14 +5426,14 @@ expression: expression {if(isA($1.name)){addAsm("PHA; ***", 1, false );}} arithm
 	{
 	  addAsm( "STA $FB", 2, false ); // temporaily store OP2 in zp
 	  addAsm( "PLA" ); 
- 	  addAsm( "CLC" );
+ 	  //addAsm( "CLC" );
 	  addAsm( "ADC $FB", 2, false );
 	}
       else if( op == string("-"))
 	{
 	  addAsm( "STA $FB", 2, false ); // temporaily store OP2 in zp
 	  addAsm( "PLA" ); 
- 	  addAsm( "SEC" );
+ 	  //addAsm( "SEC" );
 	  addAsm( "SBC $FB", 2, false );
 	}
       else if( op == string("*"))
