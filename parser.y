@@ -4237,7 +4237,7 @@ statement: datatype ID init
 };
 | tINC '(' expression ')'
 {
-  addComment( "inc(ID)");
+  addComment( "inc(expression)");
   int a = getAddressOf($3.name);
   int size_of_instruction = 3;
   if( a < 256 ) size_of_instruction = 2;
@@ -4268,7 +4268,7 @@ statement: datatype ID init
   else if( isWordIMM($3.name) )
     {
       // increase the value at a specific address
-      addAsm( string( "INC $" ) + stripFirst($3.name), 3, false);
+      addAsm( string( "INC $" ) + toHex(atoi(stripFirst($3.name).c_str())), 3, false);
     }
   else
     {
@@ -5063,9 +5063,17 @@ expression: expression {
   if(isA($1.name))
     {addAsm("PHA");}
   else if(isXA($1.name))
-    {addAsm("PHA");addAsm("TXA");addAsm("PHA");}} arithmetic expression {/*if(isA($1.name) && isA($4.name)){addAsm("PHA");}*/}
+    {addComment("OP1");addAsm("PHA");addAsm("TXA");addAsm("PHA");}} arithmetic expression {/*if(isA($1.name) && isA($4.name)){addAsm("PHA");}*/addComment("OP2");}
 {
-  addParserComment( "RULE: expression: expression arithmetic expression" );
+    if( isXA($1.name) && !isXA($4.name) )
+    {
+      deletePreviousAsm();
+      deletePreviousAsm();
+      deletePreviousAsm();
+      deletePreviousAsm();
+    }
+
+  addComment( "RULE: expression: expression arithmetic expression" );
   
   string op = string($3.name);
   addComment( string($1.name) + string( " " ) + op + string( " " ) + string($4.name) );

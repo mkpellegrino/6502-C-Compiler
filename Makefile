@@ -20,6 +20,15 @@ compiler: y.tab.c
 	$(CC) $(LIBRARIES) -w  y.tab.c -o compiler
 
 
+
+show:
+	cat ./showspr.c common.c > showspr.tmp
+	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./showspr.tmp > showspr.asm
+
+coll:
+	cat ./spritecol.c common.c > spritecol.tmp
+	./compiler --code-segment 2100 --data-segment 820 --memory-locations < ./spritecol.tmp > spritecol.asm
+
 poke2:
 	cat ./poke2.c common.c > poke2.tmp
 	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./poke2.tmp > poke2.asm
@@ -58,10 +67,9 @@ collision:
 
 math:
 	cat ./math.c common.c > math.tmp
-	cat ./division.c common.c > division.tmp
-
+#	cat ./division.c common.c > division.tmp
 	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./math.tmp > math.asm
-	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./division.tmp > division.asm
+#	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./division.tmp > division.asm
 
 input:
 	./compiler --code-segment 2100 --data-segment 820 --parser-comments --memory-locations --symbol-table < ./input.c > input.asm
@@ -100,7 +108,8 @@ sound:
 	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./sound.c > sound.asm
 
 array:
-	./compiler --code-segment 2100 --data-segment 820 --no-asm-comments  --memory-locations --symbol-table < ./array.c > array.asm
+	cat ./array.c common.c > array.tmp
+	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./array.tmp > array.asm
 
 getchar:
 	./compiler --code-segment 2100 --data-segment 820 --no-asm-comments  --memory-locations --symbol-table < ./getchar.c > getchar.asm
@@ -111,6 +120,9 @@ sprite:
 sprite2:
 	./compiler --code-segment 2100 --data-segment 820 --parser-comments --memory-locations --symbol-table < ./sprite2.c > sprite2.asm
 
+sprite3:
+	cat ./sprite3.c common.c > sprite3.tmp
+	./compiler --code-segment 2100 --data-segment 820 --parser-comments --memory-locations --symbol-table < ./sprite3.tmp > sprite3.asm
 
 
 plot:
