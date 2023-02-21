@@ -3129,39 +3129,44 @@ condition: expression relop expression
   addDebugComment( string( "condition in ") + string( scope_stack.top() ));
   addParserComment( scope_stack.top() + string(" ")  + string($1.name) + string($2.name) + string($3.name) );
   addDebugComment( "=========================================================");
-  if( isXA($1.name ) ) addComment( "RegXA" );
-  if( isA($1.name ) ) addComment( "RegA" );
-  if( isUintID($1.name) ) addComment( "UintID" );
-  if( isIntID($1.name) ) addComment( "IntID" );
-  if( isWordID($1.name) ) addComment( "WordID" );
-  if( isDoubleID($1.name) ) addComment( "DoubleID" );
-  if( isFloatID($1.name) ) addComment( "FloatID" );
-  if( isUintIMM($1.name) ) addComment( "UintIMM" );
-  if( isIntIMM($1.name) ) addComment( "IntIMM" );
-  if( isWordIMM($1.name) ) addComment( "WordIMM" );
-  if( isDoubleIMM($1.name) ) addComment( "DoubleIMM" );
-  if( isFloatIMM($1.name) ) addComment( "FloatIMM" );
-  addComment($1.name);
-  addComment( " vs. " );
+  string tc;
+  if( isXA($1.name ) ) tc+=string( "RegXA" );
+  if( isA($1.name ) ) tc+=string( "RegA" );
+  if( isUintID($1.name) ) tc+=string( "UintID" );
+  if( isIntID($1.name) ) tc+=string( "IntID" );
+  if( isWordID($1.name) ) tc+=string( "WordID" );
+  if( isDoubleID($1.name) ) tc+=string( "DoubleID" );
+  if( isFloatID($1.name) ) tc+=string( "FloatID" );
+  if( isUintIMM($1.name) ) tc+=string( "UintIMM" );
+  if( isIntIMM($1.name) ) tc+=string( "IntIMM" );
+  if( isWordIMM($1.name) ) tc+=string( "WordIMM" );
+  if( isDoubleIMM($1.name) ) tc+=string( "DoubleIMM" );
+  if( isFloatIMM($1.name) ) tc+=string( "FloatIMM" );
+  tc+=string( " " );
+  tc+=string($1.name);
+  tc+=string( " vs. " );
   if( isA($3.name ) )
     {
       
-      addComment( "RegA" );
+      tc+=string( "RegA" );
       addAsm( "STA $02", 2, false );
     }
-  if( isXA($3.name ) ) addComment( "RegXA" );
-  if( isUintID($3.name) ) addComment( "UintID" );
-  if( isIntID($3.name) ) addComment( "IntID" );
-  if( isWordID($3.name) ) addComment( "WordID" );
-  if( isDoubleID($3.name) ) addComment( "DoubleID" );
-  if( isFloatID($3.name) ) addComment( "FloatID" );
-  if( isUintIMM($3.name) ) addComment( "UintIMM" );
+  if( isXA($3.name ) ) tc+=string( "RegXA" );
+  if( isUintID($3.name) ) tc+=string( "UintID" );
+  if( isIntID($3.name) ) tc+=string( "IntID" );
+  if( isWordID($3.name) ) tc+=string( "WordID" );
+  if( isDoubleID($3.name) ) tc+=string( "DoubleID" );
+  if( isFloatID($3.name) ) tc+=string( "FloatID" );
+  if( isUintIMM($3.name) ) tc+=string( "UintIMM" );
   if( isIntIMM($3.name) ) addComment( "IntIMM" );
-  if( isWordIMM($3.name) ) addComment( "WordIMM" );
-  if( isDoubleIMM($3.name) ) addComment( "DoubleIMM" );
-  if( isFloatIMM($3.name) ) addComment( "FloatIMM" );
-  addComment($3.name);
+  if( isWordIMM($3.name) ) tc+=string( "WordIMM" );
+  if( isDoubleIMM($3.name) ) tc+=string( "DoubleIMM" );
+  if( isFloatIMM($3.name) ) tc+=string( "FloatIMM" );
+  tc+=string( " " );
+  tc+=string($3.name);
 
+  addComment( tc );
+  
   if( scope_stack.top() == "FOR" ) addAsm( generateNewLabel() + string( "\t\t\t; Top of FOR Loop"), 0, true );  
   if( scope_stack.top() == "WHILE" ) addAsm( generateNewLabel() + string( "\t\t\t; Top of WHILE Loop"), 0, true );  
   if( scope_stack.top() == "IF" ) addAsm( generateNewLabel() + string( "\t\t\t; Top of IF statement"), 0, true );  
@@ -4884,16 +4889,34 @@ statement: datatype ID init
       addAsm( string("LDA #$") + toHex(atoi(stripFirst($2.name).c_str())), 2, false );
       addAsm( "LDX #$00", 2, false );
     }
-  else if( string($2.name) == "A" )
+  else if( isWordID($1.name) && isXA($2.name) )
+    {
+      int instr_size = 3;
+      if( current_variable_base_address < 256 ) instr_size=2; 
+      addAsm( string( "STA $" ) + toHex(current_variable_base_address), instr_size, false);
+      if( (current_variable_base_address+1) < 256 )
+	{
+	  instr_size=2;
+	}
+      else
+	{
+	  instr_size=3;
+	}
+      addAsm( string( "STX $" ) + toHex(current_variable_base_address+1), instr_size, false);
+    }
+  else if( (isUintID($1.name)||isIntID($1.name)) &&  isA($2.name) )
     {
       int instr_size = 3;
       if( current_variable_base_address < 256 ) instr_size=2; 
       addAsm( string( "STA $" ) + toHex(current_variable_base_address), instr_size, false);
     }
-  else if( isIntIMM($2.name))
+  else if( (isUintID($1.name)||isIntID($1.name) ) && (isIntIMM($2.name)||isUintIMM($2.name)))
     {
-      addDebugComment( string($1.name) + string( " = " ) + string($2.name) );
-      addAsm( string("LDA #$") + toHex( atoi($2.name) ), 2, false );
+      addComment( string($1.name) + string( " = " ) + string($2.name) );
+      //addAsm( string("LDA #$") + toHex( atoi($2.name) ), 2, false );
+      int instr_size = 3;
+      if( current_variable_base_address < 256 ) instr_size=2; 
+      addAsm( string( "STA $" ) + toHex(current_variable_base_address), instr_size, false);
     }
   else
     {
@@ -4907,15 +4930,15 @@ statement: datatype ID init
 init: '=' expression
 {
   addComment( string( "RULE: init: '=' expression" ) );
-  addComment( $$.name );
-  addComment( $2.name );
+
   int variable_type = getTypeOf( $$.name );
-  if( isA($2.name) && (variable_type == 0 || variable_type == 1 ))
-    {
-      addComment( "initialising an int/uint with accumulator" );
-      strcpy( $$.name, "A" );
-    }
-  else if( string($2.name) == "ARG" )
+
+  //if( isA($2.name) && (variable_type == 0 || variable_type == 1 ))
+  //  {
+  //    addComment( "initialising an int/uint with accumulator" );
+  //    strcpy( $$.name, "A" );
+  //  }
+  if( isARG($2.name)  )
     {
       addComment( "initialising a float with ARG" );
       strcpy($$.name, "ARG" );
@@ -4925,66 +4948,59 @@ init: '=' expression
       addComment( "initialising a word with XA" );
       strcpy($$.name, "XA" );
     }
-  else if( string($2.name) == "FAC" )
+  else if( isFAC($2.name)  )
     {
       addComment( "initialising a float with FAC" );
       strcpy($$.name, "FAC" );
     }  
-  else if( string($2.name) == "MOB" )
+  else if( isMOB($2.name)  )
     {
       addComment( "initialising a sprite with MOB" );
       strcpy($$.name, "MOB" );
     }  
   else if( isA($2.name) )
     {
-      addComment( "initialising an unknown type with A" );
+      addComment( "initialising a byte with A" );
       // then it's the result
       // of the expression is stored in A
       strcpy($$.name, "A" );
     }
   else if( isFloatIMM($2.name) )
     {
-      addComment( "FloatIMM" );
+      addComment( "initialising FloatIMM" );
       strcpy($$.name, $2.name);
     }
-  else
+  else if( isWordID( $2.name ) )
     {
-      strcpy($$.name, $2.name);
+      int tmp_addr = hexToDecimal($2.name); 
+      addComment( "initialising WordID" );
+      addAsm( string("LDA $") + toHex(tmp_addr), 3, false );
+      addAsm( string("LDX $") + toHex(tmp_addr+1), 3, false );
+      strcpy($$.name, "XA" );
     }
-
-
-
-
-  
-  /*else */
-  if( isUintIMM($2.name) )
+  else if( isUintID( $2.name ) )
     {
-      //addCompilerMessage( "else if( isUintIMM($2.name) )", 0);
+      int tmp_addr = hexToDecimal($2.name); 
+      addComment( "initialising UintID" );
+      addAsm( string("LDA $") + toHex(tmp_addr), 3, false );
+      strcpy($$.name, "A" );
+    }
+  else if( isIntID( $2.name ) )
+    {
+      int tmp_addr = hexToDecimal($2.name); 
+      addComment( "initialising IntID" );
+      addAsm( string("LDA $") + toHex(tmp_addr), 3, false );
+      strcpy($$.name, "A" );
+    }
+  else if( isUintIMM($2.name) )
+    {
+      addComment( "initialising UintIMM" );
       int v = atoi( stripFirst($2.name).c_str() );
       addAsm( string("LDA #$") + toHex(v), 2, false );
       strcpy( $$.name, "A" );
     }
-  else if( isWordID($2.name) || isUintID($2.name) || isIntID($2.name) ) //isAddress($2.name) || isByte($2.name))
+  else if( isWordIMM($2.name) )
     {
-      //addCompilerMessage( "isWordID($2.name) || isUintID($2.name) || isIntID($2.name)", 0 );
-      strcpy($$.name, $2.name);
-    }
-  else if( (variable_type == 2 || current_variable_type == 2) && ( isUintIMM($2.name) || isIntIMM($2.name) ) )
-    {
-      //addCompilerMessage( "(variable_type == 2 || current_variable_type == 2) && ( isUintIMM($2.name) || isIntIMM($2.name)", 0 );
-      int tmp_int = atoi( stripFirst($2.name).c_str() );
-      
-      if( tmp_int > 255  || tmp_int < 0 ) addCompilerMessage( "type overflow", 3 );
-      
-      addAsm( string( "LDA #$" ) + toHex( tmp_int ), 2, false);
-      addAsm( "LDX #$00", 2, false );
-      strcpy( $$.name, "XA" );
-
-    }
-  else if( (variable_type == 2) && (isWordIMM($2.name)) )
-    {
-      /// *******
-      //addCompilerMessage( "if( (variable_type == 2) && (isWordIMM($2.name)) )", 0 );
       int tmp_int = atoi( stripFirst($2.name).c_str() );
       
       addAsm( string( "LDA #$" ) + toHex( get_word_L(tmp_int) ), 2, false);
@@ -4992,63 +5008,89 @@ init: '=' expression
       
       strcpy($$.name, "XA" ); 
 
+    }
+   else
+    {
+     strcpy($$.name, $2.name);
+   }
+
+
+
+
+  
+  if( (variable_type == 2 || current_variable_type == 2) && ( isUintIMM($2.name) || isIntIMM($2.name) ) )
+    {
+      //addCompilerMessage( "(variable_type == 2 || current_variable_type == 2) && ( isUintIMM($2.name) || isIntIMM($2.name)", 0 );
+      //int tmp_int = atoi( stripFirst($2.name).c_str() );
+      
+      //if( tmp_int > 255  || tmp_int < 0 ) addCompilerMessage( "type overflow", 3 );
+      
+      //addAsm( string( "LDA #$" ) + toHex( tmp_int ), 2, false);
+      //addAsm( "LDX #$00", 2, false );
+      //strcpy( $$.name, "XA" );
+
+    }
+  else if( (variable_type == 2) && (isWordIMM($2.name)) )
+    {
+      /// *******
+      //addCompilerMessage( "if( (variable_type == 2) && (isWordIMM($2.name)) )", 0 );
+      //int tmp_int = atoi( stripFirst($2.name).c_str() );
+      
+      //addAsm( string( "LDA #$" ) + toHex( get_word_L(tmp_int) ), 2, false);
+      //addAsm( string( "LDX #$" ) + toHex( get_word_H(tmp_int) ), 2, false);
+      
+      //strcpy($$.name, "XA" ); 
+
       
 
     }
   else if( (variable_type == 0 || variable_type == 1) && (isIntIMM($2.name) || isUintIMM($2.name)) )
     {
       //addCompilerMessage("(variable_type == 0 || variable_type == 1) && (isIntIMM($2.name) || isUintIMM($2.name))", 0);
-      addComment("(IntID || UintID) = (IntIMM || UintIMM)");
+      //addComment("(IntID || UintID) = (IntIMM || UintIMM)");
       if( current_variable_type == 0 )
 	{
-	  int tmp_int = atoi( stripFirst($2.name).c_str() );
-	  if( tmp_int > 255  || tmp_int < 0 ) addCompilerMessage( "type overflow", 3 );
-	  addAsm( string( "LDA #$" ) + toHex( tmp_int ), 2, false);
+	  //addComment( "***** 1"  ); 
+	  //int tmp_int = atoi( stripFirst($2.name).c_str() );
+	  //if( tmp_int > 255  || tmp_int < 0 ) addCompilerMessage( "type overflow", 3 );
+	  //addAsm( string( "LDA #$" ) + toHex( tmp_int ), 2, false);
 
-	  strcpy($$.name, "A" ); 
+	  //strcpy($$.name, "A" ); 
 	}
       else if( current_variable_type == 1 )
 	{
-	  int tmp_int = atoi( stripFirst($2.name).c_str() );
-	  if( tmp_int < 0 )
-	    {
-	      tmp_int=twos_complement(tmp_int);
-	    }
-	  addAsm( string( "LDA #$" ) + toHex( tmp_int ), 2, false);
-
-	  strcpy($$.name, "A" ); 
+	  addComment( "***** 2" ); 
+	  //int tmp_int = atoi( stripFirst($2.name).c_str() );
+	  //if( tmp_int < 0 )
+	  //  {
+	  //    tmp_int=twos_complement(tmp_int);
+	  //  }
+	  //addAsm( string( "LDA #$" ) + toHex( tmp_int ), 2, false);
+	  //strcpy($$.name, "A" ); 
 	}
       else if( current_variable_type == 2 )
 	{
-	  int tmp_int = atoi( stripFirst($2.name).c_str() );
+	  addComment( "***** 3" ); 
+		  
+	  //int tmp_int = atoi( stripFirst($2.name).c_str() );
 
-	  addAsm( string( "LDA #$" ) + toHex( get_word_L(tmp_int) ), 2, false);
-	  addAsm( string( "LDX #$" ) + toHex( get_word_H(tmp_int) ), 2, false);
+	  //addAsm( string( "LDA #$" ) + toHex( get_word_L(tmp_int) ), 2, false);
+	  //addAsm( string( "LDX #$" ) + toHex( get_word_H(tmp_int) ), 2, false);
 	  
-	  strcpy($$.name, "XA" ); 
+	  //strcpy($$.name, "XA" ); 
 	}
       else
 	{
-	  int tmp_int = atoi( stripFirst($2.name).c_str() );
-	  if( tmp_int < 0 )
-	    {
-	      tmp_int=twos_complement(tmp_int);
-	    }
-	  addAsm( string( "LDA #$" ) + toHex( tmp_int ), 2, false);
-	  strcpy($$.name, "A" ); 
+	  addComment( "***** 4" ); 
+
+	  //int tmp_int = atoi( stripFirst($2.name).c_str() );
+	  //if( tmp_int < 0 )
+	  //  {
+	  //    tmp_int=twos_complement(tmp_int);
+	  //  }
+	  //addAsm( string( "LDA #$" ) + toHex( tmp_int ), 2, false);
+	  //strcpy($$.name, "A" ); 
 	}
-    }
-  else if( isMob($2.name) )
-    {
-      addComment( "MOB" );
-      strcpy($$.name, $2.name);
-    }
-  else
-    {
-      //addCompilerMessage( string( "Unknown Number Type (") + string($2.name) + string( ")"), 3 );
-      addComment( "unknown type" );
-      addComment( $2.name );
-      strcpy($$.name, $2.name);
     }
 };
 |

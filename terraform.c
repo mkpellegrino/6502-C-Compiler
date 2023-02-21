@@ -1,13 +1,36 @@
-#include <stdio.h>
-
 void main()
 {
   //cls();
   //printf( "O  :  MOVE RIGHT\nU  :  MOVE LEFT\nSPACE  :  JUMP" );
   //pause();
-  romout();
-  saveregs();
 
+  word xarray[8];
+  uint yarray[8];
+  uint rands[32];
+  
+  // save voice 3
+  uint D41B = peek( 0xD418 );
+  lda( 0 );
+  uint randomnessclock;
+  uint jerrymoveclock;
+  uint midjump;
+  uint jerjump;
+  uint subtimer;
+  uint timer;
+
+  uint lastdirectiontaken;
+  uint standing;
+  uint jerstanding;
+
+  uint jerrybelow;
+  uint jerrybelow2;
+
+  lda( 0x01 );
+  uint jerrydirection;
+  uint whichsprite;
+
+  lda( 0x02 );
+  uint gearnumber;
   uint plotshapeX;
   uint plotshapeY;
   uint plotshapeSize;
@@ -19,38 +42,45 @@ void main()
   uint X1;
   uint Y0;
   uint Y1;
-  
-  // jump table
-  data jt = { 0x00, 0xFC, 0xFC, 0xFD, 0xFD, 0xFD, 0xFE, 0xFE, 0xFE, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x01, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-  uint midjump = 0;
-  uint jerjump = 0;
-  
-  // a timer to slow down the leg movement
-  uint subtimer = 0;
-  // parameters for floor building
   uint spriteI;
 
+
+  word delay = 0x00CC;
+  word x = 0x0020;
+  lda( 100 );
+  uint y;
+  uint jy;
+  word jx = 0x012C;
+
+  word collXVar;
+  uint collYVar;
+
+
+  rands[0] = rnd(1);
+  shortcls();
+  printf( "\n\n\n\n\n          PRESS ANY KEY TO PLAY" );
+  pause();
+  for( uint randI = 0; randI < 32; inc( randI ))
+    {
+      rands[randI] = rnd(1);
+    }
+    
+  // restore voice 3
+  poke( 0xD41B, D41B );
+  
+  romout();
+  saveregs();
+
+  
+  // jump table
+  data jt = { 0x00, 0xFC, 0xFC, 0xFD, 0xFD, 0xFD, 0xFE, 0xFE, 0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x01, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+   
   // background colours
   poke( 0xD020, 9 );
   poke( 0xD021, 12 );
 
   bank( 1 );
 
-  uint lastdirectiontaken=0;
-  uint standing=0;
-  uint jerstanding=0;
-
-  uint jerrybelow=0;
-  uint jerrybelow2=0;
-  
-  uint whichsprite = 1;
-  word delay = 0x00CC;
-
-  word x = 0x0020;
-  uint y = 100;
-
-  word jx = 0x012C;
-  uint jy = 100;
 
   poke( 0xD011, 59 );
   poke( 0xD016, 24 );
@@ -58,45 +88,48 @@ void main()
 
   clearhires();
   createplatforms();
-  
-  // the blue dude walking
-  //mob blueguy1 = { 0, 1, 0, 255, 0, 3, 170, 192, 14, 170, 176, 14, 170, 172, 14, 170, 172, 14, 170, 172, 58, 251, 235, 58, 186, 235, 58, 170, 171, 58, 171, 171, 58, 170, 171, 58, 186, 187, 58, 175, 235, 14, 170, 171, 15, 170, 172, 14, 234, 188, 14, 186, 176, 58, 190, 172, 58, 195, 171, 59, 0, 235, 63, 0, 63};
 
-  //mob blueguy2 = { 0, 2, 0, 255, 0, 3, 170, 192, 14, 170, 176, 14, 170, 172, 14, 170, 172, 14, 170, 172, 58, 251, 235, 58, 186, 235, 58, 170, 171, 58, 171, 171, 58, 170, 171, 58, 186, 187, 58, 175, 235, 14, 170, 171, 15, 170, 172, 14, 170, 188, 58, 175, 240, 58, 179, 172, 58, 195, 171, 59, 0, 235, 63, 0, 63};
-
-  //mob treasurechest = { 2, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 192, 0, 14, 176, 0, 58, 172, 0, 234, 172, 3, 170, 171, 14, 234, 171, 58, 186, 175, 58, 186, 187, 234, 174, 235, 234, 175, 171, 234, 174, 187, 234, 174, 235, 234, 174, 171, 234, 174, 171, 234, 174, 172, 234, 174, 176, 234, 174, 192, 255, 255, 0 };
-
-  mob Jerry1 = { 1, 5, 0, 255, 0, 3, 255, 192, 15, 247, 240, 15, 213, 240, 15, 85, 112, 13, 255, 240, 13, 247, 240, 15, 85, 112, 3, 255, 195, 0, 255, 11, 0, 170, 58, 2, 186, 250, 10, 159, 232, 41, 87, 160, 233, 87, 128, 218, 94, 128, 214, 122, 128, 53, 122, 128, 15, 226, 128, 2, 162, 160, 10, 162, 168};
-
-  // Jerry Walking
-  //mob Jerry2 = { 4, 5, 0, 255, 0, 3, 255, 192, 15, 247, 240, 15, 213, 240, 15, 85, 112, 13, 255, 240, 13, 247, 240, 15, 85, 112, 3, 255, 195, 0, 255, 11, 0, 170, 58, 2, 186, 250, 10, 159, 232, 41, 87, 160, 234, 87, 128, 218, 94, 128, 213, 122, 128, 53, 122, 160, 15, 224, 162, 10, 128, 170, 2, 160, 40};
-
-  //mob thinguy1 = { 0, 1, 0, 168, 0, 2, 170, 0, 3, 87, 0, 3, 119, 0, 0, 252, 0, 0, 32, 0, 0, 168, 0, 2, 34, 0, 2, 34, 0, 8, 32, 128, 8, 32, 128, 16, 48, 16, 0, 252, 0, 0, 252, 0, 0, 204, 0, 0, 204, 0, 0, 204, 0, 0, 204, 0, 0, 204, 0, 0, 204, 0, 3, 207, 0};
   mob twr1 = { 0, 1, 0, 168, 0, 2, 170, 0, 3, 213, 0, 3, 213, 0, 0, 252, 0, 0, 32, 0, 0, 168, 0, 2, 34, 0, 2, 34, 0, 8, 32, 128, 8, 32, 128, 16, 48, 16, 0, 48, 0, 0, 48, 0, 0, 48, 0, 0, 204, 0, 0, 195, 0, 3, 3, 0, 12, 3, 48, 48, 0, 192, 12, 0, 192};
   mob twr2 = { 0, 2, 0, 168, 0, 2, 170, 0, 3, 213, 0, 3, 213, 0, 0, 252, 0, 0, 32, 0, 0, 168, 0, 2, 34, 0, 2, 34, 0, 8, 32, 128, 8, 32, 128, 16, 48, 16, 0, 48, 0, 0, 48, 0, 0, 48, 0, 0, 48, 0, 0, 204, 0, 0, 204, 0, 3, 12, 0, 3, 12, 0, 3, 207, 0};
   mob twr3 = { 0, 3, 0, 168, 0, 2, 170, 0, 3, 213, 0, 3, 213, 0, 0, 252, 0, 0, 32, 0, 0, 168, 0, 2, 34, 0, 2, 34, 0, 8, 32, 128, 8, 32, 128, 16, 48, 16, 0, 48, 0, 0, 48, 0, 0, 48, 0, 0, 252, 0, 0, 252, 0, 0, 252, 0, 0, 204, 0, 3, 12, 0, 3, 207, 0};
   mob twr4 = { 0, 4, 0, 168, 0, 2, 170, 0, 3, 213, 0, 3, 213, 0, 0, 252, 0, 0, 32, 0, 0, 168, 0, 2, 34, 0, 2, 34, 0, 8, 32, 128, 8, 32, 128, 16, 48, 16, 0, 48, 0, 0, 48, 0, 0, 48, 0, 0, 48, 0, 0, 204, 0, 0, 204, 0, 3, 12, 0, 3, 12, 0, 3, 207, 0};
 
-  mob twl1 = { 0, 6, 0, 168, 0, 2, 170, 0, 1, 95, 0, 1, 95, 0, 0, 252, 0, 0, 32, 0, 0, 168, 0, 2, 34, 0, 2, 34, 0, 8, 32, 128, 8, 32, 128, 16, 48, 16, 0, 48, 0, 0, 48, 0, 0, 48, 0, 0, 204, 0, 0, 204, 0, 0, 204, 0, 0, 204, 0, 0, 195, 0, 3, 207, 0};
-  mob twl2 = { 0, 7, 0, 168, 0, 2, 170, 0, 1, 95, 0, 1, 95, 0, 0, 252, 0, 0, 32, 0, 0, 168, 0, 2, 34, 0, 2, 34, 0, 8, 32, 128, 8, 32, 128, 16, 48, 16, 0, 48, 0, 0, 48, 0, 0, 48, 0, 0, 48, 0, 0, 204, 0, 0, 204, 0, 0, 195, 0, 0, 195, 0, 3, 207, 0};
-mob twl3 = { 0, 8, 0, 168, 0, 2, 170, 0, 1, 95, 0, 1, 95, 0, 0, 252, 0, 0, 32, 0, 0, 168, 0, 2, 34, 0, 2, 34, 0, 8, 32, 128, 8, 32, 128, 16, 48, 16, 0, 48, 0, 0, 48, 0, 0, 48, 0, 0, 252, 0, 0, 252, 0, 0, 252, 0, 0, 204, 0, 0, 195, 0, 3, 207, 0};
-  mob twl4 = { 0, 7, 0, 168, 0, 2, 170, 0, 1, 95, 0, 1, 95, 0, 0, 252, 0, 0, 32, 0, 0, 168, 0, 2, 34, 0, 2, 34, 0, 8, 32, 128, 8, 32, 128, 16, 48, 16, 0, 48, 0, 0, 48, 0, 0, 48, 0, 0, 48, 0, 0, 204, 0, 0, 204, 0, 0, 195, 0, 0, 195, 0, 3, 207, 0};
+  mob Jerry1 = { 1, 5, 0, 255, 0, 3, 255, 192, 15, 247, 240, 15, 213, 240, 15, 85, 112, 13, 255, 240, 13, 247, 240, 15, 85, 112, 3, 255, 195, 0, 255, 11, 0, 170, 58, 2, 186, 250, 10, 159, 232, 41, 87, 160, 233, 87, 128, 218, 94, 128, 214, 122, 128, 53, 122, 128, 15, 226, 128, 2, 162, 160, 10, 162, 168};
   
-  // the hat dude
-  //mob sprite1 = { 0, 6, 0, 0, 0, 0, 15, 0, 0, 63, 240, 0, 63, 0, 0, 234, 0, 0, 10, 0, 0, 8, 0, 0, 21, 0, 0, 85, 64, 1, 93, 80, 1, 85, 20, 1, 29, 6, 1, 21, 0, 1, 42, 0, 2, 42, 0, 0, 34, 0, 0, 34, 0, 0, 34, 0, 0, 34, 0, 0, 162, 128, 0, 162, 128 };
-  //mob sprite2 = { 1, 5, 0, 0, 0, 0, 15, 0, 0, 63, 240, 0, 63, 0, 0, 234, 0, 0, 10, 0, 0, 8, 0, 0, 21, 0, 0, 85, 64, 1, 93, 80, 1, 85, 20, 5, 29, 6, 4, 21, 0, 4, 42, 0, 8, 42, 0, 0, 34, 0, 0, 32, 128, 0, 32, 128, 0, 32, 128, 0, 40, 160, 0, 40, 160 };
+  //mob twl1 = { 0, 6, 0, 168, 0, 2, 170, 0, 1, 95, 0, 1, 95, 0, 0, 252, 0, 0, 32, 0, 0, 168, 0, 2, 34, 0, 2, 34, 0, 8, 32, 128, 8, 32, 128, 16, 48, 16, 0, 48, 0, 0, 48, 0, 0, 48, 0, 0, 204, 0, 0, 204, 0, 0, 204, 0, 0, 204, 0, 0, 195, 0, 3, 207, 0};
+  //mob twl2 = { 0, 7, 0, 168, 0, 2, 170, 0, 1, 95, 0, 1, 95, 0, 0, 252, 0, 0, 32, 0, 0, 168, 0, 2, 34, 0, 2, 34, 0, 8, 32, 128, 8, 32, 128, 16, 48, 16, 0, 48, 0, 0, 48, 0, 0, 48, 0, 0, 48, 0, 0, 204, 0, 0, 204, 0, 0, 195, 0, 0, 195, 0, 3, 207, 0};
+  //mob twl3 = { 0, 8, 0, 168, 0, 2, 170, 0, 1, 95, 0, 1, 95, 0, 0, 252, 0, 0, 32, 0, 0, 168, 0, 2, 34, 0, 2, 34, 0, 8, 32, 128, 8, 32, 128, 16, 48, 16, 0, 48, 0, 0, 48, 0, 0, 48, 0, 0, 252, 0, 0, 252, 0, 0, 252, 0, 0, 204, 0, 0, 195, 0, 3, 207, 0};
+  //mob twl4 = { 0, 7, 0, 168, 0, 2, 170, 0, 1, 95, 0, 1, 95, 0, 0, 252, 0, 0, 32, 0, 0, 168, 0, 2, 34, 0, 2, 34, 0, 8, 32, 128, 8, 32, 128, 16, 48, 16, 0, 48, 0, 0, 48, 0, 0, 48, 0, 0, 48, 0, 0, 204, 0, 0, 204, 0, 0, 195, 0, 0, 195, 0, 3, 207, 0};
 
+
+  // these are the gear items bandmembers can drop
+  mob mic1 = { 2, 8, 0, 0, 96,0, 31, 240,0, 2, 96,0, 4, 0,0, 4, 0,0, 8, 0,0, 8, 0,0, 24, 0,0, 24, 0,0, 40, 0,0, 40, 0,0, 72, 0,0, 72, 0,0, 136, 0,0, 136, 0,0, 8, 0,0, 8, 0,0, 8, 0,0, 127, 0,3, 128, 224,28, 0, 28};
+
+  mob amplifier = { 3, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 0, 63, 255, 252, 234, 170, 171, 234, 171, 251, 234, 170, 171, 234, 170, 171, 234, 170, 171, 234, 170, 171, 234, 170, 171, 234, 170, 171, 234, 170, 171, 255, 255, 255};
+
+  mob acousticguitar = { 4, 10, 0, 252, 0, 0, 252, 0, 0, 48, 0, 0, 48, 0, 0, 48, 0, 0, 48, 0, 0, 48, 0, 3, 255, 0, 14, 170, 192, 14, 170, 192, 14, 170, 192, 3, 171, 0, 14, 186, 192, 58, 254, 176, 58, 254, 176, 58, 186, 176, 58, 170, 176, 14, 254, 192, 14, 170, 192, 3, 171, 0, 0, 252, 0};
+
+
+  mob drums = { 5, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21, 3, 255, 85, 67, 171, 12, 3, 171, 15, 195, 255, 58, 176, 48, 234, 172, 48, 234, 172, 48, 234, 172, 48, 234, 172, 48, 234, 172, 48, 58, 176, 48, 207, 204, 252};
+  mob electricguitar = { 6, 12, 0, 192, 0, 0, 240, 0, 0, 240, 0, 0, 48, 0, 0, 48, 0, 0, 48, 0, 0, 48, 0, 0, 48, 0, 3, 48, 0, 14, 240, 192, 14, 243, 192, 14, 190, 192, 3, 170, 192, 3, 155, 0, 3, 171, 0, 14, 171, 0, 14, 154, 192, 14, 170, 192, 14, 254, 192, 3, 170, 192, 0, 255, 0};
+  mob mic2 = { 7, 13, 0, 0, 96,0, 31, 240,0, 2, 96,0, 4, 0,0, 4, 0,0, 8, 0,0, 8, 0,0, 24, 0,0, 24, 0,0, 40, 0,0, 40, 0,0, 72, 0,0, 72, 0,0, 136, 0,0, 136, 0,0, 8, 0,0, 8, 0,0, 8, 0,0, 127, 0,3, 128, 224,28, 0, 28};
+  
   spritex( 0, x );
   spritey( 0, y );
 
   // Jerry
-  spritexy( 3, 160, 190 );
+  spritexy( 2, 160, 190 );
 
-  // multicolour sprite mode for both sprites  %00000011
-  poke( 0xD01C, 3 );
+  //                                           Colours
+  // 0 - Black    1 - White     2 - Red     3 - Cyan    4 - Purple      5 - Green  6 - Dark Blue
+  // 7 - Yellow   8 - Orange    9 - Brown   A - Pink    B - Dark Grey   C - Grey   D - Bright Green
+  //                          E - Light Blue                F - Light Grey
+  
+  // multicolour sprite mode for some of the sprites  %01111011
+  poke( 0xD01C, 0x7B );
 
-  // turns on 0 and 1  %00000011
-  spriteon( 3 );
+  // turns on all sprites
+  spriteon( 255 );
   
   // 01 = Yellow for all sprites
   poke( 0xD025, 7 );
@@ -104,32 +137,31 @@ mob twl3 = { 0, 8, 0, 168, 0, 2, 170, 0, 1, 95, 0, 1, 95, 0, 0, 252, 0, 0, 32, 0
   // 11 = black for all sprites
   poke( 0xD026, 0 );
   
-  // 10 = yellow
-  // sprite one
-  poke( 0xD027, 2 );
-  
-  // 10 = brown
-  // sprite two
-  poke( 0xD028, 9 );
-
-  // 10 = brown
-  //poke( 0xD029, 9 );
-
-  // 10 = brown for Jerry
-  //poke( 0xD02A, 9 );
-
-  // 10 = brown for Jerry
-  //poke( 0xD02B, 9 );
+  // Colour Bit-pair: 10
+  // Jerry
+  spritecolour( 0, 2 );
+  // Roadie
+  spritecolour( 1, 9 );
+  // Microphone 1 (mono Black)
+  spritecolour( 2, 0 );
+  // Amplifier (Dark Grey)
+  spritecolour( 3, 11 );
+  // Acoustic Guitar (brown)
+  spritecolour( 4, 9);
+  // Drums (white)
+  spritecolour( 5, 1 );
+  // Electric Guitar (red)
+  spritecolour( 6, 2 );
+  // Microphone 2 (mono Black)
+  spritecolour( 7, 0 );
 
   // start the music located at $1000 (4096)
   sidirq( 0x1000, 0x1003 );
-
-
   // the main loop
-  uint timer = 0;
   uint c = getin();
   while( c != 62 )
     {
+      
       if( timer == 0 )
 	{
 	  checkIfStanding();
@@ -143,14 +175,18 @@ mob twl3 = { 0, 8, 0, 168, 0, 2, 170, 0, 1, 95, 0, 1, 95, 0, 0, 252, 0, 0, 32, 0
 	    }
 	  else
 	    {
-	      if( jerstanding == 20 )
+	      if( jerstanding == 0 )
 		{
-		  checkIfBelow();
-		  calculateai();
+		  inc(jy);
+		  if( jy > 219 )
+		    {
+		      jy = 219;
+		    }
 		}
 	      else
 		{
-		  inc(jy);
+		  checkIfBelow();
+		  calculateai();
 		}
 	    }
 
@@ -166,14 +202,13 @@ mob twl3 = { 0, 8, 0, 168, 0, 2, 170, 0, 1, 95, 0, 1, 95, 0, 0, 252, 0, 0, 32, 0
 	      else
 		{
 		  inc(y);
-		  poke( 0x47F8, whichsprite );
-		  
-		  inc( whichsprite );
-		  
-		  if( whichsprite == 5 )
+		  if( y > 219 )
 		    {
-		      whichsprite = 1;
+		      y = 219;
 		    }
+		  
+		  // wiggle legs
+		  moveLegs();
 		}
 	    }
 	  else
@@ -192,7 +227,10 @@ mob twl3 = { 0, 8, 0, 168, 0, 2, 170, 0, 1, 95, 0, 1, 95, 0, 0, 252, 0, 0, 32, 0
 	  positionplayer();
 	}
       inc( timer );
-
+      if( timer > 200 )
+	{
+	  timer = 0;
+	}
       c = getin();
     }
 
@@ -203,29 +241,60 @@ mob twl3 = { 0, 8, 0, 168, 0, 2, 170, 0, 1, 95, 0, 1, 95, 0, 0, 252, 0, 0, 32, 0
   return;
 }
 
+// this is the function that
+// figures out which direction
+// jerry should move in
 void calculateai()
 {
-  if( x < jx )
+  if( jerrymoveclock == 0 )
     {
-      if( jx > 0x0017 )
+      jerjump = 1;
+      if( jerrydirection == 1 )
 	{
-	  jx = jx - 1;
+	  jerrydirection = 0xFF;
 	}
       else
 	{
-	  jx = 0x0017;
+	  jerrydirection = 1;
+	}
+      jerrymoveclock = rands[randomnessclock];
+      inc( randomnessclock );
+      randomnessclock = randomnessclock & 63;
+      
+      // drop some gear
+      spritex( gearnumber, jx );
+      spritey( gearnumber, jy );
+      xarray[gearnumber] = jx;
+      yarray[gearnumber] = jy;
+
+      inc( gearnumber );
+      if( gearnumber == 8 )
+	{
+	  gearnumber = 0;
 	}
     }
   else
     {
-      if( jx < 320 )
+      if( jerrydirection == 1 )
 	{
 	  jx = jx + 1;
 	}
       else
 	{
+	  jx = jx - 1;
+	}
+      
+      if( jx < 0x0017 )
+	{
+	  jerrydirection = 1;
+	  jx = 0x0017;
+	}
+      if( jx > 320 )
+	{
+	  jerrydirection = 0xFF;
 	  jx = 320;
 	}
+      dec( jerrymoveclock );
     }
   return;
 }
@@ -249,13 +318,43 @@ void positionplayer()
     }
   spritey( 0, y );
   spritex( 0, x );
+  uint sc = spritecollision();
+  sc = sc & 1;
+  if( sc != 0 )
+  {
+    checkCollision();
+  }
   return;
 }
 
-void clearkb()
+void collisiondetected()
 {
-  poke( 198, 0 );
-  jsr( 65508 );
+  for( uint cdi = 0; cdi < 8; inc( cdi ) )
+    {
+      word cd1 = x & 0xEFFF;
+      cd1 = cd1 - xarray[cdi];
+      uint cd2 = y - yarray[cdi];
+      cd2 = cd2 & 0xEF;
+      if( cd1 < 0x000A )
+	{
+	  poke( 0x6041, 0xFF );
+	  if( cd2 < 10 )
+	    {
+	      poke( 0x6040, 0xFF );
+	      
+	    }
+	  else
+	    {
+	      poke( 0x6040, 0x00 );
+	    }
+	}
+      else
+	{
+	  poke( 0x6041, 0x00 );
+	}
+    }
+  
+
   return;
 }
 
@@ -276,7 +375,7 @@ void clearhires()
     }
   
   // this is for the colours for 01 and 10 of the bitmap
-  for( mem1 = 0x4400; mem1 < 0x47FF; mem1 = mem1 + 1 )
+  for( mem1 = 0x4400; mem1 < 0x47F0; mem1 = mem1 + 1 )
     {
       poke( mem1, 0x26 );
     }
@@ -287,19 +386,6 @@ void clearhires()
       poke( mem1, 0 );
     }
   
-  return;
-}
-
-void pause()
-{
-  poke( 0x00C6, 0 );
-  jsr( 0xFFE4 );
-
-  uint pausev = getchar();
-  while( pausev == 0 )
-    {
-      pausev = getchar();
-    }
   return;
 }
 
@@ -350,6 +436,8 @@ void moveLegs()
 {
   inc( subtimer );
 
+  //subtimer = subtimer & 0x0A;
+  
   if( subtimer == 10 )
     {
       poke( 0x47F8, whichsprite );
@@ -372,8 +460,10 @@ void checkIfStanding()
   uint myY = y - 29;
   lsr( myX );
   standing = getxy( myX, myY );
-  standing = standing & 0x3C;
-  if( standing != 20 )
+  poke( 0x601A, standing );
+  //standing = standing & 0x3C;
+  //if( standing != 20 )
+  if( standing != 0xFF )
     {
       standing = 0;
     }
@@ -381,7 +471,12 @@ void checkIfStanding()
   myY = jy - 29;
   lsr( myX );
   jerstanding = getxy( myX, myY );
-  jerstanding = jerstanding & 0x3C;
+  //jerstanding = jerstanding & 0x3C;
+  poke( 0x600A, jerstanding );
+  if( jerstanding != 0xFF )
+    {
+      jerstanding = 0;
+    }
   return;
 }
 
@@ -401,41 +496,10 @@ void checkIfBelow()
   jerrybelow = jerrybelow | getxy( myXp, myY );
   jerrybelow = jerrybelow | getxy( myXm, myY );
 
-  //jerrybelow = jerrybelow & 0x3C;
-  poke( 0x6148, jerrybelow );
-  if( myY > y )
-    {
-      if( jerrybelow > 0 )
-      {
-	jerjump = 1;
-      }
-    }
-
-  //plot( myX, myY, 3 );
+  
   return;
 }
 
-void saveregs()
-{
-  uint oldD011 = peek( 0xD011 );
-  uint oldD016 = peek( 0xD016 );
-  uint oldD018 = peek( 0xD018 );
-  uint oldD020 = peek( 0xD020 );
-  uint oldD021 = peek( 0xD021 );
-  uint oldChar = peek( 0x0286 );
-  return;
-}
-
-void restoreregs()
-{
-  poke( 0xD011, oldD011 );
-  poke( 0xD016, oldD016 );
-  poke( 0xD018, oldD018 );
-  poke( 0xD020, oldD020 );
-  poke( 0xD021, oldD021 );
-  poke( 0x0286, oldChar );
-  return;
-}
 
 void calculatejump()
 {
@@ -468,10 +532,9 @@ void calculatejump()
 
 void calculatejerjump()
 {
-  
-  if( lastdirectiontaken == 2 )
+  if( jerrydirection == 0xFF )
     {
-      if( x > 0x0017 )
+      if( jx > 0x0017 )
 	{
 	  jx = jx + 1;
 	}
@@ -482,7 +545,7 @@ void calculatejerjump()
     }
   else
     {
-      if( x < 320 )
+      if( jx < 320 )
 	{
 	  jx = jx - 1;
 	}
@@ -527,8 +590,8 @@ void createplatforms()
 
   plotshapeAddr = scafX;
   plotshapeSize = 1;
-  plotshapeColourValue1001 = 0xBF;
-  plotshapeColourValue11 = 0x02;  
+  plotshapeColourValue1001 = 0x00;
+  plotshapeColourValue11 = 0x00;  
 
   plotshapeY = 1;
   for( uint ppp = 0; ppp < 4; inc( ppp ))
@@ -556,30 +619,32 @@ void createplatforms()
   data fd =
     {
       // Bottom
-      0, 190, 160, 200, 1,
+      0, 190, 160, 200, 3,
 
       // Left Wall
-      0, 0, 1, 200, 1,
+      0, 0, 1, 200, 3,
 
       // Right Wall
-      159, 0, 160, 200, 1, 
+      159, 0, 160, 200, 3, 
 
       // Stage
       //24, 168, 136, 200, 1,
-      24, 168, 136, 169, 1,
-      24, 169, 136, 192, 2,
+      24, 168, 136, 169, 3,
+      //24, 169, 136, 190, 2,
       
       // Left Scaffolding Platforms
-      0, 8, 24, 9, 1,
-      0, 56, 24, 57, 1,
-      0, 104, 24, 105, 1,
-      0, 152, 24, 153, 1,
+      0, 8, 24, 9, 3,
+      0, 56, 24, 57, 3,
+      0, 104, 24, 105, 3,
+      0, 152, 24, 153, 3,
+      24, 8, 25, 200, 3,
 
       // Right Scaffolding Platforms
-      136, 8, 160, 9, 1,
-      136, 56, 160, 57, 1,
-      136, 104, 160, 105, 1,
-      136, 152, 160, 153, 1,
+      136, 8, 160, 9, 3,
+      136, 56, 160, 57, 3,
+      136, 104, 160, 105, 3,
+      136, 152, 160, 153, 3,
+      136, 8, 137, 200, 3,
 
       // casing and hangers for hanging speakers
       68, 0, 69, 40, 3,
@@ -590,10 +655,15 @@ void createplatforms()
 
       // center console
       72, 112, 88, 168, 2,
-
+      72, 113, 88, 114, 3,
       // speaker platform 1
-      100, 136, 132, 137, 3
-      
+      28, 128, 60, 129, 3,
+      28, 152, 60, 153, 3,
+      28, 80, 52, 81, 3
+      //0, 165, 160, 167, 3,
+      //0, 165, 160, 167, 3,
+
+
       //20, 150, 40, 151, 1,
       //40, 130, 60, 131, 1,
       //20, 110, 40, 111, 1,
@@ -612,7 +682,9 @@ void createplatforms()
 
   plotshapeAddr = steal1;
   plotshapeSize = 4;
+  // Blue and Red
   plotshapeColourValue1001 = 0x62;
+  // White
   plotshapeColourValue11 = 0x01;
   plotshapeX = 18;
   plotshapeY = 0;
@@ -638,7 +710,9 @@ void createplatforms()
 
   plotshapeAddr = speaker;
   plotshapeSize = 2;
+  // Grey and Light Grey
   plotshapeColourValue1001 = 0xBF;
+  // Black?
   plotshapeColourValue11 = 0x00;
 
   plotshapeX = 7;
@@ -676,6 +750,7 @@ void createplatforms()
     for( plotshapeY = 7; plotshapeY < 9; inc(plotshapeY) )
   	{
   	  plotshape();
+	  //nop();
   	}
     inc(plotshapeX);
   }
@@ -687,7 +762,10 @@ void createplatforms()
 
   plotshapeAddr = tweeter;
   plotshapeSize = 1;
+
+  // Light Grey and Grey
   plotshapeColourValue1001 = 0xFB;
+  // Black
   plotshapeColourValue11 = 0x00;
 
   Y0 = 5;
@@ -696,21 +774,14 @@ void createplatforms()
   X1 = 24;
   plotXYloop();
   
-  //plotshapeAddr = tweeter;
-  //plotshapeSize = 2;
-  //plotshapeColourValue1001 = 0xBF;
-  //plotshapeColourValue11 = 0x00;
-
-  //plotshapeX = 16;
-  //plotshapeY = 5;
-  //plotshape();
-
   data woofertop = {255, 213, 215, 222, 222, 250, 251, 251, 255, 87, 215, 183, 183, 175, 239, 239};
   data wooferbottom = {251, 251, 250, 222, 222, 215, 213, 255, 239, 239, 175, 183, 183, 215, 87, 255};
 
   plotshapeAddr = woofertop;
   plotshapeSize = 2;
+  // Grey and Light Grey
   plotshapeColourValue1001 = 0xBF;
+  // Black
   plotshapeColourValue11 = 0x00;  
   plotshapeX = 13;
 
@@ -725,7 +796,9 @@ void createplatforms()
   
   plotshapeAddr = wooferbottom;
   plotshapeSize = 2;
+  // Grey and Light Grey
   plotshapeColourValue1001 = 0xBF;
+  // Black
   plotshapeColourValue11 = 0x00;  
   plotshapeX = 13;
 
@@ -738,8 +811,8 @@ void createplatforms()
   Y1 = 21;
   plotYloopSkip();
 
-  // Draw the platforms
-  for( uint floorL = 0; floorL < 100; floorL = floorL + 5 )
+  // Draw the platforms - the 105 is the number of values in fd
+  for( uint floorL = 0; floorL < 130; floorL = floorL + 5 )
     {
       for( uint fx = (fd)[floorL]; fx < (fd)[floorL+2]; inc(fx) )
 	{
@@ -864,6 +937,34 @@ void plotshape()
 	  poke( plotshapePixels, (plotshapeAddr)[plotshapeBindex] );
 	  plotshapePixels = plotshapePixels + 1;
 	  inc( plotshapeBindex );
+	}
+    }
+  return;
+}
+
+void checkCollision()
+{
+  for( uint ccI = 0; ccI < 8; inc( ccI ) )
+    {
+      collXVar = x - xarray[ccI];
+      collYVar = y - yarray[ccI];
+      
+      if( collXVar > 320 )
+      	{
+      	  collXVar = xarray[ccI] - x;
+      	}
+      
+      if( collYVar > 200 )
+	{
+	  collYVar = yarray[ccI] - y;
+	}
+      // for now... just increment the border colour
+      if( collXVar < 0x0015 )
+	{
+	  if( collYVar < 0x15 )
+	    {
+	      inc( 0xD020 );
+	    }
 	}
     }
   return;
