@@ -1657,7 +1657,7 @@ body: WHILE
 }
 '=' '{' numberlist '}' ';'
 {
- addAsm( generateNewLabel(), 0, true ); addComment( "???NL" ); popScope();
+ addAsm( generateNewLabel(), 0, true ); popScope();
 
 }
 
@@ -5710,6 +5710,10 @@ expression: expression {
 	  addAsm( "TAX" );
 	  addAsm( "TYA" );
 	}
+      else
+	{
+	  addCompilerMessage( "That specific math operation is not supported yet.", 3);
+	}
       strcpy($$.name, "XA" );
 
     }
@@ -5742,11 +5746,12 @@ expression: expression {
       else if( op == string("/") )
 	{
 	  addComment( "WordID / IntID|UintID" );
+	  addAsm( "SEI" );
 	  int addr_op1 = hexToDecimal($1.name);
 	  int addr_op2 = hexToDecimal($4.name);
 
 	  div16_is_needed = true;
-	  
+
 	  addAsm( string("LDA $") + toHex(addr_op1), 3, false );
 	  addAsm( "STA $FB", 2, false );
 	  addAsm( string("LDA $") + toHex(addr_op1+1), 3, false );
@@ -5756,10 +5761,10 @@ expression: expression {
 	  addAsm( "STA $FE", 2, false );
 	  addAsm( string("LDA $") + toHex(addr_op2), 3, false );
 	  addAsm( "STA $FD", 2, false );
-
 	  addAsm( "JSR DIV16", 3, false );
 	  addAsm( "LDA $FB", 2, false );
 	  addAsm( "LDX $FC", 2, false );
+	  addAsm( "CLI" );
 	}
       else if( op == string("+") )
 	{
@@ -5839,7 +5844,8 @@ expression: expression {
 	  
 	  addComment( "WordID * (IntIMM || UintIMM)" );
 	  mul16_is_needed = true;
-	  
+	  addAsm( "SEI" );
+
 	  addAsm( string("LDA $") + toHex(addr_op1), 3, false );
 	  addAsm( "STA $FB", 2, false );
 	  addAsm( string("LDA $") + toHex(addr_op1+1), 3, false );
@@ -5853,11 +5859,14 @@ expression: expression {
 	  addAsm( "JSR MUL16", 3, false );
 	  addAsm( "LDA MUL16R", 3, false );
 	  addAsm( "LDX MUL16R+1", 3, false );
+	  addAsm( "CLI" );
+
 	  
 	}
       else if( op == string("/") )
 	{
 	  addComment( "WordID / (IntIMM || UintIMM)" );
+	  addCompilerMessage( "That specific math operation is not supported yet.", 3);
 	}
       else 
 	{
@@ -5921,6 +5930,7 @@ expression: expression {
 	}
       else if( op == string("/") )
 	{
+	  addAsm( "SEI" );
 	  int addr_op1 = hexToDecimal($1.name);
 	  int addr_op2 = hexToDecimal($4.name);
 
@@ -5940,6 +5950,8 @@ expression: expression {
 	  addAsm( "JSR DIV16", 3, false );
 	  addAsm( "LDA $FB", 2, false );
 	  addAsm( "LDX $FC", 2, false );
+	  addAsm( "CLI" );
+
 	}
       strcpy($$.name, "XA" );
     }
@@ -7612,9 +7624,25 @@ expression: expression {
       addAsm( string("LDA ") + string($3.name) + string("+1"), 3, false ); 
       addAsm( "JSR $B391", 3, false );
     }
+  else if( isXA($3.name) )
+    {
+      addAsm( "TAY" );
+      addAsm( "TXA" );
+      //addAsm( string("LDY ") + string($3.name), 3, false ); 
+      //addAsm( string("LDA ") + string($3.name) + string("+1"), 3, false ); 
+      addAsm( "JSR $B391", 3, false );
+    }
+  else if( isA($3.name) )
+    {
+      addAsm( "TAY" );
+      addAsm( "LDX #$00", 2, false);
+      //addAsm( string("LDY ") + string($3.name), 3, false ); 
+      //addAsm( string("LDA ") + string($3.name) + string("+1"), 3, false ); 
+      addAsm( "JSR $B391", 3, false );
+    }
   else
     {
-      addCompilerMessage( "Unable to cast as float", 3 );
+      addCompilerMessage( "Unable to convert as float", 3 );
     }
   strcpy($$.name, "FAC" );
 };
