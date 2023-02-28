@@ -2970,6 +2970,43 @@ body: WHILE
       addAsm( ".BYTE #$00", 1, false );
       popScope();
     }
+  else if( isXA($3.name) && (isUintID($5.name) || isIntID($5.name)) )
+    {
+      pushScope("poke( XA, (U)IntID )");
+      int valu_addr = getAddressOf($5.name);
+      addAsm( string( "STA " ) + getLabel( label_vector[label_major],false), 3, false );
+      addAsm( string( "STX " ) + getLabel( label_vector[label_major]+1,false), 3, false );
+
+      int instr_size = 3;
+      if( valu_addr < 256 ) instr_size = 2;      
+      addAsm( string("LDA $") + toHex( valu_addr ), instr_size, false );
+
+      addAsm( ".BYTE #$8D;\t  <-- STA absolute", 1, false );
+      addAsm( generateNewLabel() + string( "\t\t\t; <-- low byte"), 0, true );
+      addAsm( ".BYTE #$00", 1, false );
+      addAsm( generateNewLabel() + string( "\t\t\t; <-- hi byte"), 0, true );
+      addAsm( ".BYTE #$00", 1, false );
+      popScope();
+    }
+  else if( isXA($3.name) && (isUintIMM($5.name) || isIntIMM($5.name)) )
+    {
+      pushScope("poke( XA, (U)IntIMM )");
+      int valu_addr = getAddressOf($5.name);
+      addAsm( string( "STA " ) + getLabel( label_vector[label_major],false), 3, false );
+      addAsm( string( "STX " ) + getLabel( label_vector[label_major]+1,false), 3, false );
+
+
+      int value = atoi( stripFirst($5.name).c_str() );
+
+      addAsm( string("LDA #$") + toHex( value ), 2, false );
+
+      addAsm( ".BYTE #$8D;\t  <-- STA absolute", 1, false );
+      addAsm( generateNewLabel() + string( "\t\t\t; <-- low byte"), 0, true );
+      addAsm( ".BYTE #$00", 1, false );
+      addAsm( generateNewLabel() + string( "\t\t\t; <-- hi byte"), 0, true );
+      addAsm( ".BYTE #$00", 1, false );
+      popScope();
+    }
   else if( isWordID($3.name) && (isUintIMM($5.name) || isIntIMM($5.name)) )
     {
       pushScope("POKE( ID, IMM )");
@@ -4346,6 +4383,14 @@ statement: datatype ID init
       if( a+1 > 255 ) size_of_instruction = 3;
       addAsm( string("ROL $") + toHex(a+1), size_of_instruction, false );
     }
+  else if( isWordIMM($3.name) )
+    {
+      addComment( "rol(WordIMM)");
+
+      int addr = atoi(stripFirst($3.name).c_str());
+      addAsm( "CLC" );
+      addAsm( string("ROL $") + toHex(addr), 3, false );
+    }
   else addCompilerMessage( "ROL of type not permitted... yet", 3 );
 };
 | tROR '(' ID ')'
@@ -4618,6 +4663,7 @@ statement: datatype ID init
 // THIS IS BROKEN - mkpellegrino 2023 02 15
 | ID '[' expression ']' init
 {
+  addComment( "Array Initialisation" );
   addParserComment( "RULE: statement: ID '[' expression ']' init" );
   current_variable_type=getTypeOf($1.name);
   current_variable_base_address = getAddressOf($1.name);
@@ -4721,6 +4767,7 @@ statement: datatype ID init
    }
     else if( isWordID( $1.name ) && (isUintIMM($3.name) || isIntIMM($3.name)) && isWordIMM($5.name) )
     {
+      addComment( "WordID[UintIMM] = WordIMM" );
       int tmp_base = getAddressOf( $1.name );
       int tmp_i = 2*atoi( stripFirst($3.name).c_str() );  // 2* because it's a word array... not a byte array
 
@@ -5133,10 +5180,12 @@ expression: expression {
     {
       addAsm( "SEC" );
     }
-    else
-      {
-	addAsm( "CLC" );
-      }
+  else if( op == string("+") )
+    {
+      addAsm( "CLC" );
+    }
+
+  
   if( isWordID($1.name) && isXA($4.name) )
     {
       if( op == string("-") )
@@ -5860,19 +5909,35 @@ expression: expression {
 	  addAsm( "LDA MUL16R", 3, false );
 	  addAsm( "LDX MUL16R+1", 3, false );
 	  addAsm( "CLI" );
-
-	  
 	}
       else if( op == string("/") )
 	{
 	  addComment( "WordID / (IntIMM || UintIMM)" );
-	  addCompilerMessage( "That specific math operation is not supported yet.", 3);
+	  int addr_op1 = getAddressOf($1.name);
+		 
+	  div16_is_needed = true;
+	  addAsm( "SEI" );
+
+	  addAsm( string("LDA $") + toHex(addr_op1), 3, false );
+	  addAsm( "STA $FB", 2, false );
+	  addAsm( string("LDA $") + toHex(addr_op1+1), 3, false );
+	  addAsm( "STA $FC", 2, false );
+
+	  addAsm( string("LDA #$") + toHex(atoi(stripFirst($4.name).c_str())), 2, false );
+	  addAsm( "STA $FD", 2, false );
+	  addAsm( string("LDA #$00"), 2, false );
+	  addAsm( "STA $FE", 2, false );
+
+	  addAsm( "JSR DIV16", 3, false );
+	  addAsm( "LDA $FB", 2, false );
+	  addAsm( "LDX $FC", 2, false );
+	  addAsm( "CLI" );
+	  //
 	}
       else 
 	{
-	  addCompilerMessage( "WORD/(IntIMM || UintIMM) not yet implemented", 3 );
+	  addCompilerMessage( "That specific math operation is not supported yet.", 3);
 	}
-
       strcpy($$.name, "XA" );
     }
   else if( isWordID($1.name) && isWordID($4.name) )
@@ -7271,13 +7336,27 @@ expression: expression {
   else if( (isUintID($1.name)||isIntID($1.name)) && isUintIMM($3.name) )
     {
       int addr = atoi(stripFirst($3.name).c_str());
-      addAsm( string( "LDA #$" ) + toHex(get_word_L(addr)), 2, false  );      
+      addAsm( string( "LDA #$" ) + toHex(addr), 2, false  );      
       addAsm( string("AND $") + stripFirst($1.name), 3, false);
       strcpy( $$.name, "A" );
     }
   else if( isUintID($1.name) && isA($3.name) )
     {
-      addAsm( string("AND $") + stripFirst($1.name), 3, false);
+      int addr = getAddressOf($1.name);
+      if( addr > 255 )
+	{
+	  addAsm( string("AND $") + toHex(addr), 3, false);
+	}
+      else
+	{
+	  addAsm( string("AND $") + toHex(addr), 2, false);
+	}
+      strcpy( $$.name, "A" );
+    }
+  else if( (isUintIMM($1.name)||isIntIMM($1.name))  && isA($3.name) )
+    {
+      int OP1 = atoi(stripFirst($1.name).c_str());
+      addAsm( string( "AND #$" ) + toHex(OP1), 2, false );
       strcpy( $$.name, "A" );
     }
   else
@@ -8035,6 +8114,22 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
       addAsm( "STX $03", 2, false );
       addAsm( "LDA ($02),Y", 2, false );	
     }
+  else if( isXA($3.name) )
+    {
+      //int addr = hexToDecimal($3.name);
+      //int instr_size = 3;
+      //if( addr < 256 ) instr_size = 2;
+      addAsm( "LDY #$00", 2, false );
+      //addAsm( string("LDA $") + toHex(addr), instr_size, false );
+
+      //instr_size = 3;
+      //if( addr+1 < 256 ) instr_size = 2;
+      
+      //addAsm( string("LDX $") + toHex(addr+1), instr_size, false );
+      addAsm( "STA $02", 2, false );
+      addAsm( "STX $03", 2, false );
+      addAsm( "LDA ($02),Y", 2, false );	
+    }
   else if( isIntID($3.name) || isUintID($3.name) )
     {
       addAsm( string("LDX ") + string($3.name), 3, false );
@@ -8565,8 +8660,8 @@ int main(int argc, char *argv[])
   if( div16_is_needed )
     {
       // 16-bit division
-      // NUM1  * NUM2  = RESULT + REMAINDER 
-      // FC/FB * FE/FD = FC/FB     03/02
+      // NUM1  / NUM2  = RESULT + REMAINDER 
+      // FC/FB / FE/FD = FC/FB     03/02
       addAsm( "DIV16:", 0, true );
       addAsm( "LDA #$00", 2, false );
       addAsm( "STA $02", 2, false );
