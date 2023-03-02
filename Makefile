@@ -46,14 +46,27 @@ example:
 	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./example.tmp > example.asm
 
 terra:
-	cat ./terraform.c common.c > terra.tmp
-	./compiler --code-segment 8192 --data-segment 820 --memory-locations --symbol-table < ./terra.tmp > terra.tmp.asm
-	cat terra.tmp.asm cj-sid.asm > terra.asm
-	rm ./terra.tmp
-	rm ./terra.tmp.asm
+#	cat ./terraform.c common.c > terra.tmp
+	./compiler --code-segment 7632 --data-segment 40960 --memory-locations --symbol-table < ./terraform.c > terra.tmp.asm
+	cat terra.tmp.asm cj-sid.asm > terra7632.asm
+	rm -f ./terra.tmp
+	rm -f ./terra.tmp.asm
+
+keys:
+	./compiler --code-segment 2100 --data-segment 820 --no-asm-comments < ./keys.c > keys.asm
+
+city:
+	./compiler --code-segment 2100 --data-segment 820 --no-asm-comments < ./city.c > city.asm
 
 hires:
-	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./hires.c > hires.asm
+	cat ./hires.c common.c > hires.tmp
+	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./hires.tmp > hires.asm
+	rm -f hires.tmp
+
+digits:
+	cat ./digits.c common.c > digits.tmp
+	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./digits.tmp > digits.asm
+	rm -f digits.tmp
 
 quad:
 	cat ./quad.c common.c > quad.tmp
@@ -71,11 +84,21 @@ math:
 	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./math.tmp > math.asm
 #	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./division.tmp > division.asm
 
+
+odds:
+	cat ./sumofodds.c common.c > sumofodds.tmp
+	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./sumofodds.tmp > sumofodds.asm
+	rm -f sumofodds.tmp
+
 input:
-	./compiler --code-segment 2100 --data-segment 820 --parser-comments --memory-locations --symbol-table < ./input.c > input.asm
+	cat ./input.c common.c > input.tmp
+	./compiler --code-segment 2100 --data-segment 820 --parser-comments --memory-locations --symbol-table < ./input.tmp > input.asm
+	rm -f input.tmp
 
 rocket:
-	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./rocket.c > rocket.asm
+	cat ./rocket.c common.c > rocket.tmp
+	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./rocket.tmp > rocket.asm
+	rm -f rocket.tmp
 
 general:
 	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./general.c > general.asm
@@ -145,7 +168,10 @@ float:
 
 program:
 	cat ./poketest.c common.c > poketest.tmp
-	./compiler --code-segment 2100 --data-segment 820 --symbol-table < ./poketest.tmp > poketest.asm
+	./compiler --code-segment 8192 --data-segment 820 --symbol-table < ./poketest.tmp > poketest-tmp.asm
+	cat poketest-tmp.asm ufo-sid.asm > poketest.asm
+
+	rm -f poketest.tmp poketest-tmp.asm
 
 arith:
 	./compiler --code-segment 2100 --data-segment 820  --memory-locations --no-asm-comments --symbol-table  < ./arithtests.c > arithtests.asm
@@ -154,13 +180,17 @@ ifs:
 	./compiler --code-segment 49152 --data-segment 828 --no-asm-comments < ./iftests.c > iftests.asm
 
 cond:
-	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./cond-tests.c > cond-tests.asm
+	cat ./cond-tests.c common.c > cond-tests.tmp
+	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./cond-tests.tmp > cond-tests.asm
+	rm -f cond-tests.tmp
 
 mini:
 	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./minicond.c > minicond.asm
 
 vartests:
-	./compiler --code-segment 2100 --data-segment 828 --memory-locations --symbol-table < ./vartests.c > vartests.asm
+	cat ./vartests.c common.c > vartests.tmp
+	./compiler --code-segment 2100 --data-segment 828 --memory-locations --symbol-table < ./vartests.tmp > vartests.asm
+	rm -f vartests.tmp
 
 debug:
 	./compiler --code-segment 2100 --data-segment 828 --parser-comments --memory-locations < ./cond-tests.c > cond-tests.asm

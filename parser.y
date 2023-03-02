@@ -1424,7 +1424,7 @@
 
 //%parse-param { FILE* fp }
 %token VOID 
-%token <nd_obj> tDATA tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tSIDIRQ tSTRTOFLOAT tSTRTOWORD tTOFLOAT tTOUINT tTOBIT tDEC tINC tROL tROR tLSR tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJSR tFOO tROMOUT tROMIN tLDA tASL tSPRITESET  tSPRITEOFF tSPRITETOGGLE tRND tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER tPRINTS PRINTFF SCANFF INT FLOAT CHAR WHILE FOR IF ELSE TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE tSQRT UNARY INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL
+%token <nd_obj> tCOMMENT tDATA tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tSIDIRQ tSTRTOFLOAT tSTRTOWORD tTOFLOAT tTOUINT tTOBIT tDEC tINC tROL tROR tLSR tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJSR tFOO tROMOUT tROMIN tLDA tASL tSPRITESET  tSPRITEOFF tSPRITETOGGLE tRND tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER tPRINTS PRINTFF SCANFF INT FLOAT CHAR WHILE FOR IF ELSE TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE tSQRT UNARY INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL
 %type <nd_obj> headers main body return function datatype statement arithmetic relop program else 
    %type <nd_obj2> init value expression numberlist
       %type <nd_obj3> condition
@@ -3115,17 +3115,14 @@ body: WHILE
     }
   else if( (isUintIMM($3.name)||isIntIMM($3.name)) && (isUintIMM($5.name)||isIntIMM($5.name)))
     {
-      addComment("POKE( <uint/int> IMM,IMM)");
+      addComment("POKE( (U)Int, IMM); Zero Page");
       int addr = atoi( stripFirst($3.name).c_str() );
-      if( addr < 0 || addr > 65536 ) addCompilerMessage( "address out of range [0,65535]", 3 );
-
+      
       int value = atoi( stripFirst($5.name).c_str() );
       if( value < 0 || value > 255) addCompilerMessage( "value out of range [0,255]", 3 );
 
       addAsm( string( "LDA #$") + toHex( value ), 2, false );
-      int instr_size = 3;
-      if( addr < 256 ) instr_size = 2;
-      addAsm( string( "STA $") + toHex( addr ), instr_size, false );
+      addAsm( string( "STA $") + toHex( addr ), 2, false );
     }
   else
     {
@@ -3167,8 +3164,8 @@ condition: expression relop expression
   addParserComment( scope_stack.top() + string(" ")  + string($1.name) + string($2.name) + string($3.name) );
   addDebugComment( "=========================================================");
   string tc;
-  if( isXA($1.name ) ) tc+=string( "RegXA" );
-  if( isA($1.name ) ) tc+=string( "RegA" );
+  if( isXA($1.name ) ) tc+=string( "XA" );
+  if( isA($1.name ) ) tc+=string( "A" );
   if( isUintID($1.name) ) tc+=string( "UintID" );
   if( isIntID($1.name) ) tc+=string( "IntID" );
   if( isWordID($1.name) ) tc+=string( "WordID" );
@@ -3185,10 +3182,10 @@ condition: expression relop expression
   if( isA($3.name ) )
     {
       
-      tc+=string( "RegA" );
+      tc+=string( "A" );
       addAsm( "STA $02", 2, false );
     }
-  if( isXA($3.name ) ) tc+=string( "RegXA" );
+  if( isXA($3.name ) ) tc+=string( "XA" );
   if( isUintID($3.name) ) tc+=string( "UintID" );
   if( isIntID($3.name) ) tc+=string( "IntID" );
   if( isWordID($3.name) ) tc+=string( "WordID" );
@@ -3276,21 +3273,52 @@ condition: expression relop expression
       addAsm( "STA $03", 2, false );
       addAsm( "PLA" );
       addAsm( "STA $02", 2, false );
-      //addAsm( "TAY" );
-      //addAsm( "TXA" );
-      //addAsm(string("CMP #$") + toHex(tmp_H), 2, false );
-      //addAsm(string(".BYTE #$D0, #$03"), 2, false ); // if they're not equal then the CMP should do!
-      //addAsm( "TYA" );
-      //addAsm(string("CMP #$") + toHex(tmp_L), 2, false );
+    }
+  else if( isXA($1.name) && isWordID($3.name))  // mismatch
+    {
+      addComment( "XA relop WordID" );
+      int tmp_v = getAddressOf( $3.name );
+
+     
+      addAsm( "TAY" );
+      addAsm( "TXA" );
+      addAsm( string( "CMP $") + toHex( tmp_v + 1), 3, false );
+      
+      addAsm( ".BYTE #$D0, #$04; BNE +4", 2, false ); // BNE +4
+      addAsm( "TYA" );
+      addAsm( string( "CMP $") + toHex( tmp_v ), 3, false );
+
+
+    }
+  else if( isA($1.name) && isWordID($3.name))  // mismatch
+    {
+      addComment( "A relop WordID" );
+      int tmp_v = getAddressOf( $3.name );
+      addAsm( "TAY" );
+      addAsm( "LDA #$00", 2, false );
+      addAsm( string( "CMP $") + toHex( tmp_v + 1), 3, false );
+      
+      addAsm( ".BYTE #$D0, #$04; BNE +4", 2, false ); // BNE +4
+      addAsm( "TYA" );
+      addAsm( string( "CMP $") + toHex( tmp_v ), 3, false );
+    }
+  else if( isA($1.name) && isUintID($3.name))
+    {
+      addComment( "A relop UintID" );
+      int tmp_v = getAddressOf($3.name);
+      addAsm( string("CMP $") + toHex(tmp_v), 3, false );
     }
   else if( isA($1.name) && isUintIMM($3.name))
     {
+      addComment( "A relop UintIMM" );
       int tmp_v = atoi(stripFirst($3.name).c_str());
       addAsm( string("CMP #$") + toHex(tmp_v), 2, false );
     }
-  else if( isA($1.name) && isIntID($3.name))  // mismatch
+  else if( isA($1.name) && isIntIMM($3.name))  // mismatch
     {
-      addAsm( string("CMP ") + string( $3.name ), 3, false );
+      addComment( "A relop IntIMM" );
+      int tmp_v = atoi(stripFirst($3.name).c_str());
+      addAsm( string("CMP #$") + toHex(tmp_v), 2, false );
     }
   else if( isUintID($1.name) && isIntID($3.name))  // mismatch
     {
@@ -4601,11 +4629,15 @@ statement: datatype ID init
       addCompilerMessage( "type not implemented yet for plot" );
     }
 };
+| tCOMMENT '(' STR  ')'
+{
+  addAsm( string( ";;; " ) + string($3.name), 0, true );
+};
 | tLSR '(' expression ')'
 {
   if( isUintID($3.name) || isIntID($3.name)  )
     {    
-      addCommentSection( "lsr(ID) [uint|int]");
+      addCommentSection( "lsr(ID) [uint||int]");
       int a = getAddressOf($3.name);
       int size_of_instruction = 3;
       if( a < 256 ) size_of_instruction = 2;
@@ -5243,6 +5275,28 @@ expression: expression {
 	}
 	
     }
+  else if( isUintID($1.name) && isXA($4.name) )
+    {
+      if( op == string("+") )
+	{
+	  int addr = getAddressOf( $1.name );
+	  int instr_size = 3;
+	  if( addr < 256 ) instr_size = 2;
+	  addComment( "UintID + XA" );
+	  addAsm( string("ADC $") + toHex(addr), instr_size, false );
+	  addAsm( "TAY" );
+	  addAsm( "TXA" );
+	  addAsm( "ADC #$00", 2, false );
+	  addAsm( "TAX" );
+	  addAsm( "TYA" );
+	  strcpy($$.name, "XA" );
+	}
+      else
+	{
+	  addCompilerMessage( "operation not yet supported", 3 );
+	}
+
+    }
   else if( isXA($1.name) && isWordID($4.name) )
     {
       if( op == string("-") )
@@ -5839,6 +5893,8 @@ expression: expression {
     }
   else if( isWordID($1.name) && (isIntIMM($4.name)||isUintIMM($4.name)) )
     {
+      // it would be possible to add some specific optimizations here.
+      // if the IMM is a power of 2 then just add lsr's until it's divided out
       int a = getAddressOf($1.name);
       int IMMvalue = atoi(stripFirst($4.name).c_str());
       if( op == string( "+" ) )
@@ -6352,6 +6408,8 @@ expression: expression {
 	      tmp_int = twos_complement( tmp_int );
 	    }
 	  addAsm( string( "ADC #$" ) + toHex(tmp_int), 2, false );
+	  strcpy($$.name, "A" );
+
 	}
       else if( op == string("-"))
 	{
@@ -6363,21 +6421,51 @@ expression: expression {
 	      tmp_int = twos_complement( tmp_int );
 	    }
 	  addAsm( string( "SBC #$" ) + toHex(tmp_int), 2, false );
+	  strcpy($$.name, "A" );
+
 	}
       else if( op == string("*"))
 	{
-	  addCompilerMessage( "SIGNED integer multiplication (MEM * IMM) not yet implemented (try re-ordering)", 3 );
-	  umul_is_needed = true;
-	  int tmp_int = atoi(stripFirst($1.name).c_str());
-	  if( tmp_int < 0 )
-	    {
-	      tmp_int = twos_complement( tmp_int );
-	    }
-	  addAsm( "STA $02", 2, false );
-	  addAsm( string( "LDA #$" ) + toHex( tmp_int ) , 2, false );
-	  addAsm( "STA $03", 2, false );
-	  addAsm( "JSR UMUL", 3, false );
-	  addAsm( "LDA $03", 2, false );
+	  //addCompilerMessage( "SIGNED integer multiplication (MEM * IMM) not yet implemented (try re-ordering)", 1 );
+	  addComment( "UintID * UintIMM (Using 16 bit operation)" );
+	  addAsm( "SEI" );
+
+	  int addr_op1 = getAddressOf( $1.name );
+	  mul16_is_needed = true;
+
+	  addAsm( string("LDA $") + toHex(addr_op1), 3, false );
+	  addAsm( "STA $FB", 2, false );
+
+	  addAsm( "LDA #$00", 2, false );
+	  addAsm( "STA $FC", 2, false );
+
+	  addAsm( string("LDA #$") + toHex(atoi(stripFirst($4.name).c_str())), 2, false );
+	  addAsm( "STA $FD", 2, false );
+	  addAsm( string("LDA #$00"), 2, false );
+	  addAsm( "STA $FE", 2, false );
+
+	  addAsm( "JSR MUL16", 3, false );
+	  addAsm( "LDA MUL16R", 3, false );
+	  addAsm( "LDX MUL16R+1", 3, false );
+
+	  
+	  //umul_is_needed = true;
+	  //int tmp_int = atoi(stripFirst($1.name).c_str());
+	  //if( tmp_int < 0 )
+	  //  {
+	  //    tmp_int = twos_complement( tmp_int );
+	  //  }
+	  //addAsm( "STA $02", 2, false );
+	  //addAsm( string( "LDA #$" ) + toHex( tmp_int ) , 2, false );
+	  //addAsm( "STA $03", 2, false );
+	  //addAsm( "JSR UMUL", 3, false );
+	  //addAsm( "LDA $03", 2, false );
+
+
+	  
+	  addAsm( "CLI" );
+	  strcpy($$.name, "XA" );
+
 	}
       else if( op == string("/") )
 	{
@@ -6400,9 +6488,9 @@ expression: expression {
 
 	  addAsm( "JSR DIV16", 3, false );
 	  addAsm( "LDA $FB", 2, false );
+	  strcpy($$.name, "A" );
 	}
 
-      strcpy($$.name, "A" );
     }
   else if( isUintIMM($1.name) && isUintID($4.name) )     // MEM vs. IMM
     {
@@ -7471,7 +7559,6 @@ expression: expression {
       addAsm( "JSR GETPLOT", 3, false );
       addAsm( "LDY #$00", 2, false );
       addAsm( "LDA ($02),Y", 2, false );
-      strcpy( $$.name, "A" );  
       getplot_is_needed = true;
     }
   else if(isUintID($3.name) && (isUintID($5.name)||isIntID($5.name)) )
@@ -7487,7 +7574,6 @@ expression: expression {
       addAsm( "JSR GETPLOT", 3, false );
       addAsm( "LDY #$00", 2, false );
       addAsm( "LDA ($02),Y", 2, false );
-      strcpy( $$.name, "A" );  
       getplot_is_needed = true;
     }
   else if(isUintID($3.name) && isA($5.name))
@@ -7502,7 +7588,6 @@ expression: expression {
       addAsm( "JSR GETPLOT", 3, false );
       addAsm( "LDY #$00", 2, false );
       addAsm( "LDA ($02),Y", 2, false );
-      strcpy( $$.name, "A" );  
       getplot_is_needed = true;
     }
   else if(isWordID($3.name) && isA($5.name))
@@ -7517,13 +7602,13 @@ expression: expression {
       addAsm( "JSR GETPLOT", 3, false );
       addAsm( "LDY #$00", 2, false );
       addAsm( "LDA ($02),Y", 2, false );
-      strcpy( $$.name, "A" );  
       getplot_is_needed = true;
     }
   else
     {
       addCompilerMessage( "Invalid arguments for getxy", 3 );
     }
+  strcpy( $$.name, "A" );  
 }
 | tBANK '(' ')'
 {
@@ -7607,7 +7692,7 @@ expression: expression {
     }
   strcpy($$.name, "A" );
 };
-| tSTRTOWORD '(' ID ')'
+| tSTRTOWORD '(' expression ')'
 {
   if( isUintID($3.name) )
     {
@@ -7648,7 +7733,7 @@ expression: expression {
   strcpy($$.name, "XA" );
 
 };
-| tSTRTOFLOAT '(' ID ')'
+| tSTRTOFLOAT '(' expression ')'
 {
   if( isUintID($3.name) )
     {
@@ -8038,6 +8123,12 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
     {
       addAsm( "TXA" );
     }
+  else if( isWordIMM( $3.name ) )
+    {
+      int v = (atoi(stripFirst($3.name).c_str()) & 0xFF00)/255;
+      addAsm( string( "LDA #$" ) + toHex(v), 2, false );
+
+    }
   else
     {
       addCompilerMessage( "Cannot return 'hi-byte' of specified type", 3 );
@@ -8058,13 +8149,18 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
     {
       // do nothing because Lo-Byte is in accumulator
     }
+  else if( isWordIMM( $3.name ) )
+    {
+      int v = atoi(stripFirst($3.name).c_str()) & 0xFF;
+      addAsm( string( "LDA #$" ) + toHex(v), 2, false );
+    }  
   else
     {
       addCompilerMessage( "Cannot return 'lo-byte' of specified type", 3 );
     }
   strcpy( $$.name, "A" );
 };
-| tSQRT '(' ID ')'
+| tSQRT '(' expression ')'
 {
   int addr = getAddressOf( $3.name );
   if( isFloatID( $3.name ) )
@@ -8132,6 +8228,8 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
     }
   else if( isIntID($3.name) || isUintID($3.name) )
     {
+      
+      //addAsm( string("LDA $") + string($3.name), 2, false );
       addAsm( string("LDX ") + string($3.name), 3, false );
       addAsm( string("LDA $00,X"), 2, false );
     }

@@ -1,34 +1,81 @@
 void main()
 {
-  //cls();
-  //printf( "O  :  MOVE RIGHT\nU  :  MOVE LEFT\nSPACE  :  JUMP" );
+  romout();
+  //uint rands[32];
+  //rands[0] = rnd(1);
+  // INTRO SCREEN HERE!
+  printf( "PRESS A KEY" );
   //pause();
 
+  // clear kb buffer
+  poke( 0xC6, 0 );
+  jsr( 0xFFE4 );
+
+  // wait for key
+  uint general8bit = getchar();
+  while( general8bit == 0 )
+    {
+      general8bit = getchar();
+    }
+
+  // saveregs
+  uint oldD011 = peek( 0xD011 );
+  uint oldD016 = peek( 0xD016 );
+  uint oldD018 = peek( 0xD018 );
+  uint oldD020 = peek( 0xD020 );
+  uint oldD021 = peek( 0xD021 );
+  uint oldChar = peek( 0x0286 );
+
+  // create arrays
   word xarray[8];
   uint yarray[8];
-  uint rands[32];
   
   // save voice 3
   uint D41B = peek( 0xD418 );
-  lda( 0 );
-  uint randomnessclock;
-  uint jerrymoveclock;
+  
+  //uint ten = 0x0A;
+
+
+  word checkNearParamX1;
+  uint checkNearParamY1;
+  uint checkNearParamI;
+  
+  // initialise variables
+  lda( 0x00 );
+  
+  //uint randomnessclock;
+  word jerrymoveclock;
+  //uint jerrymoveclock2;
   uint midjump;
   uint jerjump;
   uint subtimer;
   uint timer;
-
   uint lastdirectiontaken;
   uint standing;
   uint jerstanding;
-
   uint jerrybelow;
-  uint jerrybelow2;
+  uint plotDigitBindex;
+  uint plotDigitColourValue1001;
+  uint shownumParamUINT;
+  word shownumParamWORD = 0x0000;
+  
+  uint whichtoblink;
+  uint blinktoggle;
+  uint shouldbeblinking;
+  uint blinktimer;
+  word adr1;
+  
+  uint currentlyholding;
+  uint collidedwith;
 
   lda( 0x01 );
   uint jerrydirection;
   uint whichsprite;
-
+  uint plotDigitX;
+  uint plotDigitY;
+  uint plotDigitColourValue11;
+  
+  
   lda( 0x02 );
   uint gearnumber;
   uint plotshapeX;
@@ -37,50 +84,103 @@ void main()
   word plotshapeAddr;
   uint plotshapeColourValue11;
   uint plotshapeColourValue1001;
-
   uint X0;
   uint X1;
   uint Y0;
   uint Y1;
-  uint spriteI;
+  //uint spriteI;
 
 
   word delay = 0x00CC;
-  word x = 0x0020;
+  //word cnX;
+  word num;
+
+  
   lda( 100 );
   uint y;
   uint jy;
+  
+  word x = 0x0020;
   word jx = 0x012C;
 
+  word score = 0x0000;
+  
   word collXVar;
   uint collYVar;
-
-
-  rands[0] = rnd(1);
-  shortcls();
-  printf( "\n\n\n\n\n          PRESS ANY KEY TO PLAY" );
-  pause();
-  for( uint randI = 0; randI < 32; inc( randI ))
-    {
-      rands[randI] = rnd(1);
-    }
-    
+  
   // restore voice 3
   poke( 0xD41B, D41B );
-  
-  romout();
-  saveregs();
 
-  
+  // digits
+ data digits =
+   {
+     0, 48, 204, 204, 204, 204, 204, 48,
+     0, 48, 48, 48, 48, 48, 48, 48,
+     0, 48, 204, 12, 48, 192, 192, 252,
+     0, 48, 204, 12, 48, 12, 204, 48,
+     0, 12, 204, 204, 252, 12, 12, 12,
+     0, 252, 192, 240, 12, 12, 204, 48,
+     0, 48, 204, 192, 240, 204, 204, 48,
+     0, 252, 12, 12, 48, 48, 48, 48,
+     0, 48, 204, 204, 48, 204, 204, 48,
+     0, 252, 204, 204, 252, 12, 12, 12,
+     // space
+     0, 0, 0, 0, 0, 0, 0, 0
+   };
+
+  word plotDigitAddr = digits;
+
   // jump table
   data jt = { 0x00, 0xFC, 0xFC, 0xFD, 0xFD, 0xFD, 0xFE, 0xFE, 0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x01, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-   
+
+
+  // down arrow
+  //data olddownarrow = { 1, 1, 1, 21, 5, 5, 1, 1, 0, 0, 0, 80, 64, 64, 0, 0 };
+  data downarrow = {169, 169, 169, 149, 165, 165, 169, 169, 170, 170, 170, 90, 106, 106, 170, 170 };
+
+  // hotspots
+  word hotspot[8];
+  hotspot[0] = 0x44CA;
+  hotspot[1] = 0x44EC;
+  hotspot[2] = 0x45BA;
+  hotspot[3] = 0x45DC;
+  hotspot[4] = 0x46AA;
+  hotspot[5] = 0x46CC;
+  hotspot[6] = 0x45F3;
+  hotspot[7] = 0x470B;
+  word hsX[8];
+  hsX[0] = 0x0025;
+  hsX[1] = 0x0025;
+  hsX[2] = 0x0025;
+  hsX[3] = 0x0136;
+  hsX[4] = 0x0136;
+  hsX[5] = 0x0136;
+  hsX[6] = 0x00AA;
+  hsX[7] = 0x00AA;
+  uint hsY[8];
+  hsY[0] = 0x55;
+  hsY[1] = 0x85;
+  hsY[2] = 0xB5;
+  hsY[3] = 0x55;
+  hsY[4] = 0x85;
+  hsY[5] = 0xB5;
+  hsY[6] = 0x8E;
+  hsY[7] = 0xC5;
+  //uint hsC[8];
+  //hsC[0] = 0x2C;
+  //hsC[1] = 0x2C;
+  //hsC[2] = 0x2C;
+  //hsC[3] = 0x2C;
+  //hsC[4] = 0x2C;
+  //hsC[5] = 0x2C;
+  //hsC[6] = 0x2C;
+  //hsC[7] = 0x2C;
+  
   // background colours
-  poke( 0xD020, 9 );
+  //poke( 0xD020, 9 );
   poke( 0xD021, 12 );
 
   bank( 1 );
-
 
   poke( 0xD011, 59 );
   poke( 0xD016, 24 );
@@ -111,20 +211,11 @@ void main()
 
 
   mob drums = { 5, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21, 3, 255, 85, 67, 171, 12, 3, 171, 15, 195, 255, 58, 176, 48, 234, 172, 48, 234, 172, 48, 234, 172, 48, 234, 172, 48, 234, 172, 48, 58, 176, 48, 207, 204, 252};
+  
   mob electricguitar = { 6, 12, 0, 192, 0, 0, 240, 0, 0, 240, 0, 0, 48, 0, 0, 48, 0, 0, 48, 0, 0, 48, 0, 0, 48, 0, 3, 48, 0, 14, 240, 192, 14, 243, 192, 14, 190, 192, 3, 170, 192, 3, 155, 0, 3, 171, 0, 14, 171, 0, 14, 154, 192, 14, 170, 192, 14, 254, 192, 3, 170, 192, 0, 255, 0};
+  
   mob mic2 = { 7, 13, 0, 0, 96,0, 31, 240,0, 2, 96,0, 4, 0,0, 4, 0,0, 8, 0,0, 8, 0,0, 24, 0,0, 24, 0,0, 40, 0,0, 40, 0,0, 72, 0,0, 72, 0,0, 136, 0,0, 136, 0,0, 8, 0,0, 8, 0,0, 8, 0,0, 127, 0,3, 128, 224,28, 0, 28};
-  
-  spritex( 0, x );
-  spritey( 0, y );
-
-  // Jerry
-  spritexy( 2, 160, 190 );
-
-  //                                           Colours
-  // 0 - Black    1 - White     2 - Red     3 - Cyan    4 - Purple      5 - Green  6 - Dark Blue
-  // 7 - Yellow   8 - Orange    9 - Brown   A - Pink    B - Dark Grey   C - Grey   D - Bright Green
-  //                          E - Light Blue                F - Light Grey
-  
+    
   // multicolour sprite mode for some of the sprites  %01111011
   poke( 0xD01C, 0x7B );
 
@@ -136,25 +227,14 @@ void main()
 
   // 11 = black for all sprites
   poke( 0xD026, 0 );
-  
-  // Colour Bit-pair: 10
-  // Jerry
-  spritecolour( 0, 2 );
-  // Roadie
-  spritecolour( 1, 9 );
-  // Microphone 1 (mono Black)
-  spritecolour( 2, 0 );
-  // Amplifier (Dark Grey)
-  spritecolour( 3, 11 );
-  // Acoustic Guitar (brown)
-  spritecolour( 4, 9);
-  // Drums (white)
-  spritecolour( 5, 1 );
-  // Electric Guitar (red)
-  spritecolour( 6, 2 );
-  // Microphone 2 (mono Black)
-  spritecolour( 7, 0 );
 
+  // set the sprites colours
+  data spritecolours = { 2, 9, 0, 11, 9, 1, 2, 0 };
+  for( general8bit = 0; general8bit < 8; inc(general8bit) )
+    {
+      spritecolour( general8bit, (spritecolours)[general8bit] );
+    }
+  
   // start the music located at $1000 (4096)
   sidirq( 0x1000, 0x1003 );
   // the main loop
@@ -206,7 +286,6 @@ void main()
 		    {
 		      y = 219;
 		    }
-		  
 		  // wiggle legs
 		  moveLegs();
 		}
@@ -222,31 +301,81 @@ void main()
 		  checkLeft();
 		  checkRight();
 		  checkJump();
+		  checkI();
+		  checkK();
 		}
 	    }
 	  positionplayer();
 	}
       inc( timer );
-      if( timer > 200 )
+      timer = timer & 127;
+      
+      if( shouldbeblinking == 1 )
 	{
-	  timer = 0;
+	  blink();
 	}
       c = getin();
     }
 
-  clearkb();
-  restoreregs();
+  // clearkb();
+  poke( 198, 0 );
+  jsr( 65508 );
+  
+  //restoreregs();
+  poke( 0xD011, oldD011 );
+  poke( 0xD016, oldD016 );
+  poke( 0xD018, oldD018 );
+  poke( 0xD020, oldD020 );
+  poke( 0xD021, oldD021 );
+  poke( 0x0286, oldChar );
+
   bank(0);
   romin();
+  spriteoff( 255 );
+  printf( "\nGAME OVER\n" );
   return;
 }
+
+// check to see if (checkNearParamX1,checkNearParamY1) is "near" (cnX,cnY) 
+// input variables
+// cnX and cnY
+// returns cnNear (uint)
+void checkNear()
+  {
+    lda( 0x00 );
+    uint cnNear;
+    word cnXVar = checkNearParamX1 - hsX[checkNearParamI];
+    uint cnYVar = checkNearParamY1 - hsY[checkNearParamI];
+
+    if( cnXVar > 320 )
+      {
+	cnXVar = hsX[checkNearParamI] - checkNearParamX1;
+      }
+
+    if( cnYVar > 200 )
+      {
+	cnYVar = hsY[checkNearParamI] - checkNearParamY1;
+      }
+
+    if( cnXVar < 0x0020 )
+      {
+	if( cnYVar < 0x10 )
+	  {
+	    cnNear = 0x01;
+	    checkNearParamI = 8;
+	  }
+      }
+
+    return;
+  }
+
 
 // this is the function that
 // figures out which direction
 // jerry should move in
 void calculateai()
 {
-  if( jerrymoveclock == 0 )
+  if( jerrymoveclock == 0x0000 )
     {
       jerjump = 1;
       if( jerrydirection == 1 )
@@ -257,20 +386,39 @@ void calculateai()
 	{
 	  jerrydirection = 1;
 	}
-      jerrymoveclock = rands[randomnessclock];
-      inc( randomnessclock );
-      randomnessclock = randomnessclock & 63;
+      //jerrymoveclock = rands[randomnessclock];
+      jerrymoveclock = rnd(1);
+      asl( jerrymoveclock );
+      //lsr( jerrymoveclock );
+      //inc( randomnessclock );
+      //randomnessclock = randomnessclock & 31;
       
       // drop some gear
-      spritex( gearnumber, jx );
-      spritey( gearnumber, jy );
-      xarray[gearnumber] = jx;
-      yarray[gearnumber] = jy;
+      if( gearnumber != currentlyholding )
+	{
+	  checkNearParamX1 = jx;
+	  checkNearParamY1 = jy;
 
+	  for( checkNearParamI = 0; checkNearParamI < 8; inc(checkNearParamI) )
+	    {
+	      checkNear();
+	    }
+
+	  if( cnNear == 0 )
+	    {
+	      spritex( gearnumber, jx );
+	      spritey( gearnumber, jy );
+      
+	      xarray[gearnumber] = jx;
+	      yarray[gearnumber] = jy;
+	    }
+	}
+      
       inc( gearnumber );
+      
       if( gearnumber == 8 )
 	{
-	  gearnumber = 0;
+      	  gearnumber = 2;
 	}
     }
   else
@@ -294,7 +442,13 @@ void calculateai()
 	  jerrydirection = 0xFF;
 	  jx = 320;
 	}
+      
+      //if( jerrymoveclock2 == 0 )
+      //{
       dec( jerrymoveclock );
+      //}
+      //dec(jerrymoveclock2);
+      //jerrymoveclock2 = jerrymoveclock2 & 0x01;
     }
   return;
 }
@@ -318,58 +472,24 @@ void positionplayer()
     }
   spritey( 0, y );
   spritex( 0, x );
-  uint sc = spritecollision();
-  sc = sc & 1;
-  if( sc != 0 )
-  {
-    checkCollision();
-  }
-  return;
-}
 
-void collisiondetected()
-{
-  for( uint cdi = 0; cdi < 8; inc( cdi ) )
+  // position the equipment too
+  // (if there is any in the player's
+  // hands)
+  if( currentlyholding != 0 )
     {
-      word cd1 = x & 0xEFFF;
-      cd1 = cd1 - xarray[cdi];
-      uint cd2 = y - yarray[cdi];
-      cd2 = cd2 & 0xEF;
-      if( cd1 < 0x000A )
-	{
-	  poke( 0x6041, 0xFF );
-	  if( cd2 < 10 )
-	    {
-	      poke( 0x6040, 0xFF );
-	      
-	    }
-	  else
-	    {
-	      poke( 0x6040, 0x00 );
-	    }
-	}
-      else
-	{
-	  poke( 0x6041, 0x00 );
-	}
+      xarray[currentlyholding] = x;
+      yarray[currentlyholding] = y;
+      spritex( currentlyholding, x );
+      spritey( currentlyholding, y );
     }
-  
-
   return;
 }
 
 void clearhires()
-{
-
-  // Colours
-  // 0 - Black    1 - White     2 - Red     3 - Cyan    4 - Purple      5 - Green  6 - Dark Blue
-  // 7 - Yellow   8 - Orange    9 - Brown   A - Pink    B - Dark Grey   C - Grey   D - Bright Green
-  //                          E - Light Blue                F - Light Grey
-
-  word mem1 = 0x0000;
-  
-  // this is for the single colour (11) -- this is ALWAYS at 0xD800
-  for( mem1 = 0xD800; mem1 < 0xDBFF; mem1 = mem1 + 1 )
+{  
+  // this is for the single colour (11) -- this is ALWAYS at 0xD800 - 0x3FF
+  for( word mem1 = 0xD800; mem1 < 0xDBFF; mem1 = mem1 + 1 )
     {
       poke( mem1, 0 );
     }
@@ -388,6 +508,81 @@ void clearhires()
   
   return;
 }
+
+void checkI()
+{
+  // Pick up a piece of equipment
+  if( c == 33 )
+    {
+      if( currentlyholding == 0 )
+	{
+	  uint sc = 1 & spritecollision();
+	  //sc = sc & 1;
+	  if( sc != 0 )
+	    {
+	      checkCollision();
+	      currentlyholding = collidedwith;
+	      if( currentlyholding != 0 )
+		{
+		  whichtoblink = 0x07 & rnd(1);
+		  adr1 = hotspot[whichtoblink];
+		  shouldbeblinking = 1;
+		  allArrowsOff();
+		}
+	    }
+	}
+    }
+  return;
+}
+
+void checkK()
+{
+  // Drop a piece of equipment
+  if( c == 37 )
+    {
+
+      if( currentlyholding != 0 )
+	{
+	  checkNearParamX1 = x;
+	  checkNearParamY1 = y;
+	  checkNearParamI = whichtoblink;
+	  checkNear();
+	  //shownumParamWORD = cnXVar;
+	  //shownum();
+
+	  if( cnNear == 0x01 )
+	    {
+	      score = score + 0x0015;
+	      updateScore();
+	      shouldbeblinking = 0;
+	      allArrowsOff();
+	    }
+	}
+      currentlyholding = 0;
+    }
+  return;
+}
+
+//void shownum()
+//{
+      // erase xy
+//      plotDigitX = 14;
+//      plotDigitY = 2;
+//      for( general8bit = 14; general8bit > 6; dec( general8bit ) )
+//	{
+//	  plotDigitX = general8bit;
+//	  plotDigitBindex = 0x50;
+//	  plotDigit();
+//	}
+            
+//      num = shownumParamWORD + shownumParamUINT;
+//      plotDigitX = 14;
+//      plotDigitY = 2;
+//    plotNumber();
+//    shownumParamWORD = 0x0000;
+//    shownumParamUINT = 0x00;
+//return;
+//}
 
 void checkLeft()
 {
@@ -435,19 +630,18 @@ void checkJump()
 void moveLegs()
 {
   inc( subtimer );
-
-  //subtimer = subtimer & 0x0A;
   
   if( subtimer == 10 )
     {
+      // this is for sprite number 1
       poke( 0x47F8, whichsprite );
 
       inc( whichsprite );
       
       if( whichsprite == 5 )
-      {
+	{
       	  whichsprite = 1;
-      }
+	}
       subtimer = 0;
     }
   return;
@@ -457,22 +651,18 @@ void moveLegs()
 void checkIfStanding()
 {
   word myX = x - 12;
-  uint myY = y - 29;
   lsr( myX );
-  standing = getxy( myX, myY );
-  poke( 0x601A, standing );
-  //standing = standing & 0x3C;
-  //if( standing != 20 )
+  standing = getxy( myX, y - 29);
   if( standing != 0xFF )
     {
       standing = 0;
     }
+  
   myX = jx - 12;
-  myY = jy - 29;
+
   lsr( myX );
-  jerstanding = getxy( myX, myY );
-  //jerstanding = jerstanding & 0x3C;
-  poke( 0x600A, jerstanding );
+
+  jerstanding = getxy( myX, jy - 29 );
   if( jerstanding != 0xFF )
     {
       jerstanding = 0;
@@ -483,7 +673,7 @@ void checkIfStanding()
 void checkIfBelow()
 {
   myX = jx - 12;
-  myY = jy - 49;
+  uint myY = jy - 49;
   lsr( myX );
   word myXp = myX + 8;
   word myXm = myX - 8;
@@ -496,7 +686,7 @@ void checkIfBelow()
   jerrybelow = jerrybelow | getxy( myXp, myY );
   jerrybelow = jerrybelow | getxy( myXm, myY );
 
-  
+  //jerrybelow =  getxy( myX, myY ) |  getxy( myXp, myY + 1 ) |   getxy( myXm, myY + 1) | getxy( myXp, myY - 1 ) |   getxy( myXm, myY - 1) | getxy( myXp, myY) |   getxy( myXm, myY);
   return;
 }
 
@@ -575,18 +765,11 @@ void calculatejerjump()
   return;
 }
 
-void animatebg()
-{
-  // TO DO: animate the background here
-  nop();
-  return;
-}
-
 void createplatforms()
 {
   // Draw the "X"'s on the Scaffolding
-  data scafX = {192, 192, 48, 48, 12, 12, 3, 3 };
-  data scafX2 = { 3, 3, 12, 12, 48, 48, 192, 192 };
+  data scafX =  {192, 192, 48, 48, 12, 12, 3, 3};
+  data scafX2 = {3, 3, 12, 12, 48, 48, 192, 192};
 
   plotshapeAddr = scafX;
   plotshapeSize = 1;
@@ -594,28 +777,44 @@ void createplatforms()
   plotshapeColourValue11 = 0x00;  
 
   plotshapeY = 1;
-  for( uint ppp = 0; ppp < 4; inc( ppp ))
+  for(  uint cpI = 0; cpI < 4; inc( cpI ))
     {
       plotshapeX = 0;
+
+      // replace with the code of the function to save a few bytes
       plotXLeft();
     }
 
   plotshapeAddr = scafX2;
   plotshapeY = 1;
-  for( ppp = 0; ppp < 4; inc( ppp ))
+  for( cpI = 0; cpI < 4; inc( cpI ))
     {
       plotshapeX = 5;
+
+      //replace with the code of the function to save a few bytes
       plotXRight();
     }
 
-  
-  // Colours
-  // 0 - Black    1 - White     2 - Red     3 - Cyan    4 - Purple      5 - Green  6 - Dark Blue
-  // 7 - Yellow   8 - Orange    9 - Brown   A - Pink    B - Dark Grey   C - Grey   D - Bright Green
-  //                          E - Light Blue                F - Light Grey
+  data tweeter =
+    {
+      85, 125, 235, 125, 85, 215, 190, 215
+    };
 
-  // floor data
-  // start X, start Y, end X, end Y, Color
+  plotshapeAddr = tweeter;
+
+  // Light Grey and Grey
+  plotshapeColourValue1001 = 0xFB;
+  // Black
+  plotshapeColourValue11 = 0x00;
+
+  Y0 = 5;
+  Y1 = 7;
+  X0 = 16;
+  X1 = 24;
+
+  // replace with the code of the function to save a few bytes
+  plotXYloop();
+
   data fd =
     {
       // Bottom
@@ -628,9 +827,7 @@ void createplatforms()
       159, 0, 160, 200, 3, 
 
       // Stage
-      //24, 168, 136, 200, 1,
       24, 168, 136, 169, 3,
-      //24, 169, 136, 190, 2,
       
       // Left Scaffolding Platforms
       0, 8, 24, 9, 3,
@@ -654,22 +851,16 @@ void createplatforms()
       95, 40, 96, 72, 3,
 
       // center console
-      72, 112, 88, 168, 2,
       72, 113, 88, 114, 3,
+      
       // speaker platform 1
       28, 128, 60, 129, 3,
-      28, 152, 60, 153, 3,
-      28, 80, 52, 81, 3
-      //0, 165, 160, 167, 3,
-      //0, 165, 160, 167, 3,
+      28, 80, 52, 81, 3,
 
-
-      //20, 150, 40, 151, 1,
-      //40, 130, 60, 131, 1,
-      //20, 110, 40, 111, 1,
-      //40, 90, 60, 91, 1,
-      //80, 80, 160, 83, 1,
-      //48, 101, 80, 102, 1
+      // speaker platform 2
+      108, 80, 112, 81, 3,
+      124, 80, 132, 81, 3,
+      100, 128, 132, 129, 3
     };
 
   // Create Objects in the background
@@ -686,19 +877,22 @@ void createplatforms()
   plotshapeColourValue1001 = 0x62;
   // White
   plotshapeColourValue11 = 0x01;
-  plotshapeX = 18;
+  plotshapeX = 18; 
   plotshapeY = 0;
   plotshape();
 
-  plotshapeY = 1;
+  inc( plotshapeY );
+  //plotshapeY = 1;
   plotshapeAddr = steal3;
   plotshape();
-
-  plotshapeY = 2;
+  
+  inc( plotshapeY );
+  //plotshapeY = 2;
   plotshapeAddr = steal5;
   plotshape();
 
-  plotshapeY = 3;
+  inc( plotshapeY );
+  //plotshapeY = 3;
   plotshapeAddr = steal7;
   plotshape();
 
@@ -750,29 +944,10 @@ void createplatforms()
     for( plotshapeY = 7; plotshapeY < 9; inc(plotshapeY) )
   	{
   	  plotshape();
-	  //nop();
   	}
     inc(plotshapeX);
   }
 
-  data tweeter =
-    {
-      85, 125, 235, 125, 85, 215, 190, 215
-    };
-
-  plotshapeAddr = tweeter;
-  plotshapeSize = 1;
-
-  // Light Grey and Grey
-  plotshapeColourValue1001 = 0xFB;
-  // Black
-  plotshapeColourValue11 = 0x00;
-
-  Y0 = 5;
-  Y1 = 7;
-  X0 = 16;
-  X1 = 24;
-  plotXYloop();
   
   data woofertop = {255, 213, 215, 222, 222, 250, 251, 251, 255, 87, 215, 183, 183, 175, 239, 239};
   data wooferbottom = {251, 251, 250, 222, 222, 215, 213, 255, 239, 239, 175, 183, 183, 215, 87, 255};
@@ -795,7 +970,7 @@ void createplatforms()
   plotYloopSkip();
   
   plotshapeAddr = wooferbottom;
-  plotshapeSize = 2;
+  //plotshapeSize = 2;
   // Grey and Light Grey
   plotshapeColourValue1001 = 0xBF;
   // Black
@@ -811,24 +986,49 @@ void createplatforms()
   Y1 = 21;
   plotYloopSkip();
 
-  // Draw the platforms - the 105 is the number of values in fd
-  for( uint floorL = 0; floorL < 130; floorL = floorL + 5 )
+  plotshapeAddr = downarrow;
+  //plotshapeSize = 2;
+  plotshapeColourValue1001 = 0x2C;
+  plotshapeColourValue11 = 0x0C;
+  
+  for( general8bit = 5; general8bit < 18; general8bit = general8bit + 6 )
     {
-      for( uint fx = (fd)[floorL]; fx < (fd)[floorL+2]; inc(fx) )
+      plotshapeX = 36;
+      plotshapeY = general8bit;
+      plotshape();
+      plotshapeX = 2;
+      plotshape();
+    }
+
+  plotshapeX = 19;
+  plotshapeY = 12;
+  plotshape();
+    
+  // Draw the platforms - the 105 is the number of values in fd
+  for(  general8bit = 0; general8bit < 130; general8bit = general8bit + 5 )
+    {
+      for( uint fx = (fd)[general8bit]; fx < (fd)[general8bit+2]; inc(fx) )
 	{
-	  for( uint fy = (fd)[floorL+1]; fy < (fd)[floorL+3]; inc(fy) )
+	  for( uint fy = (fd)[general8bit+1]; fy < (fd)[general8bit+3]; inc(fy) )
 	    {
-	      plot( fx, fy, (fd)[floorL+4] );
+	      plot( fx, fy, (fd)[general8bit+4] );
 	    }
 	}
     }
+
+  plotshapeY = 19;
+  plotshapeColourValue1001 = 0x26;
+  plotshape();
+
+  allArrowsOff();
+
   
   return;
 }
 
 void plotXLeft()
 {
-  for( uint plotXLeftIndex = 0; plotXLeftIndex < 6; inc(plotXLeftIndex) )
+  for(  general8bit = 0; general8bit < 6; inc(general8bit) )
     {
       plotshape();
       plotshapeX = plotshapeX + 34;
@@ -837,40 +1037,26 @@ void plotXLeft()
       inc(plotshapeX);  
       inc(plotshapeY);
     }
-
-
   return;
 }
 
 void plotXRight()
 {
-  for( plotXLeftIndex = 0; plotXLeftIndex < 6; inc(plotXLeftIndex) )
+  for( general8bit = 0; general8bit < 6; inc(general8bit) )
     {
       plotshape();
       plotshapeX = plotshapeX + 34;
       plotshape();
       plotshapeX = plotshapeX - 34;
-
       dec(plotshapeX);  
       inc(plotshapeY);
     }
-
-
   return;
 }
 
 void plotYloop()
 {
   for( plotshapeY = Y0; plotshapeY < Y1; inc(plotshapeY) )
-    {
-      plotshape();
-    }
-  return;
-}
-
-void plotXloop()
-{
-  for( plotshapeX = X0; plotshapeX < X1; inc(plotshapeX) )
     {
       plotshape();
     }
@@ -887,16 +1073,6 @@ void plotYloopSkip()
   return;
 }
 
-void plotXloopSkip()
-{
-  for( plotshapeX = X0; plotshapeX < X1; inc(plotshapeX) )
-    {
-      plotshape();
-      inc(plotshapeX);
-    }
-  return;
-}
-
 void plotXYloop()
 {
   for( plotshapeY = Y0; plotshapeY < Y1; inc( plotshapeY ) )
@@ -909,17 +1085,11 @@ void plotXYloop()
   return;
 }
 
-
 void plotshape()
 {
   uint plotshapeBindex = 0;
-  word plotshapeOffset = 0x0000;
-  plotshapeOffset = plotshapeY;
-  plotshapeOffset = plotshapeOffset * 40;
-  plotshapeOffset = plotshapeOffset + plotshapeX;
-
+  word plotshapeOffset = plotshapeX + plotshapeY * 40;
   word plotshapeColor1 = plotshapeOffset + 0xD800;
-  // these TWO addresses might change
   word plotshapeColors2And3 = plotshapeOffset + 0x4400;
   asl( plotshapeOffset );
   asl( plotshapeOffset );
@@ -944,7 +1114,9 @@ void plotshape()
 
 void checkCollision()
 {
-  for( uint ccI = 0; ccI < 8; inc( ccI ) )
+  collidedwith = 0;
+
+  for( uint ccI = 2; ccI < 8; inc( ccI ) )
     {
       collXVar = x - xarray[ccI];
       collYVar = y - yarray[ccI];
@@ -958,14 +1130,112 @@ void checkCollision()
 	{
 	  collYVar = yarray[ccI] - y;
 	}
+
       // for now... just increment the border colour
       if( collXVar < 0x0015 )
 	{
 	  if( collYVar < 0x15 )
 	    {
-	      inc( 0xD020 );
+	      collidedwith = ccI;
+
+	      // break;
+	      ccI = 8;	      
 	    }
 	}
     }
+  return;
+}
+
+void updateScore()
+{
+  // erase score
+  plotDigitY = 1;
+  for( general8bit = 9; general8bit < 13; inc( general8bit ) )
+    {
+      plotDigitX = general8bit;
+      plotDigitBindex = 0x50;
+      plotDigit();
+    }
+  // update score
+  num = score;
+  plotDigitX = 0x0E;
+  plotDigitY = 0x01;
+  plotNumber();
+  return;
+}
+
+void plotNumber()
+{
+  while( num > 0x0000 )
+    {
+      num = num / 0x0A;
+      //uint rem = peek( 0x02 );
+      //plotDigitBindex = rem;
+      plotDigitBindex = peek(0x02);
+      asl( plotDigitBindex );
+      asl( plotDigitBindex );
+      asl( plotDigitBindex );
+      
+      plotDigit();
+
+      dec(plotDigitX);
+    }
+  return;
+}
+
+void plotDigit()
+{
+  word plotDigitOffset = plotDigitX + plotDigitY * 40;
+  word plotDigitColor1 = plotDigitOffset + 0xD800;
+  word plotDigitColors2And3 = plotDigitOffset + 0x4400;
+  poke( plotDigitColor1, 1 );
+  poke( plotDigitColors2And3, 0 );
+
+  asl( plotDigitOffset );
+  asl( plotDigitOffset );
+  asl( plotDigitOffset );
+
+  word plotDigitPixels = plotDigitOffset + 0x6000;
+  
+
+  for( uint plotDigitI = 0; plotDigitI < 8; inc( plotDigitI ) )
+    {
+      poke( plotDigitPixels, (plotDigitAddr)[plotDigitBindex] );
+      plotDigitPixels = plotDigitPixels + 1;
+      inc( plotDigitBindex );
+    }
+
+  return;
+}
+
+void allArrowsOff()
+{
+  for(  general8bit = 0; general8bit < 8; inc( general8bit ))
+    {
+      poke( hotspot[general8bit], 0xCC );
+      poke( hotspot[general8bit]+1, 0xCC );
+    }
+  return;
+}
+
+void blink()
+{
+  //word adr2 = hotspot[whichtoblink]+1;
+  if( blinktimer == 0x00 )
+    {      
+      if( blinktoggle == 0 )
+	{
+	  inc(blinktoggle);
+	  poke( adr1, 0xCC );
+	  poke( adr1+1, 0xCC );
+	}
+      else
+	{
+	  dec( blinktoggle );
+	  poke( adr1, 0x2C );
+	  poke( adr1+1, 0x2C );
+	}
+    }
+  inc( blinktimer );
   return;
 }
