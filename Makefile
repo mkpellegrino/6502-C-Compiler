@@ -46,9 +46,11 @@ example:
 	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./example.tmp > example.asm
 
 terra:
-#	cat ./terraform.c common.c > terra.tmp
-	./compiler --code-segment 7632 --data-segment 40960 --memory-locations --symbol-table < ./terraform.c > terra.tmp.asm
-	cat terra.tmp.asm cj-sid.asm > terra7632.asm
+	cat ./terraform.c common.c > terra.tmp
+#	./compiler --code-segment 7632 --data-segment 40960 --memory-locations --symbol-table < ./terraform.c > terra.tmp.asm
+#	./compiler --code-segment 7624 --data-segment 40960 --memory-locations --symbol-table < ./terraform.c > terra.tmp.asm
+	./compiler --code-segment 7624 --data-segment 49152 --memory-locations --symbol-table < ./terra.tmp > terra.tmp.asm
+	cat terra.tmp.asm cj-sid.asm > terra7624.asm
 	rm -f ./terra.tmp
 	rm -f ./terra.tmp.asm
 
@@ -107,13 +109,17 @@ uintcmp:
 	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./uintcmp.c > uintcmp.asm
 
 tests:
-	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./cond-tests.c > cond-tests.asm
-	./compiler --code-segment 2100 --data-segment 820 --no-asm-comments < ./floatmath.c > floatmath.asm
-	./compiler --code-segment 2100 --data-segment 820 --no-asm-comments < ./decdig.c > decdig.asm
+	cat ./tests.c common.c > tests.tmp
+	./compiler --code-segment 2100 --data-segment 820  < ./tests.tmp > tests.asm
+	rm -f tests.tmp
+
+#	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./cond-tests.c > cond-tests.asm
+#	./compiler --code-segment 2100 --data-segment 820 --no-asm-comments < ./floatmath.c > floatmath.asm
+#	./compiler --code-segment 2100 --data-segment 820 --no-asm-comments < ./decdig.c > decdig.asm
 #	./compiler --code-segment 2100 --data-segment 820 --no-asm-comments < ./bytemath.c > bytemath.asm
-	./compiler --code-segment 2100 --data-segment 820 --no-asm-comments < ./poketest.c > poketest.asm
-	./compiler --code-segment 2100 --data-segment 820 --no-asm-comments < ./poke2.c > poke2.asm
-	./compiler --code-segment 2100 --data-segment 820 --no-asm-comments < ./arithtests.c > arithtests.asm
+#	./compiler --code-segment 2100 --data-segment 820 --no-asm-comments < ./poketest.c > poketest.asm
+#	./compiler --code-segment 2100 --data-segment 820 --no-asm-comments < ./poke2.c > poke2.asm
+#	./compiler --code-segment 2100 --data-segment 820 --no-asm-comments < ./arithtests.c > arithtests.asm
 
 iftest:
 	./compiler --code-segment 2100 --data-segment 820 --no-asm-comments < ./iftests.c > iftests.asm
@@ -125,7 +131,11 @@ typetest:
 	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./typetest.c > typetest.asm
 
 forloop:
-	./compiler --code-segment 2100 --data-segment 820 --no-asm-comments < ./forloop.c > forloop.asm
+	cat ./forloop.c common.c > forloop.tmp
+	./compiler --code-segment 2100 --data-segment 820 --memory-locations < ./forloop.tmp > forloop.asm
+	rm -f forloop.tmp
+
+
 
 sound:
 	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./sound.c > sound.asm
@@ -161,7 +171,9 @@ bytemath:
 	./compiler --code-segment 2100 --data-segment 820 --no-asm-comments --parser-comments --memory-locations --symbol-table < ./bytemath.c > bytemath.asm
 
 printftest:
-	./compiler --code-segment 2100 --data-segment 820 --no-asm-comments --parser-comments --memory-locations --symbol-table < ./printftest.c > printftest.asm
+	cat ./printftest.c common.c > printftest.tmp
+	./compiler --code-segment 2100 --data-segment 820 --no-asm-comments --parser-comments --memory-locations --symbol-table < ./printftest.tmp > printftest.asm
+	rm -f ./printftest.tmp
 
 float:
 	./compiler --code-segment 2100 --data-segment 820 --no-asm-comments --parser-comments --memory-locations --symbol-table < ./floatmath.c > floatmath.asm

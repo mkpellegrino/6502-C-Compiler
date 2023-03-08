@@ -1,32 +1,36 @@
 void main()
 {
-  romout();
-  //uint rands[32];
-  //rands[0] = rnd(1);
+  romout(6);
+  //uint oldBasic = peek( 0x01 );
+  //poke( 0x01, 0x35 );
+  
   // INTRO SCREEN HERE!
-  printf( "PRESS A KEY" );
+  //printf( "PRESS A KEY" );
+  // clearkb() buffer
+  
+  //poke( 0xC6, 0 );
+  //jsr( 0xFFE4 );
+
   //pause();
-
-  // clear kb buffer
-  poke( 0xC6, 0 );
-  jsr( 0xFFE4 );
-
-  // wait for key
-  uint general8bit = getchar();
+  lda( 0x00 );
+  uint general8bit;
+  uint subclock;
   while( general8bit == 0 )
     {
+      subclock=rnd(1);
       general8bit = getchar();
     }
 
+  saveregs();
   // saveregs
-  uint oldD011 = peek( 0xD011 );
-  uint oldD016 = peek( 0xD016 );
-  uint oldD018 = peek( 0xD018 );
-  uint oldD020 = peek( 0xD020 );
-  uint oldD021 = peek( 0xD021 );
-  uint oldChar = peek( 0x0286 );
+  //uint oldD011 = peek( 0xD011 );
+  // uint oldD016 = peek( 0xD016 );
+  //uint oldD018 = peek( 0xD018 );
+  //uint oldD020 = peek( 0xD020 );
+  //uint oldD021 = peek( 0xD021 );
+  //uint oldChar = peek( 0x0286 );
 
-  // create arrays
+  // create xy arrays
   word xarray[8];
   uint yarray[8];
   
@@ -35,7 +39,8 @@ void main()
   
   //uint ten = 0x0A;
 
-
+  word clock = 420;
+  subclock = 0x00;
   word checkNearParamX1;
   uint checkNearParamY1;
   uint checkNearParamI;
@@ -44,6 +49,7 @@ void main()
   lda( 0x00 );
   
   //uint randomnessclock;
+  //word printWordAddr;
   word jerrymoveclock;
   //uint jerrymoveclock2;
   uint midjump;
@@ -57,7 +63,6 @@ void main()
   uint plotDigitBindex;
   uint plotDigitColourValue1001;
   uint shownumParamUINT;
-  word shownumParamWORD = 0x0000;
   
   uint whichtoblink;
   uint blinktoggle;
@@ -67,6 +72,8 @@ void main()
   
   uint currentlyholding;
   uint collidedwith;
+
+  word shownumParamWORD = 0x0000;
 
   lda( 0x01 );
   uint jerrydirection;
@@ -91,7 +98,7 @@ void main()
   //uint spriteI;
 
 
-  word delay = 0x00CC;
+  //word delay = 0x00CC;
   //word cnX;
   word num;
 
@@ -112,21 +119,55 @@ void main()
   poke( 0xD41B, D41B );
 
   // digits
- data digits =
-   {
-     0, 48, 204, 204, 204, 204, 204, 48,
-     0, 48, 48, 48, 48, 48, 48, 48,
-     0, 48, 204, 12, 48, 192, 192, 252,
-     0, 48, 204, 12, 48, 12, 204, 48,
-     0, 12, 204, 204, 252, 12, 12, 12,
-     0, 252, 192, 240, 12, 12, 204, 48,
-     0, 48, 204, 192, 240, 204, 204, 48,
-     0, 252, 12, 12, 48, 48, 48, 48,
-     0, 48, 204, 204, 48, 204, 204, 48,
-     0, 252, 204, 204, 252, 12, 12, 12,
-     // space
-     0, 0, 0, 0, 0, 0, 0, 0
-   };
+  data digits =
+    {
+      0, 48, 204, 204, 204, 204, 204, 48,
+      0, 48, 48, 48, 48, 48, 48, 48,
+      0, 48, 204, 12, 48, 192, 192, 252,
+      0, 48, 204, 12, 48, 12, 204, 48,
+      0, 12, 204, 204, 252, 12, 12, 12,
+      0, 252, 192, 240, 12, 12, 204, 48,
+      0, 48, 204, 192, 240, 204, 204, 48,
+      0, 252, 12, 12, 48, 48, 48, 48,
+      0, 48, 204, 204, 48, 204, 204, 48,
+      0, 252, 204, 204, 252, 12, 12, 12,
+      // space
+      0, 0, 0, 0, 0, 0, 0, 0
+    };
+
+  // letters
+  data letters = {
+    0, 48, 252, 204, 252, 204, 204, 204,
+    0, 240, 204, 204, 240, 204, 204, 240,
+    0, 48, 204, 192, 192, 192, 204, 48,
+    0, 240, 204, 204, 204, 204, 204, 240,
+    0, 252, 192, 192, 240, 192, 192, 252,
+    0, 252, 192, 192, 240, 192, 192, 192,
+    0, 48, 204, 204, 60, 12, 204, 48,
+    0, 204, 204, 204, 252, 204, 204, 204,
+    0, 252, 48, 48, 48, 48, 48, 252,
+    0, 252, 12, 12, 12, 204, 204, 48,
+    0, 204, 204, 204, 240, 204, 204, 204,
+    0, 192, 192, 192, 192, 192, 192, 252,
+    0, 204, 252, 252, 204, 204, 204, 204,
+    0, 0, 0, 192, 252, 204, 204, 204,
+    0, 252, 204, 204, 204, 204, 204, 252,
+    0, 240, 204, 204, 240, 192, 192, 192,
+    0, 48, 204, 204, 204, 204, 240, 60,
+    0, 240, 204, 204, 240, 204, 204, 204,
+    0, 48, 204, 192, 48, 12, 204, 48,
+    0, 252, 48, 48, 48, 48, 48, 48,
+    0, 204, 204, 204, 204, 204, 204, 48,
+    0, 204, 204, 204, 204, 48, 48, 48,
+    0, 204, 204, 204, 252, 252, 252, 204,
+    0, 204, 204, 204, 48, 204, 204, 204,
+    0, 204, 204, 204, 60, 12, 204, 48,
+    0, 252, 12, 12, 48, 192, 192, 252
+  };
+
+  data testtext = {'T', 'E', 'S', 'T', ' ', 'T', 'E', 'X', 'T', 0 };
+  
+  //data gameover = { 'G', 'A', 'M', 'E', ' ', 'O', 'V', 'E', 'R', 0x0D, 0 };
 
   word plotDigitAddr = digits;
 
@@ -140,21 +181,24 @@ void main()
 
   // hotspots
   word hotspot[8];
-  hotspot[0] = 0x44CA;
-  hotspot[1] = 0x44EC;
-  hotspot[2] = 0x45BA;
-  hotspot[3] = 0x45DC;
-  hotspot[4] = 0x46AA;
-  hotspot[5] = 0x46CC;
-  hotspot[6] = 0x45F3;
-  hotspot[7] = 0x470B;
+
+  // used to be 0x4...
+  hotspot[0] = 0x84CA;
+  hotspot[1] = 0x85BA;
+  hotspot[2] = 0x86AA;
+  hotspot[3] = 0x84EC;
+  hotspot[4] = 0x85DC;
+  hotspot[5] = 0x86CC;
+  hotspot[6] = 0x85F3;
+  hotspot[7] = 0x870B;
+
   word hsX[8];
   hsX[0] = 0x0025;
   hsX[1] = 0x0025;
   hsX[2] = 0x0025;
-  hsX[3] = 0x0136;
-  hsX[4] = 0x0136;
-  hsX[5] = 0x0136;
+  hsX[3] = 0x0134;
+  hsX[4] = 0x0134;
+  hsX[5] = 0x0134;
   hsX[6] = 0x00AA;
   hsX[7] = 0x00AA;
   uint hsY[8];
@@ -166,21 +210,22 @@ void main()
   hsY[5] = 0xB5;
   hsY[6] = 0x8E;
   hsY[7] = 0xC5;
-  //uint hsC[8];
-  //hsC[0] = 0x2C;
-  //hsC[1] = 0x2C;
-  //hsC[2] = 0x2C;
-  //hsC[3] = 0x2C;
-  //hsC[4] = 0x2C;
-  //hsC[5] = 0x2C;
-  //hsC[6] = 0x2C;
-  //hsC[7] = 0x2C;
+
+  uint hsScores[8];
+  hsScores[0] = 42;
+  hsScores[1] = 21;
+  hsScores[2] = 7;
+  hsScores[3] = 42;
+  hsScores[4] = 21;
+  hsScores[5] = 7;
+  hsScores[6] = 84;
+  hsScores[7] = 7;
   
   // background colours
-  //poke( 0xD020, 9 );
+  poke( 0xD020, 9 );
   poke( 0xD021, 12 );
 
-  bank( 1 );
+  bank( 2 );
 
   poke( 0xD011, 59 );
   poke( 0xD016, 24 );
@@ -214,12 +259,11 @@ void main()
   
   mob electricguitar = { 6, 12, 0, 192, 0, 0, 240, 0, 0, 240, 0, 0, 48, 0, 0, 48, 0, 0, 48, 0, 0, 48, 0, 0, 48, 0, 3, 48, 0, 14, 240, 192, 14, 243, 192, 14, 190, 192, 3, 170, 192, 3, 155, 0, 3, 171, 0, 14, 171, 0, 14, 154, 192, 14, 170, 192, 14, 254, 192, 3, 170, 192, 0, 255, 0};
   
-  mob mic2 = { 7, 13, 0, 0, 96,0, 31, 240,0, 2, 96,0, 4, 0,0, 4, 0,0, 8, 0,0, 8, 0,0, 24, 0,0, 24, 0,0, 40, 0,0, 40, 0,0, 72, 0,0, 72, 0,0, 136, 0,0, 136, 0,0, 8, 0,0, 8, 0,0, 8, 0,0, 127, 0,3, 128, 224,28, 0, 28};
+  //mob mic2 = { 7, 13, 0, 0, 96,0, 31, 240,0, 2, 96,0, 4, 0,0, 4, 0,0, 8, 0,0, 8, 0,0, 24, 0,0, 24, 0,0, 40, 0,0, 40, 0,0, 72, 0,0, 72, 0,0, 136, 0,0, 136, 0,0, 8, 0,0, 8, 0,0, 8, 0,0, 127, 0,3, 128, 224,28, 0, 28};
     
-  // multicolour sprite mode for some of the sprites  %01111011
+  // multicolour sprite mode for some of the sprites  %0111 1011
   poke( 0xD01C, 0x7B );
 
-  // turns on all sprites
   spriteon( 255 );
   
   // 01 = Yellow for all sprites
@@ -229,8 +273,8 @@ void main()
   poke( 0xD026, 0 );
 
   // set the sprites colours
-  data spritecolours = { 2, 9, 0, 11, 9, 1, 2, 0 };
-  for( general8bit = 0; general8bit < 8; inc(general8bit) )
+  data spritecolours = { 2, 9, 0, 11, 9, 1, 2 };
+  for( general8bit = 0; general8bit < 7; inc(general8bit) )
     {
       spritecolour( general8bit, (spritecolours)[general8bit] );
     }
@@ -241,7 +285,10 @@ void main()
   uint c = getin();
   while( c != 62 )
     {
-      
+      if( clock < 0x001E )
+	{
+	  poke( 0xD020, rnd(1) );
+	}
       if( timer == 0 )
 	{
 	  checkIfStanding();
@@ -270,7 +317,10 @@ void main()
 		}
 	    }
 
-	  positionai();
+	  //positionai();
+	  spritey( 1, jy );
+	  spritex( 1, jx );
+
 	  // ====================================
 	  
 	  if( standing == 0 )
@@ -298,76 +348,170 @@ void main()
 		}
 	      else
 		{
-		  checkLeft();
-		  checkRight();
-		  checkJump();
+		  //checkLeft();
+		  // move left if "u" is pressed and x > 23
+		  if( c == 30 )
+		    {
+		      lastdirectiontaken=1;
+		      if( x > 0x0017 )
+			{
+			  x = x - 1;
+			  moveLegs();
+			}
+		    }
+
+		  //checkRight();
+		  // move right if "o" is pressed and x < 320
+		  if( c == 38 )
+		    {
+		      lastdirectiontaken=2;
+		      if( x < 320 )
+			{
+			  x = x + 1;
+			  moveLegs();
+			}
+		    }  
+
+		  // checkJump();
+		  if( c == 60 )
+		    {
+		      if( midjump == 0 )
+			{
+			  midjump = 1;
+			}
+		    }
+		  
 		  checkI();
 		  checkK();
 		}
 	    }
-	  positionplayer();
+	  
+	  //positionplayer();
+	  if( x < 0x0017 )
+	    {
+	      x = 0x0017;
+	    }
+	  if( x > 320 )
+	    {
+	      x = 320;
+	    }
+	  spritey( 0, y );
+	  spritex( 0, x );
+
+	  // position the equipment too
+	  // (if there is any in the player's
+	  // hands)
+	  if( currentlyholding != 0 )
+	    {
+	      xarray[currentlyholding] = x;
+	      yarray[currentlyholding] = y;
+	      spritex( currentlyholding, x );
+	      spritey( currentlyholding, y );
+	    }
+
+	  
+	  // for testing only
+	  //shownumParamUINT = y;
+	  //shownum();
+
+	  if( subclock == 0 )
+	    {
+	      shownum();
+	      dec(clock);
+	    }
+	  inc(subclock);
+	  subclock = subclock & 7;
+	  //shownum();
+	  //dec(clock);
+
 	}
+
       inc( timer );
       timer = timer & 127;
       
       if( shouldbeblinking == 1 )
 	{
-	  blink();
+
+	  if( blinktimer == 0x00 )
+	    {      
+	      if( blinktoggle == 0 )
+		{
+		  inc(blinktoggle);
+		  poke( adr1, 0xCC );
+		  poke( adr1+1, 0xCC );
+		}
+	      else
+		{
+		  dec( blinktoggle );
+		  poke( adr1, 0x2C );
+		  poke( adr1+1, 0x2C );
+		}
+	    }
+	  inc( blinktimer );
+
 	}
+
+
+      
       c = getin();
     }
+  // romin
+  //poke( 0x01, 0x37 );
 
-  // clearkb();
-  poke( 198, 0 );
-  jsr( 65508 );
+
+  //asmcomment( "clearkb();");
+  //poke( 0xC6, 0 );
+  //jsr( 0xFFE4 );
+
   
-  //restoreregs();
-  poke( 0xD011, oldD011 );
-  poke( 0xD016, oldD016 );
-  poke( 0xD018, oldD018 );
-  poke( 0xD020, oldD020 );
-  poke( 0xD021, oldD021 );
-  poke( 0x0286, oldChar );
+  //poke( 0xD011, oldD011 );
+  //poke( 0xD016, oldD016 );
+  //poke( 0xD018, oldD018 );
+  //poke( 0xD020, oldD020 );
+  //poke( 0xD021, oldD021 );
+  //poke( 0x0286, oldChar );
+
+  //poke( 0x01, 0x37 );
 
   bank(0);
   romin();
+
   spriteoff( 255 );
   printf( "\nGAME OVER\n" );
+  //  romin();
+
+  restoreregs();
+
+  clearkb();
+
+  //poke( 0x01, 0x37 );
+  //poke( 0x01, 0x37 );
+
   return;
 }
 
-// check to see if (checkNearParamX1,checkNearParamY1) is "near" (cnX,cnY) 
-// input variables
-// cnX and cnY
-// returns cnNear (uint)
+// "returns" cnNear (uint)
 void checkNear()
-  {
-    lda( 0x00 );
-    uint cnNear;
-    word cnXVar = checkNearParamX1 - hsX[checkNearParamI];
-    uint cnYVar = checkNearParamY1 - hsY[checkNearParamI];
+{
+  lda( 0x00 );
+  uint cnNear;
+  if( checkNearParamX1 < hsX[checkNearParamI] + 0x000A )
+    {
+      if( checkNearParamX1 > hsX[checkNearParamI] - 0x000A )
+	{
+	  if( checkNearParamY1 < hsY[checkNearParamI] + 5 )
+	    {
+	      if( checkNearParamY1 > hsY[checkNearParamI] - 5 )
+		{
+		  cnNear = 0x01;
+		  checkNearParamI = 8;
+		}
+	    }
+	}
+    }
 
-    if( cnXVar > 320 )
-      {
-	cnXVar = hsX[checkNearParamI] - checkNearParamX1;
-      }
-
-    if( cnYVar > 200 )
-      {
-	cnYVar = hsY[checkNearParamI] - checkNearParamY1;
-      }
-
-    if( cnXVar < 0x0020 )
-      {
-	if( cnYVar < 0x10 )
-	  {
-	    cnNear = 0x01;
-	    checkNearParamI = 8;
-	  }
-      }
-
-    return;
-  }
+  return;
+}
 
 
 // this is the function that
@@ -386,12 +530,8 @@ void calculateai()
 	{
 	  jerrydirection = 1;
 	}
-      //jerrymoveclock = rands[randomnessclock];
       jerrymoveclock = rnd(1);
       asl( jerrymoveclock );
-      //lsr( jerrymoveclock );
-      //inc( randomnessclock );
-      //randomnessclock = randomnessclock & 31;
       
       // drop some gear
       if( gearnumber != currentlyholding )
@@ -399,7 +539,7 @@ void calculateai()
 	  checkNearParamX1 = jx;
 	  checkNearParamY1 = jy;
 
-	  for( checkNearParamI = 0; checkNearParamI < 8; inc(checkNearParamI) )
+	  for( checkNearParamI = 2; checkNearParamI < 8; inc(checkNearParamI) )
 	    {
 	      checkNear();
 	    }
@@ -437,51 +577,14 @@ void calculateai()
 	  jerrydirection = 1;
 	  jx = 0x0017;
 	}
+      
       if( jx > 320 )
 	{
 	  jerrydirection = 0xFF;
 	  jx = 320;
 	}
       
-      //if( jerrymoveclock2 == 0 )
-      //{
       dec( jerrymoveclock );
-      //}
-      //dec(jerrymoveclock2);
-      //jerrymoveclock2 = jerrymoveclock2 & 0x01;
-    }
-  return;
-}
-
-void positionai()
-{
-  spritey( 1, jy );
-  spritex( 1, jx );
-  return;
-}
-
-void positionplayer()
-{
-  if( x < 0x0017 )
-    {
-      x = 0x0017;
-    }
-  if( x > 320 )
-    {
-      x = 320;
-    }
-  spritey( 0, y );
-  spritex( 0, x );
-
-  // position the equipment too
-  // (if there is any in the player's
-  // hands)
-  if( currentlyholding != 0 )
-    {
-      xarray[currentlyholding] = x;
-      yarray[currentlyholding] = y;
-      spritex( currentlyholding, x );
-      spritey( currentlyholding, y );
     }
   return;
 }
@@ -495,13 +598,15 @@ void clearhires()
     }
   
   // this is for the colours for 01 and 10 of the bitmap
-  for( mem1 = 0x4400; mem1 < 0x47F0; mem1 = mem1 + 1 )
+  //for( mem1 = 0x4400; mem1 < 0x47F0; mem1 = mem1 + 1 )
+  for( mem1 = 0x8400; mem1 < 0x87F0; mem1 = mem1 + 1 )
     {
       poke( mem1, 0x26 );
     }
 
-  // the pixels
-  for( mem1 = 0x6000; mem1 < 0x7FF8; mem1 = mem1 + 1 )
+  // the bitmap
+  //for( mem1 = 0x6000; mem1 < 0x7FF8; mem1 = mem1 + 1 )
+  for( mem1 = 0xA000; mem1 < 0xBFF8; mem1 = mem1 + 1 )
     {
       poke( mem1, 0 );
     }
@@ -524,6 +629,8 @@ void checkI()
 	      currentlyholding = collidedwith;
 	      if( currentlyholding != 0 )
 		{
+		  //inc(whichtoblink);
+		  //whichtoblink = whichtoblink & 0x07;
 		  whichtoblink = 0x07 & rnd(1);
 		  adr1 = hotspot[whichtoblink];
 		  shouldbeblinking = 1;
@@ -534,6 +641,7 @@ void checkI()
     }
   return;
 }
+
 
 void checkK()
 {
@@ -547,84 +655,116 @@ void checkK()
 	  checkNearParamY1 = y;
 	  checkNearParamI = whichtoblink;
 	  checkNear();
-	  //shownumParamWORD = cnXVar;
-	  //shownum();
 
 	  if( cnNear == 0x01 )
 	    {
-	      score = score + 0x0015;
-	      updateScore();
+	      score = score + hsScores[whichtoblink];
+	      clock = clock + 30;
+	      // update score vvv
+	      // erase old score
+	      plotDigitY = 1;
+	      for( general8bit = 10; general8bit < 15; inc( general8bit ) )
+		{
+		  plotDigitX = general8bit;
+		  plotDigitBindex = 0x50;
+		  plotDigit();
+		}
+	      // update score vvv
+	      num = score;
+	      plotDigitX = 0x0E;
+	      plotDigitY = 0x00;
+	      plotNumber();
+	      // update score ^^^
+	      
+	      currentlyholding = 0;
 	      shouldbeblinking = 0;
 	      allArrowsOff();
 	    }
 	}
-      currentlyholding = 0;
+      // for testing only
+      //shownumParamUINT = whichtoblink;
+      //shownum();
+
+      //currentlyholding = 0;
     }
   return;
 }
 
-//void shownum()
+void plotNumber()
+{
+  while( num > 0x0000 )
+    {
+      num = num / 0x0A;
+      plotDigitBindex = asl(asl(asl(peek(0x02))));
+      plotDigit();
+      dec(plotDigitX);
+    }
+  return;
+}
+
+void shownum()
+{
+  // erase xy
+  //plotDigitX = 30;
+  plotDigitY = 0;
+  for( general8bit = 26; general8bit > 23; dec( general8bit ) )
+    {
+      plotDigitX = general8bit;
+      plotDigitBindex = 0x50;
+      plotDigit();
+    }
+  
+  //num = shownumParamWORD + shownumParamUINT;
+  num = clock;
+  plotDigitX = 26;
+  //plotDigitY = 1;
+  plotNumber();
+  //shownumParamWORD = 0x0000;
+  //shownumParamUINT = 0x00;
+  return;
+}
+
+//void checkLeft()
 //{
-      // erase xy
-//      plotDigitX = 14;
-//      plotDigitY = 2;
-//      for( general8bit = 14; general8bit > 6; dec( general8bit ) )
+// move left if "u" is pressed and x > 23
+//if( c == 30 )
+//{
+//    lastdirectiontaken=1;
+//    if( x > 0x0017 )
 //	{
-//	  plotDigitX = general8bit;
-//	  plotDigitBindex = 0x50;
-//	  plotDigit();
+//	  x = x - 1;
+//	  moveLegs();
 //	}
-            
-//      num = shownumParamWORD + shownumParamUINT;
-//      plotDigitX = 14;
-//      plotDigitY = 2;
-//    plotNumber();
-//    shownumParamWORD = 0x0000;
-//    shownumParamUINT = 0x00;
+//  }
 //return;
 //}
 
-void checkLeft()
-{
-  // move left if "u" is pressed and x > 23
-  if( c == 30 )
-    {
-      lastdirectiontaken=1;
-      if( x > 0x0017 )
-	{
-	  x = x - 1;
-	  moveLegs();
-	}
-    }
-  return;
-}
+//void checkRight()
+//{
+// move right if "o" is pressed and x < 320
+//if( c == 38 )
+//{
+//    lastdirectiontaken=2;
+//    if( x < 320 )
+//	{
+//	  x = x + 1;
+//	  moveLegs();
+//	}
+//  }  
+//return;
+//}
 
-void checkRight()
-{
-  // move right if "o" is pressed and x < 320
-  if( c == 38 )
-    {
-      lastdirectiontaken=2;
-      if( x < 320 )
-	{
-	  x = x + 1;
-	  moveLegs();
-	}
-    }  
-  return;
-}
-
-void checkJump()
-{
-  if( c == 60 )
-    {
-      if( midjump == 0 )
-	{
-	  midjump = 1;
-	}
-    }
-  return;
-}
+//void checkJump()
+//{
+//  if( c == 60 )
+//    {
+//      if( midjump == 0 )
+//	{
+//	  midjump = 1;
+//	}
+//  }
+//return;
+//}
 
 // animate the legs during movement
 void moveLegs()
@@ -650,19 +790,12 @@ void moveLegs()
 
 void checkIfStanding()
 {
-  word myX = x - 12;
-  lsr( myX );
-  standing = getxy( myX, y - 29);
+  standing = getxy( lsr(x - 12), y - 29);
   if( standing != 0xFF )
     {
       standing = 0;
     }
-  
-  myX = jx - 12;
-
-  lsr( myX );
-
-  jerstanding = getxy( myX, jy - 29 );
+  jerstanding = getxy( lsr(jx - 12), jy - 29 );
   if( jerstanding != 0xFF )
     {
       jerstanding = 0;
@@ -672,19 +805,24 @@ void checkIfStanding()
 
 void checkIfBelow()
 {
-  myX = jx - 12;
+  word myX = lsr(jx - 12);
   uint myY = jy - 49;
-  lsr( myX );
+  //lsr( myX );
   word myXp = myX + 8;
   word myXm = myX - 8;
-  jerrybelow = getxy( myX, myY );
-  jerrybelow = jerrybelow | getxy( myXp, myY + 1);
-  jerrybelow = jerrybelow | getxy( myXm, myY + 1);
-  jerrybelow = jerrybelow | getxy( myXp, myY - 1);
-  jerrybelow = jerrybelow | getxy( myXm, myY - 1);
-  //jerrybelow = getxy( myX, myY );
+  jerrybelow = getxy( myX, myY);
   jerrybelow = jerrybelow | getxy( myXp, myY );
   jerrybelow = jerrybelow | getxy( myXm, myY );
+  inc(myY);
+  jerrybelow = jerrybelow | getxy( myXp, myY);
+  jerrybelow = jerrybelow | getxy( myXm, myY);
+  dec(myY);
+  dec(myY);
+  jerrybelow = jerrybelow | getxy( myXp, myY);
+  jerrybelow = jerrybelow | getxy( myXm, myY);
+  //jerrybelow = getxy( myX, myY );
+  //jerrybelow = jerrybelow | getxy( myXp, myY );
+  //jerrybelow = jerrybelow | getxy( myXm, myY );
 
   //jerrybelow =  getxy( myX, myY ) |  getxy( myXp, myY + 1 ) |   getxy( myXm, myY + 1) | getxy( myXp, myY - 1 ) |   getxy( myXm, myY - 1) | getxy( myXp, myY) |   getxy( myXm, myY);
   return;
@@ -767,6 +905,8 @@ void calculatejerjump()
 
 void createplatforms()
 {
+
+  
   // Draw the "X"'s on the Scaffolding
   data scafX =  {192, 192, 48, 48, 12, 12, 3, 3};
   data scafX2 = {3, 3, 12, 12, 48, 48, 192, 192};
@@ -782,7 +922,16 @@ void createplatforms()
       plotshapeX = 0;
 
       // replace with the code of the function to save a few bytes
-      plotXLeft();
+      for(  general8bit = 0; general8bit < 6; inc(general8bit) )
+	{
+	  plotshape();
+	  plotshapeX = plotshapeX + 34;
+	  plotshape();
+	  plotshapeX = plotshapeX - 34;
+	  inc(plotshapeX);  
+	  inc(plotshapeY);
+	}
+
     }
 
   plotshapeAddr = scafX2;
@@ -792,7 +941,15 @@ void createplatforms()
       plotshapeX = 5;
 
       //replace with the code of the function to save a few bytes
-      plotXRight();
+      for( general8bit = 0; general8bit < 6; inc(general8bit) )
+	{
+	  plotshape();
+	  plotshapeX = plotshapeX + 34;
+	  plotshape();
+	  plotshapeX = plotshapeX - 34;
+	  dec(plotshapeX);  
+	  inc(plotshapeY);
+	}
     }
 
   data tweeter =
@@ -865,7 +1022,7 @@ void createplatforms()
 
   // Create Objects in the background
 
-// steal your face logo
+  // steal your face logo
   data steal1 = {0, 0, 0, 1, 1, 7, 7, 23,     0, 63, 122, 234, 234, 170, 170, 170,     0, 252, 174, 151, 183, 181, 253, 245,    0, 0, 0, 128, 128, 224, 224, 232};
   data steal3 = {30, 30, 94, 94, 94, 94, 94, 94, 171, 171, 171, 171, 175, 191, 175, 191, 253, 245, 245, 245, 245, 213, 245, 213, 120, 122, 122, 122, 122, 122, 122, 122 };
   data steal5 = {95, 87, 87, 87, 87, 87, 23, 23, 175, 175, 173, 253, 213, 245, 255, 235, 85, 85, 85, 87, 87, 95, 255, 235, 250, 234, 234, 234, 234, 234, 232, 232 };
@@ -940,14 +1097,13 @@ void createplatforms()
   plotYloop();
   
   for( plotshapeX = 16; plotshapeX < 23; inc(plotshapeX) )
-  {
-    for( plotshapeY = 7; plotshapeY < 9; inc(plotshapeY) )
+    {
+      for( plotshapeY = 7; plotshapeY < 9; inc(plotshapeY) )
   	{
   	  plotshape();
   	}
-    inc(plotshapeX);
-  }
-
+      inc(plotshapeX);
+    }
   
   data woofertop = {255, 213, 215, 222, 222, 250, 251, 251, 255, 87, 215, 183, 183, 175, 239, 239};
   data wooferbottom = {251, 251, 250, 222, 222, 215, 213, 255, 239, 239, 175, 183, 183, 215, 87, 255};
@@ -1022,35 +1178,9 @@ void createplatforms()
 
   allArrowsOff();
 
-  
-  return;
-}
+  //printWordAddr = gameover;
+  //printWord();
 
-void plotXLeft()
-{
-  for(  general8bit = 0; general8bit < 6; inc(general8bit) )
-    {
-      plotshape();
-      plotshapeX = plotshapeX + 34;
-      plotshape();
-      plotshapeX = plotshapeX - 34;
-      inc(plotshapeX);  
-      inc(plotshapeY);
-    }
-  return;
-}
-
-void plotXRight()
-{
-  for( general8bit = 0; general8bit < 6; inc(general8bit) )
-    {
-      plotshape();
-      plotshapeX = plotshapeX + 34;
-      plotshape();
-      plotshapeX = plotshapeX - 34;
-      dec(plotshapeX);  
-      inc(plotshapeY);
-    }
   return;
 }
 
@@ -1090,11 +1220,13 @@ void plotshape()
   uint plotshapeBindex = 0;
   word plotshapeOffset = plotshapeX + plotshapeY * 40;
   word plotshapeColor1 = plotshapeOffset + 0xD800;
-  word plotshapeColors2And3 = plotshapeOffset + 0x4400;
+  //word plotshapeColors2And3 = plotshapeOffset + 0x4400;
+  word plotshapeColors2And3 = plotshapeOffset + 0x8400;
   asl( plotshapeOffset );
   asl( plotshapeOffset );
   asl( plotshapeOffset );
-  word plotshapePixels = plotshapeOffset + 0x6000;
+  //word plotshapePixels = plotshapeOffset + 0x6000;
+  word plotshapePixels = plotshapeOffset + 0xA000;
   
   for( uint plotshapeJ = 0; plotshapeJ < plotshapeSize; inc(plotshapeJ) )
     {
@@ -1131,54 +1263,14 @@ void checkCollision()
 	  collYVar = yarray[ccI] - y;
 	}
 
-      // for now... just increment the border colour
       if( collXVar < 0x0015 )
 	{
 	  if( collYVar < 0x15 )
 	    {
 	      collidedwith = ccI;
-
-	      // break;
 	      ccI = 8;	      
 	    }
 	}
-    }
-  return;
-}
-
-void updateScore()
-{
-  // erase score
-  plotDigitY = 1;
-  for( general8bit = 9; general8bit < 13; inc( general8bit ) )
-    {
-      plotDigitX = general8bit;
-      plotDigitBindex = 0x50;
-      plotDigit();
-    }
-  // update score
-  num = score;
-  plotDigitX = 0x0E;
-  plotDigitY = 0x01;
-  plotNumber();
-  return;
-}
-
-void plotNumber()
-{
-  while( num > 0x0000 )
-    {
-      num = num / 0x0A;
-      //uint rem = peek( 0x02 );
-      //plotDigitBindex = rem;
-      plotDigitBindex = peek(0x02);
-      asl( plotDigitBindex );
-      asl( plotDigitBindex );
-      asl( plotDigitBindex );
-      
-      plotDigit();
-
-      dec(plotDigitX);
     }
   return;
 }
@@ -1187,16 +1279,13 @@ void plotDigit()
 {
   word plotDigitOffset = plotDigitX + plotDigitY * 40;
   word plotDigitColor1 = plotDigitOffset + 0xD800;
-  word plotDigitColors2And3 = plotDigitOffset + 0x4400;
+  //word plotDigitColors2And3 = plotDigitOffset + 0x4400;
+  word plotDigitColors2And3 = plotDigitOffset + 0x8400;
   poke( plotDigitColor1, 1 );
   poke( plotDigitColors2And3, 0 );
 
-  asl( plotDigitOffset );
-  asl( plotDigitOffset );
-  asl( plotDigitOffset );
-
-  word plotDigitPixels = plotDigitOffset + 0x6000;
-  
+  //word plotDigitPixels = asl(asl(asl(plotDigitOffset))) + 0x6000;
+  word plotDigitPixels = asl(asl(asl(plotDigitOffset))) + 0xA000;
 
   for( uint plotDigitI = 0; plotDigitI < 8; inc( plotDigitI ) )
     {
@@ -1204,7 +1293,6 @@ void plotDigit()
       plotDigitPixels = plotDigitPixels + 1;
       inc( plotDigitBindex );
     }
-
   return;
 }
 
@@ -1218,24 +1306,36 @@ void allArrowsOff()
   return;
 }
 
-void blink()
-{
-  //word adr2 = hotspot[whichtoblink]+1;
-  if( blinktimer == 0x00 )
-    {      
-      if( blinktoggle == 0 )
-	{
-	  inc(blinktoggle);
-	  poke( adr1, 0xCC );
-	  poke( adr1+1, 0xCC );
-	}
-      else
-	{
-	  dec( blinktoggle );
-	  poke( adr1, 0x2C );
-	  poke( adr1+1, 0x2C );
-	}
-    }
-  inc( blinktimer );
-  return;
-}
+
+//void printWord()
+//{
+  //param printWordAddr
+
+// word printWordAddr = testtext;
+  
+//plotDigitAddr = letters;
+//plotDigitX = 10;
+//plotDigitY = 10;
+//uint printWordI = 0x00;
+//while( (printWordAddr)[printWordI] != 0x00 )
+//  {
+//    plotDigit();
+
+//    inc(plotDigitX);
+//    inc(printWordI);
+//  }
+  
+   
+//return;
+
+//}
+
+//void pause()
+//{
+//  while( general8bit == 0 )
+//    {
+//      subclock=rnd(1);
+//      general8bit = getchar();
+//    }
+//  return;
+//}

@@ -9,6 +9,7 @@ digit [0-9]
 frmt  [{\t}|{\n}]
 
 %%
+"screen"                { strcpy(yylval.nd_obj.name,(yytext)); return tSCREEN; }
 "asmcomment"                { strcpy(yylval.nd_obj.name,(yytext)); return tCOMMENT; }
 "data"                { strcpy(yylval.nd_obj.name,(yytext)); return tDATA; }
 "sidirq"                { strcpy(yylval.nd_obj.name,(yytext)); return tSIDIRQ; }
