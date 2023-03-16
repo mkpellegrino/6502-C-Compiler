@@ -54,6 +54,11 @@ terra:
 	rm -f ./terra.tmp
 	rm -f ./terra.tmp.asm
 
+gravity:
+	cat ./gravity.c common.c > gravity.tmp
+	./compiler --code-segment 4096 --data-segment 820 --memory-locations --symbol-table < ./gravity.tmp > gravity4096.asm
+	rm -f gravity.tmp
+
 keys:
 	./compiler --code-segment 2100 --data-segment 820 --no-asm-comments < ./keys.c > keys.asm
 
@@ -75,7 +80,9 @@ quad:
 	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./quad.tmp > quadratic.asm
 
 driver8:
-	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./driver8.c > driver8.asm
+	cat ./driver8.c common.c > driver8.tmp
+	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./driver8.tmp > driver8.asm
+	rm -f driver8.tmp
 
 collision:
 	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./collision.c > collision.asm
@@ -168,7 +175,9 @@ decdig:
 	./compiler --code-segment 2100 --data-segment 820 --no-asm-comments < ./decdig.c > decdig.asm
 
 bytemath:
-	./compiler --code-segment 2100 --data-segment 820 --no-asm-comments --parser-comments --memory-locations --symbol-table < ./bytemath.c > bytemath.asm
+	cat ./bytemath.c common.c > bytemath.tmp
+	./compiler --code-segment 2100 --data-segment 820 --no-asm-comments --memory-locations --symbol-table < ./bytemath.tmp > bytemath.asm
+	rm -f bytemath.tmp
 
 printftest:
 	cat ./printftest.c common.c > printftest.tmp

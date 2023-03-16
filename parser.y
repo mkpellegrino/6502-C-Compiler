@@ -30,7 +30,8 @@
   // compiler internal flags
   bool kick=false;
   string commentmarker=string("; ");
-  
+
+  bool illegal_operations_are_needed=false;
   bool sidirq_is_needed=false;
   bool bnkmem_is_needed=false;
   bool scrmem_is_needed=false;
@@ -2280,9 +2281,12 @@ body: WHILE
       addAsm( string( "LDA #$" ) + stripFirst(string($5.name)), 2, false );
       addAsm( string( "STA $D000,X; set the x-coord" ), 3, false );
     }
+  else if( isUintID($3.name) && isWordIMM($5.name) )
+    {
+      addCompilerMessage( "spritex( UintID, WordIMM ) not YET implemented!", 3 );
+    }
   else
     {
-      
       addCompilerMessage( "spritex error - invalid type", 1 );
     }
 };
@@ -2573,7 +2577,7 @@ body: WHILE
       addAsm( "STA $03", 2, false );
       addAsm( "JSR PRN", 3, false); printf_is_needed = true;
     }
-    else if( isFAC($3.name) )
+  else if( isFAC($3.name) )
     {
       addAsm( "JSR $BDDD; FAC -> PETSCII ($0100)", 3, false );
       pushScope("PRINTFFAC" );
@@ -2582,7 +2586,8 @@ body: WHILE
 
       addAsm( "LDA $0100,X", 3, false );
       addAsm( "CMP #$00", 2, false );
-      addAsm( "BEQ #$06", 2, false );
+      addAsm( ".BYTE #$F0, #$06", 2, false );
+      //addAsm( "BEQ #$06", 2, false );
       addAsm( "JSR $FFD2", 3, false );
       addAsm( string( "JMP " ) + getLabel( label_vector[label_major]-1,false), 3, false );
 
@@ -2685,7 +2690,7 @@ body: WHILE
 
   addCommentSection( string("byte2hex(") + string($3.name) + string(")"));
   addParserComment($3.name  );
-  if( t == 0 || t == 1 )
+  if( t == 0 || t == 1 ) // TODO: Change this to isTypeID/IMM()
     {
       // uint and int
       addParserComment( "t == 0 || t == 1" );
@@ -2706,7 +2711,7 @@ body: WHILE
       addAsm( "JSR BYTE2HEX", 3, false );
  
     }
-  else if( t == 2 || t == 4 )
+  else if( t == 2 || t == 4 ) // TODO: Change this to isTypeID/IMM()
     {
       addParserComment( "type == 2 || type == 4" );
       addAsm( string("LDA $") + toHex(getAddressOf($3.name)).c_str(), 3, false );
@@ -2912,7 +2917,11 @@ body: WHILE
   addAsm( "STA $02", 2, false );
 
   addAsm( "LDA $D011", 3, false );
+  
+  
   addAsm( "AND #$EF", 2, false );
+
+  
   addAsm( "ORA $02", 2, false );
 
   addAsm( "STA $D011", 3, false );
@@ -3669,6 +3678,7 @@ condition: expression relop expression
     }
     else if( isWordID($1.name) && isWordIMM($3.name))
     {
+      // TODO: FIX THIS!!!
       addCommentSection( "WORD ID vs. WORD IMM" );
       addComment( string($1.name) + string( " v. " ) + string($3.name) );
 
@@ -3684,8 +3694,20 @@ condition: expression relop expression
       HB/=256;
       int LB = 0x00FF & atoi( stripFirst($3.name).c_str());
       //cerr << "HB: " << HB << "\tLB: " << LB << endl;
-      addAsm(string("CMP #$") + toHex(HB), 2, false );
-      addAsm( string(".BYTE $D0, $05") + commentmarker +string(" BNE +5"), 2, false ); // BNE +5
+
+      // TMP vvvvvv
+      //addAsm( "CLC" );
+      //addAsm( string("SBC #$") + toHex(HB), 2, false );
+      //addAsm( string(".BYTE #$B0, #$05") + commentmarker +string(" BCS +5"), 2, false ); // BNE +5
+      // TMP ^^^^^
+
+      
+      addAsm( string("CMP #$") + toHex(HB), 2, false );
+      addAsm( string(".BYTE #$D0, #$05") + commentmarker +string(" BNE +5"), 2, false ); // BNE +5
+
+
+
+      
       addAsm(string("LDA $") + toHex(OP1L), 3, false );
       //addAsm(string("CMP #$") + toHex(atoi(stripFirst($3.name).c_str())).substr(2,2), 2, false );
       //addAsm(string("CMP #$") + toHex(atoi(stripFirst($3.name).c_str())).substr(2,2), 2, false );
@@ -4466,22 +4488,37 @@ statement: datatype ID init
   if( isWordID($3.name ) )
     {
       /* Words must use SBC so that Carry can get set if > 0xFF */
-      addAsm( "SEC" );
-      addAsm( string( "LDA $" ) + toHex(a), size_of_instruction, false );
-      addAsm( "SBC #$01", 2, false );
-      addAsm( string( "STA $" ) + toHex(a), size_of_instruction, false );
+      //addAsm( "SEC" );
+      //addAsm( string( "LDA $" ) + toHex(a), size_of_instruction, false );
+      //addAsm( "SBC #$01", 2, false );
+      //addAsm( string( "STA $" ) + toHex(a), size_of_instruction, false );
+      //a++;
+      //if( a < 256 )
+      //{
+      // size_of_instruction = 2;
+      //}
+      //else
+      //{
+      //size_of_instruction = 3;
+      //}
+      //addAsm( string( "LDA $" ) + toHex(a), size_of_instruction, false );
+      //addAsm( "SBC #$00", 2, false );
+      //addAsm( string( "STA $" ) + toHex(a), size_of_instruction, false );
+
+      addAsm( "LDA #$FF", 2, false );
+      illegal_operations_are_needed = true;
+      addAsm( string( "DCP $" ) + toHex(a), size_of_instruction, false );
       a++;
       if( a < 256 )
 	{
 	  size_of_instruction = 2;
-	}
+      }
       else
-	{
-	  size_of_instruction = 3;
-	}
-      addAsm( string( "LDA $" ) + toHex(a), size_of_instruction, false );
-      addAsm( "SBC #$00", 2, false );
-      addAsm( string( "STA $" ) + toHex(a), size_of_instruction, false );
+      {
+       size_of_instruction = 3;
+      }
+      addAsm( string(".BYTE #$D0, #$") + toHex(size_of_instruction) + string( "; BNE +3"), 2, false );
+      addAsm( string( "DEC $" ) + toHex(a), size_of_instruction, false );
     }
   else if( isUintID($3.name) || isIntID($3.name) )
     {
@@ -4558,7 +4595,6 @@ statement: datatype ID init
 | tPLOT '(' expression {if(isA($3.name))addAsm("PHA;\t\t\t\tx",1,false);} ',' expression {if(isA($6.name))addAsm("PHA;\t\t\t\ty",1,false);} ',' expression {if(isA($9.name))addAsm("PHA;\t\t\t\tc",1,false);} ')'
 {
   multicolour_plot_is_needed = true;
-
   if( isWordID($3.name) && (isWordID($6.name)||isUintID($6.name)) && isUintID($9.name) )
     {
       addComment( "MC PLOT [WORD  WORD|UINT  UINT]" );
@@ -4759,6 +4795,7 @@ statement: datatype ID init
     {
       addCompilerMessage( "type not implemented yet for plot" );
     }
+  
 };
 | tCOMMENT '(' STR  ')'
 {
@@ -5143,6 +5180,11 @@ init: '=' expression
 {
   addComment( string( "RULE: init: '=' expression" ) );
 
+  if( isFloatID( $$.name ) )
+    {
+      cerr << "initializing a float" << endl;
+    }
+  
   int variable_type = getTypeOf( $$.name );
 
   //if( isA($2.name) && (variable_type == 0 || variable_type == 1 ))
@@ -8016,7 +8058,7 @@ expression: expression {
       addAsm( "LDA #$00", 2, false );
       addAsm( "JSR $B391", 3, false );
     }
-  else if( isWordID($3.name) )
+  else if(isWordID($3.name) )
     {
       addAsm( string("LDY ") + string($3.name), 3, false ); 
       addAsm( string("LDA ") + string($3.name) + string("+1"), 3, false ); 
@@ -8026,16 +8068,30 @@ expression: expression {
     {
       addAsm( "TAY" );
       addAsm( "TXA" );
-      //addAsm( string("LDY ") + string($3.name), 3, false ); 
-      //addAsm( string("LDA ") + string($3.name) + string("+1"), 3, false ); 
       addAsm( "JSR $B391", 3, false );
     }
   else if( isA($3.name) )
     {
+
       addAsm( "TAY" );
-      addAsm( "LDX #$00", 2, false);
-      //addAsm( string("LDY ") + string($3.name), 3, false ); 
-      //addAsm( string("LDA ") + string($3.name) + string("+1"), 3, false ); 
+      //addAsm( "LDX #$00", 2, false);
+      addAsm( "LDA #$00", 2, false);
+      addAsm( "JSR $B391", 3, false );
+    }
+  else if( isUintIMM($3.name) || isIntIMM($3.name) )
+    {
+      int v = atoi( stripFirst($3.name).c_str() );
+      addAsm( string("LDY #$") + toHex(v), 2, false );
+      addAsm( "LDA #$00", 2, false);
+      addAsm( "JSR $B391", 3, false );
+    }
+  else if( isWordIMM($3.name) )
+    {
+      int L = get_word_L(atoi( stripFirst($3.name).c_str() ));
+      int H = get_word_H(atoi( stripFirst($3.name).c_str() ));
+      //cerr << toHex(H) << toHex(L) << endl;
+      addAsm( string("LDY #$") + toHex(L), 2, false );
+      addAsm( string("LDA #$") + toHex(H), 2, false );
       addAsm( "JSR $B391", 3, false );
     }
   else
@@ -8206,30 +8262,48 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
       addAsm( string( "LDA #$" ) + toHex(get_word_L(base_address)), 2, false  );
       addAsm( string( "LDY #$" ) + toHex(get_word_H(base_address)), 2, false  );
       addAsm( "JSR $BBA2; MEM -> FAC", 3, false ); // FP ->FAC
-      // calculate the sine of it
-      addAsm( "JSR $E26B; SIN(FAC) -> FAC", 3, false ); // sqrt
+      addAsm( "JSR $E26B; SIN(FAC) -> FAC", 3, false ); // sine
       strcpy($$.name, "FAC");
     }
-  else if( isWordID($3.name)  )
+    else if( isWordID($3.name) )
     {
-      addComment( "TBD: sin(word)" );
-      // ?? (see also cosine!)
-      strcpy($$.name, "w0344");
+      addAsm( string("LDY ") + string($3.name), 3, false ); 
+      addAsm( string("LDA ") + string($3.name) + string("+1"), 3, false ); 
+      addAsm( "JSR $B391; Word -> FAC", 3, false );
+      addAsm( "JSR $E26B; SIN(FAC) -> FAC", 3, false ); // sine
+      strcpy($$.name, "FAC");
     }
-  else if( isIntID($3.name) )
+  else if( isUintID($3.name) || isIntID($3.name) )
     {
-      addComment( "TBD: sin(int)" );
-      strcpy($$.name, "A");
+      addAsm( string("LDY ") + string($3.name), 3, false ); 
+      addAsm( string("LDA #$00"), 2, false );
+      addAsm( "JSR $B391; Word -> FAC", 3, false );
+      addAsm( "JSR $E26B; SIN(FAC) -> FAC", 3, false ); // sine
+      strcpy($$.name, "FAC");
     }
-  else if( isUintID($3.name) )
+    else if( isXA($3.name) )
     {
-      addComment( "TBD: sin(uint)" );
-      strcpy($$.name, "A");
+      addAsm( "PHA" );
+      addAsm( "TXA" );
+      addAsm( "TAY" );
+      addAsm( "PLA" );
+      addAsm( "TAX" );
+      addAsm( "TYA" );
+      addAsm( "JSR $B391; Word -> FAC", 3, false );
+      addAsm( "JSR $E26B; SIN(FAC) -> FAC", 3, false ); // sine
+      strcpy($$.name, "FAC");
+    }
+  else if( isA($3.name) )
+    {
+      addAsm( "TAX" );
+      addAsm( "LDA #$00", 2, false );
+      addAsm( "JSR $B391; Word -> FAC", 3, false );
+      addAsm( "JSR $E26B; SIN(FAC) -> FAC", 3, false ); // sine
+      strcpy($$.name, "FAC");
     }
   else
     {
       addCompilerMessage( "trying to calculate sine of unknown type", 3);
-      strcpy($$.name, "A");
     }
 };
 | tCOS '(' expression ')'
@@ -8244,28 +8318,54 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
       addAsm( "JSR $E264; COS(FAC) -> FAC", 3, false ); 
       strcpy($$.name, "FAC");
     }
-  else if( getTypeOf($3.name) == 8 )
+  else if( isFloatID($3.name) )
     {
       int base_address = getAddressOf($3.name);
       addAsm( string( "LDA #$" ) + toHex(get_word_L(base_address)), 2, false  );
       addAsm( string( "LDY #$" ) + toHex(get_word_H(base_address)), 2, false  );
       addAsm( "JSR $BBA2; MEM -> FAC", 3, false ); // FP ->FAC
-      addAsm( "JSR $E264; COS(FAC) -> FAC", 3, false ); // sqrt
+      addAsm( "JSR $E264; COS(FAC) -> FAC", 3, false ); // cos
       strcpy($$.name, "FAC");
     }
-  else if( getTypeOf($3.name) == 2 )
+  else if( isWordID($3.name) )
     {
-      // ?? see also sine!
-      strcpy($$.name, "w0344");
+      addAsm( string("LDY ") + string($3.name), 3, false ); 
+      addAsm( string("LDA ") + string($3.name) + string("+1"), 3, false ); 
+      addAsm( "JSR $B391; Word -> FAC", 3, false );
+      addAsm( "JSR $E264; COS(FAC) -> FAC", 3, false ); // cos
+      strcpy($$.name, "FAC");
     }
-  else if( getTypeOf($3.name) == 1 )
+  else if( isUintID($3.name) || isIntID($3.name) )
     {
-      strcpy($$.name, "A");
+      addAsm( string("LDY ") + string($3.name), 3, false ); 
+      addAsm( string("LDA #$00"), 2, false );
+      addAsm( "JSR $B391; Word -> FAC", 3, false );
+      addAsm( "JSR $E264; COS(FAC) -> FAC", 3, false ); // cos
+      strcpy($$.name, "FAC");
+    }
+    else if( isXA($3.name) )
+    {
+      addAsm( "PHA" );
+      addAsm( "TXA" );
+      addAsm( "TAY" );
+      addAsm( "PLA" );
+      addAsm( "TAX" );
+      addAsm( "TYA" );
+      addAsm( "JSR $B391; Word -> FAC", 3, false );
+      addAsm( "JSR $E264; COS(FAC) -> FAC", 3, false ); // cos
+      strcpy($$.name, "FAC");
+    }
+  else if( isA($3.name) )
+    {
+      addAsm( "TAX" );
+      addAsm( "LDA #$00", 2, false );
+      addAsm( "JSR $B391; Word -> FAC", 3, false );
+      addAsm( "JSR $E264; COS(FAC) -> FAC", 3, false ); // cos
+      strcpy($$.name, "FAC");
     }
   else
     {
       addCompilerMessage( "trying to calculate cosine of unknown type" );
-      strcpy($$.name, "A");
     }
 };
 | tTAN '(' expression ')'
@@ -8283,7 +8383,7 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
       // result is in FAC
       strcpy($$.name, "FAC");
     }
-  else if( getTypeOf($3.name) == 8 )
+  else if( isFloatID($3.name)  )
     {
       // float
       int base_address = getAddressOf($3.name);
@@ -8291,22 +8391,48 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
       addAsm( string( "LDY #$" ) + toHex(get_word_H(base_address)), 2, false  );
       addAsm( "JSR $BBA2; MEM -> FAC", 3, false ); // FP ->FAC
       // calculate the cosine of it
-      addAsm( "JSR $E2B4; TAN(FAC) -> FAC", 3, false ); // sqrt
+      addAsm( "JSR $E2B4; TAN(FAC) -> FAC", 3, false ); // tan
       strcpy($$.name, "FAC");
     }
-  else if( getTypeOf($3.name) == 2 )
+  else if( isWordID($3.name) )
     {
-      // ?? see also sine!
-      strcpy($$.name, "w0344");
+      addAsm( string("LDY ") + string($3.name), 3, false ); 
+      addAsm( string("LDA ") + string($3.name) + string("+1"), 3, false ); 
+      addAsm( "JSR $B391; Word -> FAC", 3, false );
+      addAsm( "JSR $E2B4; TAN(FAC) -> FAC", 3, false ); // tan
+      strcpy($$.name, "FAC");
     }
-  else if( getTypeOf($3.name) == 1 )
+  else if( isUintID($3.name)||isIntID($3.name) )
     {
-      strcpy($$.name, "A");
+      addAsm( string("LDY ") + string($3.name), 3, false ); 
+      addAsm( string("LDA #$00"), 2, false );
+      addAsm( "JSR $B391; Word -> FAC", 3, false );
+      addAsm( "JSR $E2B4; TAN(FAC) -> FAC", 3, false ); // tan
+      strcpy($$.name, "FAC");
+    }
+  else if( isXA($3.name) )
+    {
+      addAsm( "PHA" );
+      addAsm( "TXA" );
+      addAsm( "TAY" );
+      addAsm( "PLA" );
+      addAsm( "TAX" );
+      addAsm( "TYA" );
+      addAsm( "JSR $B391; Word -> FAC", 3, false );
+      addAsm( "JSR $E2B4; TAN(FAC) -> FAC", 3, false ); // tan
+      strcpy($$.name, "FAC");
+    }
+  else if( isA($3.name) )
+    {
+      addAsm( "TAX" );
+      addAsm( "LDA #$00", 2, false );
+      addAsm( "JSR $B391; Word -> FAC", 3, false );
+      addAsm( "JSR $E2B4; TAN(FAC) -> FAC", 3, false ); // tan
+      strcpy($$.name, "FAC");
     }
   else
     {
       addCompilerMessage( "trying to calculate tangent of unknown type" );
-      strcpy($$.name, "A");
     }
 };
 | value
@@ -8614,88 +8740,91 @@ value: FLOAT_NUM
   switch( string( $1.name )[1] )
     {
     case 'A':
-      strcpy( $$.name, "u71" );
+      strcpy( $$.name, "u65" );
       break;
     case 'B':
-      strcpy( $$.name, "u72" );
+      strcpy( $$.name, "u66" );
       break;
     case 'C':
-      strcpy( $$.name, "u73" );
+      strcpy( $$.name, "u67" );
       break;
     case 'D':
-      strcpy( $$.name, "u74" );
+      strcpy( $$.name, "u68" );
       break;
     case 'E':
-      strcpy( $$.name, "u75" );
+      strcpy( $$.name, "u69" );
       break;
     case 'F':
-      strcpy( $$.name, "u76" );
+      strcpy( $$.name, "u70" );
       break;
     case 'G':
-      strcpy( $$.name, "u77" );
+      strcpy( $$.name, "u71" );
       break;
     case 'H':
-      strcpy( $$.name, "u78" );
+      strcpy( $$.name, "u72" );
       break;
     case 'I':
-      strcpy( $$.name, "u79" );
+      strcpy( $$.name, "u73" );
       break;
     case 'J':
-      strcpy( $$.name, "u80" );
+      strcpy( $$.name, "u74" );
       break;
     case 'K':
-      strcpy( $$.name, "u81" );
+      strcpy( $$.name, "u75" );
       break;
     case 'L':
-      strcpy( $$.name, "u82" );
+      strcpy( $$.name, "u76" );
       break;
     case 'M':
-      strcpy( $$.name, "u83" );
+      strcpy( $$.name, "u77" );
       break;
     case 'N':
-      strcpy( $$.name, "u84" );
+      strcpy( $$.name, "u78" );
       break;
     case 'O':
-      strcpy( $$.name, "u85" );
+      strcpy( $$.name, "u79" );
       break;
     case 'P':
-      strcpy( $$.name, "u86" );
+      strcpy( $$.name, "u80" );
       break;
     case 'Q':
-      strcpy( $$.name, "u87" );
+      strcpy( $$.name, "u81" );
       break;
     case 'R':
-      strcpy( $$.name, "u88" );
+      strcpy( $$.name, "u82" );
       break;
     case 'S':
-      strcpy( $$.name, "u89" );
+      strcpy( $$.name, "u83" );
       break;
     case 'T':
-      strcpy( $$.name, "u90" );
+      strcpy( $$.name, "u84" );
       break;
     case 'U':
-      strcpy( $$.name, "u91" );
+      strcpy( $$.name, "u85" );
       break;
     case 'V':
-      strcpy( $$.name, "u92" );
+      strcpy( $$.name, "u86" );
       break;
     case 'W':
-      strcpy( $$.name, "u93" );
+      strcpy( $$.name, "u87" );
       break;
     case 'X':
-      strcpy( $$.name, "u94" );
+      strcpy( $$.name, "u88" );
       break;
     case 'Y':
-      strcpy( $$.name, "u95" );
+      strcpy( $$.name, "u89" );
       break;
     case 'Z':
-      strcpy( $$.name, "u96" );
+      strcpy( $$.name, "u90" );
       break;
     case ' ':
       strcpy( $$.name, "u32" );
       break;
     case '\n':
       strcpy( $$.name, "u13" );
+      break;
+    case ':':
+      strcpy( $$.name, "u58" );
       break;
     default:
       strcpy( $$.name, "u0" );
@@ -9136,10 +9265,19 @@ int main(int argc, char *argv[])
       addAsm( commentmarker + string("; STORE is at $FE(l), $FF(h)"), 0, true);
       addAsm( commentmarker + string("; LOC is at $02(l), $03(h)"), 0, true);
       addAsm( "MCPLOT:", 0, true );
-      //addAsm( "SEI" );
-      addAsm( "LDA $FA; xcoord", 2, false );
-      addAsm( "AND #$03", 2, false );
-      addAsm( "STA $FE; store", 2, false );
+      addAsm( "SEI" );
+
+      // -------------------------------------------------
+      // LDX #$03  - 2 cycles
+      // LDA $FA   - 3 cycles
+      // SAX $FE   - 3 cycles - 2 bytes
+      //
+      //                  OR
+      //
+      addAsm( "LDA $FA; xcoord", 2, false );  // 3 cycles
+      addAsm( "AND #$03", 2, false );  // 2 cycles
+      addAsm( "STA $FE; store", 2, false ); // 3 cycles
+
       addAsm( "LDA #$00", 2, false );
       addAsm( "STA $02; loc", 2, false );
       addAsm( "STA $FF; store + 1", 2, false );
@@ -9202,7 +9340,7 @@ int main(int argc, char *argv[])
       addAsm( "LDA ($02),Y", 2, false );
       addAsm( "ORA $50; mask", 2, false );
       addAsm( "STA ($02),Y; what is @ $50?", 2, false );
-      //addAsm( "CLI" );
+      addAsm( "CLI" );
       addAsm( "RTS" );
       addComment( "^^^------------------------------------^^^" );
       addComment( "^^^ from p164 of Advanced Machine Code ^^^" );
@@ -9223,9 +9361,12 @@ int main(int argc, char *argv[])
       addAsm( commentmarker + string("; x = ($FA, $FB), y = $FC"), 0, true );
       addAsm( "GETPLOT:", 0, true );
       addAsm( "SEI" );
+
       addAsm( "LDA $FA", 2, false );
       addAsm( "AND #$03", 2, false );
       addAsm( "STA $5C", 2, false );
+
+      
       addAsm( "LDA #$00", 2, false );
       addAsm( "STA $02", 2, false );
       addAsm( "STA $5D", 2, false );
@@ -9473,8 +9614,11 @@ int main(int argc, char *argv[])
       addAsm( "CLD" );
       addAsm( "PLA" );
       addAsm( "TAX" );
-      addAsm( "AND #$F0", 2, false );
-      addAsm( "LSR" );
+      
+      addAsm( ";\tAND #$F0", 0, true );
+      addAsm( ";\tLSR", 0, true);
+      addAsm( "ALR #$F0; Illegal Opcode (replaces the two lines above)", 2, false );
+      illegal_operations_are_needed = true;
       addAsm( "LSR" );
       addAsm( "LSR" );
       addAsm( "LSR" );
@@ -9485,8 +9629,10 @@ int main(int argc, char *argv[])
       addAsm( "ADC #$30", 2, false);
       addAsm( "JSR $FFD2", 3, false );
       addAsm( "TXA" );
+      
       addAsm( "AND #$0F", 2, false);
       addAsm( "CMP #$0A", 2, false);
+
       addAsm( ".BYTE #$90, #$03", 2, false);
       addAsm( "CLC" );
       addAsm( "ADC #$07", 2, false);
@@ -9947,7 +10093,11 @@ int main(int argc, char *argv[])
       
       addAsm( "RTS" );
     }
-  
+
+  if(  illegal_operations_are_needed )
+    {
+      cout << ".OPT ILLEGALS" << endl;
+    }
   ProcessFunctions();
   ProcessMemoryLocationsOfCode();
   ProcessStrings();

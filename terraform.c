@@ -1,57 +1,12 @@
 void main()
 {
-  romout(6);
-  //uint oldBasic = peek( 0x01 );
-  //poke( 0x01, 0x35 );
-  
-  // INTRO SCREEN HERE!
-  //printf( "PRESS A KEY" );
-  // clearkb() buffer
-  
-  //poke( 0xC6, 0 );
-  //jsr( 0xFFE4 );
-
-  //pause();
   lda( 0x00 );
   uint general8bit;
+
+  // variables that WILL NEED TO get REinitialized
+  // ZEROES
   uint subclock;
-  while( general8bit == 0 )
-    {
-      subclock=rnd(1);
-      general8bit = getchar();
-    }
-
-  saveregs();
-  // saveregs
-  //uint oldD011 = peek( 0xD011 );
-  // uint oldD016 = peek( 0xD016 );
-  //uint oldD018 = peek( 0xD018 );
-  //uint oldD020 = peek( 0xD020 );
-  //uint oldD021 = peek( 0xD021 );
-  //uint oldChar = peek( 0x0286 );
-
-  // create xy arrays
-  word xarray[8];
-  uint yarray[8];
-  
-  // save voice 3
-  uint D41B = peek( 0xD418 );
-  
-  //uint ten = 0x0A;
-
-  word clock = 420;
-  subclock = 0x00;
-  word checkNearParamX1;
-  uint checkNearParamY1;
-  uint checkNearParamI;
-  
-  // initialise variables
-  lda( 0x00 );
-  
-  //uint randomnessclock;
-  //word printWordAddr;
-  word jerrymoveclock;
-  //uint jerrymoveclock2;
+  uint wordSize;
   uint midjump;
   uint jerjump;
   uint subtimer;
@@ -60,18 +15,47 @@ void main()
   uint standing;
   uint jerstanding;
   uint jerrybelow;
-  uint plotDigitBindex;
-  uint plotDigitColourValue1001;
-  uint shownumParamUINT;
-  
   uint whichtoblink;
   uint blinktoggle;
   uint shouldbeblinking;
   uint blinktimer;
-  word adr1;
-  
   uint currentlyholding;
   uint collidedwith;
+  word newX;
+  uint checkNearParamY1;
+  uint checkNearParamI;
+ 
+  word score = 0x0000;
+ word checkNearParamX1;
+  word wordToPrint;
+ 
+  romout(6);
+  
+  // INTRO SCREEN HERE!
+  clearkb();
+
+  saveregs();
+  // create xy arrays
+  word xarray[8];
+  uint yarray[8];
+  
+  // save voice 3
+  uint D41B = peek( 0xD418 );
+  
+  word clock = 420;
+  //subclock = 0x00;
+  
+  // initialise variables
+  
+  //uint randomnessclock;
+  //word printWordAddr;
+  word jerrymoveclock;
+  //uint jerrymoveclock2;
+  uint plotDigitBindex;
+  uint plotDigitColourValue1001;
+  uint shownumParamUINT;
+  
+  word adr1;
 
   word shownumParamWORD = 0x0000;
 
@@ -81,7 +65,6 @@ void main()
   uint plotDigitX;
   uint plotDigitY;
   uint plotDigitColourValue11;
-  
   
   lda( 0x02 );
   uint gearnumber;
@@ -97,11 +80,9 @@ void main()
   uint Y1;
   //uint spriteI;
 
-
   //word delay = 0x00CC;
   //word cnX;
   word num;
-
   
   lda( 100 );
   uint y;
@@ -109,8 +90,6 @@ void main()
   
   word x = 0x0020;
   word jx = 0x012C;
-
-  word score = 0x0000;
   
   word collXVar;
   uint collYVar;
@@ -136,44 +115,67 @@ void main()
     };
 
   // letters
-  data letters = {
-    0, 48, 252, 204, 252, 204, 204, 204,
-    0, 240, 204, 204, 240, 204, 204, 240,
-    0, 48, 204, 192, 192, 192, 204, 48,
-    0, 240, 204, 204, 204, 204, 204, 240,
-    0, 252, 192, 192, 240, 192, 192, 252,
-    0, 252, 192, 192, 240, 192, 192, 192,
-    0, 48, 204, 204, 60, 12, 204, 48,
-    0, 204, 204, 204, 252, 204, 204, 204,
-    0, 252, 48, 48, 48, 48, 48, 252,
-    0, 252, 12, 12, 12, 204, 204, 48,
-    0, 204, 204, 204, 240, 204, 204, 204,
-    0, 192, 192, 192, 192, 192, 192, 252,
-    0, 204, 252, 252, 204, 204, 204, 204,
-    0, 0, 0, 192, 252, 204, 204, 204,
-    0, 252, 204, 204, 204, 204, 204, 252,
-    0, 240, 204, 204, 240, 192, 192, 192,
-    0, 48, 204, 204, 204, 204, 240, 60,
-    0, 240, 204, 204, 240, 204, 204, 204,
-    0, 48, 204, 192, 48, 12, 204, 48,
-    0, 252, 48, 48, 48, 48, 48, 48,
-    0, 204, 204, 204, 204, 204, 204, 48,
-    0, 204, 204, 204, 204, 48, 48, 48,
-    0, 204, 204, 204, 252, 252, 252, 204,
-    0, 204, 204, 204, 48, 204, 204, 204,
-    0, 204, 204, 204, 60, 12, 204, 48,
-    0, 252, 12, 12, 48, 192, 192, 252
-  };
+  data letters =
+    {
+      0, 48, 252, 204, 252, 204, 204, 204,
+      0, 240, 204, 204, 240, 204, 204, 240,
+      0, 48, 204, 192, 192, 192, 204, 48,
+      0, 240, 204, 204, 204, 204, 204, 240,
+      0, 252, 192, 192, 240, 192, 192, 252,
 
-  data testtext = {'T', 'E', 'S', 'T', ' ', 'T', 'E', 'X', 'T', 0 };
-  
-  //data gameover = { 'G', 'A', 'M', 'E', ' ', 'O', 'V', 'E', 'R', 0x0D, 0 };
+      0, 252, 192, 192, 240, 192, 192, 192,
+      0, 48, 204, 204, 60, 12, 204, 48,
+      0, 204, 204, 204, 252, 204, 204, 204,
+      0, 252, 48, 48, 48, 48, 48, 252,
+      0, 252, 12, 12, 12, 204, 204, 48,
+
+      0, 204, 204, 204, 240, 204, 204, 204,
+      0, 192, 192, 192, 192, 192, 192, 252,
+      0, 204, 252, 252, 204, 204, 204, 204,
+      0, 0, 0, 192, 252, 204, 204, 204,
+      0, 252, 204, 204, 204, 204, 204, 252,
+
+      0, 240, 204, 204, 240, 192, 192, 192,
+      0, 48, 204, 204, 204, 204, 240, 60,
+      0, 240, 204, 204, 240, 204, 204, 204,
+      0, 48, 204, 192, 48, 12, 204, 48,
+      0, 252, 48, 48, 48, 48, 48, 48,
+
+      0, 204, 204, 204, 204, 204, 204, 252,
+      0, 204, 204, 204, 204, 48, 48, 48,
+      0, 204, 204, 204, 252, 252, 252, 204,
+      0, 204, 204, 204, 48, 204, 204, 204,
+      0, 204, 204, 204, 60, 12, 204, 48,
+      
+      0, 252, 12, 12, 48, 192, 192, 252,
+      // space
+      0, 0, 0, 0, 0, 0, 0, 0,
+      // colon
+      0, 0, 60, 60, 0, 60, 60, 0
+    };
+
+  //data zero = {'A'};
+  data clockText = {'C', 'L', 'O', 'C', 'K' };
+  data scoreText = {'S', 'C', 'O', 'R', 'E' };  
+  data paused = {                'P', 'A', 'U', 'S', 'E', 'D' };
+  data pak =    { 'P', 'R', 'E', 'S', 'S', ' ', 'A', 'N', 'Y', ' ', 'K', 'E', 'Y' };
+  data spaces = { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' };
+  data hitY=    { 'H', 'I', 'T', ' ', 'Y', ' ', 'T', 'O', ' ', 'Q', 'U', 'I', 'T'} ;
+  data title = { 'R', 'A', 'M', 'R', 'O', 'D' };
+  data directions1 = {'U', ':', ' ', 'L', 'E', 'F', 'T', ' ', ' ', ' ', 'O', ':', ' ', 'R', 'I', 'G', 'H', 'T'};
+  data directions1a= {'Q', ':', ' ', 'Q', 'U', 'I', 'T', ' ', ' ', ' ', 'W', ':', ' ', 'P', 'A', 'U', 'S', 'E'};
+  data directions2 = {'I', ':', ' ', 'P', 'I', 'C', 'K', ' ', 'U', 'P', ' ', ' ', ' ', 'K', ':', ' ', 'D', 'R', 'O', 'P' };
+  data directions3 = {'C', 'R', 'E', 'A', 'T', 'E', 'D', ' ', 'B', 'Y', ' ', 'M', 'I', 'C', 'H', 'A', 'E', 'L', ' ', 'P', 'E', 'L', 'L', 'E', 'G', 'R', 'I', 'N', 'O'};
+  data directions5 = {'P', 'R', 'E', 'S', 'S', ' ', 'A', 'N', 'Y', ' ', 'K', 'E', 'Y', ' ', 'T', 'O', ' ', 'S', 'T', 'A', 'R', 'T' };
+  data credit1 =    { 'C', 'A', 'S', 'E', 'Y', ' ', 'J', 'O', 'N', 'E', 'S', ' ', 'B', 'Y', ' ', 'T', 'H', 'E', ' ', 'G', 'R', 'A', 'T', 'E', 'F', 'U', 'L', ' ', 'D', 'E', 'A', 'D' };
+  data credit2 =    { 'S', 'I', 'D', ' ', 'C', 'R', 'E', 'A', 'T', 'E', 'D', ' ', 'B', 'Y', ' ', 'I', 'V', 'A', 'N', ' ', 'K', 'O', 'H', 'L', 'E', 'R' };
+  data endscreentext1 = {'G', 'A', 'M', 'E', ' ', 'O', 'V', 'E', 'R' };
+  data endscreentext2 = {'P', 'R', 'E', 'S', 'S', ' ', 'Y', ' ', 'T', 'O', ' ', 'P', 'L', 'A', 'Y', ' ', 'A', 'G', 'A', 'I', 'N' };
 
   word plotDigitAddr = digits;
 
   // jump table
   data jt = { 0x00, 0xFC, 0xFC, 0xFD, 0xFD, 0xFD, 0xFE, 0xFE, 0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x01, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-
 
   // down arrow
   //data olddownarrow = { 1, 1, 1, 21, 5, 5, 1, 1, 0, 0, 0, 80, 64, 64, 0, 0 };
@@ -231,6 +233,20 @@ void main()
   poke( 0xD016, 24 );
   poke( 0xD018, 24 );
 
+  word bmpaddr = getbmp_addr();
+  word bmpaddrX = bmpaddr + 0x1FF8;
+  word scraddr = getscr_addr();
+  word scraddrX = scraddr + 0x03F0;
+  
+  clearhires();
+  startScreen();
+  // pause here
+  while( general8bit == 0 )
+    {
+      subclock=rnd(1);
+      general8bit = getchar();
+    }
+
   clearhires();
   createplatforms();
 
@@ -282,211 +298,173 @@ void main()
   // start the music located at $1000 (4096)
   sidirq( 0x1000, 0x1003 );
   // the main loop
+
   uint c = getin();
-  while( c != 62 )
+  uint keepPlaying = 1;
+  while( keepPlaying == 1 )
     {
-      if( clock < 0x001E )
-	{
-	  poke( 0xD020, rnd(1) );
-	}
-      if( timer == 0 )
-	{
-	  checkIfStanding();
-
-	  // ====================================
-	  //                 AI
-	  // ====================================
-	  if( jerjump >= 1 )
+      //while( c != 62 )
+      ///{
+	  if( clock < 0x001E )
 	    {
-	      calculatejerjump();
+	      poke( 0xD020, rnd(1) );
 	    }
-	  else
+	  if( clock == 0x0000 )
 	    {
-	      if( jerstanding == 0 )
+	      endscreen();
+	    }
+	  if( timer == 0 )
+	    {
+	      checkIfStanding();
+
+	      // ====================================
+	      //                 AI
+	      // ====================================
+	      if( jerjump >= 1 )
 		{
-		  inc(jy);
-		  if( jy > 219 )
+		  calculatejerjump();
+		}
+	      else
+		{
+		  if( jerstanding == 0 )
 		    {
-		      jy = 219;
+		      inc(jy);
+		      if( jy > 219 )
+			{
+			  jy = 219;
+			}
+		    }
+		  else
+		    {
+		      checkIfBelow();
+		      calculateai();
+		    }
+		}
+
+	      positionai();
+	  
+	      // ====================================
+	  
+	      if( standing == 0 )
+		{
+		  if( midjump != 0 )
+		    {
+		      calculatejump();
+		    }
+		  else
+		    {
+		      inc(y);
+		      if( y > 219 )
+			{
+			  y = 219;
+			}
+		      // wiggle player's legs
+		      moveLegs();
 		    }
 		}
 	      else
 		{
-		  checkIfBelow();
-		  calculateai();
-		}
-	    }
-
-	  //positionai();
-	  spritey( 1, jy );
-	  spritex( 1, jx );
-
-	  // ====================================
-	  
-	  if( standing == 0 )
-	    {
-	      if( midjump != 0 )
-		{
-		  calculatejump();
-		}
-	      else
-		{
-		  inc(y);
-		  if( y > 219 )
+		  if( midjump != 0 )
 		    {
-		      y = 219;
+		      calculatejump();
 		    }
-		  // wiggle legs
-		  moveLegs();
-		}
-	    }
-	  else
-	    {
-	      if( midjump != 0 )
-		{
-		  calculatejump();
-		}
-	      else
-		{
-		  //checkLeft();
-		  // move left if "u" is pressed and x > 23
-		  if( c == 30 )
+		  else
 		    {
-		      lastdirectiontaken=1;
-		      if( x > 0x0017 )
-			{
-			  x = x - 1;
-			  moveLegs();
-			}
+		      checkLeft();
+		      checkRight();
+		      checkJump();
+		      checkI();
+		      checkK();
+		      checkW();
+		      checkQ();
 		    }
-
-		  //checkRight();
-		  // move right if "o" is pressed and x < 320
-		  if( c == 38 )
-		    {
-		      lastdirectiontaken=2;
-		      if( x < 320 )
-			{
-			  x = x + 1;
-			  moveLegs();
-			}
-		    }  
-
-		  // checkJump();
-		  if( c == 60 )
-		    {
-		      if( midjump == 0 )
-			{
-			  midjump = 1;
-			}
-		    }
-		  
-		  checkI();
-		  checkK();
 		}
-	    }
 	  
-	  //positionplayer();
-	  if( x < 0x0017 )
-	    {
-	      x = 0x0017;
-	    }
-	  if( x > 320 )
-	    {
-	      x = 320;
-	    }
-	  spritey( 0, y );
-	  spritex( 0, x );
-
-	  // position the equipment too
-	  // (if there is any in the player's
-	  // hands)
-	  if( currentlyholding != 0 )
-	    {
-	      xarray[currentlyholding] = x;
-	      yarray[currentlyholding] = y;
-	      spritex( currentlyholding, x );
-	      spritey( currentlyholding, y );
-	    }
-
+	      positionplayer();
 	  
-	  // for testing only
-	  //shownumParamUINT = y;
-	  //shownum();
+	      // position the equipment too
+	      // (if there is any in the player's
+	      // hands)
+	      if( currentlyholding != 0 )
+		{
+		  xarray[currentlyholding] = x;
+		  yarray[currentlyholding] = y;
+		  spritex( currentlyholding, x );
+		  spritey( currentlyholding, y );
+		}
 
-	  if( subclock == 0 )
-	    {
-	      shownum();
-	      dec(clock);
+	      if( subclock == 0 )
+		{
+		  shownum();
+		  dec(clock);
+		}
+	      inc(subclock);
+	      // for testing only
+	      subclock = subclock & 3;
+	      //subclock = subclock & 0x0F;
 	    }
-	  inc(subclock);
-	  subclock = subclock & 7;
-	  //shownum();
-	  //dec(clock);
 
-	}
-
-      inc( timer );
-      timer = timer & 127;
+	  inc( timer );
+	  //timer = timer & 0x7F;
+	  timer = timer & 0x3F;
       
-      if( shouldbeblinking == 1 )
-	{
+	  if( shouldbeblinking == 1 )
+	    {
 
-	  if( blinktimer == 0x00 )
-	    {      
-	      if( blinktoggle == 0 )
-		{
-		  inc(blinktoggle);
-		  poke( adr1, 0xCC );
-		  poke( adr1+1, 0xCC );
+	      if( blinktimer == 0x00 )
+		{      
+		  if( blinktoggle == 0 )
+		    {
+		      inc(blinktoggle);
+		      poke( adr1, 0xCC );
+		      poke( adr1+1, 0xCC );
+		    }
+		  else
+		    {
+		      dec( blinktoggle );
+		      poke( adr1, 0x2C );
+		      poke( adr1+1, 0x2C );
+		    }
 		}
-	      else
-		{
-		  dec( blinktoggle );
-		  poke( adr1, 0x2C );
-		  poke( adr1+1, 0x2C );
-		}
+	      inc( blinktimer );
 	    }
-	  inc( blinktimer );
-
-	}
-
-
       
-      c = getin();
+	  c = getin();
+	  //}
+	  //quitscreen();
     }
-  // romin
-  //poke( 0x01, 0x37 );
-
-
-  //asmcomment( "clearkb();");
-  //poke( 0xC6, 0 );
-  //jsr( 0xFFE4 );
-
-  
-  //poke( 0xD011, oldD011 );
-  //poke( 0xD016, oldD016 );
-  //poke( 0xD018, oldD018 );
-  //poke( 0xD020, oldD020 );
-  //poke( 0xD021, oldD021 );
-  //poke( 0x0286, oldChar );
-
-  //poke( 0x01, 0x37 );
 
   bank(0);
   romin();
-
   spriteoff( 255 );
-  printf( "\nGAME OVER\n" );
-  //  romin();
-
+  
   restoreregs();
 
   clearkb();
 
-  //poke( 0x01, 0x37 );
-  //poke( 0x01, 0x37 );
 
+  return;
+}
+
+void positionai()
+{
+  spritey( 1, jy );
+  spritex( 1, jx );
+  return;
+}
+
+void positionplayer()
+{
+  if( x < 0x0017 )
+    {
+      x = 0x0017;
+    }
+  if( x > 320 )
+    {
+      x = 320;
+    }
+  spritey( 0, y );
+  spritex( 0, x );
   return;
 }
 
@@ -556,21 +534,32 @@ void calculateai()
       
       inc( gearnumber );
       
-      if( gearnumber == 8 )
+      if( gearnumber == 7 )
 	{
       	  gearnumber = 2;
 	}
     }
   else
     {
+      word newJX;
       if( jerrydirection == 1 )
 	{
-	  jx = jx + 1;
+	  newJX = jx + 0x0001;
+	  if( x != newJX )
+	    {
+	      jx = newJX;
+	    }
 	}
       else
 	{
-	  jx = jx - 1;
+	  newJX = jx - 0x0001;
+	  if( x != newJX )
+	    {
+	      jx = newJX;
+	    }
 	}
+
+      // TODO: move jerry's legs here!
       
       if( jx < 0x0017 )
 	{
@@ -590,27 +579,42 @@ void calculateai()
 }
 
 void clearhires()
-{  
+{
+  screen(0);
   // this is for the single colour (11) -- this is ALWAYS at 0xD800 - 0x3FF
   for( word mem1 = 0xD800; mem1 < 0xDBFF; mem1 = mem1 + 1 )
     {
       poke( mem1, 0 );
-    }
-  
-  // this is for the colours for 01 and 10 of the bitmap
-  //for( mem1 = 0x4400; mem1 < 0x47F0; mem1 = mem1 + 1 )
-  for( mem1 = 0x8400; mem1 < 0x87F0; mem1 = mem1 + 1 )
+    }  
+  for( mem1 = scraddr; mem1 < scraddrX; mem1 = mem1 + 1 )
     {
       poke( mem1, 0x26 );
     }
 
-  // the bitmap
-  //for( mem1 = 0x6000; mem1 < 0x7FF8; mem1 = mem1 + 1 )
-  for( mem1 = 0xA000; mem1 < 0xBFF8; mem1 = mem1 + 1 )
+  for( mem1 = bmpaddr; mem1 < bmpaddrX; mem1 = mem1 + 1 )
     {
-      poke( mem1, 0 );
+      poke( mem1, 0x00 );
     }
-  
+  screen(1);
+  return;
+}
+
+void checkW()
+{
+  if( c == 9 )
+    {
+      pausescreen();
+      clearkb();
+    }
+  return;
+}
+
+void checkQ()
+{
+  if( c == 62 )
+    {
+      quitscreen();
+    }
   return;
 }
 
@@ -659,11 +663,14 @@ void checkK()
 	  if( cnNear == 0x01 )
 	    {
 	      score = score + hsScores[whichtoblink];
-	      clock = clock + 30;
+	      clock = clock + 42;
 	      // update score vvv
 	      // erase old score
 	      plotDigitY = 1;
-	      for( general8bit = 10; general8bit < 15; inc( general8bit ) )
+
+
+
+	      for( general8bit = 11; general8bit < 15; inc( general8bit ) )
 		{
 		  plotDigitX = general8bit;
 		  plotDigitBindex = 0x50;
@@ -671,8 +678,8 @@ void checkK()
 		}
 	      // update score vvv
 	      num = score;
-	      plotDigitX = 0x0E;
-	      plotDigitY = 0x00;
+	      plotDigitX = 0x0F;
+	      plotDigitY = 0x01;
 	      plotNumber();
 	      // update score ^^^
 	      
@@ -681,23 +688,35 @@ void checkK()
 	      allArrowsOff();
 	    }
 	}
-      // for testing only
-      //shownumParamUINT = whichtoblink;
-      //shownum();
-
-      //currentlyholding = 0;
     }
   return;
 }
 
 void plotNumber()
 {
-  while( num > 0x0000 )
+  if( num == 0x0000 )
     {
-      num = num / 0x0A;
-      plotDigitBindex = asl(asl(asl(peek(0x02))));
+      //wordToPrint = zero;
+      //wordSize = 1;
+      //plotDigitX = 23;
+      //plotDigitY = 0;
+      printWord();
+
+      plotDigitBindex = 0;
       plotDigit();
-      dec(plotDigitX);
+      //plotDigitBindex = asl(asl(asl(peek(0x02))));
+      //plotDigit();
+      //dec(plotDigitX);
+    }
+  else
+    {
+      while( num > 0x0000 )
+	{
+	  num = num / 0x0A;
+	  plotDigitBindex = asl(asl(asl(peek(0x02))));
+	  plotDigit();
+	  dec(plotDigitX);
+	}
     }
   return;
 }
@@ -706,75 +725,100 @@ void shownum()
 {
   // erase xy
   //plotDigitX = 30;
-  plotDigitY = 0;
+  plotDigitY = 1;
+
   for( general8bit = 26; general8bit > 23; dec( general8bit ) )
     {
       plotDigitX = general8bit;
       plotDigitBindex = 0x50;
       plotDigit();
     }
+
+
   
-  //num = shownumParamWORD + shownumParamUINT;
   num = clock;
   plotDigitX = 26;
-  //plotDigitY = 1;
   plotNumber();
-  //shownumParamWORD = 0x0000;
-  //shownumParamUINT = 0x00;
   return;
 }
 
-//void checkLeft()
-//{
-// move left if "u" is pressed and x > 23
-//if( c == 30 )
-//{
-//    lastdirectiontaken=1;
-//    if( x > 0x0017 )
-//	{
-//	  x = x - 1;
-//	  moveLegs();
-//	}
-//  }
-//return;
-//}
+void checkLeft()
+{
+  // move left if "u" is pressed and x > 23
+  if( c == 30 )
+    {
+      lastdirectiontaken=1;
+      if( x > 0x0017 )
+	{
+	  newX = x - 1;
+	  if( jx != newX )
+	    {
+	      x = newX;
+	      moveLegs();
+	    }
+	  else
+	    {
+	      if( jy != y )
+		{
+		  x = newX;
+		  moveLegs();
+		}
 
-//void checkRight()
-//{
-// move right if "o" is pressed and x < 320
-//if( c == 38 )
-//{
-//    lastdirectiontaken=2;
-//    if( x < 320 )
-//	{
-//	  x = x + 1;
-//	  moveLegs();
-//	}
-//  }  
-//return;
-//}
+	    }
+	}
+    }
+  return;
+}
 
-//void checkJump()
-//{
-//  if( c == 60 )
-//    {
-//      if( midjump == 0 )
-//	{
-//	  midjump = 1;
-//	}
-//  }
-//return;
-//}
+void checkRight()
+{
+  // move right if "o" is pressed and x < 320
+  if( c == 38 )
+    {
+      lastdirectiontaken=2;
+      if( x < 320 )
+	{
+	  newX = x + 1;
+	  if( jx != newX)
+	    {
+	      x = newX;
+	      moveLegs();
+	    }
+	  else
+	    {
+	      if( jy != y )
+		{
+		  x = newX;
+		  moveLegs();
+		}
+	    }
+	}
+    }
+  return;
+}
+
+void checkJump()
+{
+  // space bar
+  if( c == 60 )
+    {
+      if( midjump == 0 )
+	{
+	  midjump = 1;
+	}
+    }
+  return;
+}
 
 // animate the legs during movement
 void moveLegs()
 {
   inc( subtimer );
   
-  if( subtimer == 10 )
+  if( subtimer == 5 )
     {
       // this is for sprite number 1
-      poke( 0x47F8, whichsprite );
+      poke( 0x87F8, whichsprite );
 
       inc( whichsprite );
       
@@ -905,7 +949,7 @@ void calculatejerjump()
 
 void createplatforms()
 {
-
+  screen(0);
   
   // Draw the "X"'s on the Scaffolding
   data scafX =  {192, 192, 48, 48, 12, 12, 3, 3};
@@ -1178,9 +1222,28 @@ void createplatforms()
 
   allArrowsOff();
 
-  //printWordAddr = gameover;
-  //printWord();
+  //word printWordAddr = gameover;
+  wordToPrint = clockText;
+  wordSize = 5;
+  plotDigitX = 23;
+  plotDigitY = 0;
+  printWord();
 
+  //wordSize = 5;
+  wordToPrint = scoreText;
+  plotDigitX = 12;
+  plotDigitY = 0;
+  printWord();
+
+
+  // put a zero for score
+  plotDigitY = 1;
+  plotDigitX = 15;
+  plotDigitBindex = 0x00;
+  plotDigitAddr=digits;
+  plotDigit();
+
+  screen(1);
   return;
 }
 
@@ -1220,13 +1283,13 @@ void plotshape()
   uint plotshapeBindex = 0;
   word plotshapeOffset = plotshapeX + plotshapeY * 40;
   word plotshapeColor1 = plotshapeOffset + 0xD800;
-  //word plotshapeColors2And3 = plotshapeOffset + 0x4400;
-  word plotshapeColors2And3 = plotshapeOffset + 0x8400;
+  //word plotshapeColors2And3 = plotshapeOffset + 0x8400;
+  word plotshapeColors2And3 = plotshapeOffset + scraddr;
   asl( plotshapeOffset );
   asl( plotshapeOffset );
   asl( plotshapeOffset );
-  //word plotshapePixels = plotshapeOffset + 0x6000;
-  word plotshapePixels = plotshapeOffset + 0xA000;
+  //word plotshapePixels = plotshapeOffset + 0xA000;
+  word plotshapePixels = plotshapeOffset + bmpaddr;
   
   for( uint plotshapeJ = 0; plotshapeJ < plotshapeSize; inc(plotshapeJ) )
     {
@@ -1279,13 +1342,13 @@ void plotDigit()
 {
   word plotDigitOffset = plotDigitX + plotDigitY * 40;
   word plotDigitColor1 = plotDigitOffset + 0xD800;
-  //word plotDigitColors2And3 = plotDigitOffset + 0x4400;
-  word plotDigitColors2And3 = plotDigitOffset + 0x8400;
+  //word plotDigitColors2And3 = plotDigitOffset + 0x8400;
+  word plotDigitColors2And3 = plotDigitOffset + scraddr;
   poke( plotDigitColor1, 1 );
   poke( plotDigitColors2And3, 0 );
 
-  //word plotDigitPixels = asl(asl(asl(plotDigitOffset))) + 0x6000;
-  word plotDigitPixels = asl(asl(asl(plotDigitOffset))) + 0xA000;
+  //word plotDigitPixels = asl(asl(asl(plotDigitOffset))) + 0xA000;
+  word plotDigitPixels = asl(asl(asl(plotDigitOffset))) + bmpaddr;
 
   for( uint plotDigitI = 0; plotDigitI < 8; inc( plotDigitI ) )
     {
@@ -1307,35 +1370,245 @@ void allArrowsOff()
 }
 
 
-//void printWord()
-//{
+void printWord()
+{
   //param printWordAddr
-
-// word printWordAddr = testtext;
   
-//plotDigitAddr = letters;
-//plotDigitX = 10;
-//plotDigitY = 10;
-//uint printWordI = 0x00;
-//while( (printWordAddr)[printWordI] != 0x00 )
-//  {
-//    plotDigit();
-
-//    inc(plotDigitX);
-//    inc(printWordI);
-//  }
+  //word printWordAddr = letters;
+  plotDigitAddr= letters;
+  //uint printWordI = 0x00;
+  //plotDigitBindex = 0x00;
   
-   
-//return;
+  //while ( (printWordAddr)[printWordI] != 0x00 )
+  for( uint printWordI = 0x00; printWordI < wordSize; inc(printWordI) )
+    {
+      uint currentChar = (wordToPrint)[printWordI];
+      if( currentChar == 58 )
+	{
+	  currentChar = 27;
+	}
+      else
+	{
+	  if( currentChar == 32 )
+	    {
+	      currentChar = 26;
+	    }
+	  else
+	    {
+	      currentChar = currentChar - 65;
+	    }
+	}
+      plotDigitBindex = asl(asl(asl(currentChar)));
+      plotDigit();
+      
+      inc(plotDigitX);
+    }
+  plotDigitAddr= digits;
+  
+  
+  return;
 
-//}
+}
 
-//void pause()
-//{
-//  while( general8bit == 0 )
-//    {
-//      subclock=rnd(1);
-//      general8bit = getchar();
-//    }
-//  return;
-//}
+void startScreen()
+{
+  
+  wordToPrint = title;
+  wordSize = 6;
+  plotDigitX = 16;
+  plotDigitY = 5;
+  printWord();
+
+  wordToPrint = directions1;
+  wordSize = 18;
+  plotDigitX = 11;
+  plotDigitY = 9;
+  printWord();
+  
+  wordToPrint = directions2;
+  wordSize = 20;
+  plotDigitX = 10;
+  plotDigitY = 10;
+  printWord();
+
+  wordToPrint = directions1a;
+  wordSize = 18;
+  plotDigitX = 11;
+  plotDigitY = 11;
+  printWord();
+
+  
+  wordToPrint = directions3;
+  wordSize = 29;
+  plotDigitX = 3;
+  plotDigitY = 13;
+  printWord();
+
+  num = 2023;
+  plotDigitX = 36;
+  plotDigitY = 13;
+  plotNumber();
+
+  wordToPrint = credit1;
+  wordSize = 32;
+  plotDigitX = 4;
+  plotDigitY = 16;
+  printWord();
+
+  wordToPrint = credit2;
+  wordSize = 26;
+  plotDigitX = 7;
+  plotDigitY = 17;
+  printWord();
+  
+  wordToPrint = directions5;
+  wordSize = 22;
+  plotDigitX = 9;
+  plotDigitY = 20;
+  printWord();
+
+  
+  return;
+}
+
+
+void pausescreen()
+{
+  wordToPrint = paused;
+  wordSize = 6;
+  plotDigitX = 17;
+  plotDigitY = 9;
+  printWord();
+
+
+  wordToPrint = pak;
+  wordSize = 13;
+  plotDigitX = 13;
+  inc(plotDigitY);
+  printWord();
+
+  pause();
+
+  wordToPrint = spaces;
+  wordSize = 13;
+  plotDigitX = 13;
+  plotDigitY = 9;
+  printWord();
+
+  plotDigitX = 13;
+  inc( plotDigitY );
+  printWord();
+
+  return;
+}
+
+void endscreen()
+{
+
+  spriteoff( 255 );
+  
+  clearhires();
+  
+  wordToPrint = endscreentext1;
+  wordSize = 9;
+  plotDigitX = 16;
+  plotDigitY = 10;
+  printWord();
+
+  wordToPrint = scoreText;
+  wordSize = 5;
+  plotDigitX = 16;
+  plotDigitY = 12;
+  printWord();
+
+
+
+  num = score;
+  plotDigitX = 25;
+  plotDigitY = 12;
+  plotDigitAddr=digits;
+
+  plotNumber();
+
+  
+  wordToPrint = endscreentext2;
+  wordSize = 21;
+  plotDigitX = 5;
+  plotDigitY = 14;
+  printWord();
+
+  
+  clearkb();
+  uint esq = getchar();
+  
+  while( esq == 0 )
+    {
+      esq = getchar();
+    }
+
+
+  if( esq == 'Y' )
+    {
+      clearhires();
+      // reinit everything
+
+      y=100;
+      jy=100;
+
+  
+      x = 0x0020;
+      jx = 0x012C;
+
+      spritex( 0, x );
+      spritex( 1, jx );
+      spritey( 0, y );
+      spritey( 1, jy );
+      
+      for( general8bit=2; general8bit < 8; inc( general8bit ) )
+	{
+	  word tmpWord = 340;
+	  spritex( general8bit, tmpWord );
+	  spritey( general8bit, 0 );
+	}
+
+      
+      for( general8bit=0; general8bit < 24; inc( general8bit ) )
+      	{
+      	  subclock[general8bit] = 0;
+      	}
+
+      clock = 420;
+      spriteon( 255 );
+      createplatforms();
+    }
+  else
+    {
+      keepPlaying = 0;
+    }
+
+  
+  return;
+}
+
+void quitscreen()
+{
+  wordToPrint = hitY;
+  wordSize = 13;
+  plotDigitX = 13;
+  plotDigitY = 9;
+  printWord();
+  clearkb();
+  uint qsq = getchar();
+  while( qsq == 0 )
+    {
+      qsq = getchar();
+    }
+  if( qsq == 'Y' )
+    {
+      keepPlaying = 0;
+    }
+  plotDigitX = 13;
+  wordToPrint = spaces;
+  printWord();
+  return;
+}
