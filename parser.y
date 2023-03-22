@@ -1540,14 +1540,9 @@ VOID {addComment( string("RULE: datatype: ") + string($$.name)); current_variabl
 body: WHILE
 {
   pushScope("WHILE");
-
   addCommentSection( "WHILE LOOP" );
-  //addComment( "=========================================================");
-  //addParserComment( "                        WHILE LOOP" );
-  //addComment( "=========================================================");
   addAsm( "PHA" );
   addAsm( generateNewLabel(), 0, true );
-  //addComment( "---------------------------------------------------------");
   addCommentBreak();
 }
 '(' condition
@@ -2586,7 +2581,7 @@ body: WHILE
 
       addAsm( "LDA $0100,X", 3, false );
       addAsm( "CMP #$00", 2, false );
-      addAsm( ".BYTE #$F0, #$06", 2, false );
+      addAsm( ".BYTE #$F0, #$06; BEQ +6", 2, false );
       //addAsm( "BEQ #$06", 2, false );
       addAsm( "JSR $FFD2", 3, false );
       addAsm( string( "JMP " ) + getLabel( label_vector[label_major]-1,false), 3, false );
@@ -4799,7 +4794,9 @@ statement: datatype ID init
 };
 | tCOMMENT '(' STR  ')'
 {
-  addAsm( commentmarker + string($3.name), 0, true );
+  string commentstring = string($3.name);
+  // strip the quotes off of the string
+  addAsm( commentmarker + commentstring.substr(1,commentstring.length()-2), 0, true );
 };
 | tLSR '(' expression ')'
 {
@@ -5187,11 +5184,6 @@ init: '=' expression
   
   int variable_type = getTypeOf( $$.name );
 
-  //if( isA($2.name) && (variable_type == 0 || variable_type == 1 ))
-  //  {
-  //    addComment( "initialising an int/uint with accumulator" );
-  //    strcpy( $$.name, "A" );
-  //  }
   if( isARG($2.name)  )
     {
       addComment( "initialising a float with ARG" );
@@ -5215,8 +5207,6 @@ init: '=' expression
   else if( isA($2.name) )
     {
       addComment( "initialising a byte with A" );
-      // then it's the result
-      // of the expression is stored in A
       strcpy($$.name, "A" );
     }
   else if( isFloatIMM($2.name) )
@@ -5253,6 +5243,13 @@ init: '=' expression
       addAsm( string("LDA #$") + toHex(v), 2, false );
       strcpy( $$.name, "A" );
     }
+  else if( isIntIMM($2.name) )
+    {
+      addComment( "initialising IntIMM" );
+      int v = atoi( stripFirst($2.name).c_str() );
+      addAsm( string("LDA #$") + toHex(v), 2, false );
+      strcpy( $$.name, "A" );
+    }
   else if( isWordIMM($2.name) )
     {
       int tmp_int = atoi( stripFirst($2.name).c_str() );
@@ -5267,85 +5264,6 @@ init: '=' expression
     {
      strcpy($$.name, $2.name);
    }
-
-
-
-
-  
-  if( (variable_type == 2 || current_variable_type == 2) && ( isUintIMM($2.name) || isIntIMM($2.name) ) )
-    {
-      //addCompilerMessage( "(variable_type == 2 || current_variable_type == 2) && ( isUintIMM($2.name) || isIntIMM($2.name)", 0 );
-      //int tmp_int = atoi( stripFirst($2.name).c_str() );
-      
-      //if( tmp_int > 255  || tmp_int < 0 ) addCompilerMessage( "type overflow", 3 );
-      
-      //addAsm( string( "LDA #$" ) + toHex( tmp_int ), 2, false);
-      //addAsm( "LDX #$00", 2, false );
-      //strcpy( $$.name, "XA" );
-
-    }
-  else if( (variable_type == 2) && (isWordIMM($2.name)) )
-    {
-      /// *******
-      //addCompilerMessage( "if( (variable_type == 2) && (isWordIMM($2.name)) )", 0 );
-      //int tmp_int = atoi( stripFirst($2.name).c_str() );
-      
-      //addAsm( string( "LDA #$" ) + toHex( get_word_L(tmp_int) ), 2, false);
-      //addAsm( string( "LDX #$" ) + toHex( get_word_H(tmp_int) ), 2, false);
-      
-      //strcpy($$.name, "XA" ); 
-
-      
-
-    }
-  else if( (variable_type == 0 || variable_type == 1) && (isIntIMM($2.name) || isUintIMM($2.name)) )
-    {
-      //addCompilerMessage("(variable_type == 0 || variable_type == 1) && (isIntIMM($2.name) || isUintIMM($2.name))", 0);
-      //addComment("(IntID || UintID) = (IntIMM || UintIMM)");
-      if( current_variable_type == 0 )
-	{
-	  //addComment( "***** 1"  ); 
-	  //int tmp_int = atoi( stripFirst($2.name).c_str() );
-	  //if( tmp_int > 255  || tmp_int < 0 ) addCompilerMessage( "type overflow", 3 );
-	  //addAsm( string( "LDA #$" ) + toHex( tmp_int ), 2, false);
-
-	  //strcpy($$.name, "A" ); 
-	}
-      else if( current_variable_type == 1 )
-	{
-	  addComment( "***** 2" ); 
-	  //int tmp_int = atoi( stripFirst($2.name).c_str() );
-	  //if( tmp_int < 0 )
-	  //  {
-	  //    tmp_int=twos_complement(tmp_int);
-	  //  }
-	  //addAsm( string( "LDA #$" ) + toHex( tmp_int ), 2, false);
-	  //strcpy($$.name, "A" ); 
-	}
-      else if( current_variable_type == 2 )
-	{
-	  addComment( "***** 3" ); 
-		  
-	  //int tmp_int = atoi( stripFirst($2.name).c_str() );
-
-	  //addAsm( string( "LDA #$" ) + toHex( get_word_L(tmp_int) ), 2, false);
-	  //addAsm( string( "LDX #$" ) + toHex( get_word_H(tmp_int) ), 2, false);
-	  
-	  //strcpy($$.name, "XA" ); 
-	}
-      else
-	{
-	  addComment( "***** 4" ); 
-
-	  //int tmp_int = atoi( stripFirst($2.name).c_str() );
-	  //if( tmp_int < 0 )
-	  //  {
-	  //    tmp_int=twos_complement(tmp_int);
-	  //  }
-	  //addAsm( string( "LDA #$" ) + toHex( tmp_int ), 2, false);
-	  //strcpy($$.name, "A" ); 
-	}
-    }
 };
 |
 {
@@ -5355,18 +5273,31 @@ init: '=' expression
   strcpy($$.name, "A");
 };
 
-expression: expression {
+// 2023 03 21
+// Need XA operation A support
+// if( isXA($1.name) && isA($1.name) )
+expression:
+
+expression
+
+{
   if(isA($1.name))
     {addAsm("PHA");}
   else if(isXA($1.name))
-    {addComment("OP1");addAsm("PHA");addAsm("TXA");addAsm("PHA");}} arithmetic expression {/*if(isA($1.name) && isA($4.name)){addAsm("PHA");}*/addComment("OP2");}
+    {addComment("OP1");addAsm("PHA");addAsm("TXA");addAsm("PHA");}
+}
+
+arithmetic expression
+
+{/*if(isA($1.name) && isA($4.name)){addAsm("PHA");}*/addComment("OP2");}
 {
-    if( isXA($1.name) && !isXA($4.name) )
+  if( isXA($1.name) && (!isXA($4.name) && !isA($4.name) ) )
     {
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
+      addComment( "Deleting previous 4 Mneumonics" );
     }
 
   addComment( "RULE: expression: expression arithmetic expression" );
@@ -5446,9 +5377,66 @@ expression: expression {
 	}
       else
 	{
-	  addCompilerMessage( "Math Operation not implemented yet", 3);
+	  addCompilerMessage( "Word ?? XA", 0 );
+	  addCompilerMessage( "Math operation not implemented yet.", 3 );
 	}
 	
+    }
+  else if( isXA($1.name) && isA($4.name) )
+    {
+      // XA is on stack
+      // A is in A
+      if( op == string( "+" ) )
+	{
+	  addComment( "XA + A" );
+	  addAsm( "LDX $02", 2, false );
+	  addAsm( "LDY $03", 2, false );
+	  addAsm( "STA $02", 2, false );
+	  addAsm( "PLA" );
+	  addAsm( "STA $03", 2, false ); // X1
+	  addAsm( "PLA" );
+	  //addAsm( "CLC" );
+	  addAsm( "ADC $02", 2, false );
+	  addAsm( "STA $02", 2, false );
+	  addAsm( "LDA #$00", 2, false );
+	  addAsm( "ADC $03", 2, false );
+	  addAsm( "LDA $02", 2, false );
+	  addAsm( "PHA" );
+	  addAsm( "STX $02", 2, false );
+	  addAsm( "LDX $03", 2, false );      
+	  addAsm( "STY $03", 2, false );
+	  addAsm( "PLA" );
+	  strcpy($$.name, "XA" );
+	}
+      else if( op == string("-") )
+	{
+	  addComment( "XA - A" );
+	  addAsm( "LDX $02", 2, false );
+	  addAsm( "LDY $03", 2, false );
+	  addAsm( "STA $02", 2, false );
+	  addAsm( "PLA" );
+	  addAsm( "STA $03", 2, false ); // X1
+	  addAsm( "PLA" );
+	  //addAsm( "SEC" );
+	  addAsm( "SBC $02", 2, false );
+	  addAsm( "STA $02", 2, false );
+	  addAsm( "LDA #$00", 2, false );
+	  addAsm( "SBC $03", 2, false );
+	  addAsm( "LDA $02", 2, false );
+	  addAsm( "PHA" );
+	  addAsm( "STX $02", 2, false );
+	  addAsm( "LDX $03", 2, false );      
+	  addAsm( "STY $03", 2, false );
+	  addAsm( "PLA" );
+	  strcpy($$.name, "XA" );
+
+	}
+      else
+	{
+	  addCompilerMessage( "XA ?? A", 0 );
+	  addCompilerMessage( "Math operation not implemented yet.", 3 );
+	}
+
     }
   else if( isUintID($1.name) && isXA($4.name) )
     {
@@ -5466,9 +5454,19 @@ expression: expression {
 	  addAsm( "TYA" );
 	  strcpy($$.name, "XA" );
 	}
+     else if( op == string("-") )
+	{
+	  int addr = getAddressOf( $1.name );
+	  int instr_size = 3;
+	  if( addr < 256 ) instr_size = 2;
+	  addComment( "UintID - XA" );
+	  addCompilerMessage( "UintID - XA not yet supported", 3 );
+	}
       else
 	{
-	  addCompilerMessage( "operation not yet supported", 3 );
+	  addCompilerMessage( "Uint ?? XA", 0 );
+	  addCompilerMessage( "Math operation not implemented yet.", 3 );
+
 	}
 
     }
@@ -5504,14 +5502,15 @@ expression: expression {
 	}
       else
 	{
+	  addCompilerMessage( "XA ?? Word", 0 );
 	  addCompilerMessage( "Math operation not implemented yet.", 3 );
 	}
     }
   else if( isXA($1.name) && isUintIMM($4.name) )
     {
-      addComment( "XA arith UintIMM" );
       if( op == string("-") )
 	{
+	  addComment( "XA - UintIMM" );
 	  int tmp_v = atoi(stripFirst($4.name).c_str());
 	  //addAsm( "SEC" );
 	  addAsm( string("SBC #$") + toHex(tmp_v), 2, false  );
@@ -5524,6 +5523,8 @@ expression: expression {
 	}
       else if( op == string("+") )
 	{
+	  addComment( "XA + UintIMM" );
+
 	  int tmp_v = atoi(stripFirst($4.name).c_str());
 	  //addAsm( "CLC" );
 	  addAsm( string("ADC #$") + toHex(tmp_v), 2, false  );
@@ -5533,6 +5534,241 @@ expression: expression {
 	  addAsm( "TAX" );
 	  addAsm( "TYA" );
 	  strcpy($$.name, "XA");
+	}
+      else if( op == string("*" ) )
+	{
+
+	  addComment( "XA * UintIMM" );
+	  int tmp_v = atoi(stripFirst($4.name).c_str());
+	  switch(tmp_v)
+	    {
+	    case 0:
+	      illegal_operations_are_needed = true;
+	      addAsm( "LAX #$00", 2, false );
+	      strcpy($$.name, "XA");
+	      break;
+	    case 1:
+	      strcpy($$.name, "XA");
+	      break;
+	    case 256:
+	      addAsm( "TAX" );
+	      addAsm( "LDA #$00", 2, false );
+	      break;
+	    case 128:
+	    case 64:
+	      addAsm( "TAY" );
+	      addAsm( "LDA $02", 2, false );
+	      addAsm( "PHA" );
+	      addAsm( "LDA $03", 2, false );
+	      addAsm( "PHA" );
+	      addAsm( "STY $02", 2, false );
+	      addAsm( "STX $03", 2, false );
+
+	      addAsm( string("LDX #$") + toHex(log2(tmp_v)), 2, false );
+
+	      // L1
+	      addComment( "top-of-loop" );
+	      addAsm( "ASL $02", 2, false );
+	      addAsm( "ROL $03", 2, false );
+	      addAsm( "DEX" );
+	      
+	      addAsm( ".BYTE #$D0, #$F9; BNE ^^ top-of-loop ^^", 2, false );
+
+	      addAsm( "LDY $02", 2, false );
+	      addAsm( "LDX $03", 2, false );
+	      addAsm( "PLA" );
+	      addAsm( "STA $03", 2, false );
+	      addAsm( "PLA" );
+	      addAsm( "STA $02", 2, false );
+	      addAsm( "TYA" );
+		      
+		      
+	      break;
+	    case 32:
+	      addAsm( "ASL" );
+	      addAsm( "TAY" );
+	      addAsm( "TXA" );
+	      addAsm( "ROL" );
+	      addAsm( "TAX" );
+	      addAsm( "TYA" );
+	    case 16:
+	      addAsm( "ASL" );
+	      addAsm( "TAY" );
+	      addAsm( "TXA" );
+	      addAsm( "ROL" );
+	      addAsm( "TAX" );
+	      addAsm( "TYA" );
+	    case 8:
+	      addAsm( "ASL" );
+	      addAsm( "TAY" );
+	      addAsm( "TXA" );
+	      addAsm( "ROL" );
+	      addAsm( "TAX" );
+	      addAsm( "TYA" );
+	    case 4:
+	      addAsm( "ASL" );
+	      addAsm( "TAY" );
+	      addAsm( "TXA" );
+	      addAsm( "ROL" );
+	      addAsm( "TAX" );
+	      addAsm( "TYA" );
+	    case 2:
+	      addAsm( "ASL" );
+	      addAsm( "TAY" );
+	      addAsm( "TXA" );
+	      addAsm( "ROL" );
+	      addAsm( "TAX" );
+	      addAsm( "TYA" );
+	      strcpy($$.name, "XA");
+	      break;
+	    case 5:
+	      addComment( "2023 03 21 - Multiply XA by WordIMM (5)" );
+	      // save $02 and $03
+	      addAsm( "TAY" );
+	      addAsm( "LDA $02", 2, false );
+	      addAsm( "PHA" );
+	      addAsm( "LDA $03", 2, false );
+	      addAsm( "PHA" );
+	      // store the original number
+	      addAsm( "STX $03", 2, false );
+	      addAsm( "STY $02", 2, false );
+	      // multiply the word by 4
+	      addAsm( "TYA" );
+	      addAsm( "ASL" );
+	      addAsm( "TAY" );
+	      addAsm( "TXA" );
+	      addAsm( "ROL" );
+	      addAsm( "TAX" );
+	      addAsm( "TYA" );
+	      addAsm( "ASL" );
+	      addAsm( "TAY" );
+	      addAsm( "TXA" );
+	      addAsm( "ROL" );
+	      addAsm( "TAX" );
+	      
+	      addAsm( "TYA" );
+	      addAsm( "CLC" );
+	      addAsm( "ADC $02", 2, false );
+	      addAsm( "TAY" );
+	      addAsm( "TXA" );
+	      addAsm( "ADC $03", 2, false );
+	      addAsm( "TAX" );
+	      addAsm( "PLA" );
+	      addAsm( "STA $03", 2, false );
+	      addAsm( "PLA" );
+	      addAsm( "STA $02", 2, false );
+	      addAsm( "TYA" );
+	      strcpy($$.name, "XA");
+	      break;
+
+	    case 3:
+	      addComment( "2023 03 21 - Multiply XA bye UintIMM (3)" );
+	      // save $02 and $03
+	      addAsm( "TAY" );
+	      addAsm( "LDA $02", 2, false );
+	      addAsm( "PHA" );
+	      addAsm( "LDA $03", 2, false );
+	      addAsm( "PHA" );
+
+
+	      // store the original number
+	      addAsm( "STX $03", 2, false );
+	      addAsm( "STY $02", 2, false );
+
+	      // multiply the word by 2
+	      addAsm( "TYA" );
+	      addAsm( "ASL" );
+	      addAsm( "TAY" );
+	      addAsm( "TXA" );
+	      addAsm( "ROL" );
+	      addAsm( "TAX" );
+	      
+
+	      addAsm( "TYA" );
+	      addAsm( "CLC" );
+	      addAsm( "ADC $02", 2, false );
+	      addAsm( "TAY" );
+	      addAsm( "TXA" );
+	      addAsm( "ADC $03", 2, false );
+	      addAsm( "TAX" );
+
+	      addAsm( "PLA" );
+	      addAsm( "STA $03", 2, false );
+	      addAsm( "PLA" );
+	      addAsm( "STA $02", 2, false );
+
+	      
+	      addAsm( "TYA" );
+
+	      strcpy($$.name, "XA");
+
+	      break;
+	    case 10:
+	      addComment( "2023 03 21 - Multiply XA bye UintIMM (10)" );
+	      // save $02 and $03
+	      addAsm( "TAY" );
+	      addAsm( "LDA $02", 2, false );
+	      addAsm( "PHA" );
+	      addAsm( "LDA $03", 2, false );
+	      addAsm( "PHA" );
+
+
+	      // store the original number
+	      addAsm( "STX $03", 2, false );
+	      addAsm( "STY $02", 2, false );
+
+	      // multiply the word by 2
+	      addAsm( "TYA" );
+	      addAsm( "ASL" );
+	      addAsm( "TAY" );
+	      addAsm( "TXA" );
+	      addAsm( "ROL" );
+	      addAsm( "TAX" );
+	      // multiply the word by 2 (again)
+	      addAsm( "TYA" );
+	      addAsm( "ASL" );
+	      addAsm( "TAY" );
+	      addAsm( "TXA" );
+	      addAsm( "ROL" );
+	      addAsm( "TAX" );
+	      
+
+	      addAsm( "TYA" );
+	      addAsm( "CLC" );
+	      addAsm( "ADC $02", 2, false );
+	      addAsm( "TAY" );
+	      
+	      addAsm( "TXA" );
+	      addAsm( "ADC $03", 2, false );
+	      addAsm( "TAX" );
+
+	      addAsm( "PLA" );
+	      addAsm( "STA $03", 2, false );
+	      addAsm( "PLA" );
+	      addAsm( "STA $02", 2, false );
+
+	      
+	      addAsm( "TYA" );
+
+	      // multiply the result by 2
+	      //addAsm( "TYA" );
+	      addAsm( "ASL" );
+	      addAsm( "TAY" );
+	      addAsm( "TXA" );
+	      addAsm( "ROL" );
+	      addAsm( "TAX" );
+	      addAsm( "TYA" );
+	      strcpy($$.name, "XA");
+
+	      break;
+	    default:
+	      addCompilerMessage( "Math operation not implemented yet. [XA arith UintIMM]", 3 );
+	    }		
+	}
+      else if( op == string("/" ) )
+	{
+	  addComment( "XA / UintIMM" );
+	  addCompilerMessage( "Math operation not implemented yet. [XA arith UintIMM]", 3 );
 
 	}
       else
@@ -5572,6 +5808,245 @@ expression: expression {
 	  strcpy($$.name, "XA");
 
 	}
+      else if( op == string("*") )
+	{
+
+
+	  addComment( "XA * WordIMM" );
+	  int tmp_v = atoi(stripFirst($4.name).c_str());
+	  switch(tmp_v)
+	    {
+	    case 0:
+	      illegal_operations_are_needed = true;
+	      addAsm( "LAX #$00", 2, false );
+	    case 1:
+	      strcpy($$.name, "XA");
+	      break;
+	    case 32768:
+	      addAsm( "ASL" );
+	    case 16384:
+	      addAsm( "ASL" );
+	    case 8192:
+	      addAsm( "ASL" );
+	    case 4096:
+	      addAsm( "ASL" );
+	    case 2048:
+	      addAsm( "ASL" );
+	    case 1024:
+	      addAsm( "ASL" );
+	    case 512:
+	      addAsm( "ASL" );
+	    case 256:
+	      addAsm( "TAX" );
+	      addAsm( "LDA #$00", 2, false );
+	      strcpy($$.name, "XA");
+	      addCompilerMessage( "Multiplying a Word by # >= 256... Losing some fidelity (and you may be eaten by a grue).", 0 );
+	      break;
+	    case 128:
+	    case 64:
+	      addAsm( "TAY" );
+	      addAsm( "LDA $02", 2, false );
+	      addAsm( "PHA" );
+	      addAsm( "LDA $03", 2, false );
+	      addAsm( "PHA" );
+	      addAsm( "STY $02", 2, false );
+	      addAsm( "STX $03", 2, false );
+
+	      addAsm( string("LDX #$") + toHex(log2(tmp_v)), 2, false );
+
+	      addComment( "top-of-loop" );
+	      addAsm( "ASL $02", 2, false );
+	      addAsm( "ROL $03", 2, false );
+	      addAsm( "DEX" );
+	      
+	      addAsm( ".BYTE #$D0, #$F9; BNE ^^ top-of-loop ^^", 2, false );
+
+	      addAsm( "LDY $02", 2, false );
+	      addAsm( "LDX $03", 2, false );
+	      addAsm( "PLA" );
+	      addAsm( "STA $03", 2, false );
+	      addAsm( "PLA" );
+	      addAsm( "STA $02", 2, false );
+	      addAsm( "TYA" );
+		      
+	      strcpy($$.name, "XA");
+   
+	      break;
+	    case 32:
+	      addAsm( "ASL" );
+	      addAsm( "TAY" );
+	      addAsm( "TXA" );
+	      addAsm( "ROL" );
+	      addAsm( "TAX" );
+	      addAsm( "TYA" );
+	    case 16:
+	      addAsm( "ASL" );
+	      addAsm( "TAY" );
+	      addAsm( "TXA" );
+	      addAsm( "ROL" );
+	      addAsm( "TAX" );
+	      addAsm( "TYA" );
+	    case 8:
+	      addAsm( "ASL" );
+	      addAsm( "TAY" );
+	      addAsm( "TXA" );
+	      addAsm( "ROL" );
+	      addAsm( "TAX" );
+	      addAsm( "TYA" );
+	    case 4:
+	      addAsm( "ASL" );
+	      addAsm( "TAY" );
+	      addAsm( "TXA" );
+	      addAsm( "ROL" );
+	      addAsm( "TAX" );
+	      addAsm( "TYA" );
+	    case 2:
+	      addAsm( "ASL" );
+	      addAsm( "TAY" );
+	      addAsm( "TXA" );
+	      addAsm( "ROL" );
+	      addAsm( "TAX" );
+	      addAsm( "TYA" );
+	      strcpy($$.name, "XA");
+	      break;
+	    case 5:
+	      addComment( "2023 03 21 - Multiply XA by WordIMM (5)" );
+	      // save $02 and $03
+	      addAsm( "TAY" );
+	      addAsm( "LDA $02", 2, false );
+	      addAsm( "PHA" );
+	      addAsm( "LDA $03", 2, false );
+	      addAsm( "PHA" );
+	      // store the original number
+	      addAsm( "STX $03", 2, false );
+	      addAsm( "STY $02", 2, false );
+	      // multiply the word by 4
+	      addAsm( "TYA" );
+	      addAsm( "ASL" );
+	      addAsm( "TAY" );
+	      addAsm( "TXA" );
+	      addAsm( "ROL" );
+	      addAsm( "TAX" );
+	      addAsm( "TYA" );
+	      addAsm( "ASL" );
+	      addAsm( "TAY" );
+	      addAsm( "TXA" );
+	      addAsm( "ROL" );
+	      addAsm( "TAX" );
+	      
+	      addAsm( "TYA" );
+	      addAsm( "CLC" );
+	      addAsm( "ADC $02", 2, false );
+	      addAsm( "TAY" );
+	      addAsm( "TXA" );
+	      addAsm( "ADC $03", 2, false );
+	      addAsm( "TAX" );
+	      addAsm( "PLA" );
+	      addAsm( "STA $03", 2, false );
+	      addAsm( "PLA" );
+	      addAsm( "STA $02", 2, false );
+	      addAsm( "TYA" );
+	      strcpy($$.name, "XA");
+	      break;
+
+	    case 3:
+	      addComment( "2023 03 21 - Multiply XA bye WordIMM (3)" );
+	      // save $02 and $03
+	      addAsm( "TAY" );
+	      addAsm( "LDA $02", 2, false );
+	      addAsm( "PHA" );
+	      addAsm( "LDA $03", 2, false );
+	      addAsm( "PHA" );
+	      // store the original number
+	      addAsm( "STX $03", 2, false );
+	      addAsm( "STY $02", 2, false );
+	      // multiply the word by 2
+	      addAsm( "TYA" );
+	      addAsm( "ASL" );
+	      addAsm( "TAY" );
+	      addAsm( "TXA" );
+	      addAsm( "ROL" );
+	      addAsm( "TAX" );
+	      
+	      addAsm( "TYA" );
+	      addAsm( "CLC" );
+	      addAsm( "ADC $02", 2, false );
+	      addAsm( "TAY" );
+	      addAsm( "TXA" );
+	      addAsm( "ADC $03", 2, false );
+	      addAsm( "TAX" );
+	      addAsm( "PLA" );
+	      addAsm( "STA $03", 2, false );
+	      addAsm( "PLA" );
+	      addAsm( "STA $02", 2, false );
+	      addAsm( "TYA" );
+	      strcpy($$.name, "XA");
+	      break;
+	    case 10:
+	      addComment( "2023 03 21 - Multiply XA bye WordIMM (10)" );
+	      // save $02 and $03
+	      addAsm( "TAY" );
+	      addAsm( "LDA $02", 2, false );
+	      addAsm( "PHA" );
+	      addAsm( "LDA $03", 2, false );
+	      addAsm( "PHA" );
+
+
+	      // store the original number
+	      addAsm( "STX $03", 2, false );
+	      addAsm( "STY $02", 2, false );
+
+	      // multiply the word by 2
+	      addAsm( "TYA" );
+	      addAsm( "ASL" );
+	      addAsm( "TAY" );
+	      addAsm( "TXA" );
+	      addAsm( "ROL" );
+	      addAsm( "TAX" );
+	      // multiply the word by 2 (again)
+	      addAsm( "TYA" );
+	      addAsm( "ASL" );
+	      addAsm( "TAY" );
+	      addAsm( "TXA" );
+	      addAsm( "ROL" );
+	      addAsm( "TAX" );
+	      
+
+	      addAsm( "TYA" );
+	      addAsm( "CLC" );
+	      addAsm( "ADC $02", 2, false );
+	      addAsm( "TAY" );
+	      
+	      addAsm( "TXA" );
+	      addAsm( "ADC $03", 2, false );
+	      addAsm( "TAX" );
+
+	      addAsm( "PLA" );
+	      addAsm( "STA $03", 2, false );
+	      addAsm( "PLA" );
+	      addAsm( "STA $02", 2, false );
+
+	      
+	      addAsm( "TYA" );
+
+	      // multiply the result by 2
+	      //addAsm( "TYA" );
+	      addAsm( "ASL" );
+	      addAsm( "TAY" );
+	      addAsm( "TXA" );
+	      addAsm( "ROL" );
+	      addAsm( "TAX" );
+	      addAsm( "TYA" );
+	      strcpy($$.name, "XA");
+
+	      break;
+	    default:
+	      addCompilerMessage( "Math operation not implemented yet. [XA arith WordIMM]", 3 );
+	    }		
+
+
+	}
+			    
       else
 	{
 	  addCompilerMessage( "Math operation not implemented yet. [XA arith WordIMM]", 3 );
@@ -5612,7 +6087,7 @@ expression: expression {
 	}
       else
 	{
-	  addCompilerMessage("Math operation not implemented yet. (XA arith XA)", 3);
+	  addCompilerMessage("Math operation not implemented yet. (XA arith XA)", 0);
 	}
       
     }
@@ -6936,7 +7411,8 @@ expression: expression {
 	}
       else
 	{
-	  addCompilerMessage( "math error", 3 );
+	  addCompilerMessage( "IntIMM ?? UintIMM", 0 );
+	  addCompilerMessage( "Math operation not implemented yet.", 3 );
 	}
       if( result < 0 )
 	{
@@ -7014,7 +7490,9 @@ expression: expression {
 	}
       else
 	{
-	  addComment( "unknown state" );
+	  addCompilerMessage( "Byte ?? Uint", 0 );
+	  addCompilerMessage( "Math operation not implemented yet.", 3 );
+
 	}
       addAsm( string("STA ") + string($4.name), 3, false );
       strcpy($$.name, "A" );
@@ -7034,6 +7512,11 @@ expression: expression {
 	{
 	  addAsm( "SEC" );
 	  addAsm( string("SBC ") + string($4.name),2, false);
+	}
+      else
+	{
+	  addCompilerMessage( "Uint ?? Int", 0 );
+	  addCompilerMessage( "Math operation not implemented yet.", 3 );
 	}
       strcpy($$.name, "A" );
     }
@@ -7069,7 +7552,8 @@ expression: expression {
 	}
       else
 	{
-	  addComment( "unknown state" );
+	  addCompilerMessage( "Uint ?? Byte", 0 );
+	  addCompilerMessage( "Math operation not implemented yet.", 3 );
 	}
       
       if( scope_stack.top() == string("FOR") )
@@ -7086,7 +7570,7 @@ expression: expression {
       string tmpstr = string( $1.name ) + string( $3.name ) + string( $4.name );
       addCompilerMessage( tmpstr, 0 );
       addCompilerMessage( "Unknown Math Operation (for the indicated types)", 3 );
-      addComment( "?   arith   ? : 3945" );
+      addComment( "?   arith   ? : 7505" );
       if( getTypeOf($1.name) == 8 && getTypeOf($4.name) == 8 )
 	{
 	  addComment( "both Identifiers point to floats" );
@@ -8695,7 +9179,14 @@ value: FLOAT_NUM
   //addComment(string("RULE: value: NUMBER: (") + string($1.name) + string(")") );
   int v = atoi($1.name);
 
-  if( getTypeOf($1.name) != -1 ) current_variable_type = getTypeOf($1.name);
+  if( getTypeOf($1.name) != -1 )
+    {
+      current_variable_type = getTypeOf($1.name);
+    }
+  //else
+  //  {
+  //    addCompilerMessage( "Unknown Type", 0);
+  //  }			
 
   if( atoi($1.name) > 255 ) current_variable_type = 2;
   else if( atoi($1.name) < 0 ) current_variable_type = 1;
