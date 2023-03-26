@@ -1495,8 +1495,7 @@ main: datatype ID
 };
 
 function: function function
-| datatype ID '(' ')' '{' { addComment( string("======================== ") + string($2.name) + string(" ========================")); addAsm( generateNewLabel(), 0, true );    addFunction( string($2.name), getLabel( label_vector[label_major]-1 ), getDataTypeValue($1.name));  } body return '}'
-  {
+| datatype ID '(' ')' '{' {addComment( string("======================== ") + string($2.name) + string(" ========================")); addAsm( generateNewLabel(), 0, true ); addFunction( string($2.name), getLabel( label_vector[label_major]-1 ), getDataTypeValue($1.name)); } body return '}' {
     // add this label to the list of functions and their addresses
     // any time we come across the function with this ID
     // we can JSR to it
@@ -1505,11 +1504,12 @@ function: function function
 	//             // we may want to consider
 	//             // adding a return value here
 	addAsm("RTS"); // add a return statement
+	
       } 
     
   };
 
-| datatype ID '(' ')' '{' { addComment( string("======================== ") + string($2.name) + string(" ========================")); addAsm( generateNewLabel(), 0, true );     addFunction( string($2.name), getLabel( label_vector[label_major] )); } body '}'
+| datatype ID '(' ')' '{' { addComment( string("======================== ") + string($2.name) + string(" ========================")); addAsm( generateNewLabel(), 0, true );     addFunction( string($2.name), getLabel( label_vector[label_major], getDataTypeValue($1.name))); } body '}'
 {
   // add this lavel to the list of functions and their addresses
   // any time we come across the function with this ID
@@ -2377,6 +2377,11 @@ body: WHILE
       addCompilerMessage( "spritey error - invalid type", 1 );
     }
 };
+| ID '(' expression ')' ';'
+{
+  addComment( "Call a function as a statement" );
+  addAsm( string( "###") + string($1.name), 3, false);  
+}
 | tSPRITECOLOUR '(' expression ',' expression ')' ';'
 {
   addParserComment( "statement: tSPRITECOLOUR '(' expression ',' expression ')' ';'" );
@@ -3211,22 +3216,6 @@ body: WHILE
     }
 
 };
-| ID '(' expression ')' ';'
-{
-  addAsm( string( "###") + string($1.name), 3, false);
-  if( getTypeOfFunction($1.name) == 32 )
-    {
-      addAsm( "; VOID functions do NOT return a value", 0, false );
-    }
-  else if( getTypeOfFunction($1.name) == 0 )
-    {
-      //addAsm( "PLA" ); // get the return value  (this will need to change for different function types
-    }
-  else if( getTypeOfFunction($1.name) == 1 )
-    {
-      //addAsm( "PLA" ); // get the return value  (this will need to change for different function types
-    }
-};
 
  else: ELSE
 	 {
@@ -3361,7 +3350,7 @@ condition: expression relop expression
       addComment( "XA relop WordID" );
       int tmp_v = getAddressOf( $3.name );
       addAsm( string( "CPX $") + toHex( tmp_v + 1), 3, false );
-      addAsm( string(".BYTE $D0, $03") + commentmarker +string(" BNE +3"), 2, false ); // BNE +3
+      addAsm( string(".BYTE #$D0, #$03") + commentmarker +string(" BNE +3"), 2, false ); // BNE +3
       addAsm( string( "CMP $") + toHex( tmp_v ), 3, false );
 
 
@@ -3731,7 +3720,7 @@ condition: expression relop expression
 	    {
 	      addAsm( ".BYTE #$B0, #$03; BCS +3", 2, false ); 
 	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + string( "; if c==0 jump to BODY" ), 3, false );
-	      addAsm( string(".BYTE $D0, $03") + commentmarker +string(" BNE +3"), 2, false ); // BNE +3
+	      addAsm( string(".BYTE #$D0, #$03") + commentmarker +string(" BNE +3"), 2, false ); // BNE +3
 	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + string( "; if z==1 jump to BODY" ), 3, false );
 	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+2, false) + string( "; jump out of FOR" ), 3, false );
 	    }
@@ -9313,15 +9302,22 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
     }
   strcpy($$.name, "FAC");
 };
-// $1  $2     $3                   $4                    $5       $6                 $7                     $8
-| tFOO '(' expression {if(isA($3.name)){addAsm("PHA");}} ',' expression {if(isA($6.name)){addAsm("PHA");}} ')'
-// $1  $2     $3                   $4                    $5       $6                 $7                     $8
+| ID '(' expression ')' 
 {
-  addAsm( "PLA" );
-  addAsm( "PLA" );
-  addAsm( "LDA #$F0", 2, false );
-  strcpy($$.name, "A" );
+  addComment( "Call a function as an expression" );
+  addAsm( string( "###") + string($1.name), 3, false);
 
+  addAsm( "PLA" ); // the number of bytes in the stack
+  addAsm( "TAY" );
+  addAsm( "CPY #$02", 2, false );
+  addAsm( ".BYTE #$D0, #$03; BNE +3", 2, false );
+  addAsm( "PLA" );
+  addAsm( "TAX" );
+  addAsm( "DEY" );
+  addAsm( "CPY #$01", 2, false );
+  addAsm( ".BYTE #$D0, #$01; BNE +1", 2, false );
+  addAsm( "PLA" );
+  strcpy($$.name, "XA" ); 
 };
 | tPEEK '(' expression ')'
 {
@@ -9624,6 +9620,18 @@ value: FLOAT_NUM
 
 return: RETURN ';'
   {
+    /* addComment( "Put 0 on the stack (that's the # of return bytes)" ); */
+    /* addAsm("PLA"); */
+    /* addAsm("TAX"); */
+    /* addAsm("PLA"); */
+    /* addAsm("TAY"); */
+
+    /* addAsm( "LDA #$00",2, false ); */
+    /* addAsm("TYA"); */
+    /* addAsm("PHA"); */
+    /* addAsm("TXA"); */
+    /* addAsm("PHA"); */
+
     addAsm( "RTS" );
   }
 | RETURN {} expression ';'
@@ -9647,39 +9655,79 @@ return: RETURN ';'
   /* addAsm("TXA"); */
   /* addAsm("PHA"); */
 
-  addAsm("RTS");
-
-  /* return value store can go here ? */
-  /* but that wouldn't allow recursion */
-
-  /* strcpy( $$.name, "STACK"); */
-}
-| RETURN {} value ';'
-{
-  /* addComment("Trying to return the value:"); */
-  /* addComment($3.name); */
-
-  /* /\* save the return address *\/ */
-  /* addAsm("PLA"); */
-  /* addAsm("TAX"); */
-  /* addAsm("PLA"); */
-  /* addAsm("TAY"); */
   
-  /* addAsm(string("LDA ") + string($3.name), 3, false ); */
-  /* addAsm("PHA"); */
+  addAsm("PLA");
+  addAsm("TAX");
+  addAsm("PLA");
+  addAsm("TAY");
 
-  /* /\* restore the return address *\/ */
-  /* addAsm("TYA"); */
-  /* addAsm("PHA"); */
-  /* addAsm("TXA"); */
-  /* addAsm("PHA"); */
+  int v = getAddressOf($3.name);
+  if( isUintID($3.name) || isIntID($3.name) )
+    {
+      addAsm(string("LDA $") + toHex(v), 3, false );
+      addAsm("PHA");
+      addAsm("LDA #$01", 2, false );
+      addAsm("PHA");
+    }
+  else if( isWordID($3.name) )
+    {
+      addAsm(string("LDA $") + toHex(v), 3, false );
+      addAsm("PHA");
+      addAsm(string("LDA $") + toHex(v+1), 3, false );
+      addAsm("PHA");
+      addAsm("LDA #$02", 2, false );
+      addAsm("PHA");
 
-  
+    }
+  else if( isUintIMM($3.name) || isIntIMM($3.name) )
+    {
+      v = atoi(stripFirst($3.name).c_str());
+      addAsm(string("LDA #$") + toHex(v), 2, false );
+      addAsm("PHA");
+      addAsm("LDA #$01", 2, false );
+      addAsm("PHA");
+
+    }
+  else if( isWordIMM($3.name) )
+    {
+       v = atoi(stripFirst($3.name).c_str());
+    
+      int a_register = get_word_L( v );
+      int x_register = get_word_H( v );
+      addAsm(string("LDA #$") + toHex(a_register), 2, false );
+      addAsm("PHA");
+      addAsm(string("LDA #$") + toHex(x_register), 2, false );
+      addAsm("PHA");
+      addAsm("LDA #$02", 2, false );
+      addAsm("PHA");
+
+    }
+  else if( isWordID($3.name) )
+    {
+       v = atoi(stripFirst($3.name).c_str());
+    
+      addAsm(string("LDA $") + toHex(v+1), 3, false );
+      addAsm("PHA");
+      addAsm(string("LDA $") + toHex(v), 3, false );
+      addAsm("PHA");
+      addAsm("LDA #$02", 2, false );
+      addAsm("PHA");
+
+    }
+  else
+    {
+      addCompilerMessage( "invalid return type", 0 );
+    }
+
+  addAsm("TYA");
+  addAsm("PHA");
+  addAsm("TXA");
+  addAsm("PHA");
   addAsm("RTS");
-  /* strcpy( $$.name, "STACK"); */
 }
 |
 {
+
   addAsm( "RTS" );
 }
 ;
