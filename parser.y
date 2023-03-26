@@ -1495,7 +1495,41 @@ main: datatype ID
 };
 
 function: function function
-| datatype ID '(' ')' '{' {addComment( string("======================== ") + string($2.name) + string(" ========================")); addAsm( generateNewLabel(), 0, true ); addFunction( string($2.name), getLabel( label_vector[label_major]-1 ), getDataTypeValue($1.name)); } body return '}' {
+| datatype ID '(' datatype ID ')' '{'
+{
+  addComment( string("======================== ") + string($2.name) + string(" ========================"));
+  addAsm( generateNewLabel(), 0, true );
+  addFunction( string($2.name), getLabel( label_vector[label_major]-1 ), getDataTypeValue($1.name));
+  addComment( "Get Parameter off of stack" );
+  addAsmVariable(string($5.name),getDataTypeValue($4.name ));
+  cerr << "DT: " << $4.name << endl;
+  switch( getDataTypeValue($4.name ) )
+    {
+    case 0:
+    case 1:
+      addAsm("PLA");addAsm("TAX");addAsm("PLA");addAsm("TAY");
+
+      addAsm("PLA");
+      addAsm(string("STA $")+toHex(getAddressOf($5.name)), 3, false);
+      
+      addAsm("TYA");addAsm("PHA");addAsm("TXA");addAsm("PHA");
+      break;
+    case 2:
+    case 3:
+      addAsm("PLA");addAsm("TAX");addAsm("PLA");addAsm("TAY");
+
+      addAsm("PLA");
+      addAsm(string("STA $")+toHex(getAddressOf($5.name)+1), 3, false);
+      addAsm("PLA");
+      addAsm(string("STA $")+toHex(getAddressOf($5.name)), 3, false);
+      
+      addAsm("TYA");addAsm("PHA");addAsm("TXA");addAsm("PHA");
+      break;
+    default:
+      break;
+    }
+
+} body return '}' {
     // add this label to the list of functions and their addresses
     // any time we come across the function with this ID
     // we can JSR to it
@@ -1508,8 +1542,20 @@ function: function function
       } 
     
   };
-
-| datatype ID '(' ')' '{' { addComment( string("======================== ") + string($2.name) + string(" ========================")); addAsm( generateNewLabel(), 0, true );     addFunction( string($2.name), getLabel( label_vector[label_major], getDataTypeValue($1.name))); } body '}'
+| datatype ID '('  ')' '{' {addComment( string("======================== ") + string($2.name) + string(" ========================")); addAsm( generateNewLabel(), 0, true ); addFunction( string($2.name), getLabel( label_vector[label_major]-1 ), getDataTypeValue($1.name)); } body return '}' {
+    // add this label to the list of functions and their addresses
+    // any time we come across the function with this ID
+    // we can JSR to it
+    if( !previousAsm("RTS") )
+      {
+	//             // we may want to consider
+	//             // adding a return value here
+	addAsm("RTS"); // add a return statement
+	
+      } 
+    
+  };
+| datatype ID '('  ')' '{' { addComment( string("======================== ") + string($2.name) + string(" ========================")); addAsm( generateNewLabel(), 0, true );     addFunction( string($2.name), getLabel( label_vector[label_major], getDataTypeValue($1.name))); } body '}'
 {
   // add this lavel to the list of functions and their addresses
   // any time we come across the function with this ID
@@ -2380,6 +2426,47 @@ body: WHILE
 | ID '(' expression ')' ';'
 {
   addComment( "Call a function as a statement" );
+
+  // put arguments on stack
+  if( isUintID( $3.name ) )
+    {
+      addAsm( string("LDA $") + toHex( getAddressOf( $3.name ) ), 3, false );
+      addAsm( "PHA" );
+    }
+  else if( isA( $3.name ) )
+    {
+      addAsm( "PHA" );
+    }
+  else if( isXA( $3.name ) )
+    {
+      addAsm( "PHA" );
+      addAsm( "TXA" );
+      addAsm( "PHA" );
+    }
+  else if( isWordID( $3.name ) )
+    {
+      addAsm( string("LDA $") + toHex( getAddressOf($3.name) ), 3, false );
+      addAsm( "PHA" );
+      addAsm( string("LDA $") + toHex( getAddressOf($3.name)+1 ), 3, false );
+      addAsm( "PHA" );
+    }
+  else if( isWordIMM( $3.name ) )
+    {
+      int tmp_v = atoi(stripFirst($3.name).c_str());
+      int tmp_L = get_word_L(tmp_v);
+      int tmp_H = get_word_H(tmp_v);
+      addAsm( string("LDA #$") + toHex( tmp_L ), 3, false );
+      addAsm( "PHA" );
+      addAsm( string("LDA #$") + toHex( tmp_H ), 3, false );
+      addAsm( "PHA" );
+    }
+  else if( isUintIMM( $3.name ) )
+    {
+      int tmp_v = atoi(stripFirst($3.name).c_str());
+      addAsm( string("LDA #$") + toHex( tmp_v ), 3, false );
+      addAsm( "PHA" );
+    }
+
   addAsm( string( "###") + string($1.name), 3, false);  
 }
 | tSPRITECOLOUR '(' expression ',' expression ')' ';'
@@ -9305,6 +9392,47 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
 | ID '(' expression ')' 
 {
   addComment( "Call a function as an expression" );
+  // put arguments on stack
+  if( isUintID( $3.name ) )
+    {
+      addAsm( string("LDA $") + toHex( getAddressOf( $3.name ) ), 3, false );
+      addAsm( "PHA" );
+    }
+  else if( isA( $3.name ) )
+    {
+      addAsm( "PHA" );
+    }
+  else if( isXA( $3.name ) )
+    {
+      addAsm( "PHA" );
+      addAsm( "TXA" );
+      addAsm( "PHA" );
+    }
+  else if( isWordID( $3.name ) )
+    {
+      addAsm( string("LDA $") + toHex( getAddressOf($3.name) ), 3, false );
+      addAsm( "PHA" );
+      addAsm( string("LDA $") + toHex( getAddressOf($3.name)+1 ), 3, false );
+      addAsm( "PHA" );
+    }
+  else if( isWordIMM( $3.name ) )
+    {
+      int tmp_v = atoi(stripFirst($3.name).c_str());
+      int tmp_L = get_word_L(tmp_v);
+      int tmp_H = get_word_H(tmp_v);
+      addAsm( string("LDA #$") + toHex( tmp_L ), 3, false );
+      addAsm( "PHA" );
+      addAsm( string("LDA #$") + toHex( tmp_H ), 3, false );
+      addAsm( "PHA" );
+    }
+  else if( isUintIMM( $3.name ) )
+    {
+      int tmp_v = atoi(stripFirst($3.name).c_str());
+      addAsm( string("LDA #$") + toHex( tmp_v ), 3, false );
+      addAsm( "PHA" );
+    }
+
+  addComment( "function call" );
   addAsm( string( "###") + string($1.name), 3, false);
 
   addAsm( "PLA" ); // the number of bytes in the stack
