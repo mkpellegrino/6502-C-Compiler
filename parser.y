@@ -2455,15 +2455,15 @@ body: WHILE
       int tmp_v = atoi(stripFirst($3.name).c_str());
       int tmp_L = get_word_L(tmp_v);
       int tmp_H = get_word_H(tmp_v);
-      addAsm( string("LDA #$") + toHex( tmp_L ), 3, false );
+      addAsm( string("LDA #$") + toHex( tmp_L ), 2, false );
       addAsm( "PHA" );
-      addAsm( string("LDA #$") + toHex( tmp_H ), 3, false );
+      addAsm( string("LDA #$") + toHex( tmp_H ), 2, false );
       addAsm( "PHA" );
     }
   else if( isUintIMM( $3.name ) )
     {
       int tmp_v = atoi(stripFirst($3.name).c_str());
-      addAsm( string("LDA #$") + toHex( tmp_v ), 3, false );
+      addAsm( string("LDA #$") + toHex( tmp_v ), 2, false );
       addAsm( "PHA" );
     }
 
@@ -9309,13 +9309,13 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
 | tSPRITECOLLISION '(' expression ')'
 {
   addAsm( "LDA $D01E;\t\t\tMOB-MOB Collision Register", 3, false );
-  addAsm( string( "AND #$" ) + string($3.name), 3, false );
+  addAsm( string( "AND #$" ) + string($3.name), 2, false );
   strcpy($$.name, "A" );
 };
 | tMOBBKGCOLLISION '(' expression ')'
 {
   addAsm( "LDA $D01F;\t\t\tMOB-Background Collision Register", 3, false );
-  addAsm( string( "AND " ) + toHex(atoi(stripFirst($3.name).c_str())), 3, false );
+  addAsm( string( "AND #$" ) + toHex(atoi(stripFirst($3.name).c_str())), 2, false );
   //addAsm( "PHA" );
   //addAsm( "LDA #$00", 2, false );
   //addAsm( "STA $D01F", 3, false );
@@ -9420,15 +9420,15 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
       int tmp_v = atoi(stripFirst($3.name).c_str());
       int tmp_L = get_word_L(tmp_v);
       int tmp_H = get_word_H(tmp_v);
-      addAsm( string("LDA #$") + toHex( tmp_L ), 3, false );
+      addAsm( string("LDA #$") + toHex( tmp_L ), 2, false );
       addAsm( "PHA" );
-      addAsm( string("LDA #$") + toHex( tmp_H ), 3, false );
+      addAsm( string("LDA #$") + toHex( tmp_H ), 2, false );
       addAsm( "PHA" );
     }
   else if( isUintIMM( $3.name ) )
     {
       int tmp_v = atoi(stripFirst($3.name).c_str());
-      addAsm( string("LDA #$") + toHex( tmp_v ), 3, false );
+      addAsm( string("LDA #$") + toHex( tmp_v ), 2, false );
       addAsm( "PHA" );
     }
 
@@ -9762,7 +9762,7 @@ return: RETURN ';'
 
     addAsm( "RTS" );
   }
-| RETURN {} expression ';'
+| RETURN {} expression  ';'
 {
 
   /* addComment("Trying to return the value:"); */
