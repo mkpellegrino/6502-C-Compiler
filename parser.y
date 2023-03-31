@@ -1599,7 +1599,7 @@ body: WHILE
 }
 ')' '{' body
 {
-  addAsm( string( "JMP ") + getLabel( label_vector[label_major]-2, false) + string( "; jump to top of WHILE loop" ), 3, false );
+  addAsm( string( "JMP ") + getLabel( label_vector[label_major]-2, false) + commentmarker + string( " jump to top of WHILE loop" ), 3, false );
   addAsm( generateNewLabel(), 0, true );
   addAsm( "PLA" );
   popScope();
@@ -1624,14 +1624,14 @@ body: WHILE
 }
 ';' statement
 {
-  addAsm( string( "JMP ") + getLabel( label_vector[label_major]-2, false) + string( "; jump to top of FOR loop" ), 3, false );
+  addAsm( string( "JMP ") + getLabel( label_vector[label_major]-2, false) + commentmarker + string( " jump to top of FOR loop" ), 3, false );
   addCommentBreak();
 } ')'
 {  addAsm( generateNewLabel(), 0, true ); }
 '{' body '}'
 {
   addCommentBreak();
-  addAsm( string( "JMP " ) + getLabel( ((int)label_vector[label_major]-2), false ) + "; jump to iterator", 3, false );
+  addAsm( string( "JMP " ) + getLabel( ((int)label_vector[label_major]-2), false ) + commentmarker + string( " jump to iterator" ), 3, false );
   
   addAsm( generateNewLabel(), 0, true );
   addAsm( "PLA" );  
@@ -2041,7 +2041,7 @@ body: WHILE
       addComment( "top-of-loop" );
       addAsm( "ASL" );
       addAsm( "DEX" );
-      addAsm( string(".BYTE $D0, $FC") + commentmarker + string("; BNE top-of-loop"), 2, false );
+      addAsm( string(".BYTE $D0, $FC") + commentmarker + string(" BNE top-of-loop"), 2, false );
       addAsm( "ORA $D010,X", 3, false );
       addAsm( "STA $D010,X", 3, false );
     }
@@ -2135,7 +2135,7 @@ body: WHILE
       int sprite_number = getAddressOf( $3.name );
 
       // the low byte
-      addAsm( string( "LDA $" ) + toHex( sprite_number ) + string( "; sprite # -> A"), 3, false );
+      addAsm( string( "LDA $" ) + toHex( sprite_number ) + commentmarker + string( " sprite # -> A"), 3, false );
       addAsm( "ASL; multiply it by 2", 1, false ); // multiply by 2
       addAsm( "TAX; make Sprite# * 2 the index (X)", 1, false); // move it to X
       addAsm( "TYA; move the Low Byte of x-coord to A", 1, false);
@@ -2540,16 +2540,15 @@ body: WHILE
       pushScope( "PRINTS" );
       int addr = getAddressOf( $3.name );
       addAsm( "LDX #$00", 2, false );
-      addAsm( generateNewLabel() + string( ";\t\t\ttop of prints"), 0, true ); // LABEL BB
+      addAsm( generateNewLabel() + commentmarker + string( "\t\t\ttop of prints"), 0, true ); // LABEL BB
 
       addAsm( string("LDA $") + toHex( addr ) + string(",X"), 3, false );
       addAsm( "CMP #$00", 2, false );
-      //addAsm( ".BYTE $F0, $07", 2, false );
       addAsm( string( "BEQ " ) + getLabel( label_vector[label_major],false), 2, false ); 
       addAsm( "JSR $FFD2", 3, false );
       addAsm( "INX" );
       addAsm( string( "JMP " ) + getLabel( label_vector[label_major]-1,false), 3, false ); 
-      addAsm( generateNewLabel() + string( ";\t\t\tbottom of prints"), 0, true ); // LABEL BB
+      addAsm( generateNewLabel() + commentmarker + string( "\t\t\tbottom of prints"), 0, true ); // LABEL BB
 
       popScope();
     }
@@ -2565,6 +2564,8 @@ body: WHILE
   addCommentSection( string("printf(") + string($3.name) + string( ");") );
   if( isUintID($3.name) )
     {
+      addComment( "printf(UintID);" );
+
       byt2str_is_needed = true;
       pushScope( "PRINTF" );
       addAsm( string("LDA ") + string($3.name), 3, false );
@@ -2579,23 +2580,58 @@ body: WHILE
       addAsm( string( "BEQ " ) + getLabel( label_vector[label_major]+2,false), 2, false ); // BNE AA
       addAsm( "JSR $FFD2", 3, false );
       addAsm( "TYA" );
-      addAsm( generateNewLabel() + string( "\t\t\t; Just Two Bytes"), 0, true ); // LABEL BB
+      addAsm( generateNewLabel() + string( "\t\t\t") + commentmarker + string( " Just Two Bytes"), 0, true ); // LABEL BB
       addAsm( "JSR $FFD2", 3, false );
-      addAsm( generateNewLabel() + string( "\t\t\t; Only One Byte"), 0, true ); // LABEL CC
+      addAsm( generateNewLabel() + string( "\t\t\t") + commentmarker + string( " Only One Byte"), 0, true ); // LABEL CC
       addAsm( "TXA" );
       addAsm( "JSR $FFD2", 3, false );
       addAsm( "; jump to label below ", 0, true );
       addAsm( string( "JMP " ) + getLabel( label_vector[label_major]+1,false), 3, false );
-      addAsm( generateNewLabel() + string( "\t\t\t; Label CMP2"), 0, true ); // LABEL AA
+      addAsm( generateNewLabel() + string( "\t\t\t") + commentmarker + string( " Label CMP2"), 0, true ); // LABEL AA
       addAsm( "TYA" );
       addAsm( "CMP #$30", 2, false );
       addAsm( string( "BEQ " ) + getLabel( label_vector[label_major]-2,false), 2, false );
       addAsm( string( "JMP " ) + getLabel( label_vector[label_major]-3,false), 3, false );
-      addAsm( generateNewLabel() + string( "\t\t\t; Done"), 0, true );
+      addAsm( generateNewLabel() + string( "\t\t\t") + commentmarker + string( " Done"), 0, true );
+      popScope();
+    }
+  else if( isA($3.name) )
+    {
+      byt2str_is_needed = true;
+      pushScope( "PRINTF(A)" );
+      addComment( "printf(A);" );
+
+      //addAsm( string("LDA ") + string($3.name), 3, false );
+      addAsm( "PHA" );
+      addAsm( "JSR BYT2STR", 3, false );
+      addAsm( "PLA" );
+      addAsm( "TAX" );
+      addAsm( "PLA" );
+      addAsm( "TAY" );
+      addAsm( "PLA" );
+      addAsm( "CMP #$30", 2, false );
+      addAsm( string( "BEQ " ) + getLabel( label_vector[label_major]+2,false), 2, false ); // BNE AA
+      addAsm( "JSR $FFD2", 3, false );
+      addAsm( "TYA" );
+      addAsm( generateNewLabel() + string( "\t\t\t") + commentmarker + string( " Just Two Bytes"), 0, true ); // LABEL BB
+      addAsm( "JSR $FFD2", 3, false );
+      addAsm( generateNewLabel() + string( "\t\t\t") + commentmarker + string( " Only One Byte"), 0, true ); // LABEL CC
+      addAsm( "TXA" );
+      addAsm( "JSR $FFD2", 3, false );
+      addAsm( "; jump to label below ", 0, true );
+      addAsm( string( "JMP " ) + getLabel( label_vector[label_major]+1,false), 3, false );
+      addAsm( generateNewLabel() + string( "\t\t\t") + commentmarker + string( " Label CMP2"), 0, true ); // LABEL AA
+      addAsm( "TYA" );
+      addAsm( "CMP #$30", 2, false );
+      addAsm( string( "BEQ " ) + getLabel( label_vector[label_major]-2,false), 2, false );
+      addAsm( string( "JMP " ) + getLabel( label_vector[label_major]-3,false), 3, false );
+      addAsm( generateNewLabel() + string( "\t\t\t") + commentmarker + string( " Done"), 0, true );
       popScope();
     }
   else if( isIntID($3.name) )
     {
+      addComment( "printf(IntID);" );
+
       byt2str_is_needed = true;
       pushScope( "PRINTF" );
       addAsm( string("LDA ") + string($3.name), 3, false );
@@ -2623,42 +2659,29 @@ body: WHILE
       addAsm( string( "BEQ " ) + getLabel( label_vector[label_major]+2,false), 2, false ); // BNE AA
       addAsm( "JSR $FFD2", 3, false );
       addAsm( "TYA" );
-      addAsm( generateNewLabel() + string( "\t\t\t; Just Two Bytes"), 0, true ); // LABEL BB
+      addAsm( generateNewLabel() + string( "\t\t\t") + commentmarker + string( " Just Two Bytes"), 0, true ); // LABEL BB
       addAsm( "JSR $FFD2", 3, false );
-      addAsm( generateNewLabel() + string( "\t\t\t; Only One Byte"), 0, true ); // LABEL CC
+      addAsm( generateNewLabel() + string( "\t\t\t") + commentmarker + string( " Only One Byte"), 0, true ); // LABEL CC
       addAsm( "TXA" );
       addAsm( "JSR $FFD2", 3, false );
       addAsm( "; jump to label below ", 0, true );
       addAsm( string( "JMP " ) + getLabel( label_vector[label_major]+1,false), 3, false );
-      addAsm( generateNewLabel() + string( "\t\t\t; Label CMP2"), 0, true ); // LABEL AA
+      addAsm( generateNewLabel() + string( "\t\t\t" ) + commentmarker + string( " Label CMP2"), 0, true ); // LABEL AA
       addAsm( "TYA" );
       addAsm( "CMP #$30", 2, false );
       addAsm( string( "BEQ " ) + getLabel( label_vector[label_major]-2,false), 2, false );
       addAsm( string( "JMP " ) + getLabel( label_vector[label_major]-3,false), 3, false );
-      addAsm( generateNewLabel() + string( "\t\t\t; Done"), 0, true );
+      addAsm( generateNewLabel() + string( "\t\t\t" ) + commentmarker + string( " Done"), 0, true );
       popScope();
-    }
-  else if( isA($3.name) )
-    {
-      byte2hex_is_needed = true;
-      addAsm( "PHA" );
-      addAsm( "JSR BYTE2HEX", 3, false );
-    }
-  else if( isXA($3.name) )
-    {
-      byte2hex_is_needed = true;
-      addAsm( "PHA" );
-      addAsm( "TXA" );
-      addAsm( "PHA" );
-      addAsm( "JSR BYTE2HEX", 3, false );
-      addAsm( "JSR BYTE2HEX", 3, false );
     }
   else if( isARG($3.name) )
     {
-      addAsm( "LDA #$69; ARG_L", 2, false );
-      addAsm( "LDY #$00; ARG_H", 2, false );
-      addAsm( "JSR $BBA2; RAM -> FAC", 3, false ); // FP ->FAC
-      addAsm( "JSR $BDDD; FAC -> PETSCII ($0100)", 3, false );
+      addComment( "printf(ARG);" );
+
+      addAsm( string("LDA #$69") + commentmarker + string( " ARG_L"), 2, false );
+      addAsm( string("LDY #$00") + commentmarker + string( " ARG_H"), 2, false );
+      addAsm( string("JSR $BBA2") + commentmarker + string( " RAM -> FAC"), 3, false ); // FP ->FAC
+      addAsm( string("JSR $BDDD") + commentmarker + string( " FAC -> PETSCII ($0100)"), 3, false );
       
       addAsm( "LDA #$00", 2, false );
       addAsm( "STA $02", 2, false );
@@ -2668,14 +2691,16 @@ body: WHILE
     }
   else if( isFAC($3.name) )
     {
-      addAsm( "JSR $BDDD; FAC -> PETSCII ($0100)", 3, false );
+      addComment( "printf(FAC);" );
+
+      addAsm( string("JSR $BDDD") + commentmarker + string( " FAC -> PETSCII ($0100)"), 3, false );
       pushScope("PRINTFFAC" );
       addAsm( "LDX #$00", 2, false );
       addAsm( generateNewLabel(), 0, true ); 
 
       addAsm( "LDA $0100,X", 3, false );
       addAsm( "CMP #$00", 2, false );
-      addAsm( ".BYTE #$F0, #$06; BEQ +6", 2, false );
+      addAsm( string(".BYTE #$F0, #$06") + commentmarker + string( " BEQ +6"), 2, false );
       //addAsm( "BEQ #$06", 2, false );
       addAsm( "JSR $FFD2", 3, false );
       addAsm( string( "JMP " ) + getLabel( label_vector[label_major]-1,false), 3, false );
@@ -2684,24 +2709,27 @@ body: WHILE
     }
   else if( isFloatID($3.name) )
     {
+      addComment( "printf(FloatID);" );
+
       current_variable_base_address = getAddressOf($3.name);
 
       addAsm( string("LDA #$") + toHex( get_word_L( current_variable_base_address )), 2, false );
       addAsm( string("LDY #$") + toHex( get_word_H( current_variable_base_address )), 2, false );
       
       // load it into FAC
-      addAsm( "JSR $BBA2; RAM -> FAC", 3, false ); // FP ->FAC
+      addAsm( string("JSR $BBA2") + commentmarker + string( " RAM -> FAC"), 3, false ); // FP ->FAC
       // call the FOUT
       
-      addAsm( "JSR $BDDD; FAC -> PETSCII ($0100)", 3, false );
+      addAsm( string("JSR $BDDD") + commentmarker + string( " FAC -> PETSCII ($0100)"), 3, false );
       addAsm( "LDA #$00", 2, false );
       addAsm( "STA $02", 2, false );
       addAsm( "LDA #$01", 2, false );
       addAsm( "STA $03", 2, false );
       addAsm( "JSR PRN", 3, false ); printf_is_needed = true;
     }
-  else if( isWordID($3.name) )
+    else if( isWordID($3.name) )
     {
+      addComment( "printf(WordID);" );
       pushScope("PRINTF(WORD)");
       word2dec_is_needed = true;
       byte2hex_is_needed = true;
@@ -2722,7 +2750,7 @@ body: WHILE
       addAsm( "LDA HTD_STR,X", 3, false );
       addAsm( "CMP #$30", 2, false );
       
-      addAsm( ".BYTE $D0, $04; BNE SKIP", 2, false );
+      addAsm( string(".BYTE $D0, $04") + commentmarker + string( " BNE SKIP"), 2, false );
       addAsm( "INX" );
       addAsm( string( "JMP " ) + getLabel( label_vector[label_major]-1,false), 3, false );
       // ---------------------------------
@@ -2730,14 +2758,122 @@ body: WHILE
       // make sure it prints a 0 if it's 0
       // and not just a blank space!
       addAsm( "CPX #$06", 2, false );
-      addAsm( ".BYTE $D0 $01; BNE SKIP", 2, false ); // BNE to skip
+      addAsm( string(".BYTE $D0 $01") + commentmarker + string( " BNE SKIP"), 2, false ); // BNE to skip
       addAsm( "DEX" );
       // ---------------------------------
       addAsm( generateNewLabel(), 0, true );
 
       addAsm( "LDA HTD_STR,X", 3, false );
       addAsm( "CMP #$00", 2, false );
-      addAsm( ".BYTE $F0, $07; BEQ #$07", 2, false );  // beq to pop scope
+      addAsm( string(".BYTE $F0, $07") + commentmarker + string( " BEQ #$07"), 2, false );  // beq to pop scope
+      addAsm( "INX" );
+      addAsm( "JSR $FFD2", 3, false );
+      addAsm( string( "JMP " ) + getLabel( label_vector[label_major]-1,false), 3, false );
+      popScope();
+    }
+  else if( isXA($3.name) )
+    {
+      pushScope("PRINTF(XA)");
+      addComment( "printf(XA);" );
+      word2dec_is_needed = true;
+      byte2hex_is_needed = true;
+      current_variable_base_address = getAddressOf($3.name);
+      int base_address_op1 = hexToDecimal($3.name);
+      int inst_size = 3;
+      if( base_address_op1 < 256 ) inst_size = 2;
+      //addAsm( string("LDA $") + toHex( ( base_address_op1 )), inst_size, false );
+      addAsm( "STA HTD_IN", 3, false );
+      //addAsm( string("LDA $") + toHex( ( base_address_op1+1 )), inst_size, false );
+      addAsm( "STX HTD_IN+1", 3, false );
+      addAsm( "JSR WORD2DEC", 3, false );
+
+
+      // find the 1st non-30 ('0') byte
+      addAsm( "LDX #$00", 2, false );
+      addAsm( generateNewLabel(), 0, true );
+      addAsm( "LDA HTD_STR,X", 3, false );
+      addAsm( "CMP #$30", 2, false );
+      
+      addAsm( string(".BYTE $D0, $04") + commentmarker + string( " BNE SKIP"), 2, false );
+      addAsm( "INX" );
+      addAsm( string( "JMP " ) + getLabel( label_vector[label_major]-1,false), 3, false );
+      // ---------------------------------
+      // 2022 12 16 - mkpellegrino
+      // make sure it prints a 0 if it's 0
+      // and not just a blank space!
+      addAsm( "CPX #$06", 2, false );
+      addAsm( string(".BYTE $D0 $01") + commentmarker + string( " BNE SKIP"), 2, false ); // BNE to skip
+      addAsm( "DEX" );
+      // ---------------------------------
+      addAsm( generateNewLabel(), 0, true );
+
+      addAsm( "LDA HTD_STR,X", 3, false );
+      addAsm( "CMP #$00", 2, false );
+      addAsm( string(".BYTE $F0, $07") + commentmarker + string( " BEQ #$07"), 2, false );  // beq to pop scope
+      addAsm( "INX" );
+      addAsm( "JSR $FFD2", 3, false );
+      addAsm( string( "JMP " ) + getLabel( label_vector[label_major]-1,false), 3, false );
+      popScope();
+    }
+  else if( isWordIMM($3.name) )
+    {
+      addComment( "printf(WordIMM);" );
+      addCompilerMessage( "This is very inefficient.  Your could just print the value as a string.", 0 );
+      int tmp = atoi( stripFirst($3.name).c_str() );
+      pushScope("PRINTF(WORD)");
+      word2dec_is_needed = true;
+      byte2hex_is_needed = true;
+      addAsm( string("LDA #$") + toHex( get_word_L( tmp )), 2, false );
+      addAsm( "STA HTD_IN", 3, false );
+      addAsm( string("LDA #$") + toHex( get_word_H( tmp )), 2, false );
+      addAsm( "STA HTD_IN+1", 3, false );
+      addAsm( "JSR WORD2DEC", 3, false );
+      addAsm( "LDX #$00", 2, false );
+      addAsm( generateNewLabel(), 0, true );
+      addAsm( "LDA HTD_STR,X", 3, false );
+      addAsm( "CMP #$30", 2, false );
+      addAsm( string(".BYTE $D0, $04") + commentmarker + string( " BNE SKIP"), 2, false );
+      addAsm( "INX" );
+      addAsm( string( "JMP " ) + getLabel( label_vector[label_major]-1,false), 3, false );
+      addAsm( "CPX #$06", 2, false );
+      addAsm( string(".BYTE $D0 $01") + commentmarker + string( " BNE SKIP"), 2, false ); // BNE to skip
+      addAsm( "DEX" );
+      addAsm( generateNewLabel(), 0, true );
+      addAsm( "LDA HTD_STR,X", 3, false );
+      addAsm( "CMP #$00", 2, false );
+      addAsm( string(".BYTE $F0, $07") + commentmarker + string( " BEQ #$07"), 2, false );  // beq to pop scope
+      addAsm( "INX" );
+      addAsm( "JSR $FFD2", 3, false );
+      addAsm( string( "JMP " ) + getLabel( label_vector[label_major]-1,false), 3, false );
+      popScope();
+    }
+  else if( isUintIMM($3.name) || isIntIMM($3.name) )
+    {
+      addComment( "printf((U)IntIMM);" );
+      addCompilerMessage( "This is very inefficient.  Your could just print the value as a string.", 0 );
+      int tmp = atoi( stripFirst($3.name).c_str() );
+      pushScope("PRINTF(A)");
+      word2dec_is_needed = true;
+      byte2hex_is_needed = true;
+      addAsm( string("LDA #$") + toHex( tmp ), 2, false );
+      addAsm( "STA HTD_IN", 3, false );
+      addAsm( "LDA #$00", 2, false );
+      addAsm( "STA HTD_IN+1", 3, false );
+      addAsm( "JSR WORD2DEC", 3, false );
+      addAsm( "LDX #$00", 2, false );
+      addAsm( generateNewLabel(), 0, true );
+      addAsm( "LDA HTD_STR,X", 3, false );
+      addAsm( "CMP #$30", 2, false );
+      addAsm( string(".BYTE $D0, $04") + commentmarker + string( " BNE SKIP"), 2, false );
+      addAsm( "INX" );
+      addAsm( string( "JMP " ) + getLabel( label_vector[label_major]-1,false), 3, false );
+      addAsm( "CPX #$06", 2, false );
+      addAsm( string(".BYTE $D0 $01") + commentmarker + string( " BNE SKIP"), 2, false ); // BNE to skip
+      addAsm( "DEX" );
+      addAsm( generateNewLabel(), 0, true );
+      addAsm( "LDA HTD_STR,X", 3, false );
+      addAsm( "CMP #$00", 2, false );
+      addAsm( string(".BYTE $F0, $07") + commentmarker + string( " BEQ #$07"), 2, false );  // beq to pop scope
       addAsm( "INX" );
       addAsm( "JSR $FFD2", 3, false );
       addAsm( string( "JMP " ) + getLabel( label_vector[label_major]-1,false), 3, false );
@@ -2763,67 +2899,93 @@ body: WHILE
 };
 | tBYTE2HEX '(' expression ')' ';'
 {
+  // this byte2hex section is all wonky
   addParserComment( "RULE: body: tBYTE2HEX '(' expression ')' ';'" );
   byte2hex_is_needed = true;
   int t;
-  if( string($3.name) == "A" )
-    {
-      addAsm( "PHA" );
-      addAsm( "JSR BYTE2HEX", 3, false );
-      t = -1;
-    }
-  else
-    {
-      t = getTypeOf($3.name);
-    }
+  /* if( isA( $3.name ) ) */
+  /*   { */
+  /*     addAsm( "PHA" ); */
+  /*     addAsm( "JSR BYTE2HEX", 3, false ); */
+  /*     t = -1; */
+  /*   } */
+  /* else */
+  /*   { */
+  /*     t = getTypeOf($3.name); */
+  /*   } */
 
   addCommentSection( string("byte2hex(") + string($3.name) + string(")"));
   addParserComment($3.name  );
-  if( t == 0 || t == 1 ) // TODO: Change this to isTypeID/IMM()
+  if( isUintID($3.name) || isIntID($3.name) ) // TODO: Change this to isTypeID/IMM()
     {
       // uint and int
-      addParserComment( "t == 0 || t == 1" );
+      addComment( "byte2hex((U)IntID);" );
       addAsm( string("LDA $") + toHex(getAddressOf($3.name)).c_str(), 3, false );
       addAsm( "PHA" );
       addAsm( "JSR BYTE2HEX", 3, false );
     }
-  else if( isWordIMM($3.name) /* == 'w'*/ )
+  else if( isUintIMM($3.name) )
     {
-      addParserComment( "t == word" );
-      //$3.name[0] = ' ';
+      addComment( "byte2hex(UintIMM);" );
       int tmp = atoi( stripFirst($3.name).c_str() );
-      addAsm( string( "LDA #$" ) + toHex( get_word_L( atoi($3.name))), 2, false );
-      addAsm( "PHA" );
-      addAsm( string( "LDA #$" ) + toHex( get_word_H( atoi($3.name))), 2, false );      
+      addAsm( string( "LDA #$" ) + toHex( tmp), 2, false );
       addAsm( "PHA" );
       addAsm( "JSR BYTE2HEX", 3, false );
-      addAsm( "JSR BYTE2HEX", 3, false );
- 
     }
-  else if( t == 2 || t == 4 ) // TODO: Change this to isTypeID/IMM()
+  else if( isWordIMM($3.name) )
     {
-      addParserComment( "type == 2 || type == 4" );
+      addComment( "byte2hex(WordIMM);" );
+      int tmp = atoi( stripFirst($3.name).c_str() );
+      addAsm( string( "LDA #$" ) + toHex( get_word_L( tmp )), 2, false );
+      addAsm( "PHA" );
+      addAsm( string( "LDA #$" ) + toHex( get_word_H( tmp)), 2, false );      
+      addAsm( "PHA" );
+      addAsm( "JSR BYTE2HEX", 3, false );
+      addAsm( "JSR BYTE2HEX", 3, false );
+    }
+  //else if( t == 2 || t == 4 ) // TODO: Change this to isTypeID/IMM()
+  else if( isWordID($3.name) ) 
+    {
+      addComment( "byte2hex(WordID);" );
       addAsm( string("LDA $") + toHex(getAddressOf($3.name)).c_str(), 3, false );
-      addDebugComment("Push the argument onto the stack before function call" );
       addAsm( "PHA" );
       addAsm( string("LDA $") + toHex(getAddressOf($3.name)+1).c_str(), 3, false );
-      addDebugComment("Push the argument onto the stack before function call" );
       addAsm( "PHA" );
       addAsm( "JSR BYTE2HEX", 3, false );
       addAsm( "JSR BYTE2HEX", 3, false );
     }
   else if( isFloatIMM( string($3.name) ))
     {
-      addCompilerMessage( "cannot byte2hex a float... try printf", 2 );
+      addCompilerMessage( "cannot byte2hex a float... try printf", 3 );
       addComment("cannot byte2hex a float");
     }
-  else if( string($3.name) != "A" )
+  else if( isA($3.name) )
     {
+      addComment( "byte2hex(A);" );
+
       addDebugComment( "Straight from Acc register" );
-      addAsm( string("LDA ") + string($3.name), 3, false );
+      //addAsm( string("LDA ") + string($3.name), 3, false );
       addDebugComment("Push the argument onto the stack before function call" );
       addAsm( "PHA" );
       addAsm( "JSR BYTE2HEX", 3, false );
+    }
+  else if( isXA($3.name) )
+    {
+      addComment( "byte2hex(XA);" );
+
+      addDebugComment( "Straight from X and Acc registers" );
+      //addAsm( string("LDA ") + string($3.name), 3, false );
+      addDebugComment("Push the argument onto the stack before function call" );
+
+      addAsm( "PHA" );      
+      addAsm( "TXA" );
+      addAsm( "PHA" );
+      addAsm( "JSR BYTE2HEX", 3, false );
+      addAsm( "JSR BYTE2HEX", 3, false );
+    }
+  else
+    {
+      addCompilerMessage( "invalid argument type for byte2hex", 3 );
     }
 }
 | tCURSORXY '(' expression ',' expression ')' ';'
@@ -3734,7 +3896,7 @@ condition: expression relop expression
     }
   else if( isWordID($1.name) && isWordID($3.name))
     {
-      addCommentSection( "WORD ID vs. WORD ID" );
+      addCommentSection( "WORD ID relop WORD ID" );
       int OP1L = getAddressOf( $1.name );
       int OP2L = getAddressOf( $3.name );
       //cerr << "OP1L: " << OP1L << "\tOP2L: " << OP2L << endl;
@@ -3752,8 +3914,8 @@ condition: expression relop expression
     else if( isWordID($1.name) && isWordIMM($3.name))
     {
       // TODO: FIX THIS!!!
-      addCommentSection( "WORD ID vs. WORD IMM" );
-      addComment( string($1.name) + string( " v. " ) + string($3.name) );
+      addCommentSection( "WORD ID relop  WORD IMM" );
+      addComment( string($1.name) + string( " relop " ) + string($3.name) );
 
       int OP1L = getAddressOf( $1.name );
       int OP1H = OP1L+1;
@@ -3799,91 +3961,91 @@ condition: expression relop expression
 	{
 	  if( long_branches == false )
 	    {
-	      addAsm( string( "BCC ") + getLabel( label_vector[label_major]+1, false) + string( "; if c==0 jump to BODY" ), 2, false );
-	      addAsm( string( "BEQ ") + getLabel( label_vector[label_major]+1, false) + string( "; if z==1 jump to BODY" ), 2, false );
-	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+2, false) + string( "; jump out of FOR" ), 3, false );
+	      addAsm( string( "BCC ") + getLabel( label_vector[label_major]+1, false) + commentmarker + string( " if c==0 jump to BODY" ), 2, false );
+	      addAsm( string( "BEQ ") + getLabel( label_vector[label_major]+1, false) + commentmarker + string( " if z==1 jump to BODY" ), 2, false );
+	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+2, false) + commentmarker + string( " jump out of FOR" ), 3, false );
 	    }
 	  else
 	    {
 	      addAsm( ".BYTE #$B0, #$03; BCS +3", 2, false ); 
-	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + string( "; if c==0 jump to BODY" ), 3, false );
+	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + commentmarker + string( " if c==0 jump to BODY" ), 3, false );
 	      addAsm( string(".BYTE #$D0, #$03") + commentmarker +string(" BNE +3"), 2, false ); // BNE +3
-	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + string( "; if z==1 jump to BODY" ), 3, false );
-	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+2, false) + string( "; jump out of FOR" ), 3, false );
+	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + commentmarker + string( " if z==1 jump to BODY" ), 3, false );
+	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+2, false) + commentmarker + string( " jump out of FOR" ), 3, false );
 	    }
 	}
       else if( string($2.name) == string( "==" ) )
 	{
 	  if( long_branches == false )
 	    {
-	      addAsm( string( "BEQ ") + getLabel( label_vector[label_major]+1, false) + string( "; if z==1 jump to BODY" ), 2, false );
-	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+2, false) + string( "; jump out of FOR" ), 3, false );
+	      addAsm( string( "BEQ ") + getLabel( label_vector[label_major]+1, false) + commentmarker + string( " if z==1 jump to BODY" ), 2, false );
+	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+2, false) + commentmarker + string( " jump out of FOR" ), 3, false );
 	    }
 	  else
 	    {
 	      addAsm( string(".BYTE $D0, $03") + commentmarker +string(" BNE +3"), 2, false ); // BNE +3
 	     
-	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + string( "; if z==1 jump to BODY" ), 3, false );
-	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+2, false) + string( "; jump out of FOR" ), 3, false );
+	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + commentmarker + string( " if z==1 jump to BODY" ), 3, false );
+	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+2, false) + commentmarker + string( " jump out of FOR" ), 3, false );
 	    }
 	}
       else if( string($2.name) == string( ">" ) )
 	{
 	  if( long_branches == false )
 	    {
-	      addAsm( string( "BEQ ") + getLabel( label_vector[label_major]+2, false) + string( "; if z==1 jump out of FOR" ), 2, false );
-	      addAsm( string( "BCC ") + getLabel( label_vector[label_major]+2, false) + string( "; if c==0 jump out of FOR" ), 2, false );
-	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + string( "; jump to body of FOR" ), 3, false );
+	      addAsm( string( "BEQ ") + getLabel( label_vector[label_major]+2, false) + commentmarker + string( " if z==1 jump out of FOR" ), 2, false );
+	      addAsm( string( "BCC ") + getLabel( label_vector[label_major]+2, false) + commentmarker + string( " if c==0 jump out of FOR" ), 2, false );
+	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + commentmarker + string( " jump to body of FOR" ), 3, false );
 	    }
 	  else
 	    {
 	      addAsm( string(".BYTE $D0, $03") + commentmarker +string(" BNE +3"), 2, false ); // BNE +3
-	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+2, false) + string( "; if z==1 jump out of FOR" ), 3, false );
-	      addAsm( ".BYTE #$B0, #$03; BCS +3", 2, false ); 
-	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+2, false) + string( "; if c==0 jump out of FOR" ), 3, false );
-	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + string( "; jump to body of FOR" ), 3, false );
+	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+2, false) + commentmarker + string( " if z==1 jump out of FOR" ), 3, false );
+	      addAsm( string(".BYTE #$B0, #$03") + commentmarker + string( " BCS +3"), 2, false ); 
+	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+2, false) + commentmarker + string( " if c==0 jump out of FOR" ), 3, false );
+	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + commentmarker + string( " jump to body of FOR" ), 3, false );
 	    }
 	}
       else if( string($2.name) == string( "<" ) )
 	{
 	  if( long_branches == false )
 	    {
-	      addAsm( string( "BCC ") + getLabel( label_vector[label_major]+1, false) + string( "; if c==0 jump to BODY" ), 2, false );
-	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+2, false) + string( "; jump out of FOR" ), 3, false );
+	      addAsm( string( "BCC ") + getLabel( label_vector[label_major]+1, false) + commentmarker + string( " if c==0 jump to BODY" ), 2, false );
+	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+2, false) + commentmarker + string( " jump out of FOR" ), 3, false );
 	    }
 	  else
 	    {
 	      addAsm( ".BYTE #$B0, #$03; BCS +3", 2, false ); 
-	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + string( "; if c==0 jump to BODY" ), 3, false );
-	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+2, false) + string( "; jump out of FOR" ), 3, false );
+	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + commentmarker + string( " if c==0 jump to BODY" ), 3, false );
+	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+2, false) + commentmarker + string( " jump out of FOR" ), 3, false );
 	    }
 	}
       else if( string($2.name) == string( ">=" ) )
 	{
 	  if( long_branches == false )
 	    {
-	      addAsm( string( "BCS ") + getLabel( label_vector[label_major]+1, false) + string( "; if c==1 jump to BODY" ), 2, false );
-	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+2, false) + string( "; jump out of FOR" ), 3, false );
+	      addAsm( string( "BCS ") + getLabel( label_vector[label_major]+1, false) + commentmarker + string( " if c==1 jump to BODY" ), 2, false );
+	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+2, false) + commentmarker + string( " jump out of FOR" ), 3, false );
 	    }
 	  else
 	    {
-	      addAsm( ".BYTE #$90, #$03", 2, false ); 
-	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + string( "; if c==1 jump to BODY" ), 3, false );
-	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+2, false) + string( "; jump out of FOR" ), 3, false );
+	      addAsm( string(".BYTE #$90, #$03") + commentmarker + string( " BCC +3" ), 2, false ); 
+	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + commentmarker + string( " if c==1 jump to BODY" ), 3, false );
+	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+2, false) + commentmarker + string( " jump out of FOR" ), 3, false );
 	    }
 	}
       else /* != ... NOT EQUAL TO */
 	{
 	  if( long_branches == false )
 	    {
-	      addAsm( string( "BNE ") + getLabel( label_vector[label_major]+1, false) + string( "; if z==0 jump to BODY" ), 2, false );
-	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+2, false) + string( "; jump out of FOR" ), 3, false );
+	      addAsm( string( "BNE ") + getLabel( label_vector[label_major]+1, false) + commentmarker + string( " if z==0 jump to BODY" ), 2, false );
+	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+2, false) + commentmarker + string( " jump out of FOR" ), 3, false );
 	    }
 	  else
 	    {
-	      addAsm( ".BYTE #$F0, #$03; BEQ +3", 2, false ); 
-	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + string( "; if z==0 jump to BODY" ), 3, false );
-	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+2, false) + string( "; jump out of FOR" ), 3, false );
+	      addAsm( string(".BYTE #$F0, #$03") + commentmarker + string( " BEQ +3"), 2, false ); 
+	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + commentmarker + string( " if z==0 jump to BODY" ), 3, false );
+	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+2, false) + commentmarker + string( " jump out of FOR" ), 3, false );
 	    }
 	}
     }
@@ -3893,88 +4055,88 @@ condition: expression relop expression
 	{
 	  if( long_branches == false )
 	    {
-	      addAsm( string( "BCC ") + getLabel( label_vector[label_major], false) + string( "; if c==0 jump to THEN" ), 2, false );
-	      addAsm( string( "BEQ ") + getLabel( label_vector[label_major], false) + string( "; if z==1 jump to THEN" ), 2, false );
-	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + string( "; jump to ELSE" ), 3, false );
+	      addAsm( string( "BCC ") + getLabel( label_vector[label_major], false) + commentmarker + string( " if c==0 jump to THEN" ), 2, false );
+	      addAsm( string( "BEQ ") + getLabel( label_vector[label_major], false) + commentmarker + string( " if z==1 jump to THEN" ), 2, false );
+	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + commentmarker + string( " jump to ELSE" ), 3, false );
 	    }
 	  else
 	    {
-	      addAsm( ".BYTE #$B0, #$03; BCS +3", 2, false ); 
-	      addAsm( string( "JMP ") + getLabel( label_vector[label_major], false) + string( "; if c==0 jump to THEN" ), 3, false );
+	      addAsm( string(".BYTE #$B0, #$03") + commentmarker + string( " BCS +3"), 2, false ); 
+	      addAsm( string( "JMP ") + getLabel( label_vector[label_major], false) + commentmarker + string( " if c==0 jump to THEN" ), 3, false );
 	      addAsm( string(".BYTE $D0, $03") + commentmarker +string(" BNE +3"), 2, false ); // BNE +3
 
-	      addAsm( string( "JMP ") + getLabel( label_vector[label_major], false) + string( "; if z==1 jump to THEN" ), 3, false );
-	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + string( "; jump to ELSE" ), 3, false );
+	      addAsm( string( "JMP ") + getLabel( label_vector[label_major], false) + commentmarker + string( " if z==1 jump to THEN" ), 3, false );
+	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + commentmarker + string( " jump to ELSE" ), 3, false );
 	    }
 	}   
       else if( string($2.name) == string( "==" ) )
 	{
 	  if( long_branches == false )
 	    {
-	      addAsm( ".BYTE #$F0, #$03; BEQ +3", 2, false ); 
-	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + string( "; jump to ELSE" ), 3, false );
+	      addAsm( string(".BYTE #$F0, #$03") + commentmarker + string( " BEQ +3"), 2, false ); 
+	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + commentmarker + string( " jump to ELSE" ), 3, false );
 	    }
 	  else
 	    {
-	      addAsm( ".BYTE #$F0, #$03; BEQ +3", 2, false ); 
-	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + string( "; jump to ELSE" ), 3, false );
+	      addAsm( string(".BYTE #$F0, #$03") + commentmarker + string( " BEQ +3"), 2, false ); 
+	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + commentmarker + string( " jump to ELSE" ), 3, false );
 	    }
 	}
       else if( string($2.name) == string( ">" ) )
 	{
 	  if( long_branches == false )
 	    {
-	      addAsm( string( "BCC ") + getLabel( label_vector[label_major]+1, false) + string( "; if c==0 jump to ELSE" ), 2, false );
-	      addAsm( string( "BEQ ") + getLabel( label_vector[label_major]+1, false) + string( "; if z==1 jump to ELSE" ), 2, false );
+	      addAsm( string( "BCC ") + getLabel( label_vector[label_major]+1, false) + commentmarker + string( " if c==0 jump to ELSE" ), 2, false );
+	      addAsm( string( "BEQ ") + getLabel( label_vector[label_major]+1, false) + commentmarker + string( " if z==1 jump to ELSE" ), 2, false );
 	    }
 	  else
 	    {
-	      addAsm( ".BYTE #$B0, #$03; BCS +3", 2, false ); 
-	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + string( "; if c==0 jump to ELSE" ), 3, false );
+	      addAsm( string(".BYTE #$B0, #$03") + commentmarker + string( " BCS +3"), 2, false ); 
+	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + commentmarker + string( " if c==0 jump to ELSE" ), 3, false );
 	      addAsm( string(".BYTE $D0, $03") + commentmarker +string(" BNE +3"), 2, false ); // BNE +3
 
-	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + string( "; if z==1 jump to ELSE" ), 3, false );
+	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + commentmarker + string( " if z==1 jump to ELSE" ), 3, false );
 	    }
 	}
       else if( string($2.name) == string( "<" ) )
 	{
 	  if( long_branches == false )
 	    {
-	      addAsm( string( "BCC ") + getLabel( label_vector[label_major], false) + string( "; if c==0 jump to THEN" ), 2, false );
-	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + string( "; jump to ELSE" ), 3, false );
+	      addAsm( string( "BCC ") + getLabel( label_vector[label_major], false) + commentmarker + string( " if c==0 jump to THEN" ), 2, false );
+	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + commentmarker + string( " jump to ELSE" ), 3, false );
 	    }
 	  else
 	    {
 	      // 2022 10 28 - mkpellegrino - changed from #$90 to #$B0
-	      addAsm( ".BYTE #$90, #$03; BCC +3", 2, false ); 
+	      addAsm( string(".BYTE #$90, #$03") + commentmarker + string( " BCC +3"), 2, false ); 
 
-	      //addAsm( string( "JMP ") + getLabel( label_vector[label_major], false) + string( "; if c==0 jump to THEN" ), 3, false );
-	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + string( "; jump to ELSE" ), 3, false );
+	      //addAsm( string( "JMP ") + getLabel( label_vector[label_major], false) + commentmarker + string( " if c==0 jump to THEN" ), 3, false );
+	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + commentmarker + string( " jump to ELSE" ), 3, false );
 	    }
 	}
       else if( string($2.name) == string( ">=" ) )
 	{
 	  if( long_branches == false )
 	    {
-	      addAsm( string( "BCC ") + getLabel( label_vector[label_major]+1, false) + string( "; if c==1 jump to ELSE" ), 2, false );
+	      addAsm( string( "BCC ") + getLabel( label_vector[label_major]+1, false) + commentmarker + string( " if c==1 jump to ELSE" ), 2, false );
 	    }
 	  else
 	    {
-	      addAsm( ".BYTE #$B0, #$03; BCS +3", 2, false ); 
-	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + string( "; if c==1 jump to ELSE" ), 3, false );
+	      addAsm( string(".BYTE #$B0, #$03") + commentmarker + string( " BCS +3"), 2, false ); 
+	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + commentmarker + string( " if c==1 jump to ELSE" ), 3, false );
 	    }
 	}
       else /* != ... NOT EQUAL TO */
 	{
 	  if( long_branches == false )
 	    {
-	      addAsm( string( "BEQ ") + getLabel( label_vector[label_major]+1, false) + string( "; if z==1 jump to ELSE" ), 2, false );
+	      addAsm( string( "BEQ ") + getLabel( label_vector[label_major]+1, false) + commentmarker + string( " if z==1 jump to ELSE" ), 2, false );
 	    }
 	  else
 	    {
 	      addAsm( string(".BYTE $D0, $03") + commentmarker +string(" BNE +3"), 2, false ); // BNE +3
 
-	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + string( "; if z==1 jump to ELSE" ), 3, false );
+	      addAsm( string( "JMP ") + getLabel( label_vector[label_major]+1, false) + commentmarker + string( " if z==1 jump to ELSE" ), 3, false );
 	    }
 	}
     }
@@ -4009,8 +4171,8 @@ statement: datatype ID init
       addAsm( string( "LDA #$69" ), 2, false );
       addAsm( string( "LDY #$00" ), 2, false );
       addAsm( "JSR $BBA2; MEM -> FAC", 3, false );
-      addAsm( string( "LDX #$" ) + toHex(get_word_L(current_variable_base_address)) + string("; ADDR_L" ), 2, false );
-      addAsm( string( "LDY #$" ) + toHex(get_word_H(current_variable_base_address)) + string("; ADDR_H" ), 2, false );
+      addAsm( string( "LDX #$" ) + toHex(get_word_L(current_variable_base_address)) + commentmarker + string( " ADDR_L" ), 2, false );
+      addAsm( string( "LDY #$" ) + toHex(get_word_H(current_variable_base_address)) + commentmarker + string( " ADDR_H" ), 2, false );
       addAsm( "JSR $BBD4; FAC -> MEM", 3, false );
     }
   else if( (isIntDT($1.name) || isUintDT($1.name)) && (isIntID($2.name) || isUintID($2.name)) && isWordID($3.name) )
@@ -4590,7 +4752,7 @@ statement: datatype ID init
       {
        size_of_instruction = 3;
       }
-      addAsm( string(".BYTE #$D0, #$") + toHex(size_of_instruction) + string( "; BNE +3"), 2, false );
+      addAsm( string(".BYTE #$D0, #$") + toHex(size_of_instruction) + commentmarker + string( " BNE +3"), 2, false );
       addAsm( string( "DEC $" ) + toHex(a), size_of_instruction, false );
     }
   else if( isUintID($3.name) || isIntID($3.name) )
@@ -10090,7 +10252,8 @@ int main(int argc, char *argv[])
   
   if(sem_errors>0)
     {
-      printf("; *** Semantic analysis completed with %d errors\n", sem_errors);
+      printf( commentmarker.c_str() );
+      printf(" *** Semantic analysis completed with %d errors\n", sem_errors);
       for(int i=0; i<sem_errors; i++)
 	{
 	  printf("\t - %s", errors[i]);
@@ -10382,10 +10545,10 @@ int main(int argc, char *argv[])
       addComment( "vvv  Programming for the Commodore 64  vvv" );
       addComment( "vvv w/ some changes to deal with banks vvv" );
       addComment( "vvv------------------------------------vvv" );
-      addAsm( commentmarker + string(";"), 0, true );
-      addAsm( commentmarker + string("; x = $FA, y = $FC, colour = $FD"), 0, true );
-      addAsm( commentmarker + string("; STORE is at $FE(l), $FF(h)"), 0, true);
-      addAsm( commentmarker + string("; LOC is at $02(l), $03(h)"), 0, true);
+      addAsm( commentmarker, 0, true );
+      addAsm( commentmarker + string(" x = $FA, y = $FC, colour = $FD"), 0, true );
+      addAsm( commentmarker + string(" STORE is at $FE(l), $FF(h)"), 0, true);
+      addAsm( commentmarker + string(" LOC is at $02(l), $03(h)"), 0, true);
       addAsm( "MCPLOT:", 0, true );
 
       /* // Save $02 and $03 */
@@ -10447,7 +10610,7 @@ int main(int argc, char *argv[])
       
 
       addAsm( "STA $22; tmpstore", 2, false );
-      addAsm( commentmarker + string("; These subroutines I added to calculate the addresses based on VICII settings"), 0, true );
+      addAsm( commentmarker + string(" These subroutines I added to calculate the addresses based on VICII settings"), 0, true );
       bnkmem_is_needed=true;
       addAsm( "JSR BNKMEM", 3, false );
       addAsm( "PLA" ); // <<- A should now be #$00, #$40, #$80, #$C0 based on Bank #      
@@ -10494,8 +10657,8 @@ int main(int argc, char *argv[])
       addComment( "vvv  Programming for the Commodore 64  vvv" );
       addComment( "vvv w/ some changes to deal with banks vvv" );
       addComment( "vvv------------------------------------vvv" );
-      addAsm( commentmarker + string(";       L    H"), 0, true );
-      addAsm( commentmarker + string("; x = ($FA, $FB), y = $FC"), 0, true );
+      addAsm( commentmarker + string("       L    H"), 0, true );
+      addAsm( commentmarker + string(" x = ($FA, $FB), y = $FC"), 0, true );
       addAsm( "GETPLOT:", 0, true );
 
 
@@ -10768,9 +10931,9 @@ int main(int argc, char *argv[])
       addAsm( "PLA" );
       addAsm( "TAX" );
       
-      addAsm( ";\tAND #$F0", 0, true );
-      addAsm( ";\tLSR", 0, true);
-      addAsm( "ALR #$F0; Illegal Opcode (replaces the two lines above)", 2, false );
+      addAsm( commentmarker + string( "\tAND #$F0"), 0, true );
+      addAsm( commentmarker + string( "\tLSR"), 0, true);
+      addAsm( string("ALR #$F0") + commentmarker + string( " Illegal Opcode (replaces the two lines above)"), 2, false );
       illegal_operations_are_needed = true;
       addAsm( "LSR" );
       addAsm( "LSR" );
