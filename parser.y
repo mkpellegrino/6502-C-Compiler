@@ -31,6 +31,7 @@
   bool kick=false;
   string commentmarker=string("; ");
 
+  bool stack_is_needed=true;
   bool illegal_operations_are_needed=false;
   bool sidirq_is_needed=false;
   bool bnkmem_is_needed=false;
@@ -1436,7 +1437,7 @@
 
 //%parse-param { FILE* fp }
 %token VOID 
-%token <nd_obj> tCOMMENT tDATA tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tSIDIRQ tSTRTOFLOAT tSTRTOWORD tTOFLOAT tTOUINT tTOBIT tDEC tINC tROL tROR tLSR tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJSR tFOO tROMOUT tROMIN tLDA tASL tSPRITESET  tSPRITEOFF tSPRITETOGGLE tRND tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER tPRINTS PRINTFF SCANFF INT FLOAT WHILE FOR IF ELSE TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE tSQRT UNARY INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL tSCREEN
+%token <nd_obj> tPUSH tPOP tCOMMENT tDATA tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tSIDIRQ tSTRTOFLOAT tSTRTOWORD tTOFLOAT tTOUINT tTOBIT tDEC tINC tROL tROR tLSR tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJSR tFOO tROMOUT tROMIN tLDA tASL tSPRITESET  tSPRITEOFF tSPRITETOGGLE tRND tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER tPRINTS PRINTFF SCANFF INT FLOAT WHILE FOR IF ELSE TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE tSQRT UNARY INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL tSCREEN
 %type <nd_obj> headers main body return function datatype statement arithmetic relop program else 
    %type <nd_obj2> init value expression numberlist
       %type <nd_obj3> condition
@@ -1695,6 +1696,10 @@ body: WHILE
 {
   addCommentBreak(2);
 };
+| return
+  {
+  
+  };
 | body body
 {
   $$.nd = mknode($1.nd, $2.nd, "statements");
@@ -1755,6 +1760,25 @@ body: WHILE
     {
       addCompilerMessage("unidentified argument type for lda", 2 );
     }
+};
+| tPUSH '(' expression ')' ';'
+{
+  // merely for testing out the software stack
+  if( isA($3.name) )
+    {
+      addAsm( "JSR PUSH", 3, false );
+    }
+  else if( isUintID($3.name) )
+    {
+      addAsm( string( "LDA $" ) + toHex(getAddressOf( $3.name )), 3, false );
+      addAsm( "JSR PUSH", 3, false );
+    }
+  else if( isUintIMM($3.name) )
+    {
+      addAsm( string( "LDA #$") +  toHex( atoi( stripFirst($3.name).c_str() )), 2, false );
+      addAsm( "JSR PUSH", 3, false );
+    }
+  
 };
 | tSPRITEON '(' expression ')' ';'
 {
@@ -2990,6 +3014,7 @@ body: WHILE
 }
 | tCURSORXY '(' expression ',' expression ')' ';'
 {
+  // TODO: um... like... completely redo this
   addComment( string("cursorxy(") + string($3.name) + string(",") + string($5.name) + string( ")" ));
   addAsm( "CLC" );
   if( getTypeOf($3.name) > 1 || getTypeOf($5.name) > 1 )
@@ -3034,14 +3059,12 @@ body: WHILE
 {
   addCommentSection( "cls()");
   cls_is_needed = true;
-  addAsm( "JSR CLS; cls()", 3, false );
+  addAsm( string("JSR CLS") + commentmarker + string(" deep cls()"), 3, false );
 };
 | tCLS '(' expression ')' ';'
 {
   addCommentSection( "cls(expression)");
-  //cls_is_needed = true;
-  //addAsm( "JSR CLS; cls()", 3, false );
-  addAsm( "JSR $FF81; kernal cls()", 3, false );
+  addAsm( string("JSR $FF81") + commentmarker + string(" kernal cls()"), 3, false );
 
 };
 | tROMOUT '(' expression ')' ';'
@@ -5098,7 +5121,6 @@ statement: datatype ID init
   else
     addCompilerMessage( "ASL of type not permitted... yet", 3 );
 };
-
 // THIS IS BROKEN - mkpellegrino 2023 02 15
 | ID '[' expression ']' init
 {
@@ -5251,7 +5273,7 @@ statement: datatype ID init
     {
       addCompilerMessage( "Unable to initialise WORD ARRAY", 3 );
     }
-}
+};
 | ID init 
 {
   //  ASSIGNMENTS
@@ -5424,7 +5446,6 @@ statement: datatype ID init
 
 };
 
-
 // here needs work
 init: '=' expression
 {
@@ -5556,7 +5577,7 @@ arithmetic expression
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
-      addComment( "Deleting previous 4 Mneumonics" );
+      addComment( "Deleted previous 4 Mneumonics" );
     }
 
   addComment( "RULE: expression: expression arithmetic expression" );
@@ -8392,6 +8413,13 @@ arithmetic expression
     }
 	
 };
+| tPOP '(' ')'
+{
+  // merely for testing out the software stack
+  addAsm( "JSR POP", 3, false );
+  strcpy( $$.name, "A" );
+};
+
 | tASL '(' expression ')'
 {
   if( isA( $3.name ) )
@@ -10038,42 +10066,21 @@ value: FLOAT_NUM
 
 return: RETURN ';'
   {
-    /* addComment( "Put 0 on the stack (that's the # of return bytes)" ); */
-    /* addAsm("PLA"); */
-    /* addAsm("TAX"); */
-    /* addAsm("PLA"); */
-    /* addAsm("TAY"); */
-
-    /* addAsm( "LDA #$00",2, false ); */
-    /* addAsm("TYA"); */
-    /* addAsm("PHA"); */
-    /* addAsm("TXA"); */
-    /* addAsm("PHA"); */
-
     addAsm( "RTS" );
   }
-| RETURN {} expression  ';'
+| RETURN {addAsm("TAY");addAsm("TXA");addAsm( "JSR PUSH",3,false);addAsm("TYA");addAsm("JSR PUSH",3,false);} expression  ';'
 {
+  // if $3.name is NOT an XA ... remove the previous 5 lines
+  if( !isXA($3.name) )
+    {
+      deletePreviousAsm();
+      deletePreviousAsm();
+      deletePreviousAsm();
+      deletePreviousAsm();
+      deletePreviousAsm();
+      addComment( "Deleted previous 5 Mneumonics" );
 
-  /* addComment("Trying to return the value:"); */
-  /* addComment($3.name); */
-
-  /* /\* save the return address *\/ */
-  /* addAsm("PLA"); */
-  /* addAsm("TAX"); */
-  /* addAsm("PLA"); */
-  /* addAsm("TAY"); */
-  
-  /* addAsm(string("LDA ") + string($3.name), 3, false ); */
-  /* addAsm("PHA"); */
-
-  /* /\* restore the return address *\/ */
-  /* addAsm("TYA"); */
-  /* addAsm("PHA"); */
-  /* addAsm("TXA"); */
-  /* addAsm("PHA"); */
-
-  
+    }
   addAsm("PLA");
   addAsm("TAX");
   addAsm("PLA");
@@ -10095,7 +10102,6 @@ return: RETURN ';'
       addAsm("PHA");
       addAsm("LDA #$02", 2, false );
       addAsm("PHA");
-
     }
   else if( isUintIMM($3.name) || isIntIMM($3.name) )
     {
@@ -10104,12 +10110,10 @@ return: RETURN ';'
       addAsm("PHA");
       addAsm("LDA #$01", 2, false );
       addAsm("PHA");
-
     }
   else if( isWordIMM($3.name) )
     {
-       v = atoi(stripFirst($3.name).c_str());
-    
+      v = atoi(stripFirst($3.name).c_str());
       int a_register = get_word_L( v );
       int x_register = get_word_H( v );
       addAsm(string("LDA #$") + toHex(a_register), 2, false );
@@ -10118,23 +10122,30 @@ return: RETURN ';'
       addAsm("PHA");
       addAsm("LDA #$02", 2, false );
       addAsm("PHA");
-
     }
   else if( isWordID($3.name) )
     {
-       v = atoi(stripFirst($3.name).c_str());
-    
+      v = atoi(stripFirst($3.name).c_str());
       addAsm(string("LDA $") + toHex(v+1), 3, false );
       addAsm("PHA");
       addAsm(string("LDA $") + toHex(v), 3, false );
       addAsm("PHA");
       addAsm("LDA #$02", 2, false );
       addAsm("PHA");
-
+    }
+  else if( isXA($3.name) )
+    {
+      addAsm("JSR POP", 3, false );
+      addAsm("PHA");
+      addAsm("JSR POP", 3, false );
+      addAsm("PHA");
+      addAsm("LDA #$02", 2, false );
+      addAsm("PHA");
+      //addCompilerMessage( "invalid return type (XA) - you'll need a software stack to imlement this!", 3 );
     }
   else
     {
-      addCompilerMessage( "invalid return type", 0 );
+      addCompilerMessage( "invalid return type", 3 );
     }
 
   addAsm("TYA");
@@ -10144,12 +10155,11 @@ return: RETURN ';'
   addAsm("RTS");
   addComment( "Returning a value via the stack" );
 	     
-  strcpy( $$.name, "STACK" );
+  //  strcpy( $$.name, "STACK" );
 }
 |
 {
-
-  addAsm( "RTS" );
+  //addAsm( "RTS" );
 }
 ;
 
@@ -10348,6 +10358,28 @@ int main(int argc, char *argv[])
       addAsm( "PHA" );
       addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_1" ) ), 3, false );
       addAsm( "PHA" );
+      addAsm( "RTS" );
+    }
+  if( stack_is_needed )
+    {
+      addComment( "my rendition of a software stack at $CF00" );
+      addAsm( "STACKTMP:", 0, true );
+      addAsm( ".BYTE #$00", 1, false );
+      addAsm( "PUSH:", 0, true );
+      addAsm( "STX STACKTMP", 3, false );
+      addAsm( "LDX $CF00", 3, false );
+      addAsm( "INX" );
+      addAsm( "STA $CF00,X", 3, false );
+      addAsm( "STX $CF00", 3, false );
+      addAsm( "LDX STACKTMP", 3, false );
+      addAsm( "RTS" );
+      addAsm( "POP:", 0, true );
+      addAsm( "STX STACKTMP", 3, false );
+      addAsm( "LDX $CF00", 3, false );
+      addAsm( "LDA $CF00,X", 3, false );
+      addAsm( "DEX" );
+      addAsm( "STX $CF00", 3, false );
+      addAsm( "LDX STACKTMP", 3, false );
       addAsm( "RTS" );
     }
   if( word2dec_is_needed )
