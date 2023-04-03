@@ -31,7 +31,7 @@
   bool kick=false;
   string commentmarker=string("; ");
 
-  bool stack_is_needed=true;
+  bool stack_is_needed=false;
   bool illegal_operations_are_needed=false;
   bool sidirq_is_needed=false;
   bool bnkmem_is_needed=false;
@@ -540,6 +540,27 @@
     return;
   }
 
+  class id_and_line
+  {
+  public:
+    id_and_line( string s, int l )
+      {
+	name = s;
+	line_number = l;
+      }
+    string getName(){ return name; };
+    int getLine(){ return line_number; };
+  private:
+    string name;
+    int line_number;
+  };
+
+  vector<id_and_line*> id_vector;
+
+  vector <id_and_line*> proposed_ids_vector;
+  vector <id_and_line*> defined_ids_vector;
+
+  
   class asm_function
   {
   public:
@@ -631,10 +652,14 @@
     include_file_vector.push_back( s );
   }
 
+
+  // 
+
   void addFunction( string s, string l )
   {
     asm_function * ptr_function = new asm_function( s, l );
     asm_functions.push_back( ptr_function );
+
   }
 
   void addFunction( string s, string l, int t )
@@ -1182,6 +1207,31 @@
 
   void ProcessFunctions()
   {
+
+    // delete proposed vs. defined functions
+    for( int i = 0; i < defined_ids_vector.size(); i++ )
+      {
+	string name = defined_ids_vector[i]->getName();
+	
+	for( int j = 0; j < proposed_ids_vector.size(); j++ )
+	  {
+	    if( name == proposed_ids_vector[j]->getName() )
+	      {
+		proposed_ids_vector.erase(proposed_ids_vector.begin() + j);
+		j--;
+	      }
+	  }
+      }
+    
+    for( int j=0; j<proposed_ids_vector.size(); j++ )
+      {
+	cerr << "*** Undefined Function: " <<  proposed_ids_vector[j]->getName() << " on line " <<  proposed_ids_vector[j]->getLine() << " ***" << endl;
+
+	//cerr << proposed_ids_vector[j]->getName() << " line: " << proposed_ids_vector[j]->getLine() << endl;
+      }
+
+    
+    
     for( int j=0; j<asm_functions.size(); j++ )
       {
 	string current_function = asm_functions[j]->getIdentifier();
@@ -1498,32 +1548,97 @@ main: datatype ID
 function: function function
 | datatype ID '(' datatype ID ')' '{'
 {
+  //defined_functions_vector.push_back( string($2.name) );
+  /* // this is where to remove the id_name from the id_vector */
+  /*   for( int it = 0; it < id_vector.size(); it++ ) */
+  /*     { */
+  /* 	cerr << id_vector.at(it)->getName() << endl; */
+  /* 	if( id_vector.at(it)->getName() == $2.name ) */
+  /* 	  { */
+  /* 	    cerr << " removing " << $2.name << endl; */
+  /* 	    id_vector.erase(id_vector.begin() + it); */
+  /* 	    it--; */
+  /* 	  } */
+  /*     } */
+  
+  stack_is_needed=true;
   addComment( string("======================== ") + string($2.name) + string(" ========================"));
   addAsm( generateNewLabel(), 0, true );
   addFunction( string($2.name), getLabel( label_vector[label_major]-1 ), getDataTypeValue($1.name));
   addComment( "Get Parameter off of stack" );
   addAsmVariable(string($5.name),getDataTypeValue($4.name ));
   //cerr << "DT: " << $4.name << endl;
+  int tmp_addr;
+  int tmp_addr_L;
+  int tmp_addr_H;
+  
   switch( getDataTypeValue($4.name ) )
     {
     case 0:
     case 1:
+      /* addCommentBreak(2); */
+      /* addComment( "Push (U)Int Argument onto Software Stack" ); */
+      /* // 2023 04 01 */
+      /* addComment( "Push the Value" ); */
+      /* addAsm(string("LDA $")+toHex(getAddressOf($5.name)), 3, false); */
+      /* addAsm( "JSR PUSH", 3, false ); */
+      /* tmp_addr = getAddressOf($5.name); */
+      /* tmp_addr_L = get_word_L(tmp_addr); */
+      /* tmp_addr_H = get_word_H(tmp_addr); */
+      /* addComment( "Push the Address" ); */
+      /* addAsm( string("LDA #$") + toHex(tmp_addr_L), 2, false); */
+      /* addAsm( "JSR PUSH", 3, false ); */
+      /* addAsm( string("LDA #$") + toHex(tmp_addr_H), 2, false); */
+      /* addAsm( "JSR PUSH", 3, false ); */
+      /* addComment( "Push a 2 for twice, a 1 for once, and 0 for nonce!" ); */
+      /* addAsm( "LDA #$01", 2, false ); */
+      /* addAsm( "JSR PUSH", 3, false ); */
+      /* addCommentBreak(2); */
+      
       addAsm("PLA");addAsm("TAX");addAsm("PLA");addAsm("TAY");
-
       addAsm("PLA");
       addAsm(string("STA $")+toHex(getAddressOf($5.name)), 3, false);
-      
       addAsm("TYA");addAsm("PHA");addAsm("TXA");addAsm("PHA");
       break;
     case 2:
     case 3:
-      addAsm("PLA");addAsm("TAX");addAsm("PLA");addAsm("TAY");
+      /* addCommentBreak(2); */
+      /* addComment( "Push Word Argument onto Software Stack" ); */
+      /* addComment( "Push the Value (L)" ); */
+      /* addAsm(string("LDA $")+toHex(getAddressOf($5.name)), 3, false); */
+      /* addAsm( "JSR PUSH", 3, false ); */
+      /* tmp_addr = getAddressOf($5.name); */
+      /* tmp_addr_L = get_word_L(tmp_addr); */
+      /* tmp_addr_H = get_word_H(tmp_addr); */
+      /* addComment( "Push the Address (1)" ); */
+      /* addAsm( string("LDA #$") + toHex(tmp_addr_L), 2, false); */
+      /* addAsm( "JSR PUSH", 3, false ); */
+      /* addAsm( string("LDA #$") + toHex(tmp_addr_H), 2, false); */
+      /* addAsm( "JSR PUSH", 3, false ); */
+      /* addComment( "Push the Value (H)" ); */
+      /* addAsm(string("LDA $")+toHex(getAddressOf($5.name)+1), 3, false); */
+      /* addAsm( "JSR PUSH", 3, false ); */
+      /* tmp_addr++; */
+      /* tmp_addr_L = get_word_L(tmp_addr); */
+      /* tmp_addr_H = get_word_H(tmp_addr); */
+      /* addComment( "Push the Address (2)" ); */
+      /* addAsm( string("LDA #$") + toHex(tmp_addr_L), 2, false); */
+      /* addAsm( "JSR PUSH", 3, false ); */
+      /* addAsm( string("LDA #$") + toHex(tmp_addr_H), 2, false); */
+      /* addAsm( "JSR PUSH", 3, false ); */
 
+      /* addComment( "Push a 2 for twice, a 1 for once, and 0 for nonce!" ); */
+
+      /* addAsm( "LDA #$02", 2, false ); */
+      /* addAsm( "JSR PUSH", 3, false ); */
+
+      /*  addCommentBreak(2); */
+
+      addAsm("PLA");addAsm("TAX");addAsm("PLA");addAsm("TAY");
       addAsm("PLA");
       addAsm(string("STA $")+toHex(getAddressOf($5.name)+1), 3, false);
       addAsm("PLA");
       addAsm(string("STA $")+toHex(getAddressOf($5.name)), 3, false);
-      
       addAsm("TYA");addAsm("PHA");addAsm("TXA");addAsm("PHA");
       break;
     default:
@@ -1534,6 +1649,9 @@ function: function function
     // add this label to the list of functions and their addresses
     // any time we come across the function with this ID
     // we can JSR to it
+
+   defined_ids_vector.push_back( new id_and_line( $2.name, countn+1 ));
+ 
     if( !previousAsm("RTS") )
       {
 	//             // we may want to consider
@@ -1547,6 +1665,7 @@ function: function function
     // add this label to the list of functions and their addresses
     // any time we come across the function with this ID
     // we can JSR to it
+   defined_ids_vector.push_back( new id_and_line( $2.name, countn+1 ));
     if( !previousAsm("RTS") )
       {
 	//             // we may want to consider
@@ -1561,6 +1680,9 @@ function: function function
   // add this lavel to the list of functions and their addresses
   // any time we come across the function with this ID
   // we can JSR to it
+    // remove all instances of an ID with the name $2.name from my id_vector
+
+  defined_ids_vector.push_back( new id_and_line( $2.name, countn+1 ));
   if( !previousAsm("RTS") ){addAsm("RTS");}
 };
 |
@@ -2450,7 +2572,8 @@ body: WHILE
 | ID '(' expression ')' ';'
 {
   addComment( "Call a function as a statement" );
-
+  proposed_ids_vector.push_back( new id_and_line( $1.name, countn+1 ));
+  
   // put arguments on stack
   if( isUintID( $3.name ) )
     {
@@ -2491,7 +2614,47 @@ body: WHILE
       addAsm( "PHA" );
     }
 
-  addAsm( string( "###") + string($1.name), 3, false);  
+  addAsm( string( "###") + string($1.name), 3, false);
+  
+  /* pushScope( "RTSFROMFUNC" ); */
+  /* addAsm( "LDA $02", 2, false ); */
+  /* addAsm( "PHA" ); */
+  /* addAsm( "LDA $03", 2, false ); */
+  /* addAsm( "PHA" ); */
+  /* addAsm( "JSR POP", 3, false ); */
+  /* addAsm( "CMP #$00", 2, false ); */
+  /* addAsm( "TAX" ); */
+  /* addAsm( string( "BEQ " ) + getLabel( label_vector[label_major],false), 2, false );  */
+
+  /* addAsm( "JSR POP", 3, false ); */
+  /* addAsm( "STA $03", 2, false ); */
+  /* addAsm( "JSR POP", 3, false ); */
+  /* addAsm( "STA $02", 2, false ); */
+  /* addAsm( "JSR POP", 3, false ); */
+  /* addAsm( "LDY #$00", 2, false ); */
+  /* addAsm( "STA ($02),Y", 2, false ); */
+  /* addAsm( "TXA" );   */
+  /* addAsm( "CMP #$01", 2, false ); */
+  /* addAsm( string( "BEQ " ) + getLabel( label_vector[label_major],false), 2, false );  */
+
+
+  /* addAsm( "JSR POP", 3, false ); */
+  /* addAsm( "STA $03", 2, false ); */
+  /* addAsm( "JSR POP", 3, false ); */
+  /* addAsm( "STA $02", 2, false ); */
+  /* addAsm( "JSR POP", 3, false ); */
+  /* addAsm( "LDY #$00", 2, false ); */
+  /* addAsm( "STA ($02),Y", 2, false ); */
+
+  
+  /* addAsm( generateNewLabel(), 0, true );  // if not 2 */
+
+
+  //addAsm( "PLA" );
+  //addAsm( "STA $03", 2, false );
+  //addAsm( "PLA" );
+  //addAsm( "STA $02", 2, false );
+  /* popScope(); */
 }
 | tSPRITECOLOUR '(' expression ',' expression ')' ';'
 {
@@ -4411,7 +4574,8 @@ statement: datatype ID init
     }
   else if( isWordDT($1.name) && isWordID($2.name) && isA($3.name) )
     {
-      addAsm( "LDX #$00", 2, false );
+      illegal_operations_are_needed = true;
+      addAsm( "LXA #$00", 2, false );
       int instr_size = 3;
       if( current_variable_base_address < 256 ) instr_size = 2;
 
@@ -5450,14 +5614,20 @@ statement: datatype ID init
 init: '=' expression
 {
   addComment( string( "RULE: init: '=' expression" ) );
-
   //if( isFloatID( $$.name ) )
   //  {
   //    cerr << "initializing a float" << endl;
   // }
   
   int variable_type = getTypeOf( $$.name );
-
+  //cerr << $$.name << " = " << $2.name << endl;
+      
+  //if( isWordID($$.name) && string($2.name) == string("") )
+  //  {
+  //    addAsm( "LDX #$00", 2, false );
+  //    addAsm( "LDA #$00", 2, false );
+  //    strcpy( $$.name, "XA" );
+  //  }
   if( isARG($2.name)  )
     {
       addComment( "initialising a float with ARG" );
@@ -5532,6 +5702,9 @@ init: '=' expression
     }
   else if( isWordIMM($2.name) )
     {
+
+      addComment( string("initialising WordIMM: ") + string(stripFirst($2.name)) );
+
       int tmp_int = atoi( stripFirst($2.name).c_str() );
       
       addAsm( string( "LDA #$" ) + toHex( get_word_L(tmp_int) ), 2, false);
@@ -5547,10 +5720,12 @@ init: '=' expression
 };
 |
 {
+  //cerr << $$.name << endl;
   addParserComment( "RULE: init:" );
-  sprintf($$.type, "null");
-  $$.nd = mknode(NULL, NULL, "0");
+  //sprintf($$.type, "null");
+  //$$.nd = mknode(NULL, NULL, "0");
   strcpy($$.name, "A");
+  //strcpy($$.name, "");
 };
 
 // 2023 03 21
@@ -5609,13 +5784,11 @@ arithmetic expression
       if( op == string("-") )
 	{
 	  int tmp_op1 = getAddressOf( $1.name );
-	  
 	  addAsm( "TAY" );
 	  addAsm( "LDA $02", 2, false );
 	  addAsm( "PHA" );
 	  addAsm( "LDA $03", 2, false );
 	  addAsm( "PHA" );
-	  
 	  addAsm( "STY $02", 2, false );
 	  addAsm( "STX $03", 2, false );
 	  addAsm( string( "LDA $") + toHex(tmp_op1), 3, false  );
@@ -5661,47 +5834,124 @@ arithmetic expression
 	  mul16_is_needed = true;
 	  addAsm( "STA $FD", 2, false);
 	  addAsm( "STX $FE", 2, false);
-
-	  
 	  addAsm( string( "LDA $") + toHex(tmp_op1+1), 3, false  );
 	  addAsm( "STA $FC", 2, false );
 	  addAsm( string( "LDA $") + toHex(tmp_op1), 3, false  );
 	  addAsm( "STA $FB", 2, false );
-	  
 	  addAsm( "JSR MUL16", 3, false );
 	  addAsm( "LDA MUL16R", 3, false );
 	  addAsm( "LDX MUL16R+1", 3, false );
 	  strcpy($$.name, "XA" );
-
-
 	}
       else if( op == string("/") )
 	{
 	  int tmp_op1 = getAddressOf( $1.name );
 	  div16_is_needed = true;
-
-
 	  addAsm( "STA $FD", 2, false);
 	  addAsm( "STX $FE", 2, false);
-
 	  addAsm( string( "LDA $") + toHex(tmp_op1), 3, false  );
 	  addAsm( "STA $FB", 2, false );
-
 	  addAsm( string( "LDA $") + toHex(tmp_op1+1), 3, false  );
 	  addAsm( "STA $FC", 2, false );
-	  
-	  
-
 	  addAsm( "JSR DIV16", 3, false );
 	  addAsm( "LDA $FB", 2, false );
 	  addAsm( "LDX $FC", 2, false );
-
 	  strcpy($$.name, "XA" );
-
 	}
       else
 	{
-	  addCompilerMessage( string("Word ")  + op + string(" XA"), 0 );
+	  addCompilerMessage( string("WordID ")  + op + string(" XA"), 0 );
+	  addCompilerMessage( "Math operation not implemented... yet.", 3 );
+	}
+	
+    }
+  else if( isUintID($1.name) && isXA($4.name) )
+    {
+      addComment( "UintID arith XA" );
+      if( op == string("-") )
+	{
+	  int tmp_op1 = getAddressOf( $1.name );
+	  addAsm( "TAY" );
+	  addAsm( "LDA $02", 2, false );
+	  addAsm( "PHA" );
+	  addAsm( "LDA $03", 2, false );
+	  addAsm( "PHA" );
+	  addAsm( "STY $02", 2, false );
+	  addAsm( "STX $03", 2, false );
+	  addAsm( string( "LDA $") + toHex(tmp_op1), 3, false  );
+	  addAsm( "SBC $02", 2, false );
+	  addAsm( "TAY" );
+	  addAsm( "LDA #$00", 2, false  );
+	  addAsm( "SBC $03", 2, false );
+	  addAsm( "TAX" );
+	  addAsm( "PLA" );
+	  addAsm( "STA $03", 2, false );
+	  addAsm( "PLA" );
+	  addAsm( "STA $02", 2, false );
+	  addAsm( "TYA" );
+	  strcpy($$.name, "XA" );
+	}
+      else if( op == string("+") )
+	{
+	  int tmp_op1 = getAddressOf( $1.name );
+	  //addAsm( "CLC" );
+	  addAsm( "TAY" );
+	  addAsm( "LDA $02", 2, false );
+	  addAsm( "PHA" );
+	  addAsm( "LDA $03", 2, false );
+	  addAsm( "PHA" );
+	  addAsm( "STY $02", 2, false );
+	  addAsm( "STX $03", 2, false );
+	  addAsm( string( "LDA $") + toHex(tmp_op1), 3, false  );
+	  addAsm( "ADC $02", 2, false );
+	  addAsm( "TAY" );
+	  addAsm( "LDA #$00", 2, false  );
+	  //addAsm( string( "LDA $") + toHex(tmp_op1+1), 3, false  );
+	  addAsm( "ADC $03", 2, false );
+	  addAsm( "TAX" );
+	  addAsm( "PLA" );
+	  addAsm( "STA $03", 2, false );
+	  addAsm( "PLA" );
+	  addAsm( "STA $02", 2, false );
+	  addAsm( "TYA" );
+	  strcpy($$.name, "XA" );
+	}
+      else if( op == string("*") )
+	{
+	  int tmp_op1 = getAddressOf( $1.name );
+	  mul16_is_needed = true;
+	  addAsm( "STA $FD", 2, false);
+	  addAsm( "STX $FE", 2, false);
+	  addAsm( "LDA #$00", 2, false  );
+	  //addAsm( string( "LDA $") + toHex(tmp_op1+1), 3, false  );
+	  addAsm( "STA $FC", 2, false );
+	  addAsm( string( "LDA $") + toHex(tmp_op1), 3, false  );
+	  addAsm( "STA $FB", 2, false );
+	  addAsm( "JSR MUL16", 3, false );
+	  addAsm( "LDA MUL16R", 3, false );
+	  addAsm( "LDX MUL16R+1", 3, false );
+	  strcpy($$.name, "XA" );
+	}
+      else if( op == string("/") )
+	{
+	  int tmp_op1 = getAddressOf( $1.name );
+	  div16_is_needed = true;
+	  addAsm( "STA $FD", 2, false);
+	  addAsm( "STX $FE", 2, false);
+	  addAsm( "LDA #$00", 2, false  );
+
+	  //addAsm( string( "LDA $") + toHex(tmp_op1), 3, false  );
+	  addAsm( "STA $FB", 2, false );
+	  addAsm( string( "LDA $") + toHex(tmp_op1+1), 3, false  );
+	  addAsm( "STA $FC", 2, false );
+	  addAsm( "JSR DIV16", 3, false );
+	  addAsm( "LDA $FB", 2, false );
+	  addAsm( "LDX $FC", 2, false );
+	  strcpy($$.name, "XA" );
+	}
+      else
+	{
+	  addCompilerMessage( string("UintID ")  + op + string(" XA"), 0 );
 	  addCompilerMessage( "Math operation not implemented... yet.", 3 );
 	}
 	
@@ -5990,7 +6240,7 @@ arithmetic expression
 	    {
 	    case 0:
 	      illegal_operations_are_needed = true;
-	      addAsm( "LAX #$00", 2, false );
+	      addAsm( "LXA #$00", 2, false );
 	      strcpy($$.name, "XA");
 	      break;
 	    case 1:
@@ -6279,7 +6529,7 @@ arithmetic expression
 	    {
 	    case 0:
 	      illegal_operations_are_needed = true;
-	      addAsm( "LAX #$00", 2, false );
+	      addAsm( "LXA #$00", 2, false );
 	    case 1:
 	      strcpy($$.name, "XA");
 	      break;
@@ -7618,7 +7868,7 @@ arithmetic expression
       
       if( op == string("+"))
 	{
-	  addAsm( "CLC" );
+	  //20230402 addAsm( "CLC" );
 	  int tmp_int = atoi(stripFirst($4.name).c_str());
 	  if( tmp_int < 0 )
 	    {
@@ -7630,7 +7880,7 @@ arithmetic expression
 	}
       else if( op == string("-"))
 	{
-	  addAsm( "SEC" );
+	  //20230402addAsm( "SEC" );
 
 	  int tmp_int = atoi(stripFirst($4.name).c_str());
 	  if( tmp_int < 0 )
@@ -7715,7 +7965,7 @@ arithmetic expression
       addAsm( string( "LDA ") +  string($4.name), 3, false); // 
       if( op == string("+"))
 	{
-	  addAsm( "CLC" );
+	  //20230402 addAsm( "CLC" );
 	  int tmp_int = atoi(stripFirst($1.name).c_str());
 	  if( tmp_int < 0 )
 	    {
@@ -7725,7 +7975,7 @@ arithmetic expression
 	}
       else if( op == string("-"))
 	{
-	  addAsm( "SEC" );
+	  //20230402 addAsm( "SEC" );
 
 	  int tmp_int = atoi(stripFirst($1.name).c_str());
 	  if( tmp_int < 0 )
@@ -8416,6 +8666,7 @@ arithmetic expression
 | tPOP '(' ')'
 {
   // merely for testing out the software stack
+  stack_is_needed = true;
   addAsm( "JSR POP", 3, false );
   strcpy( $$.name, "A" );
 };
@@ -9702,28 +9953,41 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
 | ID '(' expression ')' 
 {
   addComment( "Call a function as an expression" );
+  proposed_ids_vector.push_back( new id_and_line( $1.name, countn+1 ));
+
   // put arguments on stack
   if( isUintID( $3.name ) )
     {
       addAsm( string("LDA $") + toHex( getAddressOf( $3.name ) ), 3, false );
       addAsm( "PHA" );
+      //addAsm( "JSR PUSH", 3, false );
+
     }
   else if( isA( $3.name ) )
     {
       addAsm( "PHA" );
+      //addAsm( "JSR PUSH", 3, false );
+
     }
   else if( isXA( $3.name ) )
     {
       addAsm( "PHA" );
+      //addAsm( "JSR PUSH", 3, false );
       addAsm( "TXA" );
       addAsm( "PHA" );
+      // addAsm( "JSR PUSH", 3, false );
+
     }
   else if( isWordID( $3.name ) )
     {
       addAsm( string("LDA $") + toHex( getAddressOf($3.name) ), 3, false );
       addAsm( "PHA" );
+      //addAsm( "JSR PUSH", 3, false );
+
       addAsm( string("LDA $") + toHex( getAddressOf($3.name)+1 ), 3, false );
       addAsm( "PHA" );
+      //addAsm( "JSR PUSH", 3, false );
+	    
     }
   else if( isWordIMM( $3.name ) )
     {
@@ -9732,29 +9996,103 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
       int tmp_H = get_word_H(tmp_v);
       addAsm( string("LDA #$") + toHex( tmp_L ), 2, false );
       addAsm( "PHA" );
+      //addAsm( "JSR PUSH", 3, false );
+
       addAsm( string("LDA #$") + toHex( tmp_H ), 2, false );
       addAsm( "PHA" );
+      //addAsm( "JSR PUSH", 3, false );
+	    
     }
   else if( isUintIMM( $3.name ) )
     {
       int tmp_v = atoi(stripFirst($3.name).c_str());
       addAsm( string("LDA #$") + toHex( tmp_v ), 2, false );
       addAsm( "PHA" );
+      //addAsm( "JSR PUSH", 3, false );
+
     }
 
+  
   addComment( "function call" );
   addAsm( string( "###") + string($1.name), 3, false);
-  addComment( "Push Return Value onto Stack" );
+
+  // 2023 04 01
+  /* addCommentBreak(2); */
+  /* pushScope( "RTSFROMFUNC" ); */
+  /* addComment( "This is supposed to restore the argument to a function" ); */
+  /* addComment( "if it calls itself. "); */
+  /* addComment( "Save $02/03" );	       */
+  /* addAsm( "LDA $02", 2, false ); */
+  /* addAsm( "PHA" ); */
+  /* addAsm( "LDA $03", 2, false ); */
+  /* addAsm( "PHA" ); */
+  /* addComment( "Pop the number of values that are exprect to be on the Software Stack" ); */
+  /* addAsm( "JSR POP", 3, false ); */
+  /* addComment( "If it's nonce, then we're done with the return values." ); */
+  /* addAsm( "CMP #$00", 2, false ); */
+  /* addAsm( string( "TAX" ) + commentmarker + string(" save the number"), 1, false  ); */
+  /* addAsm( string( "BEQ " ) + getLabel( label_vector[label_major],false), 2, false ); */
+  /* addComment( "there's at least one, so get the first one's address" ); */
+  /* addComment( "and tore it in $02/$03" ); */
+  /* addAsm( "JSR POP", 3, false ); */
+  /* addAsm( "STA $03", 2, false ); */
+  /* addAsm( "JSR POP", 3, false ); */
+  /* addAsm( "STA $02", 2, false ); */
+  /* addComment( "Put the numeric return value into A" ); */
+  /* addAsm( "JSR POP", 3, false ); */
+  /* addComment( "Store it at the correct memory location" ); */
+  /* addAsm( "LDY #$00", 2, false ); */
+  /* addAsm( "STA ($02),Y", 2, false ); */
+  /* addComment( "get the next value if there is one." ); */
+  /* addAsm( "TXA" ); */
+  /* addAsm( "CMP #$01", 2, false ); */
+  /* addAsm( string( "BEQ " ) + getLabel( label_vector[label_major],false), 2, false ); */
+  /* addAsm( "JSR POP", 3, false ); */
+  /* addAsm( "STA $03", 2, false ); */
+  /* addAsm( "JSR POP", 3, false ); */
+  /* addAsm( "STA $02", 2, false ); */
+  /* addAsm( "JSR POP", 3, false ); */
+  /* addAsm( "LDY #$00", 2, false ); */
+  /* addAsm( "STA ($02),Y", 2, false ); */
+  /* addComment( "restore $02/$03" ); */
+  /* addAsm( "PLA" ); */
+  /* addAsm( "STA $03", 2, false ); */
+  /* addAsm( "PLA" ); */
+  /* addAsm( "STA $02", 2, false ); */
+  /* addAsm( generateNewLabel(), 0, true );  // if not 2 */
+  /* popScope(); */
+  /* addCommentBreak(2); */
+
+
+  
+  
+  addComment( "Pop Return Value off of Processor Stack - 2023 04 02" );
+  illegal_operations_are_needed = true;
+  pushScope( "POPRTN" );
+  //addAsm( "LDX #$00", 2, false );
   addAsm( "PLA" ); // the number of bytes in the stack
   addAsm( "TAY" );
-  addAsm( "CPY #$02", 2, false );
-  addAsm( ".BYTE #$D0, #$03; BNE +3", 2, false );
+  addAsm( "LXA #$00", 2, false );
+  addAsm( "CPY #$00", 2, false );
+  addAsm( string( "BEQ " ) + getLabel( label_vector[label_major]+1,false), 2, false );
+  addAsm( "CPY #$01", 2, false );
+  addAsm( string( "BEQ " ) + getLabel( label_vector[label_major],false), 2, false );
+  // get 1 value and put it in X
   addAsm( "PLA" );
   addAsm( "TAX" );
-  addAsm( "DEY" );
-  addAsm( "CPY #$01", 2, false );
-  addAsm( ".BYTE #$D0, #$01; BNE +1", 2, false );
+  addAsm( generateNewLabel(), 0, true );  // if  0
+  // get 1 value and put it in A
   addAsm( "PLA" );
+  addAsm( generateNewLabel(), 0, true );  // if  0
+  popScope();
+  addCommentBreak(2);
+  // restore the original argument
+  if( isUintID($3.name) || isIntID($3.name) || isA($3.name) || isUintIMM($3.name) || isIntIMM($3.name))
+    {
+      
+
+
+    }
   strcpy($$.name, "XA" ); 
 };
 | tPEEK '(' expression ')'
@@ -10081,6 +10419,7 @@ return: RETURN ';'
       addComment( "Deleted previous 5 Mneumonics" );
 
     }
+  addComment( "return from function" );
   addAsm("PLA");
   addAsm("TAX");
   addAsm("PLA");
@@ -10135,6 +10474,7 @@ return: RETURN ';'
     }
   else if( isXA($3.name) )
     {
+      stack_is_needed = true;
       addAsm("JSR POP", 3, false );
       addAsm("PHA");
       addAsm("JSR POP", 3, false );
@@ -10287,25 +10627,16 @@ int main(int argc, char *argv[])
     }
   if( bin2bit_is_needed )
     {
-      return_addresses_needed = true;
+      //return_addresses_needed = true;
       addAsm( "BIN2BIT:\t\t;Convert an integer in A to the Ath bit", 0, true );
 
-      //addAsm( "LDX $02", 2, false );
-      //addAsm( "LDY $03", 2, false );
-      //addAsm( "PLA" );
-      //addAsm( "STA $02", 2, false );
-      //addAsm( "PLA" );
-      //addAsm( "STA $03", 2, false );
-      //addAsm( "TXA" );
-      //addAsm( "PHA" );
-      //addAsm( "TYA" );
-      //addAsm( "PHA" );
-      
       
       addAsm( "PLA" );
-      addAsm( string( "STA $" ) + toHex(getAddressOf( "return_address_1" )), 3, false );
+      addAsm( "JSR PUSH", 3, false);
+      //addAsm( string( "STA $" ) + toHex(getAddressOf( "return_address_1" )), 3, false );
       addAsm( "PLA" );
-      addAsm( string( "STA $" ) + toHex(getAddressOf( "return_address_2" )), 3, false );
+      addAsm( "JSR PUSH", 3, false);
+      //addAsm( string( "STA $" ) + toHex(getAddressOf( "return_address_2" )), 3, false );
       // ==================================================================================
       addAsm( "PLA" );
       addAsm( "TAX" );
@@ -10319,10 +10650,13 @@ int main(int argc, char *argv[])
 
       addAsm( "PHA" );// the return value will be on the stack
       // ==================================================================================
+      stack_is_needed = true;
 
-      addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_2" ) ), 3, false );
+      addAsm( "JSR POP", 3, false );
+      //addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_2" ) ), 3, false );
       addAsm( "PHA" );
-      addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_1" ) ), 3, false );
+      addAsm( "JSR POP", 3, false );
+      //addAsm( string( "LDA $" ) + toHex(getAddressOf( "return_address_1" ) ), 3, false );
       addAsm( "PHA" );
       addAsm( "RTS" );
     }
