@@ -136,6 +136,7 @@
   {
     bool return_value = false;
     if( s[0] == 'm' ) return_value = true;
+    //if( return_value )  cerr << "isMob" << endl;
     return return_value;
   }
   
@@ -926,6 +927,7 @@
   {
     bool return_value = false;
     if( s == string("MOB")) return_value = true;
+    //if( return_value )  cerr << "isMOB" << endl;
     return return_value;
   }
 
@@ -974,6 +976,8 @@
   {
     bool return_value = false;
     if( getTypeOf( s ) == 16 ) return_value = true;
+    //if( return_value )  cerr << "isMobID" << endl;
+ 
     return return_value;
   }
 
@@ -1848,6 +1852,7 @@ body: WHILE
 };
 | tDATA {pushScope( "DATA" );} ID
 {
+  addComment( "Data" );
   addAsmVariable($3.name, 2);
   int addr = getAddressOf( $3.name );
   addAsm( string("LDA #<") + getLabel( label_vector[label_major],false), 2, false );
@@ -3504,10 +3509,11 @@ body: WHILE
       if( valu_addr < 256 ) instr_size = 2;      
       addAsm( string("LDA $") + toHex( valu_addr ), instr_size, false );
 
-      addAsm( ".BYTE $8D;\t  <-- STA absolute", 1, false );
-      addAsm( generateNewLabel() + string( "\t\t\t; <-- low byte"), 0, true );
+      addAsm( string( ".BYTE $8D\t") + commentmarker + string( " STA absolute"), 1, false );
+      //addAsm( ".BYTE $8D;\t  <-- STA absolute", 1, false );
+      addAsm( generateNewLabel() + string( "\t\t\t") + commentmarker + string("<-- low byte"), 0, true );
       addAsm( ".BYTE $00", 1, false );
-      addAsm( generateNewLabel() + string( "\t\t\t; <-- hi byte"), 0, true );
+      addAsm( generateNewLabel() + string( "\t\t\t") + commentmarker + string("<-- hi byte"), 0, true );
       addAsm( ".BYTE $00", 1, false );
       popScope();
     }
@@ -3522,10 +3528,11 @@ body: WHILE
       if( valu_addr < 256 ) instr_size = 2;      
       addAsm( string("LDA $") + toHex( valu_addr ), instr_size, false );
 
-      addAsm( ".BYTE $8D;\t  <-- STA absolute", 1, false );
-      addAsm( generateNewLabel() + string( "\t\t\t; <-- low byte"), 0, true );
+      addAsm( string( ".BYTE $8D\t") + commentmarker + string( " STA absolute"), 1, false );
+      addAsm( generateNewLabel() + string( "\t\t\t") + commentmarker + string("<-- low byte"), 0, true );
       addAsm( ".BYTE $00", 1, false );
-      addAsm( generateNewLabel() + string( "\t\t\t; <-- hi byte"), 0, true );
+      addAsm( generateNewLabel() + string( "\t\t\t") + commentmarker + string("<-- hi byte"), 0, true );
+
       addAsm( ".BYTE $00", 1, false );
       popScope();
     }
@@ -4367,8 +4374,12 @@ statement: datatype ID init
   addComment( string($1.name) + " " + string($2.name) + "=" + string($3.name) + string( " datatype#: ") + toHex( current_variable_type ));
   
   current_variable_type = getDataTypeValue( $1.name );
-  //addComment( toHex( current_variable_type ) );
+
+
+  // this adds the variable to the list of variables
   addAsmVariable($2.name, current_variable_type );
+
+
   current_variable_base_address = getAddressOf($2.name);
   
   if(isFloatDT($1.name) && isFloatID($2.name) && isARG($3.name))
@@ -4380,6 +4391,43 @@ statement: datatype ID init
       addAsm( string( "LDX #$" ) + toHex(get_word_L(current_variable_base_address)) + commentmarker + string( " ADDR_L" ), 2, false );
       addAsm( string( "LDY #$" ) + toHex(get_word_H(current_variable_base_address)) + commentmarker + string( " ADDR_H" ), 2, false );
       addAsm( string("JSR $BBD4") + commentmarker + string(" FAC -> MEM ") + string($2.name), 3, false );
+    }
+  else if( isNULL($3.name) )
+    {
+      addComment( "NULL expression... variable is ghosted" );
+
+    }
+  else if( string($3.name) == string("Slipstream"))
+    {
+      if(  (isIntDT($1.name) || isUintDT($1.name)) &&  (isIntID($2.name) || isUintID($2.name)) )
+	{
+	  addComment( "Slipstream (U)Int" );
+	  int addr1 = getAddressOf($2.name);
+	  int instr_size = 3;
+	  if( addr1 < 256 ) instr_size = 2;
+	  addAsm( string("STA $") + toHex( addr1 ) + commentmarker + string(" ") + string( $2.name ), instr_size, false );
+
+	}
+      else if( isWordDT($1.name) && isWordID($2.name) )
+	{
+	  addComment( "Slipstream Word" );
+
+	  int addr1 = getAddressOf($2.name);
+	  int addr2 = getAddressOf($2.name)+1;
+	  int instr_size = 3;
+	  if( addr1 < 256 ) instr_size = 2;
+	  addAsm( string("STA $") + toHex( addr1 ) + commentmarker + string(" ") + string( $2.name ), instr_size, false );
+	  instr_size = 3;
+	  if( addr2 < 256 ) instr_size = 2;
+	  addAsm( string("STX $") + toHex( addr2 ), instr_size, false );
+	}
+      else
+	{
+	  addCompilerMessage( "unable to Slipstream variable type", 3 );
+			      
+	}
+	
+
     }
   else if( (isIntDT($1.name) || isUintDT($1.name)) && (isIntID($2.name) || isUintID($2.name)) && isNULL($3.name) )
     {
@@ -4663,12 +4711,13 @@ statement: datatype ID init
   else if(isWordDT($1.name) && isWordID($2.name) && isWordIMM($3.name))
     {
       int v = atoi( string($3.name).substr( 1, 6 ).c_str());
-      addAsm( string( "LDA #$" ) + toHex(get_word_L(v)), 2, false  );
-      addAsm( string( "LDX #$" ) + toHex(get_word_H(v)), 2, false  );
+      addAsm( string("LDA #$") + toHex(get_word_L(v)), 2, false  );
+      addAsm( string("LDX #$") + toHex(get_word_H(v)), 2, false  );
       addAsm( string("STA $") + toHex( current_variable_base_address) + commentmarker + string(" ") + string( $2.name ), 3, false );
       addAsm( string("STX $") + toHex( current_variable_base_address+1), 3, false );
     }
-  else if(isMob($3.name))
+  //else if(string($3.name) == string("m")) // 0404
+  else if(isMOB($3.name))
     {
       addComment( "MOB Detected" );
 
@@ -5498,10 +5547,10 @@ statement: datatype ID init
       int addr2 = getAddressOf($2.name);
       int instr_size = 3;
       if( addr2 < 256 ) instr_size = 2;
-      addAsm( string("LDA $") + toHex( addr2 ), instr_size, false );
+      addAsm( string("LDA $") + toHex( addr2 ) + commentmarker + string(" ") + getNameOf(addr1), instr_size, false );
       instr_size = 3;
       if( addr1 < 256 ) instr_size = 2;
-      addAsm( string("STA $") + toHex( addr1 ), instr_size, false );
+      addAsm( string("STA $") + toHex( addr1 ) + commentmarker + string(" ") + getNameOf(addr2), instr_size, false );
     }
   else if( isUintID($1.name) && isNULL($2.name ) )
     {
@@ -5704,24 +5753,28 @@ init: '=' expression
     }
   else if( isWordID( $2.name ) )
     {
-      int tmp_addr = hexToDecimal($2.name); 
+      int tmp_addr = hexToDecimal($2.name);
+      int instr_size = 3;
+      if(tmp_addr < 256) instr_size = 2;
       addComment( "initialising WordID" );
-      addAsm( string("LDA $") + toHex(tmp_addr), 3, false );
-      addAsm( string("LDX $") + toHex(tmp_addr+1), 3, false );
+      addAsm( string("LDA $") + toHex(tmp_addr) + commentmarker + string(" ") + getNameOf(tmp_addr), instr_size, false );
+      instr_size = 3;
+      if(tmp_addr < 255) instr_size = 2;
+      addAsm( string("LDX $") + toHex(tmp_addr+1), instr_size, false );
       strcpy($$.name, "XA" );
     }
   else if( isUintID( $2.name ) )
     {
       int tmp_addr = hexToDecimal($2.name); 
       addComment( "initialising UintID" );
-      addAsm( string("LDA $") + toHex(tmp_addr), 3, false );
+      addAsm( string("LDA $") + toHex(tmp_addr) + commentmarker + string(" ") + getNameOf(tmp_addr), 3, false );
       strcpy($$.name, "A" );
     }
   else if( isIntID( $2.name ) )
     {
       int tmp_addr = hexToDecimal($2.name); 
       addComment( "initialising IntID" );
-      addAsm( string("LDA $") + toHex(tmp_addr), 3, false );
+      addAsm( string("LDA $") + toHex(tmp_addr) +  commentmarker + string(" ") + getNameOf(tmp_addr), 3, false );
       strcpy($$.name, "A" );
     }
   else if( isUintIMM($2.name) )
@@ -5762,20 +5815,26 @@ init: '=' expression
 	}
       strcpy($$.name, "XA" ); 
     }
+  else if( isNULL($2.name) )
+    {
+      
+      strcpy($$.name, "NULL" );
+    }
    else
     {
-     strcpy($$.name, $2.name);
-   }
+      strcpy($$.name, $2.name );
+
+    }
 }
 |
 {
   //cerr << $$.name << endl;
-  addParserComment( "RULE: init: NULL" );
+  addParserComment( "RULE: init: nothing (not NULL)" );
   //sprintf($$.type, "null");
   //$$.nd = mknode(NULL, NULL, "0");
   //strcpy($$.name, "w0" );
   //strcpy($$.name, "A");
-  strcpy($$.name, "NULL");
+  strcpy($$.name, "Slipstream");
 };
 
 // 2023 03 21
@@ -8713,6 +8772,11 @@ arithmetic expression
     }
 	
 };
+| tNULL
+{
+  addComment( "NULL expression" );
+  strcpy( $$.name, "NULL" );
+};
 | tPOP '(' ')'
 {
   // merely for testing out the software stack
@@ -9660,7 +9724,8 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
   mob_vector.push_back( atoi(stripFirst($126.name).c_str()) );
   mob_vector.push_back( atoi(stripFirst($128.name).c_str()) );
   mob_vector.push_back( atoi(stripFirst($130.name).c_str()) );
-  strcpy($$.name, "m" );
+  strcpy($$.name, "MOB" );
+  //strcpy($$.name, "m" ); // 0404
 };
 | tGETIN '(' ')'
 {
