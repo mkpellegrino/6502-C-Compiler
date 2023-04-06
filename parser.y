@@ -3492,12 +3492,12 @@ body: WHILE
       pushScope("POKE( ID, ID)");
       int addr_addr = getAddressOf($3.name);
       int valu_addr = getAddressOf($5.name);
-
+      string tmp_addr_name = getNameOf(addr_addr);
       int instr_size = 3;
       if( addr_addr < 256 ) instr_size = 2;
       
       /* get & store the low byte of the poke address */
-      addAsm( string( "LDA $" ) + toHex(addr_addr), instr_size, false );
+      addAsm( string( "LDA $" ) + toHex(addr_addr) + commentmarker + string(" ") + tmp_addr_name, instr_size, false );
       addAsm( string( "STA " ) + getLabel( label_vector[label_major],false), 3, false );
       /* get & store the high byte of the poke address */
       instr_size = 3;
@@ -3521,12 +3521,13 @@ body: WHILE
     {
       pushScope("poke( XA, (U)IntID )");
       int valu_addr = getAddressOf($5.name);
+      string value_name = getNameOf(valu_addr);
       addAsm( string( "STA " ) + getLabel( label_vector[label_major],false), 3, false );
       addAsm( string( "STX " ) + getLabel( label_vector[label_major]+1,false), 3, false );
 
       int instr_size = 3;
       if( valu_addr < 256 ) instr_size = 2;      
-      addAsm( string("LDA $") + toHex( valu_addr ), instr_size, false );
+      addAsm( string("LDA $") + toHex( valu_addr ) + commentmarker + string(" ") + value_name, instr_size, false );
 
       addAsm( string( ".BYTE $8D\t") + commentmarker + string( " STA absolute"), 1, false );
       addAsm( generateNewLabel() + string( "\t\t\t") + commentmarker + string("<-- low byte"), 0, true );
@@ -3548,7 +3549,7 @@ body: WHILE
 
       addAsm( string("LDA #$") + toHex( value ), 2, false );
 
-      addAsm( ".BYTE $8D;\t  <-- STA absolute", 1, false );
+      addAsm( string( ".BYTE $8D\t") + commentmarker + string("<-- STA absolute"), 1, false );
       addAsm( generateNewLabel() + string( "\t\t\t; <-- low byte"), 0, true );
       addAsm( ".BYTE $00", 1, false );
       addAsm( generateNewLabel() + string( "\t\t\t; <-- hi byte"), 0, true );
@@ -3689,6 +3690,13 @@ body: WHILE
 }
 | { $$.nd = NULL; }
 
+
+// TODO: mkpellegrino - 2023 04 06
+// there needs to be a change here:
+// condition: expression {if(isA($1.name) addAsm( "PHA" );} relop expression
+// which would make $2.name -> $3.name and $3.name -> $4.name
+// then, when comparing anything with an A as OP1, it will need to be
+// popped off of the processor stack
 condition: expression relop expression
 {
   addDebugComment( "=========================================================");
@@ -3766,16 +3774,19 @@ condition: expression relop expression
   // ====================================================================================================================
   if( isFloatIMM($1.name) && isFloatID($3.name)) 
     {
+      
       // FP Operations
       inlineFloat($1.name, 105);
       current_variable_base_address = getAddressOf($3.name);
-      addAsm( string("LDA #$") + toHex( get_word_L( current_variable_base_address )), 2, false );
-      addAsm( string("LDY #$") + toHex( get_word_H( current_variable_base_address )), 2, false );
+      string tmp_name = getNameOf(current_variable_base_address);
+      
+      addAsm( string("LDA #$") + toHex( get_word_L( current_variable_base_address )) + commentmarker + string(" ") + tmp_name + string( " (LO)" ), 2, false );
+      addAsm( string("LDY #$") + toHex( get_word_H( current_variable_base_address )) + commentmarker + string(" ") + tmp_name + string( " (HI)" ), 2, false );
       addAsm( "JSR $BBA2; RAM -> FAC", 3, false );
       addAsm( "LDA #$69", 2, false );
       addAsm( "LDY #$00", 2, false );
-      addAsm( "JSR $BC5B; CMP(FAC, RAM)", 3, false );
-      addAsm( "PHA" );
+      addAsm( string("JSR $BC5B") + commentmarker + string(" CMP(FAC, RAM)"), 3, false );
+      //addAsm( "PHA" );  // why was this even here?
     }
   else if( isXA($1.name) && isWordIMM($3.name))  // mismatch
     {
@@ -3964,16 +3975,20 @@ condition: expression relop expression
     }
   else if( isUintID($1.name) && isUintIMM($3.name))
     {
+      int tmp_addr = getAddressOf($1.name);
+      string tmp_name = getNameOf(tmp_addr);
       addComment("UintID relop UintIMM");
       // Done
-      addAsm( string("LDA ") + string($1.name), 3, false );
+      addAsm( string("LDA ") + string($1.name) + commentmarker + string( " " ) + tmp_name, 3, false );
       addAsm( string("CMP #$") + toHex( atoi(stripFirst($3.name).c_str() )), 2, false );
     }
   else if( isUintIMM($1.name) && isUintID($3.name))
     {
       // Done
+      int tmp_addr = getAddressOf($3.name);
+      string tmp_name = getNameOf(tmp_addr);
       addAsm( string("LDA #$") + toHex( atoi(stripFirst($1.name).c_str() )), 2, false );
-      addAsm( string("CMP ") + string($3.name), 3, false );
+      addAsm( string("CMP ") + string($3.name) + commentmarker + string( " " ) + tmp_name, 3, false );
     }
   else if( isUintIMM($1.name) && isUintIMM($3.name))
     {
@@ -5547,10 +5562,10 @@ statement: datatype ID init
       int addr2 = getAddressOf($2.name);
       int instr_size = 3;
       if( addr2 < 256 ) instr_size = 2;
-      addAsm( string("LDA $") + toHex( addr2 ) + commentmarker + string(" ") + getNameOf(addr1), instr_size, false );
+      addAsm( string("LDA $") + toHex( addr2 ) + commentmarker + string(" ") + getNameOf(addr2), instr_size, false );
       instr_size = 3;
       if( addr1 < 256 ) instr_size = 2;
-      addAsm( string("STA $") + toHex( addr1 ) + commentmarker + string(" ") + getNameOf(addr2), instr_size, false );
+      addAsm( string("STA $") + toHex( addr1 ) + commentmarker + string(" ") + getNameOf(addr1), instr_size, false );
     }
   else if( isUintID($1.name) && isNULL($2.name ) )
     {
@@ -5563,10 +5578,10 @@ statement: datatype ID init
       int addr2 = getAddressOf($2.name);
       int instr_size = 3;
       if( addr2 < 256 ) instr_size = 2;
-      addAsm( string("LDA $") + toHex( addr2 ), instr_size, false );
+      addAsm( string("LDA $") + toHex( addr2 ) + commentmarker + string(" ") + getNameOf(addr2), instr_size, false );
       instr_size = 3;
       if( addr1 < 256 ) instr_size = 2;
-      addAsm( string("STA $") + toHex( addr1 ), instr_size, false );      
+      addAsm( string("STA $") + toHex( addr1 ) + commentmarker + string(" ") + getNameOf(addr1), instr_size, false );      
     }
   else if( isWordID($1.name) && isWordID($2.name) )
     {
@@ -5575,17 +5590,17 @@ statement: datatype ID init
       int addr2 = getAddressOf($2.name);
       int instr_size = 3;
       if( addr2 < 256 ) instr_size = 2;
-      addAsm( string("LDA $") + toHex( addr2 ), instr_size, false );
+      addAsm( string("LDA $") + toHex(addr2) + commentmarker + string(" ") + getNameOf(addr2) + string(" L"), instr_size, false );
       instr_size = 3;
       if( addr1 < 256 ) instr_size = 2;
-      addAsm( string("STA $") + toHex( addr1 ), instr_size, false );
+      addAsm( string("STA $") + toHex(addr1) + commentmarker + string(" ") + getNameOf(addr1) + string(" L"), instr_size, false );
       
       instr_size = 3;
       if( addr2+1 < 256 ) instr_size = 2;
-      addAsm( string("LDA $") + toHex( addr2+1 ), instr_size, false );
+      addAsm( string("LDA $") + toHex(addr2+1) + commentmarker + string(" ") + getNameOf(addr2) + string(" H"), instr_size, false );
       instr_size = 3;
       if( addr1+1 < 256 ) instr_size = 2;
-      addAsm( string("STA $") + toHex( addr1+1 ), instr_size, false );
+      addAsm( string("STA $") + toHex(addr1+1) + commentmarker + string(" ") + getNameOf(addr1) + string(" H"), instr_size, false );
     }
   else if( isWordID($1.name) && (isUintID($2.name) || isIntID($2.name) ))
     {
@@ -5594,16 +5609,16 @@ statement: datatype ID init
       int addr2 = getAddressOf($2.name);
       int instr_size = 3;
       if( addr2 < 256 ) instr_size = 2;
-      addAsm( string("LDA $") + toHex( addr2 ), instr_size, false );
+      addAsm( string("LDA $") + toHex( addr2 ) + commentmarker + string(" ") + getNameOf(addr2), instr_size, false );
       instr_size = 3;
       if( addr1 < 256 ) instr_size = 2;
-      addAsm( string("STA $") + toHex( addr1 ), instr_size, false );
+      addAsm( string("STA $") + toHex( addr1 ) + commentmarker + string(" ") + getNameOf(addr1) + string(" L"), instr_size, false );
 
       // high byte
       addAsm( "LDA #$00" , 2, false );
       instr_size = 3;
       if( addr1+1 < 256 ) instr_size = 2;
-      addAsm( string("STA $") + toHex( addr1+1 ), instr_size, false );
+      addAsm( string("STA $") + toHex(addr1+1) + commentmarker + string(" ") + getNameOf(addr1) + string(" H"), instr_size, false );
 
     }
   else if( isWordID($1.name) && isA($2.name) )
@@ -5612,7 +5627,7 @@ statement: datatype ID init
       int addr = getAddressOf($1.name);
       int instr_size = 3;
       if( addr < 256 ) instr_size = 2;
-      addAsm( string( "STA $" ) + toHex(addr), instr_size, false);
+      addAsm( string( "STA $" ) + toHex(addr) + commentmarker + string(" ") + getNameOf(addr), instr_size, false);
       instr_size = 3;
       if( addr+1 < 256 ) instr_size = 2;
       addAsm( "LDA #$00", 2, false );
@@ -5625,7 +5640,7 @@ statement: datatype ID init
       int addr = getAddressOf($1.name);
       int instr_size = 3;
       if( addr < 256 ) instr_size = 2;
-      addAsm( string( "STA $" ) + toHex(addr), instr_size, false);
+      addAsm( string( "STA $" ) + toHex(addr) + commentmarker + string(" ") + getNameOf(addr), instr_size, false);
       instr_size = 3;
       if( addr+1 < 256 ) instr_size = 2;
       addAsm( string( "STX $" ) + toHex(addr+1), instr_size, false);      
@@ -5664,7 +5679,7 @@ statement: datatype ID init
     {
       int instr_size = 3;
       if( current_variable_base_address < 256 ) instr_size=2; 
-      addAsm( string( "STA $" ) + toHex(current_variable_base_address), instr_size, false);
+      addAsm( string( "STA $" ) + toHex(current_variable_base_address) + commentmarker + string(" ") + getNameOf(current_variable_base_address), instr_size, false);
       if( (current_variable_base_address+1) < 256 )
 	{
 	  instr_size=2;
@@ -5679,14 +5694,14 @@ statement: datatype ID init
     {
       int instr_size = 3;
       if( current_variable_base_address < 256 ) instr_size=2; 
-      addAsm( string( "STA $" ) + toHex(current_variable_base_address), instr_size, false);
+      addAsm( string( "STA $" ) + toHex(current_variable_base_address) + commentmarker + string(" ") + getNameOf(current_variable_base_address), instr_size, false);
     }
   else if( (isUintID($1.name)||isIntID($1.name)) &&  isXA($2.name) )
     {
       addCompilerMessage("setting a 1 byte memory location to a 2 byte value... losing High Byte",0);
       int instr_size = 3;
       if( current_variable_base_address < 256 ) instr_size = 2;
-      addAsm( string("STA $") + toHex( current_variable_base_address), instr_size, false );
+      addAsm( string("STA $") + toHex( current_variable_base_address) + commentmarker + string(" ") + getNameOf(current_variable_base_address), instr_size, false );
   }
   else if( (isUintID($1.name)||isIntID($1.name) ) && (isIntIMM($2.name)||isUintIMM($2.name)))
     {
@@ -5694,7 +5709,7 @@ statement: datatype ID init
       //addAsm( string("LDA #$") + toHex( atoi($2.name) ), 2, false );
       int instr_size = 3;
       if( current_variable_base_address < 256 ) instr_size=2; 
-      addAsm( string( "STA $" ) + toHex(current_variable_base_address), instr_size, false);
+      addAsm( string( "STA $" ) + toHex(current_variable_base_address) + commentmarker + string(" ") + getNameOf(current_variable_base_address), instr_size, false);
     }
   else
     {
@@ -5900,7 +5915,7 @@ arithmetic expression
 	  addAsm( "PHA" );
 	  addAsm( "STY $02", 2, false );
 	  addAsm( "STX $03", 2, false );
-	  addAsm( string( "LDA $") + toHex(tmp_op1), 3, false  );
+	  addAsm( string( "LDA $") + toHex(tmp_op1) + commentmarker + string(" ") + string($1.name), 3, false  );
 	  addAsm( "SBC $02", 2, false );
 	  addAsm( "TAY" );
 	  addAsm( string( "LDA $") + toHex(tmp_op1+1), 3, false  );
@@ -5924,7 +5939,7 @@ arithmetic expression
 	  addAsm( "PHA" );
 	  addAsm( "STY $02", 2, false );
 	  addAsm( "STX $03", 2, false );
-	  addAsm( string( "LDA $") + toHex(tmp_op1), 3, false  );
+	  addAsm( string( "LDA $") + toHex(tmp_op1) + commentmarker + string(" ") + string($1.name), 3, false  );
 	  addAsm( "ADC $02", 2, false );
 	  addAsm( "TAY" );
 	  addAsm( string( "LDA $") + toHex(tmp_op1+1), 3, false  );
@@ -5943,7 +5958,7 @@ arithmetic expression
 	  mul16_is_needed = true;
 	  addAsm( "STA $FD", 2, false);
 	  addAsm( "STX $FE", 2, false);
-	  addAsm( string( "LDA $") + toHex(tmp_op1+1), 3, false  );
+	  addAsm( string( "LDA $") + toHex(tmp_op1+1) + commentmarker + string(" ") + string($1.name), 3, false  );
 	  addAsm( "STA $FC", 2, false );
 	  addAsm( string( "LDA $") + toHex(tmp_op1), 3, false  );
 	  addAsm( "STA $FB", 2, false );
@@ -5958,7 +5973,7 @@ arithmetic expression
 	  div16_is_needed = true;
 	  addAsm( "STA $FD", 2, false);
 	  addAsm( "STX $FE", 2, false);
-	  addAsm( string( "LDA $") + toHex(tmp_op1), 3, false  );
+	  addAsm( string( "LDA $") + toHex(tmp_op1) + commentmarker + string(" ") + string($1.name), 3, false  );
 	  addAsm( "STA $FB", 2, false );
 	  addAsm( string( "LDA $") + toHex(tmp_op1+1), 3, false  );
 	  addAsm( "STA $FC", 2, false );
@@ -5977,6 +5992,8 @@ arithmetic expression
   else if( isUintID($1.name) && isXA($4.name) )
     {
       addComment( "UintID arith XA" );
+      int tmp_addr = getAddressOf($1.name);
+      string tmp_name = getNameOf(tmp_addr);
       if( op == string("-") )
 	{
 	  int tmp_op1 = getAddressOf( $1.name );
@@ -5987,7 +6004,7 @@ arithmetic expression
 	  addAsm( "PHA" );
 	  addAsm( "STY $02", 2, false );
 	  addAsm( "STX $03", 2, false );
-	  addAsm( string( "LDA $") + toHex(tmp_op1), 3, false  );
+	  addAsm( string( "LDA $") + toHex(tmp_op1) + commentmarker + string(" ") + tmp_name, 3, false  );
 	  addAsm( "SBC $02", 2, false );
 	  addAsm( "TAY" );
 	  addAsm( "LDA #$00", 2, false  );
@@ -6011,7 +6028,7 @@ arithmetic expression
 	  addAsm( "PHA" );
 	  addAsm( "STY $02", 2, false );
 	  addAsm( "STX $03", 2, false );
-	  addAsm( string( "LDA $") + toHex(tmp_op1), 3, false  );
+	  addAsm( string( "LDA $") + toHex(tmp_op1) + commentmarker + string(" ") + tmp_name, 3, false  );
 	  addAsm( "ADC $02", 2, false );
 	  addAsm( "TAY" );
 	  addAsm( "LDA #$00", 2, false  );
@@ -6034,7 +6051,7 @@ arithmetic expression
 	  addAsm( "LDA #$00", 2, false  );
 	  //addAsm( string( "LDA $") + toHex(tmp_op1+1), 3, false  );
 	  addAsm( "STA $FC", 2, false );
-	  addAsm( string( "LDA $") + toHex(tmp_op1), 3, false  );
+	  addAsm( string( "LDA $") + toHex(tmp_op1) + commentmarker + string(" ") + tmp_name, 3, false  );
 	  addAsm( "STA $FB", 2, false );
 	  addAsm( "JSR MUL16", 3, false );
 	  addAsm( "LDA MUL16R", 3, false );
@@ -6051,7 +6068,7 @@ arithmetic expression
 
 	  //addAsm( string( "LDA $") + toHex(tmp_op1), 3, false  );
 	  addAsm( "STA $FB", 2, false );
-	  addAsm( string( "LDA $") + toHex(tmp_op1+1), 3, false  );
+	  addAsm( string( "LDA $") + toHex(tmp_op1+1) + commentmarker + string(" ") + tmp_name, 3, false  );
 	  addAsm( "STA $FC", 2, false );
 	  addAsm( "JSR DIV16", 3, false );
 	  addAsm( "LDA $FB", 2, false );
@@ -6168,7 +6185,7 @@ arithmetic expression
 	  int instr_size = 3;
 	  if( addr < 256 ) instr_size = 2;
 	  addComment( "UintID + XA" );
-	  addAsm( string("ADC $") + toHex(addr), instr_size, false );
+	  addAsm( string("ADC $") + toHex(addr) + commentmarker + string(" ") + string($1.name), instr_size, false );
 	  addAsm( "TAY" );
 	  addAsm( "TXA" );
 	  addAsm( "ADC #$00", 2, false );
@@ -6201,7 +6218,7 @@ arithmetic expression
 	  int tmp_base = getAddressOf( $4.name );
 	  //addCompilerMessage( "XA - WordID", 0 );
 	  //addAsm( "SEC" );
-	  addAsm( string("SBC $") + toHex( tmp_base ), 3, false );
+	  addAsm( string("SBC $") + toHex( tmp_base ) + commentmarker + string(" ") + string($4.name), 3, false );
 	  addAsm( "TAY" );
 	  addAsm( "TXA" );
 	  addAsm( string("SBC $") + toHex( tmp_base + 1 ), 3, false );
@@ -6215,7 +6232,7 @@ arithmetic expression
 	  int tmp_base = getAddressOf( $4.name );
 	  //addCompilerMessage( "XA + WordID", 0 );
 	  //addAsm( "CLC" );
-	  addAsm( string("ADC $") + toHex( tmp_base ), 3, false );
+	  addAsm( string("ADC $") + toHex( tmp_base ) + commentmarker + string(" ") + string($4.name), 3, false );
 	  addAsm( "TAY" );
 	  addAsm( "TXA" );
 	  addAsm( string("ADC $") + toHex( tmp_base + 1 ), 3, false );
@@ -6241,7 +6258,7 @@ arithmetic expression
 	    {
 	      instr_size = 2;
 	    }
-	  addAsm( string("LDA ") + toHex( tmp_base ), instr_size, false );
+	  addAsm( string("LDA ") + toHex( tmp_base ) + commentmarker + string(" ") + string($4.name), instr_size, false );
 	  
 	  addAsm( "STA $FD", 2, false);
 	  if( tmp_base+1 > 255 )
@@ -6281,7 +6298,7 @@ arithmetic expression
 	    {
 	      instr_size = 2;
 	    }
-	  addAsm( string("LDA ") + toHex( tmp_base ), instr_size, false );
+	  addAsm( string("LDA ") + toHex( tmp_base ) + commentmarker + string(" ") + string($4.name), instr_size, false );
 	  
 	  addAsm( "STA $FD", 2, false);
 	  if( tmp_base+1 > 255 )
@@ -6318,7 +6335,7 @@ arithmetic expression
 	  addComment( "XA - UintIMM" );
 	  int tmp_v = atoi(stripFirst($4.name).c_str());
 	  //addAsm( "SEC" );
-	  addAsm( string("SBC #$") + toHex(tmp_v), 2, false  );
+	  addAsm( string("SBC #$") + toHex(tmp_v) + commentmarker + string(" ") + string($4.name), 2, false  );
 	  addAsm( "TAY" );
 	  addAsm( "TXA" );
 	  addAsm( "SBC #$00", 2, false );
@@ -6332,7 +6349,7 @@ arithmetic expression
 
 	  int tmp_v = atoi(stripFirst($4.name).c_str());
 	  //addAsm( "CLC" );
-	  addAsm( string("ADC #$") + toHex(tmp_v), 2, false  );
+	  addAsm( string("ADC #$") + toHex(tmp_v) + commentmarker + string(" ") + string($4.name), 2, false  );
 	  addAsm( "TAY" );
 	  addAsm( "TXA" );
 	  addAsm( "ADC #$00", 2, false );
@@ -7003,16 +7020,20 @@ arithmetic expression
     {
       addComment( "A arithmetic UintID" );
       addAsm( "PLA" );
+      int tmp_addr = getAddressOf($4.name);
+      
+      string tmp_name = getNameOf(tmp_addr);
+      //addComment( toHex(tmp_addr) + string(": ") + tmp_name );
       // THIS IS BROKEN
       if( op == string("+"))
 	{
 	  //addAsm( "CLC" );
-	  addAsm( string( "ADC " ) + string($4.name), 3, false );
+	  addAsm( string( "ADC " ) + string($4.name) + commentmarker + string(" ") + tmp_name, 3, false );
 	}
       else if( op == string("-"))
 	{
 	  //addAsm( "SEC" );
-	  addAsm( string( "SBC " ) + string($4.name), 3, false );
+	  addAsm( string( "SBC " ) + string($4.name) + commentmarker + string(" ") + tmp_name, 3, false );
 	}
       else if( op == string("*"))
 	{
@@ -7029,7 +7050,7 @@ arithmetic expression
 
 	  //addAsm( "TXA" );
 	  addAsm( "STA $02", 2, false );
-	  addAsm( string( "LDA " ) + string($4.name), 3, false );
+	  addAsm( string( "LDA " ) + string($4.name) + commentmarker + string(" ") + tmp_name, 3, false );
 	  addAsm( "STA $03", 2, false );
 	  addAsm( "JSR UMUL", 3, false );
 	  addAsm( "LDA $03", 2, false );
@@ -7056,7 +7077,7 @@ arithmetic expression
 	  addAsm( "LDA #$00", 2, false ); 
 	  addAsm( "STA $FC", 2, false );
 	  
-	  addAsm( string("LDA $") + toHex(addr_op2), 3, false );
+	  addAsm( string("LDA $") + toHex(addr_op2) + commentmarker + string(" ") + tmp_name, 3, false );
 	  addAsm( "STA $FD", 2, false );
 	  addAsm( "LDA #$00", 2, false ); 
 	  addAsm( "STA $FE", 2, false );
