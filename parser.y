@@ -3255,7 +3255,39 @@ body: WHILE
 | tCLS '(' expression ')' ';'
 {
   addCommentSection( "cls(expression)");
-  addAsm( string("JSR $FF81") + commentmarker + string(" kernal cls()"), 3, false );
+  if( isUintIMM( $3.name ) )
+    {
+      int v = atoi(stripFirst($3.name).c_str());
+      switch( v )
+	{
+	case 1:
+	case 2:
+	case 3:
+	  v*=4;
+	case 0:
+	case 4:
+	case 8:
+	case 12:
+	  addAsm( "LDA #$20", 2, false ); // space
+	  addAsm( "LDX #$00", 2, false ); // (essentially 256)
+	  //addAsm( "CLSLOOP:", 0, true );
+	  addComment( "top-of-cls-loop" );
+	  addAsm( string( "STA $" ) + toHex( v ) + string( "400,X"), 3, false );
+	  addAsm( string( "STA $" ) + toHex( v ) + string( "500,X"), 3, false );
+	  addAsm( string( "STA $" ) + toHex( v ) + string( "600,X"), 3, false );
+	  addAsm( string( "STA $" ) + toHex( v ) + string( "6E8,X"), 3, false );
+	  addAsm( "DEX" );
+	  addAsm( ".BYTE #$D0, #$F1", 2, false ); // BNE top-of-loop
+	  break;
+	default:
+	  addAsm( string("JSR $FF81") + commentmarker + string(" kernal cls()"), 3, false );
+	  break;
+	}
+    }
+  else
+    {
+      addCompilerMessage( "Unhandled argument type for cls( expression );", 3 );
+    }
 
 };
 | tROMOUT '(' expression ')' ';'

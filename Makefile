@@ -8,7 +8,7 @@ YACC=/usr/local/bin/yacc
 #YACC=/usr/local/bin/bison
 LIBRARIES=-ll -ly
 
-all:	clean lexer parser compiler tests ifs decdig
+all:	clean lexer parser compiler tests ifs decdig show coll poke2 data banks example terra terraland gravity keys city hires digits quad driver8 collision math odds
 
 parser: parser.y
 	$(YACC) -d -v parser.y
@@ -49,10 +49,23 @@ terra:
 	cat ./terraform.c common.c > terra.tmp
 #	./compiler --code-segment 7632 --data-segment 40960 --memory-locations --symbol-table < ./terraform.c > terra.tmp.asm
 #	./compiler --code-segment 7624 --data-segment 40960 --memory-locations --symbol-table < ./terraform.c > terra.tmp.asm
-	./compiler --code-segment 7624 --data-segment 49152 --memory-locations --symbol-table < ./terra.tmp > terra.tmp.asm
+	./compiler --code-segment 7624 --data-segment 49152  --memory-locations --symbol-table < ./terra.tmp > terra.tmp.asm
 	cat terra.tmp.asm cj-sid.asm > terra7624.asm
 	rm -f ./terra.tmp
 	rm -f ./terra.tmp.asm
+
+
+terraland:
+	cat ./terraland.c common.c > terraland.tmp
+	./compiler --code-segment 7624 --data-segment 49152 --memory-locations --symbol-table < ./terraland.tmp > terraland.tmp.asm
+	cat ./terra3.hex cj-sid.asm terraland.tmp.asm > terraland7624.asm
+	rm -f ./terraland.tmp
+	rm -f ./terraland.tmp.asm
+
+dice:
+	cat ./dice.c common.c > dice.tmp
+	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./dice.tmp > dice2100.asm
+	rm -f dice.tmp
 
 gravity:
 	cat ./gravity.c common.c > gravity.tmp
@@ -76,7 +89,7 @@ digits:
 	rm -f digits.tmp
 
 quad:
-	cat ./quad.c common.c > quad.tmp
+	cat ./quadratic.c common.c > quad.tmp
 	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./quad.tmp > quadratic.asm
 
 driver8:
@@ -110,7 +123,9 @@ rocket:
 	rm -f rocket.tmp
 
 general:
-	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./general.c > general.asm
+	cat ./general.c common.c > general.tmp
+	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./general.tmp > general.asm
+	rm -f general.tmp
 
 uintcmp:
 	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./uintcmp.c > uintcmp.asm
@@ -119,14 +134,6 @@ tests:
 	cat ./tests.c common.c > tests.tmp
 	./compiler --code-segment 2100 --data-segment 820  < ./tests.tmp > tests.asm
 	rm -f tests.tmp
-
-#	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./cond-tests.c > cond-tests.asm
-#	./compiler --code-segment 2100 --data-segment 820 --no-asm-comments < ./floatmath.c > floatmath.asm
-#	./compiler --code-segment 2100 --data-segment 820 --no-asm-comments < ./decdig.c > decdig.asm
-#	./compiler --code-segment 2100 --data-segment 820 --no-asm-comments < ./bytemath.c > bytemath.asm
-#	./compiler --code-segment 2100 --data-segment 820 --no-asm-comments < ./poketest.c > poketest.asm
-#	./compiler --code-segment 2100 --data-segment 820 --no-asm-comments < ./poke2.c > poke2.asm
-#	./compiler --code-segment 2100 --data-segment 820 --no-asm-comments < ./arithtests.c > arithtests.asm
 
 iftest:
 	./compiler --code-segment 2100 --data-segment 820 --no-asm-comments < ./iftests.c > iftests.asm
@@ -171,13 +178,46 @@ plot:
 	rm -f plottest.tmp
 
 
+screen:
+	cat ./screen.c common.c > screen.tmp
+	./compiler --code-segment 2100 --data-segment 820 --no-asm-comments < ./screen.tmp > screen2.tmp
+	cat screen2.tmp  terra2img.hex > screen.asm
+	rm -f screen.tmp
+	rm -f screen2.tmp
+
+
 decdig:
 	./compiler --code-segment 2100 --data-segment 820 --no-asm-comments < ./decdig.c > decdig.asm
 
+
+return:
+	cat ./return.c common.c > return.tmp
+	./compiler --code-segment 2100 --data-segment 820 --no-asm-comments --symbol-table < ./return.tmp > return.asm
+	rm -f return.tmp
+
+conway:
+	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./conway.c > conway2100.asm
+
+stack:
+	cat ./stack.c common.c > stack.tmp
+	./compiler --code-segment 2100 --data-segment 820 < ./stack.tmp > stack.asm
+	rm -f stack.tmp
+
+recursive:
+	cat ./recursive.c common.c > recursive.tmp
+	./compiler --code-segment 2100 --data-segment 820 --no-asm-comments --symbol-table < ./recursive.tmp > recursive.asm
+	rm -f recursive.tmp
+
 bytemath:
 	cat ./bytemath.c common.c > bytemath.tmp
-	./compiler --code-segment 2100 --data-segment 820 --no-asm-comments --memory-locations --symbol-table < ./bytemath.tmp > bytemath.asm
+	./compiler --code-segment 2100 --data-segment 820 < ./bytemath.tmp > bytemath.asm
 	rm -f bytemath.tmp
+
+clearscreen:
+	./compiler --code-segment 2100 --data-segment 820   < ./clearscreen.c > clearscreen.asm
+
+snake2100:
+	./compiler --code-segment 2100 --data-segment 820   < ./snake2100.c > snake2100.asm
 
 printftest:
 	cat ./printftest.c common.c > printftest.tmp
