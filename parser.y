@@ -3284,6 +3284,47 @@ body: WHILE
 	  break;
 	}
     }
+  else if( isUintID( $3.name ) )
+    {
+      int addr = getAddressOf( $3.name );
+      
+      pushScope("CLS(ID)");
+      addAsm( string( "LDA $" ) + toHex(addr), 3, false );
+      addAsm( "CMP #$04", 2, false );
+      addAsm( string(".BYTE #$B0, #$02") + commentmarker + string( " BCS +2" ), 2, false );
+      addAsm( "ASL" );
+      addAsm( "ASL" );
+
+      addAsm( "ASL" );
+      addAsm( "ASL" );
+      addAsm( "ASL" );
+      addAsm( "ASL" );
+      addAsm( "ORA #$04", 2, false );
+      addAsm( "TAX" );
+      
+      addAsm( string( "STX ") + getLabel( label_vector[label_major], false) + string("+2"), 3, false );
+      addAsm( "INX" );
+      addAsm( string( "STX ") + getLabel( label_vector[label_major]+1, false) + string("+2"), 3, false );
+      addAsm( "INX" );
+      addAsm( string( "STX ") + getLabel( label_vector[label_major]+2, false) + string("+2"), 3, false );
+      addAsm( string( "STX ") + getLabel( label_vector[label_major]+3, false) + string("+2"), 3, false );
+      
+      addAsm( "LDA #$20", 2, false );
+      addAsm( "LDX #$00", 2, false );
+      
+      addComment( "top-of-cls-loop" );
+      addAsm( generateNewLabel(), 0, true );
+      addAsm( "STA $0000,X", 3, false );
+      addAsm( generateNewLabel(), 0, true );
+      addAsm( "STA $0000,X", 3, false );
+      addAsm( generateNewLabel(), 0, true );
+      addAsm( "STA $0000,X", 3, false );
+      addAsm( generateNewLabel(), 0, true );
+      addAsm( "STA $00E8,X", 3, false );
+      addAsm( "DEX" );
+      addAsm( string(".BYTE #$D0, #$F1") + commentmarker + string( "bnz top-of-cls-loop" ), 2, false );
+      popScope();
+    }
   else
     {
       addCompilerMessage( "Unhandled argument type for cls( expression );", 3 );

@@ -1,89 +1,99 @@
 void main()
 {
+  intro();
+  
+  // fill all of the screens
+  fillScreens();
+  
+  for( uint j = 0; j < 4; inc(j) )
+    {
+      bank(0);
+      cls(5);
+      printf( "BANK: " );
+      printf( j );
+      pause();
+      if( j == 0 )
+	{
+	  putStuffOnScreen( 0x0400 ); 
+	}      
+      bank(j);
+      pause();
+      test(j);
+      pause();
+    }
+
+  // fill all of the screens
+  //fillScreens();
   bank(0);
-  printf( "TESTING BANK(0) AND CLS(0)" );  
+  cls(5);
+  printf( "BANK: 0" );
   pause();
-  bank(0);
   putStuffOnScreen( 0x0400 );
+  j = 0;
   pause();
-  cls(0);
-  
+  test(j);
   pause();
+
   bank(0);
-  printf( "\nTESTING BANK(1) AND CLS(1)" );  
+  cls(5);
+  printf( "BANK: 1" );
   pause();
-  bank(1);
   putStuffOnScreen( 0x4400 );
-  pause();
-  cls(1);
-
-  pause();
-  bank(0);
-  printf( "\nTESTING BANK(2) AND CLS(2)" );  
-  pause();
-
-  bank(2);
-  putStuffOnScreen( 0x8400 );
-  pause();
-  cls(2);
-
-  pause();
-  bank(0);
-  printf( "\nTESTING BANK(3) AND CLS(3)" );  
-  pause();
-
-  bank(3);
-  putStuffOnScreen( 0xC400 );
-  pause();
-  cls(3);
-
-  pause();
-  bank(0);
-  printf( "\nTESTING BANK(1) AND CLS(4)" );  
-  pause();
-
   bank(1);
-  putStuffOnScreen( 0x4400 );
+  j = 4;
   pause();
-  cls(4);
+  test(j);
+  pause();
 
-  pause();
   bank(0);
-  printf( "\nTESTING BANK(2) AND CLS(8)" );  
+  cls(5);
+  printf( "BANK: 2" );
   pause();
-  bank(2);
   putStuffOnScreen( 0x8400 );
+  bank(2);
+  j = 8;
   pause();
-  cls(8);
+  test(j);
+  pause();
 
-  pause();
+
   bank(0);
-    printf( "\nTESTING BANK(3) AND CLS(12)" );  
+  cls(5);
+  printf( "BANK: 3" );
   pause();
-
-  bank(3);
   putStuffOnScreen( 0xC400 );
+  bank(3);
+  j = 12;
   pause();
-  cls(0x0C);
+  test(j);
+  pause();
 
-  
-  pause();
+
   bank(0);
-  //cls(0);
   printf( "\nDONE." );
-  
   clearkb();
-
   return;
 }
 
-  //                                           Colours
-  // 0 - Black  1 - White   2 - Red   3 - Cyan  4 - Purple  5 - Green  6 - Dark Blue
-  // 7 - Yellow 8 - Orange  9 - Brown A - Pink  B - Drk Gry C - Grey   D - Bright Green
-  //                        E - Light Blue                   F - Light Grey
+void test( uint testARG0 )
+{
+  cls(testARG0);
+  return;
+}
+
+void fillScreens()
+{
+  screen(0);
+  putStuffOnScreen( 0x0400 );
+  putStuffOnScreen( 0x4400 );
+  putStuffOnScreen( 0x8400 );
+  putStuffOnScreen( 0xC400 );
+  screen(1);
+  return;
+}
 
 void putStuffOnScreen( word putStuffOnScreenARG0 )
-{
+{  
   for( word i = 0x0000; i < 0x03E8; inc(i) )
     {
       poke( putStuffOnScreenARG0, rnd() );
@@ -110,5 +120,13 @@ void clearkb()
 {
   poke( 198, 0 );
   jsr( 65508 );
+  return;
+}
+
+void intro()
+{
+  cls(5);
+  printf( "SCREEN WAS JUST CLEARED USING KERNAL CLS\n(JSR $FF81)\n");
+  pause();
   return;
 }
