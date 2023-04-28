@@ -3442,7 +3442,7 @@ body: WHILE
 };
 | tSCREEN '(' expression ')' ';'
 {
-  addComment( "blank(exp); : set bit 4 of $D011 to LSB of expression" );
+  addComment( "screen(exp); : set bit 4 of $D011 to LSB of expression" );
   addAsm( "LDX $02", 2, false );
   if( isUintID( $3.name ) )
     {
@@ -3598,21 +3598,47 @@ body: WHILE
       if( addr_dst > 65536 ) addCompilerMessage("memcpy destination out of range",3);
       if( memcpy_size > 255 ) addCompilerMessage("memcpy size out of range: ",3);
       // ----------------------------------
-      addAsm( string("LDY #$") + toHex(memcpy_size), 2, false );
-      addAsm( generateNewLabel(), 0, true );
-      addAsm( "CPY #$00", 2, false );
-      addAsm( string( "BEQ " ) + getLabel( label_vector[label_major],false), 2, false );
-      addAsm( string("LDA $") + toHex(addr_src) + string(",Y"), 3, false );
-      addAsm( string("STA $") + toHex(addr_dst) + string(",Y"), 3, false );
-      addAsm( "DEY", 1, false );
-      addAsm( string( "JMP " ) + getLabel( label_vector[label_major]-1,false), 3, false );
-      addAsm( generateNewLabel(), 0, true );
+      // TODO: add another check here to see if the two regions overlap
+      if( addr_src > addr_dst )
+	{
+	  addComment( "memcpy R->L" );
+	  // use the R->L memcpy
+	  addAsm( "SEI" );
+	  addAsm( "LDY #$00", 2, false );
+	  addAsm( generateNewLabel(), 0, true ); // top-of-loop
+	  addAsm( string("LDA $") + toHex(addr_src) + string(",Y"), 3, false );
+	  addAsm( string("STA $") + toHex(addr_dst) + string(",Y"), 3, false );
+	  addAsm( string("CPY #$") + toHex(memcpy_size+1), 2, false );
+	  addAsm( string("BEQ " ) + getLabel( label_vector[label_major],false), 2, false );
+	  addAsm( "INY", 1, false );	  
+	  addAsm( string("JMP " ) + getLabel( label_vector[label_major]-1,false), 3, false );
+	  addAsm( generateNewLabel(), 0, true );
+	  addAsm( "CLI" );
+	}
+      else
+	{
+	  addComment( "memcpy L->R" );	  
+	  // use the L->R memcpy
+	  addAsm( "SEI" );
+	  addAsm( string("LDY #$") + toHex(memcpy_size), 2, false );
+	  addAsm( generateNewLabel(), 0, true );
+	  addAsm( "CPY #$FF", 2, false );
+	  addAsm( string("BEQ " ) + getLabel( label_vector[label_major],false), 2, false );
+	  addAsm( string("LDA $") + toHex(addr_src) + string(",Y"), 3, false );
+	  addAsm( string("STA $") + toHex(addr_dst) + string(",Y"), 3, false );
+	  addAsm( "DEY", 1, false );
+	  addAsm( string( "JMP " ) + getLabel( label_vector[label_major]-1,false), 3, false );
+	  addAsm( generateNewLabel(), 0, true );
+	  addAsm( "CLI" );
+
+	}
       popScope();
     }
   else if( isWordIMM($3.name) && isWordIMM($6.name) && isUintID($9.name) )
     {
       pushScope("memcpy");
- 
+      // 2023 04 25 - mkpellegrino
+      addAsm( "SEI" );
       int addr_src = atoi(stripFirst($3.name).c_str());
       int addr_dst = atoi(stripFirst($6.name).c_str());
       int memcpy_size_addr = getAddressOf($9.name);
@@ -3623,14 +3649,16 @@ body: WHILE
       addAsm( string("LDY $") + toHex(memcpy_size_addr) + commentmarker + string(" ") + getNameOf(memcpy_size_addr), instr_size, false );
 
       addAsm( generateNewLabel(), 0, true );
-      addAsm( "CPY #$00", 2, false );
+      addAsm( "CPY #$FF", 2, false );
       addAsm( string( "BEQ " ) + getLabel( label_vector[label_major],false), 2, false );
       addAsm( string("LDA $") + toHex(addr_src) + string(",Y"), 3, false );
       addAsm( string("STA $") + toHex(addr_dst) + string(",Y"), 3, false );
       addAsm( "DEY", 1, false );
       addAsm( string( "JMP " ) + getLabel( label_vector[label_major]-1,false), 3, false );
       addAsm( generateNewLabel(), 0, true );
-      
+      // 2023 04 25 - mkpellegrino
+      addAsm( "CLI" );
+
       popScope();
 
     }
@@ -3638,7 +3666,6 @@ body: WHILE
     {
       addCompilerMessage( "memcpy not yet implemented for arguments of those types", 3 );
     }
-
 }
 | tPOKE '(' expression ',' expression ')' ';'
 {
@@ -5554,6 +5581,11 @@ statement: datatype ID init
   current_variable_type=getTypeOf($1.name);
   current_variable_base_address = getAddressOf($1.name);
 
+  //string s = toHex( getAddressOf($1.name) ) + string( "[" ) + string( $3.name) + string("]") + string( $5.name );
+  //addCompilerMessage( s, 0 );
+  //cerr << current_variable_type << endl;
+
+  
   if( isUintID( $1.name ) && (isUintID($3.name) || isIntID($3.name)) && isA($5.name) )
     {
       addComment( "UintID_array[(U)IntID] = A" );
@@ -5561,6 +5593,32 @@ statement: datatype ID init
       int addr_of_index = getAddressOf($3.name);
       addAsm( string("LDX ") + string($3.name), 3, false );
       addAsm( string("STA $") + toHex( current_variable_base_address ) + string( ",X" ), 3, false );
+    }
+  else if( isUintID($1.name)  && (isUintID($3.name) || isIntID($3.name)) && isXA($5.name) )
+    {
+
+
+      addComment( "uintarray[(U)IntID] = XA;" );
+      addCompilerMessage( "Setting UINT = WORD, losing high byte", 0 );
+      addAsm( "TAY" );
+      //addAsm( "TXA" );
+      //addAsm( "PHA" );
+
+      int tmp_i = getAddressOf( $3.name );
+      int tmp_v = getAddressOf( $1.name );
+
+      addAsm( string("LDA $") + toHex(tmp_i), 3, false ); 
+      //addAsm( "ASL" );// 2* because it's a word array... not a byte array
+      addAsm( "TAX" );
+      addAsm( "TYA" );
+      addAsm( string("STA $") + toHex( tmp_v ) + string( ",X" ), 3, false );
+      //addAsm( "PLA" );
+      //addAsm( "INX" );
+      //addAsm( string("STA $") + toHex( tmp_v ) + string( ",X" ), 3, false );
+
+
+
+      
     }
   else if( isUintID( $1.name ) && (isUintIMM($3.name) || isIntIMM($3.name)) && isA($5.name) )
     {
@@ -5693,7 +5751,6 @@ statement: datatype ID init
       //addAsm( string("LDA #$" ) + toHex(get_word_H(tmp_w) ), 2, false );
       addAsm( string("STA $") + toHex( tmp_base ) + string( ",X" ), 3, false );
     }
-
   else
     {
       addCompilerMessage( "Unable to initialise WORD ARRAY", 3 );
@@ -6151,6 +6208,63 @@ arithmetic expression
 	  addCompilerMessage( "Math operation not implemented... yet.", 3 );
 	}
 	
+    }
+  else if( isUintID($1.name) && isWordIMM($4.name) )
+    {
+      // TODO: Not fully implemented yet!
+      int OP1_addr = getAddressOf($1.name);
+      int OP2 = atoi(stripFirst($4.name).c_str());
+      if( op == string("+") )
+	{
+	  addComment( "UintID + WordIMM" );
+	  addAsm( string("LDA #$") + toHex(get_word_L(OP2)), 2, false );
+	  addAsm( string("ADC $") + toHex(OP1_addr), 3, false );
+	  addAsm( "TAY" );
+	  addAsm( string("LDA #$") + toHex(get_word_H(OP2)), 2, false );
+	  addAsm( "ADC #$00", 2, false );
+	  addAsm( "TAX" );
+	  addAsm( "TYA" );
+	  strcpy($$.name, "XA" );
+
+	}
+      else if( op == string("-") )
+	{
+	  addComment( "UintID - WordIMM" );
+	  addCompilerMessage( "Math Operation not implemented for UintID - WordIMM (yet)", 3 );
+
+	  //strcpy($$.name, "XA" );
+
+	}
+      else if( op == string("*") )
+	{
+	  mul16_is_needed = true;
+	  addComment( "UintID * WordIMM" );
+	  addAsm( string("LDA $") + toHex(OP1_addr), 3, false );
+	  addAsm( "STA $FD", 2, false );
+	  addAsm( "LDA #$00", 2, false );
+	  addAsm( "STA $FE", 2, false );
+	  addAsm( string("LDA #$") + toHex(get_word_L(OP2)), 2, false );
+	  addAsm( "STA $FB", 2, false );
+	  addAsm( string("LDA #$") + toHex(get_word_H(OP2)), 2, false );
+	  addAsm( "STA $FC", 2, false );
+	  addAsm( "JSR MUL16", 3, false );
+	  addAsm( "LDA MUL16R", 3, false );
+	  addAsm( "LDX MUL16R+1", 3, false );	  
+	  strcpy($$.name, "XA" );
+
+	}
+      else if( op == string("/") )
+	{
+	  addComment( "UintID / WordIMM" );
+	  addCompilerMessage( "Math Operation not implemented for UintID / WordIMM (yet)", 3 );
+
+	  //strcpy($$.name, "XA" );
+
+	}
+      else
+	{
+	  addCompilerMessage( string("Unknown Math Operation: ") + op, 3 );
+	}
     }
   else if( isUintID($1.name) && isXA($4.name) )
     {
@@ -8014,7 +8128,7 @@ arithmetic expression
       
       strcpy($$.name, "A" );
     }
-  else if( isUintID( $1.name ) && isA($4.name) )
+  else if( isUintID($1.name) && isA($4.name) )
     {
       
       if( op == string("+"))
@@ -8037,7 +8151,7 @@ arithmetic expression
 	  addCompilerMessage( "Unknown Math Operation: UintID ? A --> A", 3 );
 	}
     }
-  else if( isUintID( $1.name ) && isIntIMM($4.name) )
+  else if( isUintID($1.name) && isIntIMM($4.name) )
     {
       addComment( "UintID arith IntImm --> A (type mismatch)" );
       
