@@ -9,6 +9,13 @@ digit [0-9]
 frmt  [{\t}|{\n}]
 
 %%
+"irq"              { strcpy(yylval.nd_obj.name,(yytext)); return tIRQ; }
+"sidoff"              { strcpy(yylval.nd_obj.name,(yytext)); return tSIDOFF; }
+"seed"              { strcpy(yylval.nd_obj.name,(yytext)); return tSEED; }
+"memcpy"              { strcpy(yylval.nd_obj.name,(yytext)); return tMEMCPY; }
+"NULL"                { strcpy(yylval.nd_obj.name,(yytext)); return tNULL; }
+"push"                { strcpy(yylval.nd_obj.name,(yytext)); return tPUSH; }
+"pop"                { strcpy(yylval.nd_obj.name,(yytext)); return tPOP; }
 "screen"                { strcpy(yylval.nd_obj.name,(yytext)); return tSCREEN; }
 "asmcomment"                { strcpy(yylval.nd_obj.name,(yytext)); return tCOMMENT; }
 "data"                { strcpy(yylval.nd_obj.name,(yytext)); return tDATA; }

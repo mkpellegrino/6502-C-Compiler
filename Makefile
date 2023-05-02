@@ -19,6 +19,29 @@ lexer:	lexer.l
 compiler: y.tab.c
 	$(CC) $(LIBRARIES) -w  y.tab.c -o compiler
 
+motion:
+	cat ./motion.c common.c > motion.tmp
+	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./motion.tmp > motion.asm
+	rm -f motion.tmp
+
+raster:
+	cat ./raster.c common.c > raster.tmp
+	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./raster.tmp > raster.asm
+	rm -f raster.tmp
+
+charset:
+	cat ./charset.c common.c > charset.tmp
+	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./charset.tmp > charset.asm
+	rm -f charset.tmp
+
+testdrive:
+	cat ./testdrive.c common.c > testdrive.tmp
+	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./testdrive.tmp > testdrive.asm
+
+pokes:
+	cat ./pokes.c common.c > pokes.tmp
+	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./pokes.tmp > pokes.asm
+	rm -fR pokes.tmp
 
 
 show:

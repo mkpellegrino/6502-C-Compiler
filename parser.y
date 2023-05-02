@@ -1538,7 +1538,7 @@
 
 //%parse-param { FILE* fp }
 %token VOID 
-%token <nd_obj> tPUSH tPOP tCOMMENT tDATA tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tSIDIRQ tSIDOFF tSTRTOFLOAT tSTRTOWORD tTOFLOAT tTOUINT tTOBIT tDEC tINC tROL tROR tLSR tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJSR tFOO tROMOUT tROMIN tLDA tASL tSPRITESET  tSPRITEOFF tSPRITETOGGLE tRND tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER tPRINTS PRINTFF SCANFF INT FLOAT WHILE FOR IF ELSE TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE tSQRT UNARY INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL tSCREEN tNULL tMEMCPY tSEED
+%token <nd_obj> tPUSH tPOP tCOMMENT tDATA tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tSIDIRQ tSIDOFF tSTRTOFLOAT tSTRTOWORD tTOFLOAT tTOUINT tTOBIT tDEC tINC tROL tROR tLSR tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJUMP tJSR tIRQ tFOO tROMOUT tROMIN tLDA tASL tSPRITESET  tSPRITEOFF tSPRITETOGGLE tRND tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER tPRINTS PRINTFF SCANFF INT FLOAT WHILE FOR IF ELSE TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE tSQRT UNARY INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL tSCREEN tNULL tMEMCPY tSEED
 %type <nd_obj> headers main body return function datatype statement arithmetic relop program else 
    %type <nd_obj2> init value expression numberlist
       %type <nd_obj3> condition
@@ -1712,7 +1712,7 @@ function: function function
       } 
     
   };
-| datatype ID '('  ')' '{' {addComment( string("======================== ") + string($2.name) + string(" ========================")); addAsm( generateNewLabel(), 0, true ); addFunction( string($2.name), getLabel( label_vector[label_major]-1 ), getDataTypeValue($1.name)); } body return '}' {
+| datatype ID '('  ')' '{' {addComment( string("======================== ") + string($2.name) + string(" ========================")); addAsm( generateNewLabel(), 0, true ); addFunction( string($2.name), getLabel( label_vector[label_major]-1 ), getDataTypeValue($1.name)); addAsm( string($2.name)+string(":" ), 0, true); } body return '}' {
     // add this label to the list of functions and their addresses
     // any time we come across the function with this ID
     // we can JSR to it
@@ -3484,6 +3484,42 @@ body: WHILE
   addAsm( "STX $02", 2, false );
 };
 
+| tIRQ '(' ID ',' expression ',' NUMBER ')' ';'
+{
+  // irq( myFunction, 0x85 );
+  int addr = getAddressOf( $3.name );
+  int b = atoi($7.name);
+  if( isUintIMM( $5.name ))
+    {
+      int rasterline = atoi( stripFirst($5.name).c_str() );
+      if( b == 1 ) addAsm( "SEI" );
+      addAsm( "LDA #$7F", 2, false );
+      addAsm( "STA $DC0D", 3, false );
+      addAsm( "STA $DD0D", 3, false );
+      addAsm( "LDA $DC0D", 3, false );
+      addAsm( "LDA $DD0D", 3, false );
+      addAsm( "LDA #$01", 2, false );
+      addAsm( "STA $D01A", 3, false );
+      addAsm( string( "LDA #$" ) + toHex(rasterline), 2, false );
+      addAsm( "STA $D012", 3, false );
+      addAsm( "LDA $D011", 3, false );
+      addAsm( "AND #$7F", 2, false );
+      addAsm( "STA $D011", 3, false );
+      addAsm( string("LDA #<") + string($3.name), 2, false );
+      addAsm( "STA $0314", 3, false );
+      addAsm( string("LDA #>") + string($3.name), 2, false );
+      addAsm( "STA $0315", 3, false );
+      if( b == 1 ) addAsm( "CLI" );
+      
+    }
+  else
+    {
+      addCompilerMessage( "Invalid raster line in irq function", 3 );
+    }
+
+
+
+}
 // TODO : these two JSRs should really be just one rule
 // tJSR '(' expression ')' ';'
 | tJSR '(' NUMBER ')' ';'
@@ -3560,7 +3596,7 @@ body: WHILE
       addCompilerMessage( "Error setting VIC-II Bank - unknown type", 3 );
     }
 };
-// I'm not sure this is even needed : TODO: remove
+// 2023 05 02 : this IS needed to support Interrupt Routines
 | tJMP '(' expression ')' ';'
 {
   if( isWordIMM( $3.name ) )
@@ -10722,7 +10758,6 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
 {
   addComment( "Call a function as an expression" );
   proposed_ids_vector.push_back( new id_and_line( $1.name, countn+1 ));
-
   // put arguments on stack
   if( isUintID( $3.name ) )
     {
