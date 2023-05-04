@@ -24,6 +24,11 @@ motion:
 	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./motion.tmp > motion.asm
 	rm -f motion.tmp
 
+raster2:
+	cat ./raster2.c common.c > raster2.tmp
+	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./raster2.tmp > raster2.asm
+	rm -f raster2.tmp
+
 raster:
 	cat ./raster.c common.c > raster.tmp
 	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./raster.tmp > raster.asm

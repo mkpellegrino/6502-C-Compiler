@@ -3632,30 +3632,32 @@ body: WHILE
       int memcpy_size = atoi(stripFirst($9.name).c_str());
       if( addr_src > 65536 ) addCompilerMessage("memcpy source out of range",3);
       if( addr_dst > 65536 ) addCompilerMessage("memcpy destination out of range",3);
-      if( memcpy_size > 255 ) addCompilerMessage("memcpy size out of range: ",3);
+      if( memcpy_size > 255 ) addCompilerMessage("memcpy size out of range",3);
       // ----------------------------------
       // TODO: add another check here to see if the two regions overlap
       if( addr_src > addr_dst )
 	{
+	  if( memcpy_size > 255 ) addCompilerMessage("memcpy size out of range",3);
 	  addComment( "memcpy R->L" );
 	  // use the R->L memcpy
-	  addAsm( "SEI" );
+	  //addAsm( "SEI" );
 	  addAsm( "LDY #$00", 2, false );
 	  addAsm( generateNewLabel(), 0, true ); // top-of-loop
+	  addAsm( string("CPY #$") + toHex(memcpy_size), 2, false );
+	  addAsm( string("BEQ " ) + getLabel( label_vector[label_major],false), 2, false );
 	  addAsm( string("LDA $") + toHex(addr_src) + string(",Y"), 3, false );
 	  addAsm( string("STA $") + toHex(addr_dst) + string(",Y"), 3, false );
-	  addAsm( string("CPY #$") + toHex(memcpy_size+1), 2, false );
-	  addAsm( string("BEQ " ) + getLabel( label_vector[label_major],false), 2, false );
 	  addAsm( "INY", 1, false );	  
 	  addAsm( string("JMP " ) + getLabel( label_vector[label_major]-1,false), 3, false );
 	  addAsm( generateNewLabel(), 0, true );
-	  addAsm( "CLI" );
+	  //addAsm( "CLI" );
 	}
       else
 	{
+	  if( memcpy_size > 254 ) addCompilerMessage("memcpy size out of range for L->R copy",3);
 	  addComment( "memcpy L->R" );	  
 	  // use the L->R memcpy
-	  addAsm( "SEI" );
+	  //addAsm( "SEI" );
 	  addAsm( string("LDY #$") + toHex(memcpy_size), 2, false );
 	  addAsm( generateNewLabel(), 0, true );
 	  addAsm( "CPY #$FF", 2, false );
@@ -3665,7 +3667,7 @@ body: WHILE
 	  addAsm( "DEY", 1, false );
 	  addAsm( string( "JMP " ) + getLabel( label_vector[label_major]-1,false), 3, false );
 	  addAsm( generateNewLabel(), 0, true );
-	  addAsm( "CLI" );
+	  //addAsm( "CLI" );
 
 	}
       popScope();
@@ -3697,6 +3699,13 @@ body: WHILE
 
       popScope();
 
+    }
+  else if( isWordID($3.name) && isWordID($6.name) && isUintIMM($9.name) )
+    {
+      pushScope("memcpy");
+      
+
+      popScope();
     }
   else
     {
