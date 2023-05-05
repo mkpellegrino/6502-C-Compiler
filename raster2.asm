@@ -1,29 +1,33 @@
 ; uint : return_address_1 : $0334 (820)
 ; uint : return_address_2 : $0335 (821)
-; uint : pixelShift : $0336 (822)
-; word : joshua : $0337 (823)
-; uint : oldD011a : $0339 (825)
-; uint : oldD016a : $033A (826)
-; uint : oldD018a : $033B (827)
-; uint : oldD020a : $033C (828)
-; uint : oldD021a : $033D (829)
-; uint : old0286a : $033E (830)
-; word : bmpaddr : $033F (831)
-; word : bmpaddrX : $0341 (833)
-; word : scraddr : $0343 (835)
-; word : scraddrX : $0345 (837)
-; word : colraddr : $0347 (839)
-; word : colraddrX : $0349 (841)
-; word : loc : $034B (843)
-; uint : j : $034D (845)
-; word : mem1 : $034E (846)
-; uint : pausev : $0350 (848)
-; uint : oldD011 : $0351 (849)
-; uint : oldD016 : $0352 (850)
-; uint : oldD018 : $0353 (851)
-; uint : oldD020 : $0354 (852)
-; uint : oldD021 : $0355 (853)
-; uint : oldChar : $0356 (854)
+; uint : direction : $0336 (822)
+; uint : pixelShift : $0337 (823)
+; uint : int1flag : $0338 (824)
+; uint : int2flag : $0339 (825)
+; word : joshua : $033A (826)
+; uint : oldD011a : $033C (828)
+; uint : oldD016a : $033D (829)
+; uint : oldD018a : $033E (830)
+; uint : oldD020a : $033F (831)
+; uint : oldD021a : $0340 (832)
+; uint : old0286a : $0341 (833)
+; word : bmpaddr : $0342 (834)
+; word : bmpaddrX : $0344 (836)
+; word : scraddr : $0346 (838)
+; word : scraddrX : $0348 (840)
+; word : colraddr : $034A (842)
+; word : colraddrX : $034C (844)
+; word : loc : $034E (846)
+; uint : j : $0350 (848)
+; uint : c : $0351 (849)
+; word : mem1 : $0352 (850)
+; uint : pausev : $0354 (852)
+; uint : oldD011 : $0355 (853)
+; uint : oldD016 : $0356 (854)
+; uint : oldD018 : $0357 (855)
+; uint : oldD020 : $0358 (856)
+; uint : oldD021 : $0359 (857)
+; uint : oldChar : $035A (858)
 ; RULE: datatype: void
 .org $0834
 ; =========================================================
@@ -34,89 +38,101 @@
 ; initialising UintIMM
 	LDA #$00; ; 0834
 ; RULE: statement: datatype ID init
+; UINT direction=A datatype#: 00
+; UINT UintID A
+	STA $0336;  direction; ; 0836
+; =========================================================
+; RULE: datatype: uint
+; RULE: init: '=' expression
+; initialising UintIMM
+	LDA #$00; ; 0839
+; RULE: statement: datatype ID init
 ; UINT pixelShift=A datatype#: 00
 ; UINT UintID A
-	STA $0336;  pixelShift; ; 0836
+	STA $0337;  pixelShift; ; 083B
+; =========================================================
+; RULE: datatype: uint
+; RULE: init: '=' expression
+; initialising UintIMM
+	LDA #$00; ; 083E
+; RULE: statement: datatype ID init
+; UINT int1flag=A datatype#: 00
+; UINT UintID A
+	STA $0338;  int1flag; ; 0840
+; =========================================================
+; RULE: datatype: uint
+; RULE: init: '=' expression
+; initialising UintIMM
+	LDA #$00; ; 0843
+; RULE: statement: datatype ID init
+; UINT int2flag=A datatype#: 00
+; UINT UintID A
+	STA $0339;  int2flag; ; 0845
 ; =========================================================
 ; Data
-	LDA #<LBL1L0; ; 0839
-	STA $0337; ; 083B
-	LDA #>LBL1L0; ; 083E
-	STA $0338; ; 0840
-	JMP LBL1L1; ; 0843
+	LDA #<LBL1L0; ; 0848
+	STA $033A; ; 084A
+	LDA #>LBL1L0; ; 084D
+	STA $033B; ; 084F
+	JMP LBL1L1; ; 0852
 LBL1L0:
-	.byte $00; ; 0846
-	.byte $00; ; 0847
-	.byte $00; ; 0848
-	.byte $40; ; 0849
-	.byte $40; ; 084A
-	.byte $40; ; 084B
-	.byte $55; ; 084C
-	.byte $55; ; 084D
-	.byte $14; ; 084E
-	.byte $14; ; 084F
-	.byte $14; ; 0850
-	.byte $14; ; 0851
-	.byte $14; ; 0852
-	.byte $14; ; 0853
-	.byte $54; ; 0854
-	.byte $54; ; 0855
-	.byte $55; ; 0856
-	.byte $40; ; 0857
+	.byte $00; ; 0855
+	.byte $00; ; 0856
+	.byte $00; ; 0857
 	.byte $40; ; 0858
 	.byte $40; ; 0859
-	.byte $50; ; 085A
-	.byte $50; ; 085B
-	.byte $50; ; 085C
-	.byte $55; ; 085D
-	.byte $54; ; 085E
-	.byte $04; ; 085F
-	.byte $04; ; 0860
-	.byte $04; ; 0861
-	.byte $04; ; 0862
-	.byte $04; ; 0863
-	.byte $04; ; 0864
-	.byte $54; ; 0865
-	.byte $55; ; 0866
+	.byte $40; ; 085A
+	.byte $55; ; 085B
+	.byte $55; ; 085C
+	.byte $14; ; 085D
+	.byte $14; ; 085E
+	.byte $14; ; 085F
+	.byte $14; ; 0860
+	.byte $14; ; 0861
+	.byte $14; ; 0862
+	.byte $54; ; 0863
+	.byte $54; ; 0864
+	.byte $55; ; 0865
+	.byte $40; ; 0866
 	.byte $40; ; 0867
 	.byte $40; ; 0868
-	.byte $55; ; 0869
-	.byte $00; ; 086A
-	.byte $40; ; 086B
-	.byte $40; ; 086C
-	.byte $55; ; 086D
-	.byte $54; ; 086E
+	.byte $50; ; 0869
+	.byte $50; ; 086A
+	.byte $50; ; 086B
+	.byte $55; ; 086C
+	.byte $54; ; 086D
+	.byte $04; ; 086E
 	.byte $04; ; 086F
-	.byte $00; ; 0870
-	.byte $54; ; 0871
+	.byte $04; ; 0870
+	.byte $04; ; 0871
 	.byte $04; ; 0872
-	.byte $14; ; 0873
-	.byte $14; ; 0874
-	.byte $54; ; 0875
-	.byte $55; ; 0876
+	.byte $04; ; 0873
+	.byte $54; ; 0874
+	.byte $55; ; 0875
+	.byte $40; ; 0876
 	.byte $40; ; 0877
-	.byte $40; ; 0878
-	.byte $40; ; 0879
-	.byte $50; ; 087A
-	.byte $50; ; 087B
-	.byte $50; ; 087C
-	.byte $50; ; 087D
-	.byte $54; ; 087E
-	.byte $04; ; 087F
-	.byte $04; ; 0880
+	.byte $55; ; 0878
+	.byte $00; ; 0879
+	.byte $40; ; 087A
+	.byte $40; ; 087B
+	.byte $55; ; 087C
+	.byte $54; ; 087D
+	.byte $04; ; 087E
+	.byte $00; ; 087F
+	.byte $54; ; 0880
 	.byte $04; ; 0881
-	.byte $04; ; 0882
-	.byte $04; ; 0883
-	.byte $04; ; 0884
-	.byte $04; ; 0885
+	.byte $14; ; 0882
+	.byte $14; ; 0883
+	.byte $54; ; 0884
+	.byte $55; ; 0885
 	.byte $40; ; 0886
 	.byte $40; ; 0887
 	.byte $40; ; 0888
-	.byte $40; ; 0889
+	.byte $50; ; 0889
 	.byte $50; ; 088A
 	.byte $50; ; 088B
 	.byte $50; ; 088C
-	.byte $55; ; 088D
+	.byte $54; ; 088D
 	.byte $04; ; 088E
 	.byte $04; ; 088F
 	.byte $04; ; 0890
@@ -124,1096 +140,1321 @@ LBL1L0:
 	.byte $04; ; 0892
 	.byte $04; ; 0893
 	.byte $04; ; 0894
-	.byte $54; ; 0895
-	.byte $15; ; 0896
-	.byte $00; ; 0897
-	.byte $00; ; 0898
-	.byte $55; ; 0899
-	.byte $40; ; 089A
+	.byte $40; ; 0895
+	.byte $40; ; 0896
+	.byte $40; ; 0897
+	.byte $40; ; 0898
+	.byte $50; ; 0899
+	.byte $50; ; 089A
 	.byte $50; ; 089B
-	.byte $50; ; 089C
-	.byte $55; ; 089D
-	.byte $54; ; 089E
+	.byte $55; ; 089C
+	.byte $04; ; 089D
+	.byte $04; ; 089E
 	.byte $04; ; 089F
 	.byte $04; ; 08A0
-	.byte $54; ; 08A1
+	.byte $04; ; 08A1
 	.byte $04; ; 08A2
 	.byte $04; ; 08A3
-	.byte $04; ; 08A4
-	.byte $54; ; 08A5
+	.byte $54; ; 08A4
+	.byte $15; ; 08A5
+	.byte $00; ; 08A6
+	.byte $00; ; 08A7
+	.byte $55; ; 08A8
+	.byte $40; ; 08A9
+	.byte $50; ; 08AA
+	.byte $50; ; 08AB
+	.byte $55; ; 08AC
+	.byte $54; ; 08AD
+	.byte $04; ; 08AE
+	.byte $04; ; 08AF
+	.byte $54; ; 08B0
+	.byte $04; ; 08B1
+	.byte $04; ; 08B2
+	.byte $04; ; 08B3
+	.byte $54; ; 08B4
 LBL1L1:
 ; RULE: datatype: uint
 ; tPEEK '(' expression ')' 
-	LDA $D011; ; 08A6
+	LDA $D011; ; 08B5
 ; RULE: init: '=' expression
 ; initialising a byte with A
 ; RULE: statement: datatype ID init
 ; UINT oldD011a=A datatype#: 00
 ; UINT UintID A
-	STA $0339;  oldD011a; ; 08A9
+	STA $033C;  oldD011a; ; 08B8
 ; =========================================================
 ; RULE: datatype: uint
 ; tPEEK '(' expression ')' 
-	LDA $D016; ; 08AC
+	LDA $D016; ; 08BB
 ; RULE: init: '=' expression
 ; initialising a byte with A
 ; RULE: statement: datatype ID init
 ; UINT oldD016a=A datatype#: 00
 ; UINT UintID A
-	STA $033A;  oldD016a; ; 08AF
+	STA $033D;  oldD016a; ; 08BE
 ; =========================================================
 ; RULE: datatype: uint
 ; tPEEK '(' expression ')' 
-	LDA $D018; ; 08B2
+	LDA $D018; ; 08C1
 ; RULE: init: '=' expression
 ; initialising a byte with A
 ; RULE: statement: datatype ID init
 ; UINT oldD018a=A datatype#: 00
 ; UINT UintID A
-	STA $033B;  oldD018a; ; 08B5
+	STA $033E;  oldD018a; ; 08C4
 ; =========================================================
 ; RULE: datatype: uint
 ; tPEEK '(' expression ')' 
-	LDA $D020; ; 08B8
+	LDA $D020; ; 08C7
 ; RULE: init: '=' expression
 ; initialising a byte with A
 ; RULE: statement: datatype ID init
 ; UINT oldD020a=A datatype#: 00
 ; UINT UintID A
-	STA $033C;  oldD020a; ; 08BB
+	STA $033F;  oldD020a; ; 08CA
 ; =========================================================
 ; RULE: datatype: uint
 ; tPEEK '(' expression ')' 
-	LDA $D021; ; 08BE
+	LDA $D021; ; 08CD
 ; RULE: init: '=' expression
 ; initialising a byte with A
 ; RULE: statement: datatype ID init
 ; UINT oldD021a=A datatype#: 00
 ; UINT UintID A
-	STA $033D;  oldD021a; ; 08C1
+	STA $0340;  oldD021a; ; 08D0
 ; =========================================================
 ; RULE: datatype: uint
 ; tPEEK '(' expression ')' 
-	LDA $0286; ; 08C4
+	LDA $0286; ; 08D3
 ; RULE: init: '=' expression
 ; initialising a byte with A
 ; RULE: statement: datatype ID init
 ; UINT old0286a=A datatype#: 00
 ; UINT UintID A
-	STA $033E;  old0286a; ; 08C7
+	STA $0341;  old0286a; ; 08D6
 ; =========================================================
 ; poke( expression, expression );
 ; POKE(wIMM,IMM)
-	LDA #$3B; ; 08CA
-	STA $D011; ; 08CC
+	LDA #$3B; ; 08D9
+	STA $D011; ; 08DB
 ; poke( expression, expression );
 ; POKE(wIMM,IMM)
-	LDA #$18; ; 08CF
-	STA $D016; ; 08D1
+	LDA #$18; ; 08DE
+	STA $D016; ; 08E0
 ; poke( expression, expression );
 ; POKE(wIMM,IMM)
-	LDA #$18; ; 08D4
-	STA $D018; ; 08D6
+	LDA #$18; ; 08E3
+	STA $D018; ; 08E5
 ; RULE: datatype: word
-	SEI; ; 08D9
-	LDA $D018; ; 08DA
-	AND #$08; ; 08DD
-	CLC; ; 08DF
-	ASL; ; 08E0
-	ASL; ; 08E1
-	STA $FF; ; 08E2
-	LDA $DD00; ; 08E4
-	EOR #$FF; ; 08E7
-	AND #$03; ; 08E9
-	CLC; ; 08EB
-	ASL; ; 08EC
-	ASL; ; 08ED
-	ASL; ; 08EE
+	SEI; ; 08E8
+	LDA $D018; ; 08E9
+	AND #$08; ; 08EC
+	CLC; ; 08EE
 	ASL; ; 08EF
 	ASL; ; 08F0
-	ASL; ; 08F1
-	ADC $FF; ; 08F2
-	TAX; ; 08F4
-	LDA #$00; ; 08F5
-	CLI; ; 08F7
+	STA $FF; ; 08F1
+	LDA $DD00; ; 08F3
+	EOR #$FF; ; 08F6
+	AND #$03; ; 08F8
+	CLC; ; 08FA
+	ASL; ; 08FB
+	ASL; ; 08FC
+	ASL; ; 08FD
+	ASL; ; 08FE
+	ASL; ; 08FF
+	ASL; ; 0900
+	ADC $FF; ; 0901
+	TAX; ; 0903
+	LDA #$00; ; 0904
+	CLI; ; 0906
 ; RULE: init: '=' expression
 ; initialising a word with XA
 ; RULE: statement: datatype ID init
 ; WORD bmpaddr=XA datatype#: 02
-	STA $033F;  bmpaddr; ; 08F8
-	STX $0340; ; 08FB
+	STA $0342;  bmpaddr; ; 0907
+	STX $0343; ; 090A
 ; =========================================================
 ; RULE: datatype: word
 ; OP2
 ; RULE: expression: expression arithmetic expression
-; $033F + w1280
-; $033F (2) + w1280 (-1)
-	CLC; ; 08FE
+; $0342 + w1280
+; $0342 (2) + w1280 (-1)
+	CLC; ; 090D
 ; WordID + WordIMM -> XA
-	LDA $033F; ; 08FF
-	ADC #$00; ; 0902
-	TAY; ; 0904
-	LDA $0340; ; 0905
-	ADC #$05; ; 0908
-	TAX; ; 090A
-	TYA; ; 090B
+	LDA $0342; ; 090E
+	ADC #$00; ; 0911
+	TAY; ; 0913
+	LDA $0343; ; 0914
+	ADC #$05; ; 0917
+	TAX; ; 0919
+	TYA; ; 091A
 ; RULE: init: '=' expression
 ; initialising a word with XA
 ; RULE: statement: datatype ID init
 ; WORD bmpaddrX=XA datatype#: 02
-	STA $0341;  bmpaddrX; ; 090C
-	STX $0342; ; 090F
+	STA $0344;  bmpaddrX; ; 091B
+	STX $0345; ; 091E
 ; =========================================================
 ; RULE: datatype: word
-	LDA #$00; ; 0912
-	STA $03; ; 0914
-	JSR SCRMEM; ; 0916
-	PLA; ; 0919
-	CLC; ; 091A
-	ADC $03; ; 091B
-	STA $03; ; 091D
-	JSR BNKMEM; ; 091F
-	PLA; ; 0922
-	ADC $03; ; 0923
-	TAX; ; 0925
-	LDA #$00; ; 0926
+	LDA #$00; ; 0921
+	STA $03; ; 0923
+	JSR SCRMEM; ; 0925
+	PLA; ; 0928
+	CLC; ; 0929
+	ADC $03; ; 092A
+	STA $03; ; 092C
+	JSR BNKMEM; ; 092E
+	PLA; ; 0931
+	ADC $03; ; 0932
+	TAX; ; 0934
+	LDA #$00; ; 0935
 ; RULE: init: '=' expression
 ; initialising a word with XA
 ; RULE: statement: datatype ID init
 ; WORD scraddr=XA datatype#: 02
-	STA $0343;  scraddr; ; 0928
-	STX $0344; ; 092B
+	STA $0346;  scraddr; ; 0937
+	STX $0347; ; 093A
 ; =========================================================
 ; RULE: datatype: word
 ; OP2
 ; RULE: expression: expression arithmetic expression
-; $0343 + w160
-; $0343 (2) + w160 (-1)
-	CLC; ; 092E
+; $0346 + w160
+; $0346 (2) + w160 (-1)
+	CLC; ; 093D
 ; WordID + WordIMM -> XA
-	LDA $0343; ; 092F
-	ADC #$A0; ; 0932
-	TAY; ; 0934
-	LDA $0344; ; 0935
-	ADC #$00; ; 0938
-	TAX; ; 093A
-	TYA; ; 093B
+	LDA $0346; ; 093E
+	ADC #$A0; ; 0941
+	TAY; ; 0943
+	LDA $0347; ; 0944
+	ADC #$00; ; 0947
+	TAX; ; 0949
+	TYA; ; 094A
 ; RULE: init: '=' expression
 ; initialising a word with XA
 ; RULE: statement: datatype ID init
 ; WORD scraddrX=XA datatype#: 02
-	STA $0345;  scraddrX; ; 093C
-	STX $0346; ; 093F
+	STA $0348;  scraddrX; ; 094B
+	STX $0349; ; 094E
 ; =========================================================
 ; RULE: datatype: word
 ; RULE: init: '=' expression
 ; initialising WordIMM: 55296
-	LDA #$00; ; 0942
-	LDX #$D8; ; 0944
+	LDA #$00; ; 0951
+	LDX #$D8; ; 0953
 ; RULE: statement: datatype ID init
 ; WORD colraddr=XA datatype#: 02
-	STA $0347;  colraddr; ; 0946
-	STX $0348; ; 0949
+	STA $034A;  colraddr; ; 0955
+	STX $034B; ; 0958
 ; =========================================================
 ; RULE: datatype: word
 ; RULE: init: '=' expression
 ; initialising WordIMM: 55456
-	LDA #$A0; ; 094C
-	LDX #$D8; ; 094E
+	LDA #$A0; ; 095B
+	LDX #$D8; ; 095D
 ; RULE: statement: datatype ID init
 ; WORD colraddrX=XA datatype#: 02
-	STA $0349;  colraddrX; ; 0950
-	STX $034A; ; 0953
+	STA $034C;  colraddrX; ; 095F
+	STX $034D; ; 0962
 ; =========================================================
 ; RULE: datatype: word
 ; OP2
 ; RULE: expression: expression arithmetic expression
-; $033F + w328
-; $033F (2) + w328 (-1)
-	CLC; ; 0956
+; $0342 + w328
+; $0342 (2) + w328 (-1)
+	CLC; ; 0965
 ; WordID + WordIMM -> XA
-	LDA $033F; ; 0957
-	ADC #$48; ; 095A
-	TAY; ; 095C
-	LDA $0340; ; 095D
-	ADC #$01; ; 0960
-	TAX; ; 0962
-	TYA; ; 0963
+	LDA $0342; ; 0966
+	ADC #$48; ; 0969
+	TAY; ; 096B
+	LDA $0343; ; 096C
+	ADC #$01; ; 096F
+	TAX; ; 0971
+	TYA; ; 0972
 ; RULE: init: '=' expression
 ; initialising a word with XA
 ; RULE: statement: datatype ID init
 ; WORD loc=XA datatype#: 02
-	STA $034B;  loc; ; 0964
-	STX $034C; ; 0967
+	STA $034E;  loc; ; 0973
+	STX $034F; ; 0976
 ; =========================================================
 ; Call a function as a statement
-	JSR LBL0L2; clearhires(); ; 096A
+	JSR LBL0L2; clearhires(); ; 0979
 ; Preserve $02
-	LDA $02; ; 096D
-	PHA; ; 096F
+	LDA $02; ; 097C
+	PHA; ; 097E
 ; =========================================================
 ;                         FOR LOOP
 ; =========================================================
 LBL1L2:
-	PHA; ; 0970
+	PHA; ; 097F
 ; ---------------------------------------------------------
 ; RULE: datatype: uint
 ; RULE: init: '=' expression
 ; initialising UintIMM
-	LDA #$00; ; 0971
+	LDA #$00; ; 0980
 ; RULE: statement: datatype ID init
 ; UINT j=A datatype#: 00
 ; UINT UintID A
-	STA $034D;  j; ; 0973
+	STA $0350;  j; ; 0982
 ; ---------------------------------------------------------
-; UintID $034D vs. UintIMM u96
+; UintID $0350 vs. UintIMM u96
 LBL1L3:			; Top of FOR Loop
 ; UintID relop UintIMM
-	LDA $034D;  j; ; 0976
-	CMP #$60; ; 0979
-	.BYTE #$B0, #$03; BCS +3; ; 097B
-	JMP LBL1L5;  if c==0 jump to BODY; ; 097D
-	JMP LBL1L6;  jump out of FOR; ; 0980
+	LDA $0350;  j; ; 0985
+	CMP #$60; ; 0988
+	.BYTE #$B0, #$03; BCS +3; ; 098A
+	JMP LBL1L5;  if c==0 jump to BODY; ; 098C
+	JMP LBL1L6;  jump out of FOR; ; 098F
 ; =========================================================
 ; ---------------------------------------------------------
 LBL1L4:
 ; inc(expression)
-	INC $034D; ; 0983
-	JMP LBL1L3;  jump to top of FOR loop; ; 0986
+	INC $0350; ; 0992
+	JMP LBL1L3;  jump to top of FOR loop; ; 0995
 ; ---------------------------------------------------------
 LBL1L5:
 ; Dereference: joshua
-	LDA $0337; ; 0989
-	STA LBL2L0; ; 098C
-	LDA $0338; ; 098F
-	STA LBL2L0+1; ; 0992
-	LDX $034D; ; 0995
-	.BYTE #$BD;		LDA ABS,X; ; 0998
+	LDA $033A; ; 0998
+	STA LBL2L0; ; 099B
+	LDA $033B; ; 099E
+	STA LBL2L0+1; ; 09A1
+	LDX $0350; ; 09A4
+	.BYTE #$BD;		LDA ABS,X; ; 09A7
 LBL2L0:
-	.BYTE #$00; ; 0999
-	.BYTE #$00; ; 099A
+	.BYTE #$00; ; 09A8
+	.BYTE #$00; ; 09A9
 ; poke( expression, expression );
-	STA LBL2L1-2; ; 099B
-	LDA $034B; ; 099E
-	STA LBL2L1; ; 09A1
-	LDA $034C; ; 09A4
-	STA LBL2L2; ; 09A7
-	LDA #$00; ; 09AA
-	.BYTE $A9; ; 09AC
-	.BYTE $00; ; 09AD
-	.BYTE $8D;	  <-- STA absolute; ; 09AE
+	STA LBL2L1-2; ; 09AA
+	LDA $034E; ; 09AD
+	STA LBL2L1; ; 09B0
+	LDA $034F; ; 09B3
+	STA LBL2L2; ; 09B6
+	LDA #$00; ; 09B9
+	.BYTE $A9; ; 09BB
+	.BYTE $00; ; 09BC
+	.BYTE $8D;	  <-- STA absolute; ; 09BD
 LBL2L1:			; <-- low byte
-	.BYTE $00; ; 09AF
+	.BYTE $00; ; 09BE
 LBL2L2:			; <-- hi byte
-	.BYTE $00; ; 09B0
+	.BYTE $00; ; 09BF
 ; OP2
 ; RULE: expression: expression arithmetic expression
-; $034B + u1
-; $034B (2) + u1 (-1)
-	CLC; ; 09B1
+; $034E + u1
+; $034E (2) + u1 (-1)
+	CLC; ; 09C0
 ; WordID + (IntIMM || UintIMM)
-	LDA #$01; ; 09B2
-	ADC $034B; ; 09B4
-	PHA; ; 09B7
-	LDA #$00; ; 09B8
-	ADC $034C; ; 09BA
-	TAX; ; 09BD
-	PLA; ; 09BE
+	LDA #$01; ; 09C1
+	ADC $034E; ; 09C3
+	PHA; ; 09C6
+	LDA #$00; ; 09C7
+	ADC $034F; ; 09C9
+	TAX; ; 09CC
+	PLA; ; 09CD
 ; RULE: init: '=' expression
 ; initialising a word with XA
 ; RULE: statement: ID init
 ; WordID = XA
-	STA $034B;  loc; ; 09BF
-	STX $034C; ; 09C2
+	STA $034E;  loc; ; 09CE
+	STX $034F; ; 09D1
 ; =========================================================
 ; ---------------------------------------------------------
-	JMP LBL1L4;  jump to iterator; ; 09C5
+	JMP LBL1L4;  jump to iterator; ; 09D4
 LBL1L6:
-	PLA; ; 09C8
+	PLA; ; 09D7
 ; ---------------------------------------------------------
 ; Restore $02
-	PLA; ; 09C9
-	STA $02; ; 09CA
-	SEI; ; 09CC
-	LDA #$7F; ; 09CD
-	STA $DC0D; ; 09CF
-	STA $DD0D; ; 09D2
-	LDA $DC0D; ; 09D5
-	LDA $DD0D; ; 09D8
-	LDA #$01; ; 09DB
-	STA $D01A; ; 09DD
-	LDA #$31; ; 09E0
-	STA $D012; ; 09E2
-	LDA $D011; ; 09E5
-	AND #$7F; ; 09E8
-	STA $D011; ; 09EA
-	LDA #<int1; ; 09ED
-	STA $0314; ; 09EF
-	LDA #>int1; ; 09F2
-	STA $0315; ; 09F4
-	CLI; ; 09F7
+	PLA; ; 09D8
+	STA $02; ; 09D9
+	SEI; ; 09DB
+	LDA #$7F; ; 09DC
+	STA $DC0D; ; 09DE
+	STA $DD0D; ; 09E1
+	LDA $DC0D; ; 09E4
+	LDA $DD0D; ; 09E7
+	LDA #$01; ; 09EA
+	STA $D01A; ; 09EC
+	LDA #$31; ; 09EF
+	STA $D012; ; 09F1
+	LDA $D011; ; 09F4
+	AND #$7F; ; 09F7
+	STA $D011; ; 09F9
+	LDA #<int1; ; 09FC
+	STA $0314; ; 09FE
+	LDA #>int1; ; 0A01
+	STA $0315; ; 0A03
+	CLI; ; 0A06
+; RULE: datatype: uint
+; =========================================================
+;                  getin()
+; =========================================================
+	LDA $CB; ; 0A07
+; RULE: init: '=' expression
+; initialising a byte with A
+; RULE: statement: datatype ID init
+; UINT c=A datatype#: 00
+; UINT UintID A
+	STA $0351;  c; ; 0A09
+; =========================================================
+; =========================================================
+;                         WHILE LOOP
+; =========================================================
+	PHA; ; 0A0C
+LBL1L7:
+; ---------------------------------------------------------
+; UintID $0351 vs. UintIMM u62
+LBL1L8:			; Top of WHILE Loop
+; UintID relop UintIMM
+	LDA $0351;  c; ; 0A0D
+	CMP #$3E; ; 0A10
+	.BYTE $D0, $03;  BNE +3; ; 0A12
+	JMP LBL1L10;  if z==1 jump to ELSE; ; 0A14
+; =========================================================
+LBL1L9:
+; =========================================================
+;                         IF STATEMENT
+; =========================================================
+LBL2L3:
+; UintID $0351 vs. UintIMM u30
+LBL2L4:			; Top of IF statement
+; UintID relop UintIMM
+	LDA $0351;  c; ; 0A17
+	CMP #$1E; ; 0A1A
+	.BYTE #$F0, #$03;  BEQ +3; ; 0A1C
+	JMP LBL2L6;  jump to ELSE; ; 0A1E
+; =========================================================
+; ---------------------------------------------------------
+;                       THEN:
+LBL2L5:
+; RULE: init: '=' expression
+; initialising UintIMM
+	LDA #$FF; ; 0A21
+; RULE: statement: ID init
+	STA $0336;  direction; ; 0A23
+; =========================================================
+	JMP LBL2L7; ; 0A26
+LBL2L6:
+; ---------------------------------------------------------
+;                       ELSE:
+; ---------------------------------------------------------
+; ---------------------------------------------------------
+LBL2L7:
+; =========================================================
+;                         IF STATEMENT
+; =========================================================
+LBL2L8:
+; UintID $0351 vs. UintIMM u38
+LBL2L9:			; Top of IF statement
+; UintID relop UintIMM
+	LDA $0351;  c; ; 0A29
+	CMP #$26; ; 0A2C
+	.BYTE #$F0, #$03;  BEQ +3; ; 0A2E
+	JMP LBL2L11;  jump to ELSE; ; 0A30
+; =========================================================
+; ---------------------------------------------------------
+;                       THEN:
+LBL2L10:
+; RULE: init: '=' expression
+; initialising UintIMM
+	LDA #$01; ; 0A33
+; RULE: statement: ID init
+	STA $0336;  direction; ; 0A35
+; =========================================================
+	JMP LBL2L12; ; 0A38
+LBL2L11:
+; ---------------------------------------------------------
+;                       ELSE:
+; ---------------------------------------------------------
+; ---------------------------------------------------------
+LBL2L12:
+; =========================================================
+;                  getin()
+; =========================================================
+	LDA $CB; ; 0A3B
+; RULE: init: '=' expression
+; initialising a byte with A
+; RULE: statement: ID init
+	STA $0351;  c; ; 0A3D
+; =========================================================
+	JMP LBL1L8;  jump to top of WHILE loop; ; 0A40
+LBL1L10:
+	PLA; ; 0A43
+; Call a function as a statement
+	JSR LBL0L6; clearkb(); ; 0A44
 ; poke( expression, expression );
 ; POKE(IMM,ID)
-	LDA $033E; ; 09F8
-	STA $0286; ; 09FB
+	LDA $0341; ; 0A47
+	STA $0286; ; 0A4A
 ; poke( expression, expression );
 ; POKE(IMM,ID)
-	LDA $033C; ; 09FE
-	STA $D020; ; 0A01
+	LDA $033F; ; 0A4D
+	STA $D020; ; 0A50
 ; poke( expression, expression );
 ; POKE(IMM,ID)
-	LDA $033D; ; 0A04
-	STA $D021; ; 0A07
-	RTS; ; 0A0A
+	LDA $0340; ; 0A53
+	STA $D021; ; 0A56
+	RTS; ; 0A59
 ; RULE: datatype: void
 ; ======================== int1 ========================
 LBL0L0:
 int1:
 ; poke( expression, expression );
 ; POKE(wIMM,IMM)
-	LDA #$3B; ; 0A0B
-	STA $D011; ; 0A0D
+	LDA #$3B; ; 0A5A
+	STA $D011; ; 0A5C
 ; poke( expression, expression );
 ; POKE(wIMM,IMM)
-	LDA #$18; ; 0A10
-	STA $D016; ; 0A12
+	LDA #$18; ; 0A5F
+	STA $D016; ; 0A61
 ; poke( expression, expression );
 ; POKE(wIMM,IMM)
-	LDA #$18; ; 0A15
-	STA $D018; ; 0A17
-; dec(ID)
-	DEC $0336; ; 0A1A
-; =========================================================
-	LDA #$07; ; 0A1D
-	AND $0336; ; 0A1F
-; RULE: init: '=' expression
-; initialising a byte with A
-; RULE: statement: ID init
-	STA $0336;  pixelShift; ; 0A22
-; =========================================================
-	LDA #$C8; ; 0A25
-	ORA $0336; ; 0A27
-; poke( expression, expression );
-; POKE(IMM,A)
-	STA $D016; ; 0A2A
-	LDA #$7F; ; 0A2D
-	STA $DC0D; ; 0A2F
-	STA $DD0D; ; 0A32
-	LDA $DC0D; ; 0A35
-	LDA $DD0D; ; 0A38
-	LDA #$01; ; 0A3B
-	STA $D01A; ; 0A3D
-	LDA #$51; ; 0A40
-	STA $D012; ; 0A42
-	LDA $D011; ; 0A45
-	AND #$7F; ; 0A48
-	STA $D011; ; 0A4A
-	LDA #<int2; ; 0A4D
-	STA $0314; ; 0A4F
-	LDA #>int2; ; 0A52
-	STA $0315; ; 0A54
-; poke( expression, expression );
-; POKE(wIMM,IMM)
-	LDA #$FF; ; 0A57
-	STA $D019; ; 0A59
-; =========================================================
-;                         jmp(WordIMM)
-; =========================================================
-	JMP $EA7E; ; 0A5C
-	RTS; ; 0A5F
-; RULE: datatype: void
-; ======================== int2 ========================
-LBL0L1:
-int2:
-	NOP; ; 0A60
-	NOP; ; 0A61
-	NOP; ; 0A62
-	NOP; ; 0A63
-	NOP; ; 0A64
-	NOP; ; 0A65
-	NOP; ; 0A66
-; poke( expression, expression );
-; POKE(IMM,ID)
-	LDA $0339; ; 0A67
-	STA $D011; ; 0A6A
-; poke( expression, expression );
-; POKE(IMM,ID)
-	LDA $033A; ; 0A6D
-	STA $D016; ; 0A70
-; poke( expression, expression );
-; POKE(IMM,ID)
-	LDA $033B; ; 0A73
-	STA $D018; ; 0A76
-; poke( expression, expression );
-; POKE(wIMM,IMM)
-	LDA #$FF; ; 0A79
-	STA $D019; ; 0A7B
-; poke( expression, expression );
-; POKE(wIMM,IMM)
-	LDA #$C8; ; 0A7E
-	STA $D016; ; 0A80
+	LDA #$18; ; 0A64
+	STA $D018; ; 0A66
 ; =========================================================
 ;                         IF STATEMENT
 ; =========================================================
-LBL1L7:
-; UintID $0336 vs. UintIMM u0
-LBL1L8:			; Top of IF statement
+LBL1L11:
+; UintID $0336 vs. UintIMM u255
+LBL1L12:			; Top of IF statement
 ; UintID relop UintIMM
-	LDA $0336;  pixelShift; ; 0A83
-	CMP #$00; ; 0A86
-	.BYTE #$F0, #$03;  BEQ +3; ; 0A88
-	JMP LBL1L10;  jump to ELSE; ; 0A8A
+	LDA $0336;  direction; ; 0A69
+	CMP #$FF; ; 0A6C
+	.BYTE #$F0, #$03;  BEQ +3; ; 0A6E
+	JMP LBL1L14;  jump to ELSE; ; 0A70
 ; =========================================================
 ; ---------------------------------------------------------
 ;                       THEN:
-LBL1L9:
-; memcpy(w8512,w9792,u8);
-; memcpy L->R
-	LDY #$08; ; 0A8D
-LBL2L3:
-	CPY #$FF; ; 0A8F
-	BEQ LBL2L4; ; 0A91
-	LDA $2140,Y; ; 0A93
-	STA $2640,Y; ; 0A96
-	DEY; ; 0A99
-	JMP LBL2L3; ; 0A9A
-LBL2L4:
-; memcpy(w8832,w9800,u8);
-; memcpy L->R
-	LDY #$08; ; 0A9D
-LBL2L5:
-	CPY #$FF; ; 0A9F
-	BEQ LBL2L6; ; 0AA1
-	LDA $2280,Y; ; 0AA3
-	STA $2648,Y; ; 0AA6
-	DEY; ; 0AA9
-	JMP LBL2L5; ; 0AAA
-LBL2L6:
-; memcpy(w8520,w8512,u248);
-; memcpy R->L
-	LDY #$00; ; 0AAD
-LBL2L7:
-	CPY #$F8; ; 0AAF
-	BEQ LBL2L8; ; 0AB1
-	LDA $2148,Y; ; 0AB3
-	STA $2140,Y; ; 0AB6
-	INY; ; 0AB9
-	JMP LBL2L7; ; 0ABA
-LBL2L8:
-; memcpy(w8768,w8760,u64);
-; memcpy R->L
-	LDY #$00; ; 0ABD
-LBL2L9:
-	CPY #$40; ; 0ABF
-	BEQ LBL2L10; ; 0AC1
-	LDA $2240,Y; ; 0AC3
-	STA $2238,Y; ; 0AC6
-	INY; ; 0AC9
-	JMP LBL2L9; ; 0ACA
-LBL2L10:
-; memcpy(w8840,w8832,u248);
-; memcpy R->L
-	LDY #$00; ; 0ACD
-LBL2L11:
-	CPY #$F8; ; 0ACF
-	BEQ LBL2L12; ; 0AD1
-	LDA $2288,Y; ; 0AD3
-	STA $2280,Y; ; 0AD6
-	INY; ; 0AD9
-	JMP LBL2L11; ; 0ADA
-LBL2L12:
-; memcpy(w9088,w9080,u64);
-; memcpy R->L
-	LDY #$00; ; 0ADD
-LBL2L13:
-	CPY #$40; ; 0ADF
-	BEQ LBL2L14; ; 0AE1
-	LDA $2380,Y; ; 0AE3
-	STA $2378,Y; ; 0AE6
-	INY; ; 0AE9
-	JMP LBL2L13; ; 0AEA
-LBL2L14:
-; memcpy(w9792,w8824,u8);
-; memcpy R->L
-	LDY #$00; ; 0AED
-LBL2L15:
-	CPY #$08; ; 0AEF
-	BEQ LBL2L16; ; 0AF1
-	LDA $2640,Y; ; 0AF3
-	STA $2278,Y; ; 0AF6
-	INY; ; 0AF9
-	JMP LBL2L15; ; 0AFA
-LBL2L16:
-; memcpy(w9800,w9144,u8);
-; memcpy R->L
-	LDY #$00; ; 0AFD
-LBL2L17:
-	CPY #$08; ; 0AFF
-	BEQ LBL2L18; ; 0B01
-	LDA $2648,Y; ; 0B03
-	STA $23B8,Y; ; 0B06
-	INY; ; 0B09
-	JMP LBL2L17; ; 0B0A
-LBL2L18:
-	JMP LBL1L11; ; 0B0D
-LBL1L10:
+LBL1L13:
+; dec(ID)
+	DEC $0337; ; 0A73
+; =========================================================
+	JMP LBL1L15; ; 0A76
+LBL1L14:
 ; ---------------------------------------------------------
 ;                       ELSE:
 ; ---------------------------------------------------------
 ; ---------------------------------------------------------
-LBL1L11:
-	LDA #$7F; ; 0B10
-	STA $DC0D; ; 0B12
-	STA $DD0D; ; 0B15
-	LDA $DC0D; ; 0B18
-	LDA $DD0D; ; 0B1B
-	LDA #$01; ; 0B1E
-	STA $D01A; ; 0B20
-	LDA #$31; ; 0B23
-	STA $D012; ; 0B25
-	LDA $D011; ; 0B28
-	AND #$7F; ; 0B2B
-	STA $D011; ; 0B2D
-	LDA #<int1; ; 0B30
-	STA $0314; ; 0B32
-	LDA #>int1; ; 0B35
-	STA $0315; ; 0B37
+LBL1L15:
+; =========================================================
+;                         IF STATEMENT
+; =========================================================
+LBL1L16:
+; UintID $0336 vs. UintIMM u1
+LBL1L17:			; Top of IF statement
+; UintID relop UintIMM
+	LDA $0336;  direction; ; 0A79
+	CMP #$01; ; 0A7C
+	.BYTE #$F0, #$03;  BEQ +3; ; 0A7E
+	JMP LBL1L19;  jump to ELSE; ; 0A80
+; =========================================================
+; ---------------------------------------------------------
+;                       THEN:
+LBL1L18:
+; inc(expression)
+	INC $0337; ; 0A83
+; =========================================================
+	JMP LBL1L20; ; 0A86
+LBL1L19:
+; ---------------------------------------------------------
+;                       ELSE:
+; ---------------------------------------------------------
+; ---------------------------------------------------------
+LBL1L20:
+	LDA #$07; ; 0A89
+	AND $0337; ; 0A8B
+; RULE: init: '=' expression
+; initialising a byte with A
+; RULE: statement: ID init
+	STA $0337;  pixelShift; ; 0A8E
+; =========================================================
+	LDA #$C8; ; 0A91
+	ORA $0337; ; 0A93
+; poke( expression, expression );
+; POKE(IMM,A)
+	STA $D016; ; 0A96
+	LDA #$7F; ; 0A99
+	STA $DC0D; ; 0A9B
+	STA $DD0D; ; 0A9E
+	LDA $DC0D; ; 0AA1
+	LDA $DD0D; ; 0AA4
+	LDA #$01; ; 0AA7
+	STA $D01A; ; 0AA9
+	LDA #$51; ; 0AAC
+	STA $D012; ; 0AAE
+	LDA $D011; ; 0AB1
+	AND #$7F; ; 0AB4
+	STA $D011; ; 0AB6
+	LDA #<int2; ; 0AB9
+	STA $0314; ; 0ABB
+	LDA #>int2; ; 0ABE
+	STA $0315; ; 0AC0
+; poke( expression, expression );
+; POKE(wIMM,IMM)
+	LDA #$FF; ; 0AC3
+	STA $D019; ; 0AC5
 ; =========================================================
 ;                         jmp(WordIMM)
 ; =========================================================
-	JMP $EA31; ; 0B3A
-	RTS; ; 0B3D
+	JMP $EA7E; ; 0AC8
+	RTS; ; 0ACB
+; RULE: datatype: void
+; ======================== int2 ========================
+LBL0L1:
+int2:
+	NOP; ; 0ACC
+	NOP; ; 0ACD
+	NOP; ; 0ACE
+	NOP; ; 0ACF
+	NOP; ; 0AD0
+	NOP; ; 0AD1
+	NOP; ; 0AD2
+; poke( expression, expression );
+; POKE(IMM,ID)
+	LDA $033C; ; 0AD3
+	STA $D011; ; 0AD6
+; poke( expression, expression );
+; POKE(IMM,ID)
+	LDA $033D; ; 0AD9
+	STA $D016; ; 0ADC
+; poke( expression, expression );
+; POKE(IMM,ID)
+	LDA $033E; ; 0ADF
+	STA $D018; ; 0AE2
+; poke( expression, expression );
+; POKE(wIMM,IMM)
+	LDA #$FF; ; 0AE5
+	STA $D019; ; 0AE7
+; poke( expression, expression );
+; POKE(wIMM,IMM)
+	LDA #$C8; ; 0AEA
+	STA $D016; ; 0AEC
+; =========================================================
+;                         IF STATEMENT
+; =========================================================
+LBL1L21:
+; UintID $0336 vs. UintIMM u255
+LBL1L22:			; Top of IF statement
+; UintID relop UintIMM
+	LDA $0336;  direction; ; 0AEF
+	CMP #$FF; ; 0AF2
+	.BYTE #$F0, #$03;  BEQ +3; ; 0AF4
+	JMP LBL1L24;  jump to ELSE; ; 0AF6
+; =========================================================
+; ---------------------------------------------------------
+;                       THEN:
+LBL1L23:
+; =========================================================
+;                         IF STATEMENT
+; =========================================================
+LBL2L13:
+; UintID $0337 vs. UintIMM u0
+LBL2L14:			; Top of IF statement
+; UintID relop UintIMM
+	LDA $0337;  pixelShift; ; 0AF9
+	CMP #$00; ; 0AFC
+	.BYTE #$F0, #$03;  BEQ +3; ; 0AFE
+	JMP LBL2L16;  jump to ELSE; ; 0B00
+; =========================================================
+; ---------------------------------------------------------
+;                       THEN:
+LBL2L15:
+; memcpy(w8512,w9792,u8);
+; memcpy L->R
+	LDY #$07; ; 0B03
+LBL3L0:
+	LDA $2140,Y; ; 0B05
+	STA $2640,Y; ; 0B08
+	CPY #$00; ; 0B0B
+	BEQ LBL3L1; ; 0B0D
+	DEY; ; 0B0F
+	JMP LBL3L0; ; 0B10
+LBL3L1:
+; memcpy(w8520,w8512,u248);
+; memcpy R->L
+	LDY #$00; ; 0B13
+LBL3L2:
+	LDA $2148,Y; ; 0B15
+	STA $2140,Y; ; 0B18
+	INY; ; 0B1B
+	CPY #$F8; ; 0B1C
+	BEQ LBL3L3; ; 0B1E
+	JMP LBL3L2; ; 0B20
+LBL3L3:
+; memcpy(w8768,w8760,u64);
+; memcpy R->L
+	LDY #$00; ; 0B23
+LBL3L4:
+	LDA $2240,Y; ; 0B25
+	STA $2238,Y; ; 0B28
+	INY; ; 0B2B
+	CPY #$40; ; 0B2C
+	BEQ LBL3L5; ; 0B2E
+	JMP LBL3L4; ; 0B30
+LBL3L5:
+; memcpy(w9792,w8824,u8);
+; memcpy R->L
+	LDY #$00; ; 0B33
+LBL3L6:
+	LDA $2640,Y; ; 0B35
+	STA $2278,Y; ; 0B38
+	INY; ; 0B3B
+	CPY #$08; ; 0B3C
+	BEQ LBL3L7; ; 0B3E
+	JMP LBL3L6; ; 0B40
+LBL3L7:
+	JMP LBL2L17; ; 0B43
+LBL2L16:
+; ---------------------------------------------------------
+;                       ELSE:
+; ---------------------------------------------------------
+; ---------------------------------------------------------
+LBL2L17:
+	JMP LBL1L25; ; 0B46
+LBL1L24:
+; ---------------------------------------------------------
+;                       ELSE:
+; ---------------------------------------------------------
+; ---------------------------------------------------------
+LBL1L25:
+; =========================================================
+;                         IF STATEMENT
+; =========================================================
+LBL1L26:
+; UintID $0336 vs. UintIMM u1
+LBL1L27:			; Top of IF statement
+; UintID relop UintIMM
+	LDA $0336;  direction; ; 0B49
+	CMP #$01; ; 0B4C
+	.BYTE #$F0, #$03;  BEQ +3; ; 0B4E
+	JMP LBL1L29;  jump to ELSE; ; 0B50
+; =========================================================
+; ---------------------------------------------------------
+;                       THEN:
+LBL1L28:
+; =========================================================
+;                         IF STATEMENT
+; =========================================================
+LBL2L18:
+; UintID $0337 vs. UintIMM u7
+LBL2L19:			; Top of IF statement
+; UintID relop UintIMM
+	LDA $0337;  pixelShift; ; 0B53
+	CMP #$07; ; 0B56
+	.BYTE #$F0, #$03;  BEQ +3; ; 0B58
+	JMP LBL2L21;  jump to ELSE; ; 0B5A
+; =========================================================
+; ---------------------------------------------------------
+;                       THEN:
+LBL2L20:
+; memcpy(w8824,w9792,u8);
+; memcpy L->R
+	LDY #$07; ; 0B5D
+LBL3L8:
+	LDA $2278,Y; ; 0B5F
+	STA $2640,Y; ; 0B62
+	CPY #$00; ; 0B65
+	BEQ LBL3L9; ; 0B67
+	DEY; ; 0B69
+	JMP LBL3L8; ; 0B6A
+LBL3L9:
+; memcpy(w8760,w8768,u64);
+; memcpy L->R
+	LDY #$3F; ; 0B6D
+LBL3L10:
+	LDA $2238,Y; ; 0B6F
+	STA $2240,Y; ; 0B72
+	CPY #$00; ; 0B75
+	BEQ LBL3L11; ; 0B77
+	DEY; ; 0B79
+	JMP LBL3L10; ; 0B7A
+LBL3L11:
+; memcpy(w8512,w8520,u248);
+; memcpy L->R
+	LDY #$F7; ; 0B7D
+LBL3L12:
+	LDA $2140,Y; ; 0B7F
+	STA $2148,Y; ; 0B82
+	CPY #$00; ; 0B85
+	BEQ LBL3L13; ; 0B87
+	DEY; ; 0B89
+	JMP LBL3L12; ; 0B8A
+LBL3L13:
+; memcpy(w9792,w8512,u8);
+; memcpy R->L
+	LDY #$00; ; 0B8D
+LBL3L14:
+	LDA $2640,Y; ; 0B8F
+	STA $2140,Y; ; 0B92
+	INY; ; 0B95
+	CPY #$08; ; 0B96
+	BEQ LBL3L15; ; 0B98
+	JMP LBL3L14; ; 0B9A
+LBL3L15:
+	JMP LBL2L22; ; 0B9D
+LBL2L21:
+; ---------------------------------------------------------
+;                       ELSE:
+; ---------------------------------------------------------
+; ---------------------------------------------------------
+LBL2L22:
+	JMP LBL1L30; ; 0BA0
+LBL1L29:
+; ---------------------------------------------------------
+;                       ELSE:
+; ---------------------------------------------------------
+; ---------------------------------------------------------
+LBL1L30:
+	LDA #$7F; ; 0BA3
+	STA $DC0D; ; 0BA5
+	STA $DD0D; ; 0BA8
+	LDA $DC0D; ; 0BAB
+	LDA $DD0D; ; 0BAE
+	LDA #$01; ; 0BB1
+	STA $D01A; ; 0BB3
+	LDA #$31; ; 0BB6
+	STA $D012; ; 0BB8
+	LDA $D011; ; 0BBB
+	AND #$7F; ; 0BBE
+	STA $D011; ; 0BC0
+	LDA #<int1; ; 0BC3
+	STA $0314; ; 0BC5
+	LDA #>int1; ; 0BC8
+	STA $0315; ; 0BCA
+; =========================================================
+;                         jmp(WordIMM)
+; =========================================================
+	JMP $EA31; ; 0BCD
+	RTS; ; 0BD0
 ; RULE: datatype: void
 ; ======================== clearhires ========================
 LBL0L2:
 clearhires:
 ; Preserve $02
-	LDA $02; ; 0B3E
-	PHA; ; 0B40
+	LDA $02; ; 0BD1
+	PHA; ; 0BD3
 ; =========================================================
 ;                         FOR LOOP
 ; =========================================================
-LBL1L12:
-	PHA; ; 0B41
+LBL1L31:
+	PHA; ; 0BD4
 ; ---------------------------------------------------------
 ; RULE: datatype: word
 ; RULE: init: '=' expression
 ; initialising WordID
-	LDA $0347;  colraddr; ; 0B42
-	LDX $0348; ; 0B45
+	LDA $034A;  colraddr; ; 0BD5
+	LDX $034B; ; 0BD8
 ; RULE: statement: datatype ID init
 ; WORD mem1=XA datatype#: 02
-	STA $034E;  mem1; ; 0B48
-	STX $034F; ; 0B4B
+	STA $0352;  mem1; ; 0BDB
+	STX $0353; ; 0BDE
 ; ---------------------------------------------------------
-; WordID $034E vs. WordID $0349
-LBL1L13:			; Top of FOR Loop
+; WordID $0352 vs. WordID $034C
+LBL1L32:			; Top of FOR Loop
 ; =========================================================
 ;                         WORD ID relop WORD ID
 ; =========================================================
-	LDA $034F; ; 0B4E
-	CMP $034A; ; 0B51
-	.BYTE $D0, $06;  BNE +6; ; 0B54
-	LDA $034E; ; 0B56
-	CMP $0349; ; 0B59
-	.BYTE #$B0, #$03; BCS +3; ; 0B5C
-	JMP LBL1L15;  if c==0 jump to BODY; ; 0B5E
-	JMP LBL1L16;  jump out of FOR; ; 0B61
+	LDA $0353; ; 0BE1
+	CMP $034D; ; 0BE4
+	.BYTE $D0, $06;  BNE +6; ; 0BE7
+	LDA $0352; ; 0BE9
+	CMP $034C; ; 0BEC
+	.BYTE #$B0, #$03; BCS +3; ; 0BEF
+	JMP LBL1L34;  if c==0 jump to BODY; ; 0BF1
+	JMP LBL1L35;  jump out of FOR; ; 0BF4
 ; =========================================================
 ; ---------------------------------------------------------
-LBL1L14:
+LBL1L33:
 ; OP2
 ; RULE: expression: expression arithmetic expression
-; $034E + u1
-; $034E (2) + u1 (-1)
-	CLC; ; 0B64
+; $0352 + u1
+; $0352 (2) + u1 (-1)
+	CLC; ; 0BF7
 ; WordID + (IntIMM || UintIMM)
-	LDA #$01; ; 0B65
-	ADC $034E; ; 0B67
-	PHA; ; 0B6A
-	LDA #$00; ; 0B6B
-	ADC $034F; ; 0B6D
-	TAX; ; 0B70
-	PLA; ; 0B71
+	LDA #$01; ; 0BF8
+	ADC $0352; ; 0BFA
+	PHA; ; 0BFD
+	LDA #$00; ; 0BFE
+	ADC $0353; ; 0C00
+	TAX; ; 0C03
+	PLA; ; 0C04
 ; RULE: init: '=' expression
 ; initialising a word with XA
 ; RULE: statement: ID init
 ; WordID = XA
-	STA $034E;  mem1; ; 0B72
-	STX $034F; ; 0B75
-	JMP LBL1L13;  jump to top of FOR loop; ; 0B78
+	STA $0352;  mem1; ; 0C05
+	STX $0353; ; 0C08
+	JMP LBL1L32;  jump to top of FOR loop; ; 0C0B
 ; ---------------------------------------------------------
-LBL1L15:
+LBL1L34:
 ; poke( expression, expression );
-	LDA $034E; ; 0B7B
-	STA LBL2L19; ; 0B7E
-	LDA $034F; ; 0B81
-	STA LBL2L20; ; 0B84
-	LDA #$00; ; 0B87
-	.BYTE $8D;	  <-- STA absolute; ; 0B89
-LBL2L19:			; <-- low byte
-	.BYTE $00; ; 0B8A
-LBL2L20:			; <-- hi byte
-	.BYTE $00; ; 0B8B
+	LDA $0352; ; 0C0E
+	STA LBL2L23; ; 0C11
+	LDA $0353; ; 0C14
+	STA LBL2L24; ; 0C17
+	LDA #$00; ; 0C1A
+	.BYTE $8D;	  <-- STA absolute; ; 0C1C
+LBL2L23:			; <-- low byte
+	.BYTE $00; ; 0C1D
+LBL2L24:			; <-- hi byte
+	.BYTE $00; ; 0C1E
 ; ---------------------------------------------------------
-	JMP LBL1L14;  jump to iterator; ; 0B8C
-LBL1L16:
-	PLA; ; 0B8F
+	JMP LBL1L33;  jump to iterator; ; 0C1F
+LBL1L35:
+	PLA; ; 0C22
 ; ---------------------------------------------------------
 ; Restore $02
-	PLA; ; 0B90
-	STA $02; ; 0B91
+	PLA; ; 0C23
+	STA $02; ; 0C24
 ; Preserve $02
-	LDA $02; ; 0B93
-	PHA; ; 0B95
+	LDA $02; ; 0C26
+	PHA; ; 0C28
 ; =========================================================
 ;                         FOR LOOP
 ; =========================================================
-LBL1L17:
-	PHA; ; 0B96
+LBL1L36:
+	PHA; ; 0C29
 ; ---------------------------------------------------------
 ; RULE: init: '=' expression
 ; initialising WordIMM: 1024
-	LDA #$00; ; 0B97
-	LDX #$04; ; 0B99
+	LDA #$00; ; 0C2A
+	LDX #$04; ; 0C2C
 ; RULE: statement: ID init
 ; WordID = XA
-	STA $034E;  mem1; ; 0B9B
-	STX $034F; ; 0B9E
+	STA $0352;  mem1; ; 0C2E
+	STX $0353; ; 0C31
 ; ---------------------------------------------------------
-; WordID $034E vs. WordIMM w1144
-LBL1L18:			; Top of FOR Loop
+; WordID $0352 vs. WordIMM w1144
+LBL1L37:			; Top of FOR Loop
 ; =========================================================
 ;                         WORD ID relop  WORD IMM
 ; =========================================================
-; $034E relop w1144
-	LDA $034F; ; 0BA1
-	CMP #$04; ; 0BA4
-	.BYTE #$D0, #$05;  BNE +5; ; 0BA6
-	LDA $034E; ; 0BA8
-	CMP #$78; ; 0BAB
-	.BYTE #$B0, #$03; BCS +3; ; 0BAD
-	JMP LBL1L20;  if c==0 jump to BODY; ; 0BAF
-	JMP LBL1L21;  jump out of FOR; ; 0BB2
+; $0352 relop w1144
+	LDA $0353; ; 0C34
+	CMP #$04; ; 0C37
+	.BYTE #$D0, #$05;  BNE +5; ; 0C39
+	LDA $0352; ; 0C3B
+	CMP #$78; ; 0C3E
+	.BYTE #$B0, #$03; BCS +3; ; 0C40
+	JMP LBL1L39;  if c==0 jump to BODY; ; 0C42
+	JMP LBL1L40;  jump out of FOR; ; 0C45
 ; =========================================================
 ; ---------------------------------------------------------
-LBL1L19:
+LBL1L38:
 ; OP2
 ; RULE: expression: expression arithmetic expression
-; $034E + u1
-; $034E (2) + u1 (-1)
-	CLC; ; 0BB5
+; $0352 + u1
+; $0352 (2) + u1 (-1)
+	CLC; ; 0C48
 ; WordID + (IntIMM || UintIMM)
-	LDA #$01; ; 0BB6
-	ADC $034E; ; 0BB8
-	PHA; ; 0BBB
-	LDA #$00; ; 0BBC
-	ADC $034F; ; 0BBE
-	TAX; ; 0BC1
-	PLA; ; 0BC2
+	LDA #$01; ; 0C49
+	ADC $0352; ; 0C4B
+	PHA; ; 0C4E
+	LDA #$00; ; 0C4F
+	ADC $0353; ; 0C51
+	TAX; ; 0C54
+	PLA; ; 0C55
 ; RULE: init: '=' expression
 ; initialising a word with XA
 ; RULE: statement: ID init
 ; WordID = XA
-	STA $034E;  mem1; ; 0BC3
-	STX $034F; ; 0BC6
-	JMP LBL1L18;  jump to top of FOR loop; ; 0BC9
+	STA $0352;  mem1; ; 0C56
+	STX $0353; ; 0C59
+	JMP LBL1L37;  jump to top of FOR loop; ; 0C5C
 ; ---------------------------------------------------------
-LBL1L20:
+LBL1L39:
 ; poke( expression, expression );
-	LDA $034E; ; 0BCC
-	STA LBL2L21; ; 0BCF
-	LDA $034F; ; 0BD2
-	STA LBL2L22; ; 0BD5
-	LDA #$50; ; 0BD8
-	.BYTE $8D;	  <-- STA absolute; ; 0BDA
-LBL2L21:			; <-- low byte
-	.BYTE $00; ; 0BDB
-LBL2L22:			; <-- hi byte
-	.BYTE $00; ; 0BDC
+	LDA $0352; ; 0C5F
+	STA LBL2L25; ; 0C62
+	LDA $0353; ; 0C65
+	STA LBL2L26; ; 0C68
+	LDA #$D0; ; 0C6B
+	.BYTE $8D;	  <-- STA absolute; ; 0C6D
+LBL2L25:			; <-- low byte
+	.BYTE $00; ; 0C6E
+LBL2L26:			; <-- hi byte
+	.BYTE $00; ; 0C6F
 ; ---------------------------------------------------------
-	JMP LBL1L19;  jump to iterator; ; 0BDD
-LBL1L21:
-	PLA; ; 0BE0
+	JMP LBL1L38;  jump to iterator; ; 0C70
+LBL1L40:
+	PLA; ; 0C73
 ; ---------------------------------------------------------
 ; Restore $02
-	PLA; ; 0BE1
-	STA $02; ; 0BE2
+	PLA; ; 0C74
+	STA $02; ; 0C75
 ; Preserve $02
-	LDA $02; ; 0BE4
-	PHA; ; 0BE6
+	LDA $02; ; 0C77
+	PHA; ; 0C79
 ; =========================================================
 ;                         FOR LOOP
 ; =========================================================
-LBL1L22:
-	PHA; ; 0BE7
+LBL1L41:
+	PHA; ; 0C7A
 ; ---------------------------------------------------------
 ; RULE: init: '=' expression
 ; initialising WordIMM: 1144
-	LDA #$78; ; 0BE8
-	LDX #$04; ; 0BEA
+	LDA #$78; ; 0C7B
+	LDX #$04; ; 0C7D
 ; RULE: statement: ID init
 ; WordID = XA
-	STA $034E;  mem1; ; 0BEC
-	STX $034F; ; 0BEF
+	STA $0352;  mem1; ; 0C7F
+	STX $0353; ; 0C82
 ; ---------------------------------------------------------
-; WordID $034E vs. WordIMM w1184
-LBL1L23:			; Top of FOR Loop
+; WordID $0352 vs. WordIMM w1184
+LBL1L42:			; Top of FOR Loop
 ; =========================================================
 ;                         WORD ID relop  WORD IMM
 ; =========================================================
-; $034E relop w1184
-	LDA $034F; ; 0BF2
-	CMP #$04; ; 0BF5
-	.BYTE #$D0, #$05;  BNE +5; ; 0BF7
-	LDA $034E; ; 0BF9
-	CMP #$A0; ; 0BFC
-	.BYTE #$B0, #$03; BCS +3; ; 0BFE
-	JMP LBL1L25;  if c==0 jump to BODY; ; 0C00
-	JMP LBL1L26;  jump out of FOR; ; 0C03
+; $0352 relop w1184
+	LDA $0353; ; 0C85
+	CMP #$04; ; 0C88
+	.BYTE #$D0, #$05;  BNE +5; ; 0C8A
+	LDA $0352; ; 0C8C
+	CMP #$A0; ; 0C8F
+	.BYTE #$B0, #$03; BCS +3; ; 0C91
+	JMP LBL1L44;  if c==0 jump to BODY; ; 0C93
+	JMP LBL1L45;  jump out of FOR; ; 0C96
 ; =========================================================
 ; ---------------------------------------------------------
-LBL1L24:
+LBL1L43:
 ; OP2
 ; RULE: expression: expression arithmetic expression
-; $034E + u1
-; $034E (2) + u1 (-1)
-	CLC; ; 0C06
+; $0352 + u1
+; $0352 (2) + u1 (-1)
+	CLC; ; 0C99
 ; WordID + (IntIMM || UintIMM)
-	LDA #$01; ; 0C07
-	ADC $034E; ; 0C09
-	PHA; ; 0C0C
-	LDA #$00; ; 0C0D
-	ADC $034F; ; 0C0F
-	TAX; ; 0C12
-	PLA; ; 0C13
+	LDA #$01; ; 0C9A
+	ADC $0352; ; 0C9C
+	PHA; ; 0C9F
+	LDA #$00; ; 0CA0
+	ADC $0353; ; 0CA2
+	TAX; ; 0CA5
+	PLA; ; 0CA6
 ; RULE: init: '=' expression
 ; initialising a word with XA
 ; RULE: statement: ID init
 ; WordID = XA
-	STA $034E;  mem1; ; 0C14
-	STX $034F; ; 0C17
-	JMP LBL1L23;  jump to top of FOR loop; ; 0C1A
+	STA $0352;  mem1; ; 0CA7
+	STX $0353; ; 0CAA
+	JMP LBL1L42;  jump to top of FOR loop; ; 0CAD
 ; ---------------------------------------------------------
-LBL1L25:
+LBL1L44:
 ; poke( expression, expression );
-	LDA $034E; ; 0C1D
-	STA LBL2L23; ; 0C20
-	LDA $034F; ; 0C23
-	STA LBL2L24; ; 0C26
-	LDA #$20; ; 0C29
-	.BYTE $8D;	  <-- STA absolute; ; 0C2B
-LBL2L23:			; <-- low byte
-	.BYTE $00; ; 0C2C
-LBL2L24:			; <-- hi byte
-	.BYTE $00; ; 0C2D
+	LDA $0352; ; 0CB0
+	STA LBL2L27; ; 0CB3
+	LDA $0353; ; 0CB6
+	STA LBL2L28; ; 0CB9
+	LDA #$20; ; 0CBC
+	.BYTE $8D;	  <-- STA absolute; ; 0CBE
+LBL2L27:			; <-- low byte
+	.BYTE $00; ; 0CBF
+LBL2L28:			; <-- hi byte
+	.BYTE $00; ; 0CC0
 ; ---------------------------------------------------------
-	JMP LBL1L24;  jump to iterator; ; 0C2E
-LBL1L26:
-	PLA; ; 0C31
+	JMP LBL1L43;  jump to iterator; ; 0CC1
+LBL1L45:
+	PLA; ; 0CC4
 ; ---------------------------------------------------------
 ; Restore $02
-	PLA; ; 0C32
-	STA $02; ; 0C33
+	PLA; ; 0CC5
+	STA $02; ; 0CC6
 ; Preserve $02
-	LDA $02; ; 0C35
-	PHA; ; 0C37
+	LDA $02; ; 0CC8
+	PHA; ; 0CCA
 ; =========================================================
 ;                         FOR LOOP
 ; =========================================================
-LBL1L27:
-	PHA; ; 0C38
+LBL1L46:
+	PHA; ; 0CCB
 ; ---------------------------------------------------------
 ; RULE: init: '=' expression
 ; initialising WordID
-	LDA $033F;  bmpaddr; ; 0C39
-	LDX $0340; ; 0C3C
+	LDA $0342;  bmpaddr; ; 0CCC
+	LDX $0343; ; 0CCF
 ; RULE: statement: ID init
 ; WordID = XA
-	STA $034E;  mem1; ; 0C3F
-	STX $034F; ; 0C42
+	STA $0352;  mem1; ; 0CD2
+	STX $0353; ; 0CD5
 ; ---------------------------------------------------------
-; WordID $034E vs. WordID $0341
-LBL1L28:			; Top of FOR Loop
+; WordID $0352 vs. WordID $0344
+LBL1L47:			; Top of FOR Loop
 ; =========================================================
 ;                         WORD ID relop WORD ID
 ; =========================================================
-	LDA $034F; ; 0C45
-	CMP $0342; ; 0C48
-	.BYTE $D0, $06;  BNE +6; ; 0C4B
-	LDA $034E; ; 0C4D
-	CMP $0341; ; 0C50
-	.BYTE #$B0, #$03; BCS +3; ; 0C53
-	JMP LBL1L30;  if c==0 jump to BODY; ; 0C55
-	JMP LBL1L31;  jump out of FOR; ; 0C58
+	LDA $0353; ; 0CD8
+	CMP $0345; ; 0CDB
+	.BYTE $D0, $06;  BNE +6; ; 0CDE
+	LDA $0352; ; 0CE0
+	CMP $0344; ; 0CE3
+	.BYTE #$B0, #$03; BCS +3; ; 0CE6
+	JMP LBL1L49;  if c==0 jump to BODY; ; 0CE8
+	JMP LBL1L50;  jump out of FOR; ; 0CEB
 ; =========================================================
 ; ---------------------------------------------------------
-LBL1L29:
+LBL1L48:
 ; OP2
 ; RULE: expression: expression arithmetic expression
-; $034E + u1
-; $034E (2) + u1 (-1)
-	CLC; ; 0C5B
+; $0352 + u1
+; $0352 (2) + u1 (-1)
+	CLC; ; 0CEE
 ; WordID + (IntIMM || UintIMM)
-	LDA #$01; ; 0C5C
-	ADC $034E; ; 0C5E
-	PHA; ; 0C61
-	LDA #$00; ; 0C62
-	ADC $034F; ; 0C64
-	TAX; ; 0C67
-	PLA; ; 0C68
+	LDA #$01; ; 0CEF
+	ADC $0352; ; 0CF1
+	PHA; ; 0CF4
+	LDA #$00; ; 0CF5
+	ADC $0353; ; 0CF7
+	TAX; ; 0CFA
+	PLA; ; 0CFB
 ; RULE: init: '=' expression
 ; initialising a word with XA
 ; RULE: statement: ID init
 ; WordID = XA
-	STA $034E;  mem1; ; 0C69
-	STX $034F; ; 0C6C
-	JMP LBL1L28;  jump to top of FOR loop; ; 0C6F
+	STA $0352;  mem1; ; 0CFC
+	STX $0353; ; 0CFF
+	JMP LBL1L47;  jump to top of FOR loop; ; 0D02
 ; ---------------------------------------------------------
-LBL1L30:
+LBL1L49:
 ; poke( expression, expression );
-	LDA $034E; ; 0C72
-	STA LBL2L25; ; 0C75
-	LDA $034F; ; 0C78
-	STA LBL2L26; ; 0C7B
-	LDA #$00; ; 0C7E
-	.BYTE $8D;	  <-- STA absolute; ; 0C80
-LBL2L25:			; <-- low byte
-	.BYTE $00; ; 0C81
-LBL2L26:			; <-- hi byte
-	.BYTE $00; ; 0C82
+	LDA $0352; ; 0D05
+	STA LBL2L29; ; 0D08
+	LDA $0353; ; 0D0B
+	STA LBL2L30; ; 0D0E
+	LDA #$00; ; 0D11
+	.BYTE $8D;	  <-- STA absolute; ; 0D13
+LBL2L29:			; <-- low byte
+	.BYTE $00; ; 0D14
+LBL2L30:			; <-- hi byte
+	.BYTE $00; ; 0D15
 ; ---------------------------------------------------------
-	JMP LBL1L29;  jump to iterator; ; 0C83
-LBL1L31:
-	PLA; ; 0C86
+	JMP LBL1L48;  jump to iterator; ; 0D16
+LBL1L50:
+	PLA; ; 0D19
 ; ---------------------------------------------------------
 ; Restore $02
-	PLA; ; 0C87
-	STA $02; ; 0C88
-	RTS; ; 0C8A
+	PLA; ; 0D1A
+	STA $02; ; 0D1B
+	RTS; ; 0D1D
 ; RULE: datatype: void
 ; ======================== cr ========================
 LBL0L3:
 cr:
-	LDA #$0D; ; 0C8B
+	LDA #$0D; ; 0D1E
 ; =========================================================
 ;                         jsr(HEX_NUM)
 ; =========================================================
-	JSR $FFD2; ; 0C8D
-	RTS; ; 0C90
+	JSR $FFD2; ; 0D20
+	RTS; ; 0D23
 ; RULE: datatype: void
 ; ======================== sp ========================
 LBL0L4:
 sp:
-	LDA #$20; ; 0C91
+	LDA #$20; ; 0D24
 ; =========================================================
 ;                         jsr(HEX_NUM)
 ; =========================================================
-	JSR $FFD2; ; 0C93
-	RTS; ; 0C96
+	JSR $FFD2; ; 0D26
+	RTS; ; 0D29
 ; RULE: datatype: void
 ; ======================== pause ========================
 LBL0L5:
 pause:
 ; poke( expression, expression );
 ; POKE(wIMM,IMM)
-	LDA #$00; ; 0C97
-	STA $C6; ; 0C99
+	LDA #$00; ; 0D2A
+	STA $C6; ; 0D2C
 ; =========================================================
 ;                         jsr(HEX_NUM)
 ; =========================================================
-	JSR $FFE4; ; 0C9B
+	JSR $FFE4; ; 0D2E
 ; RULE: datatype: uint
 ; =========================================================
 ;                  getchar()
 ; =========================================================
-	JSR $FFE4; ; 0C9E
+	JSR $FFE4; ; 0D31
 ; RULE: init: '=' expression
 ; initialising a byte with A
 ; RULE: statement: datatype ID init
 ; UINT pausev=A datatype#: 00
 ; UINT UintID A
-	STA $0350;  pausev; ; 0CA1
+	STA $0354;  pausev; ; 0D34
 ; =========================================================
 ; =========================================================
 ;                         WHILE LOOP
 ; =========================================================
-	PHA; ; 0CA4
-LBL1L32:
+	PHA; ; 0D37
+LBL1L51:
 ; ---------------------------------------------------------
-; UintID $0350 vs. UintIMM u0
-LBL1L33:			; Top of WHILE Loop
+; UintID $0354 vs. UintIMM u0
+LBL1L52:			; Top of WHILE Loop
 ; UintID relop UintIMM
-	LDA $0350;  pausev; ; 0CA5
-	CMP #$00; ; 0CA8
-	.BYTE #$F0, #$03;  BEQ +3; ; 0CAA
-	JMP LBL1L35;  jump to ELSE; ; 0CAC
+	LDA $0354;  pausev; ; 0D38
+	CMP #$00; ; 0D3B
+	.BYTE #$F0, #$03;  BEQ +3; ; 0D3D
+	JMP LBL1L54;  jump to ELSE; ; 0D3F
 ; =========================================================
-LBL1L34:
+LBL1L53:
 ; =========================================================
 ;                  getchar()
 ; =========================================================
-	JSR $FFE4; ; 0CAF
+	JSR $FFE4; ; 0D42
 ; RULE: init: '=' expression
 ; initialising a byte with A
 ; RULE: statement: ID init
-	STA $0350;  pausev; ; 0CB2
+	STA $0354;  pausev; ; 0D45
 ; =========================================================
-	JMP LBL1L33;  jump to top of WHILE loop; ; 0CB5
-LBL1L35:
-	PLA; ; 0CB8
-	RTS; ; 0CB9
+	JMP LBL1L52;  jump to top of WHILE loop; ; 0D48
+LBL1L54:
+	PLA; ; 0D4B
+	RTS; ; 0D4C
 ; RULE: datatype: void
 ; ======================== clearkb ========================
 LBL0L6:
 clearkb:
 ; poke( expression, expression );
 ; POKE( (U)Int, IMM); Zero Page
-	LDA #$00; ; 0CBA
-	STA $C6; ; 0CBC
+	LDA #$00; ; 0D4D
+	STA $C6; ; 0D4F
 ; =========================================================
 ;                         jsr(NUMBER)
 ; =========================================================
-	JSR $FFE4; ; 0CBE
-	RTS; ; 0CC1
+	JSR $FFE4; ; 0D51
+	RTS; ; 0D54
 ; RULE: datatype: void
 ; ======================== saveregs ========================
 LBL0L7:
 saveregs:
 ; RULE: datatype: uint
 ; tPEEK '(' expression ')' 
-	LDA $D011; ; 0CC2
+	LDA $D011; ; 0D55
 ; RULE: init: '=' expression
 ; initialising a byte with A
 ; RULE: statement: datatype ID init
 ; UINT oldD011=A datatype#: 00
 ; UINT UintID A
-	STA $0351;  oldD011; ; 0CC5
+	STA $0355;  oldD011; ; 0D58
 ; =========================================================
 ; RULE: datatype: uint
 ; tPEEK '(' expression ')' 
-	LDA $D016; ; 0CC8
+	LDA $D016; ; 0D5B
 ; RULE: init: '=' expression
 ; initialising a byte with A
 ; RULE: statement: datatype ID init
 ; UINT oldD016=A datatype#: 00
 ; UINT UintID A
-	STA $0352;  oldD016; ; 0CCB
+	STA $0356;  oldD016; ; 0D5E
 ; =========================================================
 ; RULE: datatype: uint
 ; tPEEK '(' expression ')' 
-	LDA $D018; ; 0CCE
+	LDA $D018; ; 0D61
 ; RULE: init: '=' expression
 ; initialising a byte with A
 ; RULE: statement: datatype ID init
 ; UINT oldD018=A datatype#: 00
 ; UINT UintID A
-	STA $0353;  oldD018; ; 0CD1
+	STA $0357;  oldD018; ; 0D64
 ; =========================================================
 ; RULE: datatype: uint
 ; tPEEK '(' expression ')' 
-	LDA $D020; ; 0CD4
+	LDA $D020; ; 0D67
 ; RULE: init: '=' expression
 ; initialising a byte with A
 ; RULE: statement: datatype ID init
 ; UINT oldD020=A datatype#: 00
 ; UINT UintID A
-	STA $0354;  oldD020; ; 0CD7
+	STA $0358;  oldD020; ; 0D6A
 ; =========================================================
 ; RULE: datatype: uint
 ; tPEEK '(' expression ')' 
-	LDA $D021; ; 0CDA
+	LDA $D021; ; 0D6D
 ; RULE: init: '=' expression
 ; initialising a byte with A
 ; RULE: statement: datatype ID init
 ; UINT oldD021=A datatype#: 00
 ; UINT UintID A
-	STA $0355;  oldD021; ; 0CDD
+	STA $0359;  oldD021; ; 0D70
 ; =========================================================
 ; RULE: datatype: uint
 ; tPEEK '(' expression ')' 
-	LDA $0286; ; 0CE0
+	LDA $0286; ; 0D73
 ; RULE: init: '=' expression
 ; initialising a byte with A
 ; RULE: statement: datatype ID init
 ; UINT oldChar=A datatype#: 00
 ; UINT UintID A
-	STA $0356;  oldChar; ; 0CE3
+	STA $035A;  oldChar; ; 0D76
 ; =========================================================
-	RTS; ; 0CE6
+	RTS; ; 0D79
 ; RULE: datatype: void
 ; ======================== restoreregs ========================
 LBL0L8:
 restoreregs:
 ; poke( expression, expression );
 ; POKE(IMM,ID)
-	LDA $0351; ; 0CE7
-	STA $D011; ; 0CEA
+	LDA $0355; ; 0D7A
+	STA $D011; ; 0D7D
 ; poke( expression, expression );
 ; POKE(IMM,ID)
-	LDA $0352; ; 0CED
-	STA $D016; ; 0CF0
+	LDA $0356; ; 0D80
+	STA $D016; ; 0D83
 ; poke( expression, expression );
 ; POKE(IMM,ID)
-	LDA $0353; ; 0CF3
-	STA $D018; ; 0CF6
+	LDA $0357; ; 0D86
+	STA $D018; ; 0D89
 ; poke( expression, expression );
 ; POKE(IMM,ID)
-	LDA $0354; ; 0CF9
-	STA $D020; ; 0CFC
+	LDA $0358; ; 0D8C
+	STA $D020; ; 0D8F
 ; poke( expression, expression );
 ; POKE(IMM,ID)
-	LDA $0355; ; 0CFF
-	STA $D021; ; 0D02
+	LDA $0359; ; 0D92
+	STA $D021; ; 0D95
 ; poke( expression, expression );
 ; POKE(IMM,ID)
-	LDA $0356; ; 0D05
-	STA $0286; ; 0D08
-	RTS; ; 0D0B
+	LDA $035A; ; 0D98
+	STA $0286; ; 0D9B
+	RTS; ; 0D9E
 ; RULE: datatype: void
 ; ======================== shortcls ========================
 LBL0L9:
 shortcls:
-	LDA #$93; ; 0D0C
+	LDA #$93; ; 0D9F
 ; =========================================================
 ;                         jsr(HEX_NUM)
 ; =========================================================
-	JSR $FFD2; ; 0D0E
-	RTS; ; 0D11
+	JSR $FFD2; ; 0DA1
+	RTS; ; 0DA4
 SCRMEM:		; Get the screen mem location from the vic II
-	PLA; ; 0D12
-	STA $0334; ; 0D13
-	PLA; ; 0D16
-	STA $0335; ; 0D17
-	LDA $D018; ; 0D1A
-	AND #$F0; ; 0D1D
-	CLC; ; 0D1F
-	LSR; ; 0D20
-	LSR; ; 0D21
-	PHA; ; 0D22
-	LDA $0335; ; 0D23
-	PHA; ; 0D26
-	LDA $0334; ; 0D27
-	PHA; ; 0D2A
-	RTS; ; 0D2B
+	PLA; ; 0DA5
+	STA $0334; ; 0DA6
+	PLA; ; 0DA9
+	STA $0335; ; 0DAA
+	LDA $D018; ; 0DAD
+	AND #$F0; ; 0DB0
+	CLC; ; 0DB2
+	LSR; ; 0DB3
+	LSR; ; 0DB4
+	PHA; ; 0DB5
+	LDA $0335; ; 0DB6
+	PHA; ; 0DB9
+	LDA $0334; ; 0DBA
+	PHA; ; 0DBD
+	RTS; ; 0DBE
 BNKMEM:		; Get the bank memory from the vic II
-	PLA; ; 0D2C
-	STA $0334; ; 0D2D
-	PLA; ; 0D30
-	STA $0335; ; 0D31
-	LDA $DD00; ; 0D34
-	EOR #$FF; ; 0D37
-	AND #$03; ; 0D39
-	CLC; ; 0D3B
-	ASL; ; 0D3C
-	ASL; ; 0D3D
-	ASL; ; 0D3E
-	ASL; ; 0D3F
-	ASL; ; 0D40
-	ASL; ; 0D41
-	PHA; ; 0D42
-	LDA $0335; ; 0D43
-	PHA; ; 0D46
-	LDA $0334; ; 0D47
-	PHA; ; 0D4A
-	RTS; ; 0D4B
+	PLA; ; 0DBF
+	STA $0334; ; 0DC0
+	PLA; ; 0DC3
+	STA $0335; ; 0DC4
+	LDA $DD00; ; 0DC7
+	EOR #$FF; ; 0DCA
+	AND #$03; ; 0DCC
+	CLC; ; 0DCE
+	ASL; ; 0DCF
+	ASL; ; 0DD0
+	ASL; ; 0DD1
+	ASL; ; 0DD2
+	ASL; ; 0DD3
+	ASL; ; 0DD4
+	PHA; ; 0DD5
+	LDA $0335; ; 0DD6
+	PHA; ; 0DD9
+	LDA $0334; ; 0DDA
+	PHA; ; 0DDD
+	RTS; ; 0DDE
