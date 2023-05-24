@@ -19,6 +19,17 @@ lexer:	lexer.l
 compiler: y.tab.c
 	$(CC) $(LIBRARIES) -w  y.tab.c -o compiler
 
+pointers:
+	cat ./pointers.c common.c > pointers.tmp
+	./compiler --code-segment 2100 --data-segment 820 --kick < ./pointers.tmp > pointers.asm
+	java -jar KickAss.jar pointers.asm
+	rm -f pointers.tmp
+
+sidint:
+	cat ./sidint.c common.c > sidint.tmp
+	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./sidint.tmp > sidint.asm
+	rm -f sidint.tmp
+
 motion:
 	cat ./motion.c common.c > motion.tmp
 	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./motion.tmp > motion.asm
@@ -28,6 +39,11 @@ memcpy:
 	cat ./memcpy.c common.c > memcpy.tmp
 	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./memcpy.tmp > memcpy.asm
 	rm -f memcpy.tmp
+
+raster3:
+	cat ./raster3.c common.c > raster3.tmp
+	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./raster3.tmp > raster3.asm
+	rm -f raster3.tmp
 
 raster2:
 	cat ./raster2.c common.c > raster2.tmp
@@ -83,7 +99,8 @@ terra:
 #	./compiler --code-segment 7632 --data-segment 40960 --memory-locations --symbol-table < ./terraform.c > terra.tmp.asm
 #	./compiler --code-segment 7624 --data-segment 40960 --memory-locations --symbol-table < ./terraform.c > terra.tmp.asm
 	./compiler --code-segment 7624 --data-segment 49152  --memory-locations --symbol-table < ./terra.tmp > terra.tmp.asm
-	cat terra.tmp.asm cj-sid.asm > terra7624.asm
+#	cat terra.tmp.asm cj-sid.asm > terra7624.asm
+	cat terra.tmp.asm mysid.hex > terra7624.asm
 	rm -f ./terra.tmp
 	rm -f ./terra.tmp.asm
 
@@ -250,7 +267,9 @@ clearscreen:
 	./compiler --code-segment 2100 --data-segment 820   < ./clearscreen.c > clearscreen.asm
 
 snake2100:
-	./compiler --code-segment 2100 --data-segment 820   < ./snake2100.c > snake2100.asm
+	./compiler --code-segment 2100 --data-segment 820 --kick  < ./snake2100.c > snake2100.asm
+	java -jar KickAss.jar snake2100.asm
+
 
 printftest:
 	cat ./printftest.c common.c > printftest.tmp
@@ -262,9 +281,9 @@ float:
 
 program:
 	cat ./poketest.c common.c > poketest.tmp
-	./compiler --code-segment 8192 --data-segment 820 --symbol-table < ./poketest.tmp > poketest-tmp.asm
+	./compiler --code-segment 8192 --data-segment 820 --symbol-table --kick < ./poketest.tmp > poketest-tmp.asm
 	cat poketest-tmp.asm ufo-sid.asm > poketest.asm
-
+	java -jar KickAss.jar poketest.asm
 	rm -f poketest.tmp poketest-tmp.asm
 
 arith:
