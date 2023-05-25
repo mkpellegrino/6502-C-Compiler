@@ -12097,7 +12097,7 @@ int main(int argc, char *argv[])
       addAsm( str_ROL );
       addAsm( str_DEX );
       addAsm( str_BYTE + string("$D0, $FC") + commentmarker + string("BNE top-of-loop"), 2, false );
-      addAsm( str_PHA + commentmarker + string("return value on processor stack"));// the return value will be on the stack
+      addAsm( str_PHA + commentmarker + string("return value on processor stack"), 1, false);// the return value will be on the stack
       // ==================================================================================
       restoreReturnAddress();
       addAsm( str_RTS );
