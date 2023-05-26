@@ -231,6 +231,7 @@
   bool p2=false;
   bool p3=false;
 
+  bool basic_upstart=false;
   bool function_labels_are_still_needed=true;
   bool stack_is_needed=false;
   bool illegal_operations_are_needed=false;
@@ -1858,7 +1859,12 @@ main: datatype ID
 {
   if( kick )
     {
-      addAsm( string( "* = $" ) + toHex( code_start ), 0, true );
+      if( basic_upstart )
+	{
+	  addAsm( "* = $0801", 0, true );
+	  addAsm( string("BasicUpstart($") + toHex( code_start ) + ")", 0, true );
+	}
+      addAsm( string( "* = $") + toHex( code_start ), 0, true );
     }
   else
     {
@@ -4564,7 +4570,7 @@ condition: expression relop expression
       
       addAsm( str_LDA + "#$" + toHex( get_word_L( current_variable_base_address )) + commentmarker +  tmp_name + string( " (LO)" ), 2, false );
       addAsm( str_LDY + "#$" + toHex( get_word_H( current_variable_base_address )) + commentmarker +  tmp_name + string( " (HI)" ), 2, false );
-      addAsm( str_JSR + "$BBA2; RAM -> FAC", 3, false );
+      addAsm( str_JSR + "$BBA2" + commentmarker + "RAM -> FAC", 3, false );
       addAsm( str_LDA + "#$69", 2, false );
       addAsm( str_LDY + "#$00", 2, false );
       addAsm( string("JSR $BC5B") + commentmarker + string("CMP(FAC, RAM)"), 3, false );
@@ -4866,10 +4872,10 @@ condition: expression relop expression
       current_variable_base_address = getAddressOf($1.name);
       addAsm( str_LDA + "#$" + toHex( get_word_L( current_variable_base_address )), 2, false );
       addAsm( str_LDY + "#$" + toHex( get_word_H( current_variable_base_address )), 2, false );
-      addAsm( str_JSR + "$BBA2; RAM -> FAC", 3, false );
+      addAsm( str_JSR + "$BBA2" + commentmarker + "RAM -> FAC", 3, false );
       addAsm( str_LDA + "#$69", 2, false );
       addAsm( str_LDY + "#$00", 2, false );
-      addAsm( str_JSR + "$BC5B; CMP(FAC, RAM)", 3, false );
+      addAsm( str_JSR + "$BC5B" + commentmarker + "CMP(FAC, RAM)", 3, false );
       addAsm( str_PHA );
       addAsm( str_LDA + "#$00", 2, false );
       addAsm( str_PHA );
@@ -4883,7 +4889,7 @@ condition: expression relop expression
       addAsm( str_LDA + string($1.name) + string( ",X" ),3, false );      
       addAsm( str_CMP + "#$00", 2, false );
       // if A is NOT 0, then WORD > UINT
-      addAsm( str_BYTE + "$D0, $06" + commentmarker +string("BNE +6"), 2, false ); // BNE +6
+      addAsm( str_BYTE + "$D0, $06" + commentmarker +"BNE +6", 2, false ); // BNE +6
       addCompilerMessage( "If address of OP1 or OP2 is in Zero Page, instruction size may vary", 0);
       addAsm( str_LDA + $1.name, 3, false );
       addAsm( str_CMP + $3.name, 3, false );
@@ -5281,10 +5287,10 @@ statement: datatype ID init
       //addCompilerMessage( "FloatID -> FloatID not yet implemented", 1 );
       addAsm( str_LDA + "#$" + toHex(src_addr_L), 3, false );
       addAsm( str_LDY + "#$" + toHex(src_addr_H), 3, false );
-      addAsm( str_JSR + "$BBA2; MEM -> FAC", 3, false );
+      addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
       addAsm( str_LDX + "#$" + toHex(dst_addr_L), 3, false );
       addAsm( str_LDY + "#$" + toHex(dst_addr_H), 3, false );
-      addAsm( str_JSR + "$BBD4" + commentmarker + string(" FAC -> MEM ") + string($2.name) , 3, false );
+      addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM" + string($2.name) , 3, false );
     }
   else if(isFloatDT($1.name) && isFloatID($2.name) && isFloatID($3.name))
     {
@@ -5298,7 +5304,7 @@ statement: datatype ID init
      
       addAsm( str_LDA + "#$" + toHex(src_addr_L), 3, false );
       addAsm( str_LDY + "#$" + toHex(src_addr_H), 3, false );
-      addAsm( str_JSR + "$BBA2; MEM -> FAC", 3, false );
+      addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
       addAsm( str_LDX + "#$" + toHex(dst_addr_L), 3, false );
       addAsm( str_LDY + "#$" + toHex(dst_addr_H), 3, false );
       addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );
@@ -6028,13 +6034,13 @@ statement: datatype ID init
       int y = atoi(stripFirst($6.name).c_str());
       int c = atoi(stripFirst($9.name).c_str());
       addAsm( str_PLA );
-      addAsm( str_STA + "$FD; Colour", 2, false );
+      addAsm( str_STA + "$FD" + commentmarker + "Colour", 2, false );
 
       addAsm( str_PLA );
-      addAsm( str_STA + "$FC; Y", 2, false );
+      addAsm( str_STA + "$FC" + commentmarker + "Y", 2, false );
 
       addAsm( str_PLA );
-      addAsm( str_STA + "$FA; X", 2, false );
+      addAsm( str_STA + "$FA" + commentmarker + "X", 2, false );
       
       addAsm( str_JSR + "MCPLOT", 3, false );
     }
@@ -8217,20 +8223,20 @@ arithmetic expression
            
       if( op == string("*"))
 	{
-	  addAsm( str_JSR + "$BA28; RAM * FAC", 3, false );
+	  addAsm( str_JSR + "$BA28" + commentmarker + "RAM * FAC", 3, false );
 	}
       else if( op == string("+"))
 	{
-	  addAsm( str_JSR + "$B867; RAM + FAC", 3, false );
+	  addAsm( str_JSR + "$B867" + commentmarker + "RAM + FAC", 3, false );
 	}
       else if( op == string("-"))
 	{
-	  addAsm( str_JSR + "$B850; RAM - FAC", 3, false );
+	  addAsm( str_JSR + "$B850" + commentmarker + "RAM - FAC", 3, false );
 	}
       else if( op == string("/"))
 	{
 	  addComment( "If Y is ZERO at this point, we'll be dividing by 0 (or at least attempting to)" );
-	  addAsm( str_JSR + "$BB0F; RAM/FAC", 3, false );
+	  addAsm( str_JSR + "$BB0F" + commentmarker + "RAM/FAC", 3, false );
 	}
       FAC = 1;
     }
@@ -9249,11 +9255,11 @@ arithmetic expression
 
 	  addAsm( str_LDX + "#$69", 2, false );
 	  addAsm( str_LDY + "#$00", 2, false );
-	  addAsm( str_JSR + "$BBD4; FAC -> MEM", 3, false );
+	  addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );
 
 	  addAsm( str_LDA + "#$" + toHex(get_word_L(base_address_op2)), 2, false );
 	  addAsm( str_LDY + "#$" + toHex(get_word_H(base_address_op2)), 2, false );
-	  addAsm( str_JSR + "$BBA2; MEM -> FAC", 3, false );
+	  addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
 
 	  addAsm( str_LDA + "#$69", 2, false );
 	  addAsm( str_LDY + "#$00", 2, false );
@@ -9264,20 +9270,20 @@ arithmetic expression
 	{
 	  addAsm( string("LDY $") + toHex( ( base_address_op1 )), 3, false );
 	  addAsm( str_LDA + "$" + toHex( ( base_address_op1+1 )), 3, false );
-	  addAsm( string("JSR $B391") + commentmarker + string(" INT16 -> FAC"), 3, false );
+	  addAsm( string("JSR $B391") + commentmarker + "INT16 -> FAC", 3, false );
 
 	  addAsm( str_LDX + "#$69", 2, false );
 	  addAsm( str_LDY + "#$00", 2, false );
-	  addAsm( string("JSR $BBD4") + commentmarker + string(" FAC -> MEM"), 3, false );
+	  addAsm( string("JSR $BBD4") + commentmarker + string("FAC -> MEM"), 3, false );
 
 	  addAsm( str_LDA + "#$" + toHex(get_word_L(base_address_op2)), 2, false );
 	  addAsm( str_LDY + "#$" + toHex(get_word_H(base_address_op2)), 2, false );
-	  addAsm( string("JSR $BBA2") + commentmarker + string(" MEM -> FAC"), 3, false );
+	  addAsm( string("JSR $BBA2") + commentmarker + "MEM -> FAC", 3, false );
 
 	  addAsm( str_LDA + "#$69", 2, false );
 	  addAsm( str_LDY + "#$00", 2, false );
 
-	  addAsm( string("JSR $BB0F") + commentmarker + string(" FDIV RAM/FAC"), 3, false );
+	  addAsm( string("JSR $BB0F") + commentmarker + "FDIV RAM/FAC", 3, false );
 	}
       else
 	{
@@ -9293,26 +9299,26 @@ arithmetic expression
 
       addAsm( string("LDY $") + toHex( ( base_address_op2 )), 3, false );
       addAsm( str_LDA + "$" + toHex( ( base_address_op2+1 )), 3, false );
-      addAsm( str_JSR + "$B391; INT16 -> FAC", 3, false );
+      addAsm( str_JSR + "$B391" + commentmarker + "INT16 -> FAC", 3, false );
 
       addAsm( str_LDA + "#$" + toHex(get_word_L(base_address_op1)), 2, false );
       addAsm( str_LDY + "#$" + toHex(get_word_H(base_address_op1)), 2, false );
       
       if( op == string("*"))
 	{
-	  addAsm( str_JSR + "$BA28; FMULT RAM * FAC", 3, false );
+	  addAsm( str_JSR + "$BA28" + commentmarker + "FMULT RAM * FAC", 3, false );
 	}
       else if( op == string("+"))
 	{
-	  addAsm( str_JSR + "$B867; FADD RAM + FAC", 3, false );
+	  addAsm( str_JSR + "$B867" + commentmarker + "FADD RAM + FAC", 3, false );
 	}
       else if( op == string("-"))
 	{
-	  addAsm( str_JSR + "$B850; FSUB RAM - FAC", 3, false );
+	  addAsm( str_JSR + "$B850" + commentmarker + "FSUB RAM - FAC", 3, false );
 	}
       else if( op == string("/"))
 	{
-	  addAsm( str_JSR + "$BB0F; FDIV RAM/FAC", 3, false );
+	  addAsm( str_JSR + "$BB0F" + commentmarker + "FDIV RAM/FAC", 3, false );
 	}
       else
 	{
@@ -10771,7 +10777,7 @@ arithmetic expression
       addAsm( str_JSR + "$B1AA", 3, false );
       addAsm( str_TAX );
       addAsm( str_TYA );
-      //addAsm( str_JSR + "$AABC; FAC -> CRT (for debugging purposes)", 3, false );
+      //addAsm( str_JSR + "$AABC" + commentmarker + "FAC -> CRT (for debugging purposes)", 3, false );
     }
   else
     {
@@ -10812,7 +10818,7 @@ arithmetic expression
       addAsm( str_PLA );
       addAsm( str_STA + "$7A", 2, false );
       
-      //addAsm( str_JSR + "$AABC; FAC -> CRT (for debugging purposes)", 3, false );
+      //addAsm( str_JSR + "$AABC" + commentmarker + "FAC -> CRT (for debugging purposes)", 3, false );
     }
   else
     {
@@ -11276,12 +11282,12 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
   
     if( isUintID($3.name) )
     {
-      addAsm( str_LDA + "$D01E;\t\t\tMOB-MOB Collision Register", 3, false );
+      addAsm( str_LDA + "$D01E\t\t\t" + commentmarker + "MOB-MOB Collision Register", 3, false );
       addAsm( str_AND + "$" + toHex(getAddressOf($3.name)), 3, false );
     }
   else if( isUintIMM($3.name) )
     {
-      addAsm( str_LDA + "$D01E;\t\t\tMOB-MOB Collision Register", 3, false );
+      addAsm( str_LDA + "$D01E\t\t\t" + commentmarker + "MOB-MOB Collision Register", 3, false );
       addAsm( str_AND + "#$" + toHex(atoi(stripFirst($3.name).c_str())), 2, false );
     }
   else if( isA( $3.name ) )
@@ -11289,7 +11295,7 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
       addCompilerMessage( "Slowest possible method... could you use an ID or IMM instead of A?", 0 );
       addAsm( str_LDY + "$02", 2, false );
       addAsm( str_STA + "$02", 2, false );
-      addAsm( str_LDA + "$D01E;\t\t\tMOB-MOB Collision Register", 3, false );
+      addAsm( str_LDA + "$D01E\t\t\t" + commentmarker + "MOB-MOB Collision Register", 3, false );
       addAsm( str_AND + "$02", 2, false );
       addAsm( str_STY + "$02", 2, false );      
     }
@@ -11304,12 +11310,12 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
 {
   if( isUintID($3.name) )
     {
-      addAsm( str_LDA + "$D01F;\t\t\tMOB-Background Collision Register", 3, false );
+      addAsm( str_LDA + "$D01F\t\t\t" + commentmarker + "MOB-Background Collision Register", 3, false );
       addAsm( str_AND + "$" + toHex(getAddressOf($3.name)), 3, false );
     }
   else if( isUintIMM($3.name) )
     {
-      addAsm( str_LDA + "$D01F;\t\t\tMOB-Background Collision Register", 3, false );
+      addAsm( str_LDA + "$D01F\t\t\t" + commentmarker + "MOB-Background Collision Register", 3, false );
       addAsm( str_AND + "#$" + toHex(atoi(stripFirst($3.name).c_str())), 2, false );
     }
   else if( isA( $3.name ) )
@@ -11317,7 +11323,7 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
       addCompilerMessage( "Slowest possible method... could you use an ID or IMM instead of A?", 0 );
       addAsm( str_LDY + "$02", 2, false );
       addAsm( str_STA + "$02", 2, false );
-      addAsm( str_LDA + "$D01F;\t\t\tMOB-Background Collision Register", 3, false );
+      addAsm( str_LDA + "$D01F\t\t\t" + commentmarker + "MOB-Background Collision Register", 3, false );
       addAsm( str_AND + "$02", 2, false );
       addAsm( str_STY + "$02", 2, false );      
     }
@@ -12003,10 +12009,10 @@ int main(int argc, char *argv[])
       if( a == "--no-labels" ) arg_show_labels = false;
       if( a == "--short-branches" ) long_branches = false;
       if( a == "--debug" ) debug_flag_is_on = true;
+      if( a == "--basic" || a == "basicupstart" ) basic_upstart = true;
       if( a == "--kick" )
 	{
 	  kick = true;
-	  cerr << "K    I   C  K K C  I   K    K   I  C K!!!" << endl;
 	  setKickDialect();
 	  commentmarker = string(" // ");
 	}
@@ -12028,11 +12034,14 @@ int main(int argc, char *argv[])
 	}
       if( a == "--help" )
 	{
-	  cerr << "\n\nusage:" << endl << argv[0] << " --memory-locations inputfile.c outputfile.asm\n\n"
+	  cerr << "\n\nusage:" << endl << argv[0] << " <options> inputfile.c outputfile.asm\n\n"
 	       << "\t--memory-locations\twill show the memory addresses of the assembler instructions\n" 
 	       << "\t--no-labels\t\twill supress the labels (and turn them into memory addresses)\n" 
 	       << "\t--no-asm-comments\twill supress most comments pertaining to flow of control\n" 
-	       << "\t--parser-comments\twill show the comments intended to help debug the parser\n" 
+	       << "\t--parser-comments\twill show the comments intended to help debug the parser\n"
+	       << "\t--kick\t\t\tcreate .asm file that is compatible with Kick Assembler\n"
+	       << "\t--basic\t\t\tput BASIC Upstart code at $0801\n"
+	       << "\t--help\t\t\tthis message\n" 
 	       << "\t--code-segment address\tsets the start of code segment to a memory addres (default is 49152)\n"
 	       << "\t--data-segment address\tsets the start of data segment to a memory addres (default is 828)\n\n" << endl;
 	  exit(-1);

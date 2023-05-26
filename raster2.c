@@ -2,10 +2,10 @@
 
 void main()
 {
-  uint direction = 0x00;
-  uint pixelShift = 0x00;
-  uint int1flag = 0x00;
-  uint int2flag = 0x00;
+  lda( 0x00 );
+  uint direction;
+  uint pixelShift;
+  uint previousDirection;
   
   data joshua = {
     
@@ -53,7 +53,7 @@ void main()
       poke( loc, (joshua)[j] );
       loc = loc + 1;
     }
-  irq( int1, 0x31, 1);
+  irq( ptr(int1), 0x31, 1);
 
 
   uint c = getin();
@@ -86,22 +86,24 @@ void int1()
   poke( 0xD018, 24 );
 
   // shift the screen
-  if( direction == 0xFF )
-    {
-      dec( pixelShift );
-    }
-  if( direction == 0x01 )
-    {
-      inc( pixelShift );
-    }
-
+      if( direction == 0xFF )
+	{
+	  dec( pixelShift );
+	}
+      if( direction == 0x01 )
+	{
+	  inc( pixelShift );
+	}
   
   pixelShift = pixelShift & 0x07;
   poke( 0xD016, pixelShift | 0xC8 );
 
   
-  irq( int2, 0x51, 0 );
-  poke( 0xD019, 0xFF );
+  irq( ptr(int2), 0x51, 0 );
+
+  // ack the int
+
+  poke( 0xD019, 0x01 );
 
   jmp( 0xEA7E );
 }
@@ -118,15 +120,15 @@ void int2()
   nop();
   nop();
 
+  // put the screen back into textmode
   poke( 0xD011, oldD011a );
   poke( 0xD016, oldD016a );
   poke( 0xD018, oldD018a );
   
-  poke( 0xD019, 0xFF );
-
 
   // no pixel shift in this frame
   poke( 0xD016, 0xC8 );
+
   if( direction == 0xFF )
     {
       if( pixelShift == 0x00 )
@@ -155,8 +157,12 @@ void int2()
 	  //memcpy( 0x2648, 0x2280, 0x08 );
 	}
     }
+  //poke( 0xD019, 0x01 );
+  previousDirection = direction;
+  irq( ptr(int1), 0x31, 0 );
 
-  irq( int1, 0x31, 0 );
+  // ack the int
+  poke( 0xD019, 0x01 );
 
   jmp( 0xEA31 );
 }
@@ -169,7 +175,8 @@ void clearhires()
     }  
   for( mem1 = 0x0400; mem1 < 0x0478; mem1 = mem1 + 1 )
     {
-      poke( mem1, 0xD0 );
+      //poke( mem1, 0xD0 );
+      poke( mem1, 0x10 );
     }
   for( mem1 = 0x0478; mem1 < 0x04A0; mem1 = mem1 + 1 )
     {
@@ -179,5 +186,11 @@ void clearhires()
     {
       poke( mem1, 0x00 );
     }
+
+  poke( 0x0429, 0x00 );
+  poke( 0x042A, 0xB0 );
+  poke( 0x042B, 0xF0 );
+  poke( 0x042C, 0x10 );
+  
   return;
 }

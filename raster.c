@@ -13,7 +13,6 @@ void main()
 void int1()
 {
 
-  // put the letter A in the top left of the screen
   nop();
   nop();
   nop();

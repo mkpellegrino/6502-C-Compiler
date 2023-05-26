@@ -3,6 +3,7 @@ void main()
   lda( 0x00 );
   uint general8bit;
 
+  
   // variables that WILL NEED TO get REinitialized
   // ZEROES
   uint subclock;
@@ -240,6 +241,8 @@ void main()
   
   clearhires();
   startScreen();
+
+  seed();
   // pause here
   while( general8bit == 0 )
     {
@@ -442,6 +445,7 @@ void main()
 
   clearkb();
 
+  sidoff();
 
   return;
 }

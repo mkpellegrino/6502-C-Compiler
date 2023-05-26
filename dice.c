@@ -1,7 +1,7 @@
 void main()
 {
-  uint general8bit = 0x00;
-  uint randomNumber;
+  uint g8bit = 0x00;
+  uint rNumber;
 
   word tally = 0x0000;
   
@@ -10,21 +10,17 @@ void main()
   // use presses a key
   seed();
   printf( "SEEDING RANDOM NUMBER GENERATOR\nPRESS A KEY\n" );
-  while( general8bit == 0 )
+  while( g8bit == 0 )
     {
-      randomNumber=rnd(1);
-      general8bit = getchar();
+      rNumber=rnd(1);
+      g8bit = getchar();
     }
 
-  for( word i = 0x0000; i < 400; inc(i) )
+  for( word i = 0x0000; i < 400; i=i+0x0001 )
     {
       tally = tally + rand(100);
-      
-      //printf( rand( 100 ) );
-      //sp();
     }
 
-  //word x = 400;
   tally = tally / 400;
 
   printf( tally );
