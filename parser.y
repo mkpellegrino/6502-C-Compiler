@@ -1803,7 +1803,7 @@
 
 //%parse-param { FILE* fp }
 %token VOID 
-%token <nd_obj>  tPUSH tPOP tCOMMENT tDATA tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tSIDIRQ tSIDOFF tSTRTOFLOAT tSTRTOWORD tTOFLOAT tTOUINT tTOBIT tDEC tINC tROL tROR tLSR tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJUMP tJSR tIRQ tFOO tROMOUT tROMIN tLDA tASL tSPRITESET  tSPRITEOFF tSPRITETOGGLE tRND tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER tPRINTS PRINTFF SCANFF INT FLOAT WHILE FOR IF ELSE TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE tSQRT UNARY INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL tSCREEN tNULL tMEMCPY tSEED
+%token <nd_obj>  tSPRPTR tPUSH tPOP tCOMMENT tDATA tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tSIDIRQ tSIDOFF tSTRTOFLOAT tSTRTOWORD tTOFLOAT tTOUINT tTOBIT tDEC tINC tROL tROR tLSR tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJUMP tJSR tIRQ tFOO tROMOUT tROMIN tLDA tASL tSPRITESET  tSPRITEOFF tSPRITETOGGLE tRND tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER tPRINTS PRINTFF SCANFF INT FLOAT WHILE FOR IF ELSE TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE tSQRT UNARY INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL tSCREEN tNULL tMEMCPY tSEED
 %type <nd_obj> headers main body return function datatype statement arithmetic relop program else 
    %type <nd_obj2> init value expression numberlist
       %type <nd_obj3> condition
@@ -2324,7 +2324,7 @@ body: WHILE
 };
 | tSPRITEXY '(' expression ',' expression ',' expression ')' ';'
 {
-  addComment( string( "spritexy( ") + string($3.name) + string(", ") + string($5.name) + string( ", " ) + string($7.name) + string( " );" ) );
+  addComment( string( "spritexy( ") + $3.name + ", " + $5.name + ", " + $7.name +  " );"  );
 
 
   int base_address = 53248;
@@ -2343,6 +2343,7 @@ body: WHILE
       sprite_address = atoi( stripFirst($3.name).c_str() );
       sprite_address*=2;
       sprite_address+=base_address;
+      
       x_coord = atoi( stripFirst($5.name).c_str() );
       addAsm( str_LDA + "#$" + toHex( x_coord) , 2, false );
       addAsm( str_STA + "$" + toHex( sprite_address ), 3, false );
@@ -5186,8 +5187,16 @@ statement: datatype ID init
 
 
   // this adds the variable to the list of variables
-  addAsmVariable($2.name, current_variable_type );
-
+  if( !isMOB($3.name) )
+    {
+      addAsmVariable($2.name, current_variable_type );
+    }
+  else
+    {
+      addParserComment("The Mob variable should be added as a word and set equal to" );
+      addParserComment("scr_addr + 0x03F7 + sprite#" );
+      addAsmVariable($2.name, 2);
+    }
 
   current_variable_base_address = getAddressOf($2.name);
   
@@ -5610,6 +5619,11 @@ statement: datatype ID init
       addAsm( str_ADC + getLabel( ((int)label_vector[label_major]), false ), 3, false );
       addAsm( str_STA + getLabel( ((int)label_vector[label_major]), false ), 3, false );
 
+      // in case the value in Label overflows, we need to carry the 1 into Label+1
+      // actually .. we don't!  because the greatest sprite # is 7... #$F7 + #$7 < #$100
+      //addAsm( str_LDA + "#$00", 2, false );
+      //addAsm( str_ADC + getLabel( ((int)label_vector[label_major]), false )+ "+1", 3, false );
+
       // get the location of the screen memory -> A
       // I checked the value in "A" after the pop off the stack
       // and it is correct for (at least) bank 1
@@ -5630,9 +5644,24 @@ statement: datatype ID init
       //addAsm( str_STA + "$0401; for debugging only - take this out later", 3, false );
 
       // add the location of the bank to the address
-      addAsm( str_ADC + getLabel( ((int)label_vector[label_major]), false ) + string("+1"), 3, false );
-      addAsm( str_STA + getLabel( ((int)label_vector[label_major]), false ) + string("+1"), 3, false );
+      addAsm( str_ADC + getLabel( ((int)label_vector[label_major]), false ) + "+1", 3, false );
+      addAsm( str_STA + getLabel( ((int)label_vector[label_major]), false ) + "+1", 3, false );
+      // store the pointer in the variable name $2.name
+      addAsm( str_LDA + getLabel( ((int)label_vector[label_major]), false ) + "+1", 3, false );
+      addAsm( str_STA + $2.name + "+1", 3, false );
+      addAsm( str_LDA + getLabel( ((int)label_vector[label_major]), false ), 3, false );
+      addAsm( str_STA + $2.name, 3, false );
 
+
+      addAsm( str_CLC );
+      addAsm( str_LDA + "#$01", 2, false );
+      addAsm( str_ADC + $2.name, 3, false );
+      addAsm( str_STA + $2.name, 3, false );
+      addAsm( str_LDA + "#$00", 2, false );
+      addAsm( str_ADC + $2.name + "+1", 3, false );
+      addAsm( str_STA + $2.name + "+1", 3, false );
+
+      
       // Load the sprite area and store it at the address
       addAsm( str_LDA + "#$" + toHex( mob_vector[1] ) + commentmarker + "sprite pointer", 2, false );
       addAsm( str_BYTE + "$8D" + commentmarker + "STA Absolute", 1, false ); // STA
@@ -5645,7 +5674,7 @@ statement: datatype ID init
       string BA_L = toHex(get_word_L(sprite_base_address)); 
       string BA_H = toHex(get_word_H(sprite_base_address));
       //cerr << "mob_vector[2] = " << mob_vector[2] << endl;
-      string byte_string = string($2.name) + ":\n\t" + str_BYTE;
+      string byte_string = string($2.name) + "_data:\n\t" + str_BYTE;
       for( int i=2; i<mob_vector.size(); i++ )
 	{
 	  byte_string += string( "$" ) + toHex( mob_vector[i]);
@@ -5658,10 +5687,10 @@ statement: datatype ID init
       addAsm( byte_string, 63, true );
       addAsm( generateNewLabel(), 0, true );
       //addAsm( str_PLA );
-      addAsm( str_LDA + "#<" + $2.name, 2, false );
+      addAsm( str_LDA + "#<" + $2.name + "_data", 2, false ); /// $2.name is the name of the MOB
       addAsm( str_STA + "$FB", 2, false );
       //addAsm( str_PLA );
-      addAsm( str_LDA + "#>" + $2.name, 2, false );
+      addAsm( str_LDA + "#>" + $2.name + "_data", 2, false );
       addAsm( str_STA + "$FC", 2, false );
       // we need to subtract one from $FB/$FC
       // and take care of a borrow if necessary
@@ -9978,7 +10007,80 @@ arithmetic expression
   addAsm( str_JSR + "POP", 3, false );
   strcpy( $$.name, "A" );
 };
+| tSPRPTR '(' expression ')'
+{
+  addComment( "sprptr(exp)" );
+  scrmem_is_needed=true;
+  bnkmem_is_needed=true;
+  stack_is_needed=true;
+  // save $02 and $03 on stack (not processor stack)
+  addAsm( str_LDA + "$02", 2, false );
+  addAsm( str_JSR + "PUSH", 3, false );
+  addAsm( str_LDA + "$03", 2, false );
+  addAsm( str_JSR + "PUSH", 3, false );
 
+  // offset from bank start
+  addAsm( str_LDA + "#$F7", 2, false );
+  addAsm( str_STA + "$02", 2, false );
+  addAsm( str_LDA + "#$03", 2, false );
+  addAsm( str_LDA + "$03", 2, false );
+  
+  
+  // sprite pointer = bank_mem + screen_mem + 0x03F7 + sprite_number
+  // $02/$03 already hold 0xF7 and 0x03 respecfully
+  if( isUintIMM( $3.name ) || isIntIMM( $3.name ))
+    {
+      int sprite_number = atoi(stripFirst($3.name).c_str());
+      addAsm( str_CLC );
+      addAsm( str_LDA + "#$" + toHex( sprite_number ), 2, false );
+      addAsm( str_ADC + "$02", 2, false );
+      addAsm( str_STA + "$02", 2, false );
+      
+      addAsm( str_JSR + "SCRMEM", 3, false );
+      addAsm( str_PLA );
+      addAsm( str_ADC + "$03", 2, false );
+      addAsm( str_STA + "$03", 2, false );
+
+      
+      addAsm( str_JSR + "BNKMEM", 3, false );
+      addAsm( str_PLA );
+      addAsm( str_ADC + "$03", 2, false );
+      
+      addAsm( str_PHA );
+      addAsm( str_LDA + "$02", 2, false );
+      addAsm( str_PHA );
+
+      
+      addAsm( str_JSR + "POP", 3, false );
+      addAsm( str_STA + "$03", 2, false );
+      addAsm( str_JSR + "POP", 3, false );
+      addAsm( str_STA + "$02", 2, false );
+      addAsm( str_PLA );
+      addAsm( str_TAX );
+      addAsm( str_PLA );
+    }
+  else if( isUintID( $3.name ) || isIntID( $3.name ))
+    {
+
+
+    }
+  else if( isWordID( $3.name ) )
+    {
+      string msg = string( "Only using the Low byte of Word: ") + $3.name + " to get sprite pointer.";
+      addCompilerMessage( msg, 0);
+    }
+  else if( isA( $3.name ) )
+    {
+
+    }
+  else if( isXA( $3.name ))
+    {
+      string msg = string( "Only using the A register (not the X): ") + $3.name + " to get sprite pointer.";
+      addCompilerMessage( msg, 0);
+    }
+
+  strcpy( $$.name, "XA" );
+}
 | tASL '(' expression ')'
 {
   //addNode( string($1.name) );
