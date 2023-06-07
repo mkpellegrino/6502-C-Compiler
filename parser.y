@@ -12009,9 +12009,384 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
     }
   strcpy($$.name, "FAC");
 };
+| ID '(' expression ',' expression ',' expression ')'
+{
+  addComment( "Call a function as an expression (2 arg)" );
+  proposed_ids_vector.push_back( new id_and_line( $1.name, countn+1 ));
+  // put arguments on stack
+
+
+
+  
+  if( isUintID( $3.name ) )
+    {
+      addAsm( str_LDA + "$" + toHex( getAddressOf( $3.name ) ), 3, false );
+      addAsm( str_PHA );
+      //addAsm( str_JSR + "PUSH", 3, false );
+
+    }
+  else if( isA( $3.name ) )
+    {
+      addAsm( str_PHA );
+      //addAsm( str_JSR + "PUSH", 3, false );
+
+    }
+  else if( isXA( $3.name ) )
+    {
+      addAsm( str_PHA );
+      //addAsm( str_JSR + "PUSH", 3, false );
+      addAsm( str_TXA );
+      addAsm( str_PHA );
+      // addAsm( str_JSR + "PUSH", 3, false );
+
+    }
+  else if( isWordID( $3.name ) )
+    {
+      addAsm( str_LDA + "$" + toHex( getAddressOf($3.name) ), 3, false );
+      addAsm( str_PHA );
+      //addAsm( str_JSR + "PUSH", 3, false );
+      
+      addAsm( str_LDA + "$" + toHex( getAddressOf($3.name)+1 ), 3, false );
+      addAsm( str_PHA );
+      //addAsm( str_JSR + "PUSH", 3, false );
+	    
+    }
+  else if( isWordIMM( $3.name ) )
+    {
+      int tmp_v = atoi(stripFirst($3.name).c_str());
+      int tmp_L = get_word_L(tmp_v);
+      int tmp_H = get_word_H(tmp_v);
+      addAsm( str_LDA + "#$" + toHex( tmp_L ), 2, false );
+      addAsm( str_PHA );
+      //addAsm( str_JSR + "PUSH", 3, false );
+
+      addAsm( str_LDA + "#$" + toHex( tmp_H ), 2, false );
+      addAsm( str_PHA );
+      //addAsm( str_JSR + "PUSH", 3, false );
+	    
+    }
+  else if( isUintIMM( $3.name ) )
+    {
+      int tmp_v = atoi(stripFirst($3.name).c_str());
+      addAsm( str_LDA + "#$" + toHex( tmp_v ), 2, false );
+      addAsm( str_PHA );
+      //addAsm( str_JSR + "PUSH", 3, false );
+
+    }
+
+
+
+
+  
+  if( isUintID( $5.name ) )
+    {
+      addAsm( str_LDA + "$" + toHex( getAddressOf( $5.name ) ), 3, false );
+      addAsm( str_PHA );
+      //addAsm( str_JSR + "PUSH", 3, false );
+
+    }
+  else if( isA( $5.name ) )
+    {
+      addAsm( str_PHA );
+      //addAsm( str_JSR + "PUSH", 3, false );
+
+    }
+  else if( isXA( $5.name ) )
+    {
+      addAsm( str_PHA );
+      //addAsm( str_JSR + "PUSH", 3, false );
+      addAsm( str_TXA );
+      addAsm( str_PHA );
+      // addAsm( str_JSR + "PUSH", 3, false );
+
+    }
+  else if( isWordID( $5.name ) )
+    {
+      addAsm( str_LDA + "$" + toHex( getAddressOf($5.name) ), 3, false );
+      addAsm( str_PHA );
+      //addAsm( str_JSR + "PUSH", 3, false );
+      
+      addAsm( str_LDA + "$" + toHex( getAddressOf($5.name)+1 ), 3, false );
+      addAsm( str_PHA );
+      //addAsm( str_JSR + "PUSH", 3, false );
+	    
+    }
+  else if( isWordIMM( $5.name ) )
+    {
+      int tmp_v = atoi(stripFirst($5.name).c_str());
+      int tmp_L = get_word_L(tmp_v);
+      int tmp_H = get_word_H(tmp_v);
+      addAsm( str_LDA + "#$" + toHex( tmp_L ), 2, false );
+      addAsm( str_PHA );
+      //addAsm( str_JSR + "PUSH", 3, false );
+
+      addAsm( str_LDA + "#$" + toHex( tmp_H ), 2, false );
+      addAsm( str_PHA );
+      //addAsm( str_JSR + "PUSH", 3, false );
+	    
+    }
+  else if( isUintIMM( $5.name ) )
+    {
+      int tmp_v = atoi(stripFirst($5.name).c_str());
+      addAsm( str_LDA + "#$" + toHex( tmp_v ), 2, false );
+      addAsm( str_PHA );
+      //addAsm( str_JSR + "PUSH", 3, false );
+
+    }
+
+  
+if( isUintID( $7.name ) )
+    {
+      addAsm( str_LDA + "$" + toHex( getAddressOf( $7.name ) ), 3, false );
+      addAsm( str_PHA );
+      //addAsm( str_JSR + "PUSH", 3, false );
+
+    }
+  else if( isA( $7.name ) )
+    {
+      addAsm( str_PHA );
+      //addAsm( str_JSR + "PUSH", 3, false );
+
+    }
+  else if( isXA( $7.name ) )
+    {
+      addAsm( str_PHA );
+      //addAsm( str_JSR + "PUSH", 3, false );
+      addAsm( str_TXA );
+      addAsm( str_PHA );
+      // addAsm( str_JSR + "PUSH", 3, false );
+
+    }
+  else if( isWordID( $7.name ) )
+    {
+      addAsm( str_LDA + "$" + toHex( getAddressOf($7.name) ), 3, false );
+      addAsm( str_PHA );
+      //addAsm( str_JSR + "PUSH", 3, false );
+      
+      addAsm( str_LDA + "$" + toHex( getAddressOf($7.name)+1 ), 3, false );
+      addAsm( str_PHA );
+      //addAsm( str_JSR + "PUSH", 3, false );
+	    
+    }
+  else if( isWordIMM( $7.name ) )
+    {
+      int tmp_v = atoi(stripFirst($7.name).c_str());
+      int tmp_L = get_word_L(tmp_v);
+      int tmp_H = get_word_H(tmp_v);
+      addAsm( str_LDA + "#$" + toHex( tmp_L ), 2, false );
+      addAsm( str_PHA );
+      //addAsm( str_JSR + "PUSH", 3, false );
+
+      addAsm( str_LDA + "#$" + toHex( tmp_H ), 2, false );
+      addAsm( str_PHA );
+      //addAsm( str_JSR + "PUSH", 3, false );
+	    
+    }
+  else if( isUintIMM( $7.name ) )
+    {
+      int tmp_v = atoi(stripFirst($7.name).c_str());
+      addAsm( str_LDA + "#$" + toHex( tmp_v ), 2, false );
+      addAsm( str_PHA );
+      //addAsm( str_JSR + "PUSH", 3, false );
+
+    }
+
+  addComment( "function call" );
+  addAsm( string( "###") + string($1.name), 3, false);
+
+
+  
+  addComment( "Pop Return Value off of Processor Stack - 2023 04 02" );
+  //illegal_operations_are_needed = true;
+  pushScope( "POPRTN" );
+  //addAsm( str_LDX + "#$00", 2, false );
+  addAsm( str_PLA ); // the number of bytes in the stack
+  addAsm( str_TAY );
+
+  addAsm( str_LDA + "#$00", 2, false );
+  addAsm( str_LDX + "#$00", 2, false );
+  
+  addAsm( str_CPY + "#$00", 2, false );
+  addAsm( str_BEQ + getLabel( label_vector[label_major]+1,false), 2, false );
+  addAsm( str_CPY + "#$01", 2, false );
+  addAsm( str_BEQ + getLabel( label_vector[label_major],false), 2, false );
+  // get 1 value and put it in X
+  addAsm( str_PLA );
+  addAsm( str_TAX );
+  addAsm( generateNewLabel(), 0, true );  // if  0
+  // get 1 value and put it in A
+  addAsm( str_PLA );
+  addAsm( generateNewLabel(), 0, true );  // if  0
+  popScope();
+  addCommentBreak(2);
+// restore the original argument
+  if( isUintID($3.name) || isIntID($3.name) || isA($3.name) || isUintIMM($3.name) || isIntIMM($3.name))
+    {
+      
+
+
+    }
+strcpy($$.name, "XA" );
+};
+| ID '(' expression ',' expression ')'
+{
+  addComment( "Call a function as an expression (2 arg)" );
+  proposed_ids_vector.push_back( new id_and_line( $1.name, countn+1 ));
+
+
+  // put arguments on stack
+  if( isUintID( $3.name ) )
+    {
+      addAsm( str_LDA + "$" + toHex( getAddressOf( $3.name ) ), 3, false );
+      addAsm( str_PHA );
+      //addAsm( str_JSR + "PUSH", 3, false );
+
+    }
+  else if( isA( $3.name ) )
+    {
+      addAsm( str_PHA );
+      //addAsm( str_JSR + "PUSH", 3, false );
+
+    }
+  else if( isXA( $3.name ) )
+    {
+      addAsm( str_PHA );
+      //addAsm( str_JSR + "PUSH", 3, false );
+      addAsm( str_TXA );
+      addAsm( str_PHA );
+      // addAsm( str_JSR + "PUSH", 3, false );
+
+    }
+  else if( isWordID( $3.name ) )
+    {
+      addAsm( str_LDA + "$" + toHex( getAddressOf($3.name) ), 3, false );
+      addAsm( str_PHA );
+      //addAsm( str_JSR + "PUSH", 3, false );
+      
+      addAsm( str_LDA + "$" + toHex( getAddressOf($3.name)+1 ), 3, false );
+      addAsm( str_PHA );
+      //addAsm( str_JSR + "PUSH", 3, false );
+	    
+    }
+  else if( isWordIMM( $3.name ) )
+    {
+      int tmp_v = atoi(stripFirst($3.name).c_str());
+      int tmp_L = get_word_L(tmp_v);
+      int tmp_H = get_word_H(tmp_v);
+      addAsm( str_LDA + "#$" + toHex( tmp_L ), 2, false );
+      addAsm( str_PHA );
+      //addAsm( str_JSR + "PUSH", 3, false );
+
+      addAsm( str_LDA + "#$" + toHex( tmp_H ), 2, false );
+      addAsm( str_PHA );
+      //addAsm( str_JSR + "PUSH", 3, false );
+	    
+    }
+  else if( isUintIMM( $3.name ) )
+    {
+      int tmp_v = atoi(stripFirst($3.name).c_str());
+      addAsm( str_LDA + "#$" + toHex( tmp_v ), 2, false );
+      addAsm( str_PHA );
+      //addAsm( str_JSR + "PUSH", 3, false );
+
+    }
+  if( isUintID( $5.name ) )
+    {
+      addAsm( str_LDA + "$" + toHex( getAddressOf( $5.name ) ), 3, false );
+      addAsm( str_PHA );
+      //addAsm( str_JSR + "PUSH", 3, false );
+
+    }
+  else if( isA( $5.name ) )
+    {
+      addAsm( str_PHA );
+      //addAsm( str_JSR + "PUSH", 3, false );
+
+    }
+  else if( isXA( $5.name ) )
+    {
+      addAsm( str_PHA );
+      //addAsm( str_JSR + "PUSH", 3, false );
+      addAsm( str_TXA );
+      addAsm( str_PHA );
+      // addAsm( str_JSR + "PUSH", 3, false );
+
+    }
+  else if( isWordID( $5.name ) )
+    {
+      addAsm( str_LDA + "$" + toHex( getAddressOf($5.name) ), 3, false );
+      addAsm( str_PHA );
+      //addAsm( str_JSR + "PUSH", 3, false );
+      
+      addAsm( str_LDA + "$" + toHex( getAddressOf($5.name)+1 ), 3, false );
+      addAsm( str_PHA );
+      //addAsm( str_JSR + "PUSH", 3, false );
+	    
+    }
+  else if( isWordIMM( $5.name ) )
+    {
+      int tmp_v = atoi(stripFirst($5.name).c_str());
+      int tmp_L = get_word_L(tmp_v);
+      int tmp_H = get_word_H(tmp_v);
+      addAsm( str_LDA + "#$" + toHex( tmp_L ), 2, false );
+      addAsm( str_PHA );
+      //addAsm( str_JSR + "PUSH", 3, false );
+
+      addAsm( str_LDA + "#$" + toHex( tmp_H ), 2, false );
+      addAsm( str_PHA );
+      //addAsm( str_JSR + "PUSH", 3, false );
+	    
+    }
+  else if( isUintIMM( $5.name ) )
+    {
+      int tmp_v = atoi(stripFirst($5.name).c_str());
+      addAsm( str_LDA + "#$" + toHex( tmp_v ), 2, false );
+      addAsm( str_PHA );
+      //addAsm( str_JSR + "PUSH", 3, false );
+
+    }
+
+
+  addComment( "function call" );
+  addAsm( string( "###") + string($1.name), 3, false);
+
+
+  
+  addComment( "Pop Return Value off of Processor Stack - 2023 04 02" );
+  //illegal_operations_are_needed = true;
+  pushScope( "POPRTN" );
+  //addAsm( str_LDX + "#$00", 2, false );
+  addAsm( str_PLA ); // the number of bytes in the stack
+  addAsm( str_TAY );
+
+  addAsm( str_LDA + "#$00", 2, false );
+  addAsm( str_LDX + "#$00", 2, false );
+  
+  addAsm( str_CPY + "#$00", 2, false );
+  addAsm( str_BEQ + getLabel( label_vector[label_major]+1,false), 2, false );
+  addAsm( str_CPY + "#$01", 2, false );
+  addAsm( str_BEQ + getLabel( label_vector[label_major],false), 2, false );
+  // get 1 value and put it in X
+  addAsm( str_PLA );
+  addAsm( str_TAX );
+  addAsm( generateNewLabel(), 0, true );  // if  0
+  // get 1 value and put it in A
+  addAsm( str_PLA );
+  addAsm( generateNewLabel(), 0, true );  // if  0
+  popScope();
+  addCommentBreak(2);
+// restore the original argument
+  if( isUintID($3.name) || isIntID($3.name) || isA($3.name) || isUintIMM($3.name) || isIntIMM($3.name))
+    {
+      
+
+
+    }
+strcpy($$.name, "XA" );
+};
 | ID '(' expression ')' 
 {
-  addComment( "Call a function as an expression" );
+  addComment( "Call a function as an expression (1 arg)" );
   proposed_ids_vector.push_back( new id_and_line( $1.name, countn+1 ));
   // put arguments on stack
   if( isUintID( $3.name ) )
