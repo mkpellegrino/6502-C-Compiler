@@ -19,6 +19,12 @@ lexer:	lexer.l
 compiler: y.tab.c
 	$(CC) $(LIBRARIES) -w  y.tab.c -o compiler
 
+args:
+	cat ./args.c common.c > args.tmp
+	./compiler --basic --code-segment 2100 --data-segment 820 --kick < ./args.tmp > args.asm
+	java -jar KickAss.jar args.asm
+	rm -f args.tmp
+
 pointers:
 	cat ./pointers.c common.c > pointers.tmp
 	./compiler --code-segment 2100 --data-segment 820 --kick < ./pointers.tmp > pointers.asm
@@ -69,7 +75,7 @@ raster:
 
 charset:
 	cat ./charset.c common.c > charset.tmp
-	./compiler --kick --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./charset.tmp > charset.asm
+	./compiler --kick --basic --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./charset.tmp > charset.asm
 	java -jar KickAss.jar charset.asm
 	rm -f charset.tmp
 
@@ -101,6 +107,9 @@ poke2:
 	./compiler --kick --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./poke2.tmp > poke2.asm
 	java -jar KickAss.jar poke2.asm
 
+pong:
+	java -jar KickAss.jar pong.asm
+
 banks:
 	cat ./banks.c common.c > banks.tmp
 	./compiler --kick --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./banks.tmp > banks.asm
@@ -116,7 +125,7 @@ terra:
 	cat ./terraform.c common.c > terra.tmp
 #	./compiler --code-segment 7632 --data-segment 40960 --memory-locations --symbol-table < ./terraform.c > terra.tmp.asm
 #	./compiler --code-segment 7624 --data-segment 40960 --memory-locations --symbol-table < ./terraform.c > terra.tmp.asm
-	./compiler --code-segment 7624 --data-segment 49152  --memory-locations --symbol-table --kick < ./terra.tmp > terra.tmp.asm
+	./compiler  --basic --code-segment 7624 --data-segment 49152  --memory-locations --symbol-table --kick < ./terra.tmp > terra.tmp.asm
 	cat terra.tmp.asm cj-sid.asm > terra7624.asm
 #	cat terra.tmp.asm mysid.hex > terra7624.asm
 	java -jar KickAss.jar terra7624.asm
@@ -172,9 +181,21 @@ quad:
 
 knight:
 	cat ./knight.c common.c > knight.tmp
-	./compiler --kick --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./knight.tmp > knight.asm
+	./compiler --kick --basic --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./knight.tmp > knight.asm
 	java -jar KickAss.jar knight.asm
 	rm -f knight.tmp
+
+knight2:
+	cat ./knight2.c common.c > knight2.tmp
+	./compiler --kick --basic --code-segment 4096 --data-segment 820 < ./knight2.tmp > knight2.asm
+	java -jar KickAss.jar knight2.asm
+	rm -f knight2.tmp
+
+knight3:
+	cat ./knight3.c common.c > knight3.tmp
+	./compiler --kick --basic --code-segment 4096 --data-segment 820 < ./knight3.tmp > knight3.asm
+	java -jar KickAss.jar knight3.asm
+	rm -f knight3.tmp
 
 collision:
 	./compiler --kick --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./collision.c > collision.asm
@@ -247,19 +268,29 @@ array:
 getchar:
 	./compiler --code-segment 2100 --data-segment 820 --no-asm-comments  --memory-locations --symbol-table < ./getchar.c > getchar.asm
 
+spriteptr:
+	cat ./spriteptr.c common.c > spriteptr.tmp
+	./compiler --kick --basic --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./spriteptr.tmp > spriteptr.asm
+	java -jar KickAss.jar spriteptr.asm
+
 sprite:
-	./compiler --kick --code-segment 2100 --data-segment 820 --parser-comments --memory-locations --symbol-table < ./sprite.c > sprite.asm
+	cat ./sprite.c common.c > sprite.tmp
+	./compiler --kick --basic --code-segment 2100 --data-segment 820 --parser-comments --memory-locations --symbol-table < ./sprite.tmp > sprite.asm
 	java -jar KickAss.jar sprite.asm
 
 sprite2:
-	./compiler --kick --code-segment 2100 --data-segment 820 --parser-comments --memory-locations --symbol-table < ./sprite2.c > sprite2.asm
+	./compiler --kick --basic --code-segment 2100 --data-segment 820 --parser-comments --memory-locations --symbol-table < ./sprite2.c > sprite2.asm
 	java -jar KickAss.jar sprite2.asm
 
 sprite3:
 	cat ./sprite3.c common.c > sprite3.tmp
-	./compiler --kick --code-segment 2100 --data-segment 820 --parser-comments --memory-locations --symbol-table < ./sprite3.tmp > sprite3.asm
+	./compiler --kick --basic --code-segment 2100 --data-segment 820 --parser-comments --memory-locations --symbol-table < ./sprite3.tmp > sprite3.asm
 	java -jar KickAss.jar sprite3.asm
 
+sprite4:
+	cat ./sprite4.c common.c > sprite4.tmp
+	./compiler --kick --basic --code-segment 2100 --data-segment 820 --parser-comments --memory-locations --symbol-table < ./sprite4.tmp > sprite4.asm
+	java -jar KickAss.jar sprite4.asm
 
 plot:
 	cat ./plottest.c common.c > plottest.tmp

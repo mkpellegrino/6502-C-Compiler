@@ -9,6 +9,8 @@ digit [0-9]
 frmt  [{\t}|{\n}]
 
 %%
+"sprptr"          { strcpy(yylval.nd_obj.name,(yytext)); return tSPRPTR; }
+"ptr"             { strcpy(yylval.nd_obj.name,(yytext)); return tPOINTER; }
 "irq"              { strcpy(yylval.nd_obj.name,(yytext)); return tIRQ; }
 "sidoff"              { strcpy(yylval.nd_obj.name,(yytext)); return tSIDOFF; }
 "seed"              { strcpy(yylval.nd_obj.name,(yytext)); return tSEED; }
@@ -35,6 +37,7 @@ frmt  [{\t}|{\n}]
 "plot"              { strcpy(yylval.nd_obj.name,(yytext)); return tPLOT; }
 "getbmp_addr"            { strcpy(yylval.nd_obj.name,(yytext)); return tGETBMP; }
 "getscr_addr"            { strcpy(yylval.nd_obj.name,(yytext)); return tGETSCR; }
+"setscr_addr"            { strcpy(yylval.nd_obj.name,(yytext)); return tSETSCR; }
 "getbank_addr"            { strcpy(yylval.nd_obj.name,(yytext)); return tGETBANK; }
 "getaddr"             { strcpy(yylval.nd_obj.name,(yytext)); return tGETADDR; }
 "getxy"             { strcpy(yylval.nd_obj.name,(yytext)); return tGETXY; }

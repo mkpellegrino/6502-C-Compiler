@@ -1803,7 +1803,7 @@
 
 //%parse-param { FILE* fp }
 %token VOID 
-%token <nd_obj>  tSPRPTR tPUSH tPOP tCOMMENT tDATA tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tSIDIRQ tSIDOFF tSTRTOFLOAT tSTRTOWORD tTOFLOAT tTOUINT tTOBIT tDEC tINC tROL tROR tLSR tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJUMP tJSR tIRQ tFOO tROMOUT tROMIN tLDA tASL tSPRITESET  tSPRITEOFF tSPRITETOGGLE tRND tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER tPRINTS PRINTFF SCANFF INT FLOAT WHILE FOR IF ELSE TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE tSQRT UNARY INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL tSCREEN tNULL tMEMCPY tSEED
+%token <nd_obj>  tSPRPTR tPUSH tPOP tCOMMENT tDATA tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tSIDIRQ tSIDOFF tSTRTOFLOAT tSTRTOWORD tTOFLOAT tTOUINT tTOBIT tDEC tINC tROL tROR tLSR tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJUMP tSETSCR tJSR tIRQ tFOO tROMOUT tROMIN tLDA tASL tSPRITESET  tSPRITEOFF tSPRITETOGGLE tRND tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER tPRINTS PRINTFF SCANFF INT FLOAT WHILE FOR IF ELSE TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE tSQRT UNARY INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL tSCREEN tNULL tMEMCPY tSEED
 %type <nd_obj> headers main body return function datatype statement arithmetic relop program else 
    %type <nd_obj2> init value expression numberlist
       %type <nd_obj3> condition
@@ -1874,20 +1874,290 @@ main: datatype ID
 };
 
 function: function function
+| datatype ID '(' datatype ID ',' datatype ID ',' datatype ID ')' '{'
+{
+  // A FUNCTION WITH 3 ARGUMENTS
+  stack_is_needed=true;
+  addComment( string("======================== ") + string($2.name) + string(" ========================"));
+  addAsm( generateNewLabel(), 0, true );
+  addFunction( string($2.name), getLabel( label_vector[label_major]-1 ), getDataTypeValue($1.name));
+  addAsmVariable(string($5.name),getDataTypeValue($4.name ));
+  addAsmVariable(string($8.name),getDataTypeValue($7.name ));
+  addAsmVariable(string($11.name),getDataTypeValue($10.name ));
+  int tmp_addr;
+  int tmp_addr_L;
+  int tmp_addr_H;
+
+  /* Datatypes from int getDataTypeValue() */
+    /* if( s == string("UINT")) return 0; */
+    /* if( s == string("BYTE")) return 0; */
+    /* if( s == string("INT")) return 1; */
+    /* if( s == string("WORD")) return 2; */
+    /* if( s == string("DOUBLE")) return 4; */
+    /* if( s == string("FLOAT")) return 8; */
+    /* if( s == string("MOB")) return 16; */
+    /* if( s == string("VOID")) return 32; */
+  addComment( "Get Parameters off of stack" );
+
+  switch( getDataTypeValue($10.name ) )
+    {
+    case 0:
+    case 1: // one byte argument
+      addAsm(str_PLA);addAsm(str_TAX);addAsm(str_PLA);addAsm(str_TAY);
+
+      
+      addAsm(str_PLA);
+      addAsm(str_STA+"$"+toHex(getAddressOf($11.name)), 3, false);
+
+      
+      //addAsm(str_TYA);addAsm(str_PHA);addAsm(str_TXA);addAsm(str_PHA);
+      break;
+    case 2:
+    case 3:
+      addAsm(str_PLA);addAsm( str_TAX );addAsm(str_PLA);addAsm(str_TAY);
+
+      
+      addAsm(str_PLA);
+      addAsm(str_STA+"$"+toHex(getAddressOf($11.name)+1), 3, false);
+      addAsm(str_PLA);
+      addAsm(str_STA+"$"+toHex(getAddressOf($11.name)), 3, false);
+
+      
+      //addAsm( str_TYA );;addAsm( str_PHA );addAsm( str_TXA );addAsm( str_PHA );
+      break;
+    case 4:
+      // double
+      break;
+    case 8:
+      // float
+      break;
+    case 16:
+      // MOV
+      break;
+      
+    default:
+      break;
+    }
+  switch( getDataTypeValue($7.name ) )
+    {
+    case 0:
+    case 1: // one byte argument
+      //addAsm(str_PLA);addAsm(str_TAX);addAsm(str_PLA);addAsm(str_TAY);
+
+      
+      addAsm(str_PLA);
+      addAsm(str_STA+"$"+toHex(getAddressOf($8.name)), 3, false);
+
+      
+      //addAsm(str_TYA);addAsm(str_PHA);addAsm(str_TXA);addAsm(str_PHA);
+      break;
+    case 2:
+    case 3:
+      //addAsm(str_PLA);addAsm( str_TAX );addAsm(str_PLA);addAsm(str_TAY);
+
+      
+      addAsm(str_PLA);
+      addAsm(str_STA+"$"+toHex(getAddressOf($8.name)+1), 3, false);
+      addAsm(str_PLA);
+      addAsm(str_STA+"$"+toHex(getAddressOf($8.name)), 3, false);
+
+      
+      //addAsm( str_TYA );;addAsm( str_PHA );addAsm( str_TXA );addAsm( str_PHA );
+      break;
+    case 4:
+      // double
+      break;
+    case 8:
+      // float
+      break;
+    case 16:
+      // MOV
+      break;
+      
+    default:
+      break;
+    }
+
+
+
+    switch( getDataTypeValue($4.name ) )
+    {
+    case 0:
+    case 1: // one byte argument
+      //addAsm(str_PLA);addAsm(str_TAX);addAsm(str_PLA);addAsm(str_TAY);
+
+      
+      addAsm(str_PLA);
+      addAsm(str_STA+"$"+toHex(getAddressOf($5.name)), 3, false);
+
+      
+      addAsm(str_TYA);addAsm(str_PHA);addAsm(str_TXA);addAsm(str_PHA);
+      break;
+    case 2:
+    case 3:
+      //addAsm(str_PLA);addAsm( str_TAX );addAsm(str_PLA);addAsm(str_TAY);
+
+      
+      addAsm(str_PLA);
+      addAsm(str_STA+"$"+toHex(getAddressOf($5.name)+1), 3, false);
+      addAsm(str_PLA);
+      addAsm(str_STA+"$"+toHex(getAddressOf($5.name)), 3, false);
+
+      
+      addAsm( str_TYA );;addAsm( str_PHA );addAsm( str_TXA );addAsm( str_PHA );
+      break;
+    case 4:
+      // double
+      break;
+    case 8:
+      // float
+      break;
+    case 16:
+      // MOV
+      break;
+      
+    default:
+      break;
+    }
+
+  addComment( "the body of the function" );
+} body return '}' {
+    // add this label to the list of functions and their addresses
+    // any time we come across the function with this ID
+    // we can JSR to it
+
+   defined_ids_vector.push_back( new id_and_line( $2.name, countn+1 ));
+ 
+    if( !previousAsm(str_RTS) )
+      {
+	//             // we may want to consider
+	//             // adding a return value here
+	addAsm(str_RTS); // add a return statement
+	
+      } 
+    
+  };
+| datatype ID '(' datatype ID ',' datatype ID ')' '{'
+{
+  // A FUNCTION WITH 2 ARGUMENTS
+  stack_is_needed=true;
+  addComment( string("======================== ") + string($2.name) + string(" ========================"));
+  addAsm( generateNewLabel(), 0, true );
+  addFunction( string($2.name), getLabel( label_vector[label_major]-1 ), getDataTypeValue($1.name));
+  addAsmVariable(string($5.name),getDataTypeValue($4.name ));
+  addAsmVariable(string($8.name),getDataTypeValue($7.name ));
+  int tmp_addr;
+  int tmp_addr_L;
+  int tmp_addr_H;
+
+  /* Datatypes from int getDataTypeValue() */
+    /* if( s == string("UINT")) return 0; */
+    /* if( s == string("BYTE")) return 0; */
+    /* if( s == string("INT")) return 1; */
+    /* if( s == string("WORD")) return 2; */
+    /* if( s == string("DOUBLE")) return 4; */
+    /* if( s == string("FLOAT")) return 8; */
+    /* if( s == string("MOB")) return 16; */
+    /* if( s == string("VOID")) return 32; */
+  addComment( "Get Parameters off of stack" );
+
+  switch( getDataTypeValue($7.name ) )
+    {
+    case 0:
+    case 1: // one byte argument
+      addAsm(str_PLA);addAsm(str_TAX);addAsm(str_PLA);addAsm(str_TAY);
+
+      
+      addAsm(str_PLA);
+      addAsm(str_STA+"$"+toHex(getAddressOf($8.name)), 3, false);
+
+      
+      //addAsm(str_TYA);addAsm(str_PHA);addAsm(str_TXA);addAsm(str_PHA);
+      break;
+    case 2:
+    case 3:
+      addAsm(str_PLA);addAsm( str_TAX );addAsm(str_PLA);addAsm(str_TAY);
+
+      
+      addAsm(str_PLA);
+      addAsm(str_STA+"$"+toHex(getAddressOf($8.name)+1), 3, false);
+      addAsm(str_PLA);
+      addAsm(str_STA+"$"+toHex(getAddressOf($8.name)), 3, false);
+
+      
+      //addAsm( str_TYA );;addAsm( str_PHA );addAsm( str_TXA );addAsm( str_PHA );
+      break;
+    case 4:
+      // double
+      break;
+    case 8:
+      // float
+      break;
+    case 16:
+      // MOV
+      break;
+      
+    default:
+      break;
+    }
+  switch( getDataTypeValue($4.name ) )
+    {
+    case 0:
+    case 1: // one byte argument
+      //addAsm(str_PLA);addAsm(str_TAX);addAsm(str_PLA);addAsm(str_TAY);
+
+      
+      addAsm(str_PLA);
+      addAsm(str_STA+"$"+toHex(getAddressOf($5.name)), 3, false);
+
+      
+      addAsm(str_TYA);addAsm(str_PHA);addAsm(str_TXA);addAsm(str_PHA);
+      break;
+    case 2:
+    case 3:
+      //addAsm(str_PLA);addAsm( str_TAX );addAsm(str_PLA);addAsm(str_TAY);
+
+      
+      addAsm(str_PLA);
+      addAsm(str_STA+"$"+toHex(getAddressOf($5.name)+1), 3, false);
+      addAsm(str_PLA);
+      addAsm(str_STA+"$"+toHex(getAddressOf($5.name)), 3, false);
+
+      
+      addAsm( str_TYA );;addAsm( str_PHA );addAsm( str_TXA );addAsm( str_PHA );
+      break;
+    case 4:
+      // double
+      break;
+    case 8:
+      // float
+      break;
+    case 16:
+      // MOV
+      break;
+      
+    default:
+      break;
+    }
+  addComment( "the body of the function" );
+} body return '}' {
+    // add this label to the list of functions and their addresses
+    // any time we come across the function with this ID
+    // we can JSR to it
+
+   defined_ids_vector.push_back( new id_and_line( $2.name, countn+1 ));
+ 
+    if( !previousAsm(str_RTS) )
+      {
+	//             // we may want to consider
+	//             // adding a return value here
+	addAsm(str_RTS); // add a return statement
+	
+      } 
+    
+  };
 | datatype ID '(' datatype ID ')' '{'
 {
-  //defined_functions_vector.push_back( string($2.name) );
-  /* // this is where to remove the id_name from the id_vector */
-  /*   for( int it = 0; it < id_vector.size(); it++ ) */
-  /*     { */
-  /* 	cerr << id_vector.at(it)->getName() << endl; */
-  /* 	if( id_vector.at(it)->getName() == $2.name ) */
-  /* 	  { */
-  /* 	    cerr << " removing " << $2.name << endl; */
-  /* 	    id_vector.erase(id_vector.begin() + it); */
-  /* 	    it--; */
-  /* 	  } */
-  /*     } */
   
   stack_is_needed=true;
   addComment( string("======================== ") + string($2.name) + string(" ========================"));
@@ -1895,82 +2165,56 @@ function: function function
   addFunction( string($2.name), getLabel( label_vector[label_major]-1 ), getDataTypeValue($1.name));
   addComment( "Get Parameter off of stack" );
   addAsmVariable(string($5.name),getDataTypeValue($4.name ));
-  //cerr << "DT: " << $4.name << endl;
   int tmp_addr;
   int tmp_addr_L;
   int tmp_addr_H;
-  
+
+  /* Datatypes from int getDataTypeValue() */
+    /* if( s == string("UINT")) return 0; */
+    /* if( s == string("BYTE")) return 0; */
+    /* if( s == string("INT")) return 1; */
+    /* if( s == string("WORD")) return 2; */
+    /* if( s == string("DOUBLE")) return 4; */
+    /* if( s == string("FLOAT")) return 8; */
+    /* if( s == string("MOB")) return 16; */
+    /* if( s == string("VOID")) return 32; */
+
   switch( getDataTypeValue($4.name ) )
     {
     case 0:
-    case 1:
-      /* addCommentBreak(2); */
-      /* addComment( "Push (U)Int Argument onto Software Stack" ); */
-      /* // 2023 04 01 */
-      /* addComment( "Push the Value" ); */
-      /* addAsm(str_LDA + "$"+toHex(getAddressOf($5.name)), 3, false); */
-      /* addAsm( str_JSR + "PUSH", 3, false ); */
-      /* tmp_addr = getAddressOf($5.name); */
-      /* tmp_addr_L = get_word_L(tmp_addr); */
-      /* tmp_addr_H = get_word_H(tmp_addr); */
-      /* addComment( "Push the Address" ); */
-      /* addAsm( str_LDA + "#$" + toHex(tmp_addr_L), 2, false); */
-      /* addAsm( str_JSR + "PUSH", 3, false ); */
-      /* addAsm( str_LDA + "#$" + toHex(tmp_addr_H), 2, false); */
-      /* addAsm( str_JSR + "PUSH", 3, false ); */
-      /* addComment( "Push a 2 for twice, a 1 for once, and 0 for nonce!" ); */
-      /* addAsm( str_LDA + "#$01", 2, false ); */
-      /* addAsm( str_JSR + "PUSH", 3, false ); */
-      /* addCommentBreak(2); */
-      
+    case 1: // one byte argument
       addAsm(str_PLA);addAsm(str_TAX);addAsm(str_PLA);addAsm(str_TAY);
+
+      
       addAsm(str_PLA);
       addAsm(str_STA+"$"+toHex(getAddressOf($5.name)), 3, false);
+
+      
       addAsm(str_TYA);addAsm(str_PHA);addAsm(str_TXA);addAsm(str_PHA);
-      // oops - return address was incorrect!
-      //addAsm(str_TAY);addAsm(str_PHA);addAsm(str_TXA);addAsm(str_PHA);
       break;
     case 2:
     case 3:
-      /* addCommentBreak(2); */
-      /* addComment( "Push Word Argument onto Software Stack" ); */
-      /* addComment( "Push the Value (L)" ); */
-      /* addAsm(str_LDA + "$"+toHex(getAddressOf($5.name)), 3, false); */
-      /* addAsm( str_JSR + "PUSH", 3, false ); */
-      /* tmp_addr = getAddressOf($5.name); */
-      /* tmp_addr_L = get_word_L(tmp_addr); */
-      /* tmp_addr_H = get_word_H(tmp_addr); */
-      /* addComment( "Push the Address (1)" ); */
-      /* addAsm( str_LDA + "#$" + toHex(tmp_addr_L), 2, false); */
-      /* addAsm( str_JSR + "PUSH", 3, false ); */
-      /* addAsm( str_LDA + "#$" + toHex(tmp_addr_H), 2, false); */
-      /* addAsm( str_JSR + "PUSH", 3, false ); */
-      /* addComment( "Push the Value (H)" ); */
-      /* addAsm(str_LDA + "$"+toHex(getAddressOf($5.name)+1), 3, false); */
-      /* addAsm( str_JSR + "PUSH", 3, false ); */
-      /* tmp_addr++; */
-      /* tmp_addr_L = get_word_L(tmp_addr); */
-      /* tmp_addr_H = get_word_H(tmp_addr); */
-      /* addComment( "Push the Address (2)" ); */
-      /* addAsm( str_LDA + "#$" + toHex(tmp_addr_L), 2, false); */
-      /* addAsm( str_JSR + "PUSH", 3, false ); */
-      /* addAsm( str_LDA + "#$" + toHex(tmp_addr_H), 2, false); */
-      /* addAsm( str_JSR + "PUSH", 3, false ); */
-
-      /* addComment( "Push a 2 for twice, a 1 for once, and 0 for nonce!" ); */
-
-      /* addAsm( str_LDA + "#$02", 2, false ); */
-      /* addAsm( str_JSR + "PUSH", 3, false ); */
-
-      /*  addCommentBreak(2); */
-
       addAsm(str_PLA);addAsm( str_TAX );addAsm(str_PLA);addAsm(str_TAY);
+
+      
       addAsm(str_PLA);
       addAsm(str_STA+"$"+toHex(getAddressOf($5.name)+1), 3, false);
       addAsm(str_PLA);
       addAsm(str_STA+"$"+toHex(getAddressOf($5.name)), 3, false);
+
+      
       addAsm( str_TYA );;addAsm( str_PHA );addAsm( str_TXA );addAsm( str_PHA );
       break;
+    case 4:
+      // double
+      break;
+    case 8:
+      // float
+      break;
+    case 16:
+      // MOV
+      break;
+      
     default:
       break;
     }
@@ -2909,6 +3153,242 @@ body: WHILE
       addCompilerMessage( "spritey error - invalid type", 1 );
     }
 };
+| ID '(' expression ',' expression ',' expression ')' ';'
+{
+  addComment( "Call a function (with 3 argments) as a statement" );
+  proposed_ids_vector.push_back( new id_and_line( $1.name, countn+1 ));
+  
+  // put arguments on stack
+  if( isUintID( $3.name ) )
+    {
+      addAsm( str_LDA + "$" + toHex( getAddressOf( $3.name ) ), 3, false );
+      addAsm( str_PHA );
+    }
+  else if( isA( $3.name ) )
+    {
+      addAsm( str_PHA );
+    }
+  else if( isXA( $3.name ) )
+    {
+      addAsm( str_PHA );
+      addAsm( str_TXA );
+      addAsm( str_PHA );
+    }
+  else if( isWordID( $3.name ) )
+    {
+      addAsm( str_LDA + "$" + toHex( getAddressOf($3.name) ), 3, false );
+      addAsm( str_PHA );
+      addAsm( str_LDA + "$" + toHex( getAddressOf($3.name)+1 ), 3, false );
+      addAsm( str_PHA );
+    }
+  else if( isWordIMM( $3.name ) )
+    {
+      int tmp_v = atoi(stripFirst($3.name).c_str());
+      int tmp_L = get_word_L(tmp_v);
+      int tmp_H = get_word_H(tmp_v);
+      
+      addAsm( str_LDA + "#$" + toHex( tmp_L ), 2, false );
+      addAsm( str_PHA );
+      addAsm( str_LDA + "#$" + toHex( tmp_H ), 2, false );
+      addAsm( str_PHA );
+    }
+  else if( isUintIMM( $3.name ) )
+    {
+      int tmp_v = atoi(stripFirst($3.name).c_str());
+      
+      addAsm( str_LDA + "#$" + toHex( tmp_v ), 2, false );
+      addAsm( str_PHA );
+    }
+
+
+
+  // second argument
+    if( isUintID( $5.name ) )
+    {
+      addAsm( str_LDA + "$" + toHex( getAddressOf( $5.name ) ), 3, false );
+      addAsm( str_PHA );
+    }
+  else if( isA( $5.name ) )
+    {
+      addAsm( str_PHA );
+    }
+  else if( isXA( $5.name ) )
+    {
+      addAsm( str_PHA );
+      addAsm( str_TXA );
+      addAsm( str_PHA );
+    }
+  else if( isWordID( $5.name ) )
+    {
+      addAsm( str_LDA + "$" + toHex( getAddressOf($5.name) ), 3, false );
+      addAsm( str_PHA );
+      addAsm( str_LDA + "$" + toHex( getAddressOf($5.name)+1 ), 3, false );
+      addAsm( str_PHA );
+    }
+  else if( isWordIMM( $5.name ) )
+    {
+      int tmp_v = atoi(stripFirst($5.name).c_str());
+      int tmp_L = get_word_L(tmp_v);
+      int tmp_H = get_word_H(tmp_v);
+      
+      addAsm( str_LDA + "#$" + toHex( tmp_L ), 2, false );
+      addAsm( str_PHA );
+      addAsm( str_LDA + "#$" + toHex( tmp_H ), 2, false );
+      addAsm( str_PHA );
+    }
+  else if( isUintIMM( $5.name ) )
+    {
+      int tmp_v = atoi(stripFirst($5.name).c_str());
+      
+      addAsm( str_LDA + "#$" + toHex( tmp_v ), 2, false );
+      addAsm( str_PHA );
+    }
+
+  // third argument
+    if( isUintID( $7.name ) )
+    {
+      addAsm( str_LDA + "$" + toHex( getAddressOf( $7.name ) ), 3, false );
+      addAsm( str_PHA );
+    }
+  else if( isA( $7.name ) )
+    {
+      addAsm( str_PHA );
+    }
+  else if( isXA( $7.name ) )
+    {
+      addAsm( str_PHA );
+      addAsm( str_TXA );
+      addAsm( str_PHA );
+    }
+  else if( isWordID( $7.name ) )
+    {
+      addAsm( str_LDA + "$" + toHex( getAddressOf($7.name) ), 3, false );
+      addAsm( str_PHA );
+      addAsm( str_LDA + "$" + toHex( getAddressOf($7.name)+1 ), 3, false );
+      addAsm( str_PHA );
+    }
+  else if( isWordIMM( $7.name ) )
+    {
+      int tmp_v = atoi(stripFirst($7.name).c_str());
+      int tmp_L = get_word_L(tmp_v);
+      int tmp_H = get_word_H(tmp_v);
+      
+      addAsm( str_LDA + "#$" + toHex( tmp_L ), 2, false );
+      addAsm( str_PHA );
+      addAsm( str_LDA + "#$" + toHex( tmp_H ), 2, false );
+      addAsm( str_PHA );
+    }
+  else if( isUintIMM( $7.name ) )
+    {
+      int tmp_v = atoi(stripFirst($7.name).c_str());
+      
+      addAsm( str_LDA + "#$" + toHex( tmp_v ), 2, false );
+      addAsm( str_PHA );
+    }
+
+
+  
+  addAsm( string( "###") + string($1.name), 3, false);
+  
+};
+
+| ID '(' expression ',' expression ')' ';'
+{
+  addComment( "Call a function (with 2 argments) as a statement" );
+  proposed_ids_vector.push_back( new id_and_line( $1.name, countn+1 ));
+  
+  // put arguments on stack
+  if( isUintID( $3.name ) )
+    {
+      addAsm( str_LDA + "$" + toHex( getAddressOf( $3.name ) ), 3, false );
+      addAsm( str_PHA );
+    }
+  else if( isA( $3.name ) )
+    {
+      addAsm( str_PHA );
+    }
+  else if( isXA( $3.name ) )
+    {
+      addAsm( str_PHA );
+      addAsm( str_TXA );
+      addAsm( str_PHA );
+    }
+  else if( isWordID( $3.name ) )
+    {
+      addAsm( str_LDA + "$" + toHex( getAddressOf($3.name) ), 3, false );
+      addAsm( str_PHA );
+      addAsm( str_LDA + "$" + toHex( getAddressOf($3.name)+1 ), 3, false );
+      addAsm( str_PHA );
+    }
+  else if( isWordIMM( $3.name ) )
+    {
+      int tmp_v = atoi(stripFirst($3.name).c_str());
+      int tmp_L = get_word_L(tmp_v);
+      int tmp_H = get_word_H(tmp_v);
+      
+      addAsm( str_LDA + "#$" + toHex( tmp_L ), 2, false );
+      addAsm( str_PHA );
+      addAsm( str_LDA + "#$" + toHex( tmp_H ), 2, false );
+      addAsm( str_PHA );
+    }
+  else if( isUintIMM( $3.name ) )
+    {
+      int tmp_v = atoi(stripFirst($3.name).c_str());
+      
+      addAsm( str_LDA + "#$" + toHex( tmp_v ), 2, false );
+      addAsm( str_PHA );
+    }
+
+
+
+  // second argument
+    if( isUintID( $5.name ) )
+    {
+      addAsm( str_LDA + "$" + toHex( getAddressOf( $5.name ) ), 3, false );
+      addAsm( str_PHA );
+    }
+  else if( isA( $5.name ) )
+    {
+      addAsm( str_PHA );
+    }
+  else if( isXA( $5.name ) )
+    {
+      addAsm( str_PHA );
+      addAsm( str_TXA );
+      addAsm( str_PHA );
+    }
+  else if( isWordID( $5.name ) )
+    {
+      addAsm( str_LDA + "$" + toHex( getAddressOf($5.name) ), 3, false );
+      addAsm( str_PHA );
+      addAsm( str_LDA + "$" + toHex( getAddressOf($5.name)+1 ), 3, false );
+      addAsm( str_PHA );
+    }
+  else if( isWordIMM( $5.name ) )
+    {
+      int tmp_v = atoi(stripFirst($5.name).c_str());
+      int tmp_L = get_word_L(tmp_v);
+      int tmp_H = get_word_H(tmp_v);
+      
+      addAsm( str_LDA + "#$" + toHex( tmp_L ), 2, false );
+      addAsm( str_PHA );
+      addAsm( str_LDA + "#$" + toHex( tmp_H ), 2, false );
+      addAsm( str_PHA );
+    }
+  else if( isUintIMM( $5.name ) )
+    {
+      int tmp_v = atoi(stripFirst($5.name).c_str());
+      
+      addAsm( str_LDA + "#$" + toHex( tmp_v ), 2, false );
+      addAsm( str_PHA );
+    }
+
+
+  
+  addAsm( string( "###") + string($1.name), 3, false);
+  
+  
+};
 | ID '(' expression ')' ';'
 {
   addComment( "Call a function as a statement" );
@@ -2959,7 +3439,7 @@ body: WHILE
   addAsm( string( "###") + string($1.name), 3, false);
   
   
-}
+};
 | tSPRITECOLOUR '(' expression ',' expression ')' ';'
 {
   addParserComment( "statement: tSPRITECOLOUR '(' expression ',' expression ')' ';'" );
@@ -4077,7 +4557,22 @@ body: WHILE
     }
 
 };
-
+| tSETSCR '(' expression ')' ';'
+{
+  addComment( "set screen memory address" );
+  if( isUintIMM( $3.name ) || isIntIMM( $3.name ) )
+    {
+      int v = 16 * atoi( stripFirst( $3.name ).c_str());
+      addAsm( str_LDA + "$D018", 3, false );
+      addAsm( str_AND + "#$0F", 2, false );
+      addAsm( str_ORA + "#$" + toHex(v), 2, false);
+      addAsm( str_STA + "$D018", 3, false );
+    }
+  else
+    {
+      addCompilerMessage( "wrong type for setting screen address", 3);
+    }
+};
 // TODO : these two JSRs should really be just one rule
 // tJSR '(' expression ')' ';'
 | tJSR '(' NUMBER ')' ';'
@@ -4263,7 +4758,7 @@ body: WHILE
     {
       pushScope("memcpy");
       
-
+      addCompilerMessage( "Not Yet Implemented", 3 );
       popScope();
     }
   else
@@ -4273,6 +4768,7 @@ body: WHILE
 }
 | tPOKE '(' expression ',' expression ')' ';'
 {
+  // TODO: add poke( XA, A );
   addComment( "poke( expression, expression );" );
   if( isWordID($3.name) && (isUintID($5.name) || isIntID($5.name)) )
     {
@@ -5193,9 +5689,10 @@ statement: datatype ID init
     }
   else
     {
-      addParserComment("The Mob variable should be added as a word and set equal to" );
-      addParserComment("scr_addr + 0x03F7 + sprite#" );
-      addAsmVariable($2.name, 2);
+      //addParserComment("The Mob variable should be added as a word and set equal to" );
+      //addParserComment("scr_addr + 0x03F7 + sprite#" );
+      addParserComment( "Add the variable that will hold the pointer" );
+      addAsmVariable($2.name, 0);
     }
 
   current_variable_base_address = getAddressOf($2.name);
@@ -5593,6 +6090,9 @@ statement: datatype ID init
       if( mob_vector[0] > 7 || mob_vector[0] < 0 ) addCompilerMessage( "MOB # out of range (must be 0-7)", 3 );
       if( mob_vector[1] > 255 || mob_vector[1] < 0 ) addCompilerMessage( "MOB Pointer out of range", 3 );
       pushScope("MOB");
+      // store the pointer number in the variable with name $2.name
+      addAsm( str_LDA + "#$" + toHex(mob_vector[1]-1), 2, false );
+      addAsm( str_STA + $2.name, 3, false );
 
       // first 2 bytes are: sprite # and sprite location
       int sprite_number = mob_vector[0]; // 0-7
@@ -5646,17 +6146,19 @@ statement: datatype ID init
       // add the location of the bank to the address
       addAsm( str_ADC + getLabel( ((int)label_vector[label_major]), false ) + "+1", 3, false );
       addAsm( str_STA + getLabel( ((int)label_vector[label_major]), false ) + "+1", 3, false );
-      // store the pointer in the variable name $2.name
-      addAsm( str_LDA + getLabel( ((int)label_vector[label_major]), false ) + "+1", 3, false );
-      addAsm( str_STA + $2.name + "+1", 3, false );
-      addAsm( str_LDA + getLabel( ((int)label_vector[label_major]), false ), 3, false );
-      addAsm( str_STA + $2.name, 3, false );
 
+      
+      // store the pointer in the variable name $2.name
+      //addAsm( str_LDA + getLabel( ((int)label_vector[label_major]), false ) + "+1", 3, false );
+      //addAsm( str_STA + $2.name + "+1", 3, false );
+      //addAsm( str_LDA + getLabel( ((int)label_vector[label_major]), false ), 3, false );
+      //addAsm( str_STA + $2.name, 3, false );
 
       addAsm( str_CLC );
       addAsm( str_LDA + "#$01", 2, false );
       addAsm( str_ADC + $2.name, 3, false );
       addAsm( str_STA + $2.name, 3, false );
+      addComment( "not sure if the next 3 lines are needed" );
       addAsm( str_LDA + "#$00", 2, false );
       addAsm( str_ADC + $2.name + "+1", 3, false );
       addAsm( str_STA + $2.name + "+1", 3, false );
