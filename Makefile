@@ -8,7 +8,7 @@ YACC=/usr/local/bin/yacc
 #YACC=/usr/local/bin/bison
 LIBRARIES=-ll -ly
 
-all:	clean lexer parser compiler math motion snake2100 city gravity program
+all:	clean lexer parser compiler
 
 parser: parser.y
 	$(YACC) -d -v parser.y
@@ -193,7 +193,7 @@ knight2:
 
 knight3:
 	cat ./knight3.c common.c > knight3.tmp
-	./compiler --kick --basic --code-segment 4096 --data-segment 820 < ./knight3.tmp > knight3.asm
+	./compiler  --kick --basic --code-segment 4096 --data-segment 820 < ./knight3.tmp > knight3.asm
 	java -jar KickAss.jar knight3.asm
 	rm -f knight3.tmp
 
@@ -318,7 +318,7 @@ return:
 	rm -f return.tmp
 
 conway:
-	./compiler --kick --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./conway.c > conway2100.asm
+	./compiler --kick --basic --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./conway.c > conway2100.asm
 	java -jar KickAss.jar conway2100.asm
 
 

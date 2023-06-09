@@ -1,30 +1,30 @@
 int main()
 {
+  //test2( 1,2,3 );
 
-  myFunc3( 0x1000, 0x20, 0x2A);
-  myFunc2( 0x1000, 0x20 );
-  
+  word y = test1( 5, 0);
+  printf( y );
   return;
 }
 
 
-void myFunc3( word a, uint b, uint c )
-{
-  printf( a );
-  cr();
-  printf( b );
-  cr();
-  printf( c );
-  cr();
-  return;
-}
+//void test2( uint test3a, uint test3b, uint test3c)
+//{
+//  printf( "ARG1: " );
+//  printf( test3a );
+//  cr();
+//  printf( "ARG2: " );
+//  printf( test3b );
+//  cr();
+//  printf( "ARG3: " );
+//  printf( test3c );
+//  cr();
+//  return;
+//}
 
 
-void myFunc2( word d, uint e )
+word test1( uint x, uint throwaway)
 {
-  printf( d );
-  cr();
-  printf( e );
-  cr();
-  return;
+  x = x * 2;
+  return x;
 }

@@ -22,7 +22,6 @@ frmt  [{\t}|{\n}]
 "asmcomment"                { strcpy(yylval.nd_obj.name,(yytext)); return tCOMMENT; }
 "data"                { strcpy(yylval.nd_obj.name,(yytext)); return tDATA; }
 "sidirq"                { strcpy(yylval.nd_obj.name,(yytext)); return tSIDIRQ; }
-"foo"                { strcpy(yylval.nd_obj.name,(yytext)); return tFOO; }
 "tobit"               { strcpy(yylval.nd_obj.name,(yytext)); return tTOBIT; }
 "romout"               { strcpy(yylval.nd_obj.name,(yytext)); return tROMOUT; }
 "romin"               { strcpy(yylval.nd_obj.name,(yytext)); return tROMIN; }
