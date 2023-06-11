@@ -1357,7 +1357,7 @@
       {
 	if( asm_variables[i]->getIdentifier() == id )
 	  {
-	    addCompilerMessage( "you cannot re-declare variables", 3 );
+	    addCompilerMessage( string( "You cannot re-declare variables: ") + id, 3 );
 	  }
       }
     if( t == 0 || t == 1 || t == 2 || t == 4 || t == 8 )
@@ -2316,6 +2316,8 @@ body: WHILE
 };
 | tPUSH '(' expression ')' ';'
 {
+  stack_is_needed = true;
+
   // merely for testing out the software stack
   if( isA($3.name) )
     {
@@ -10087,6 +10089,7 @@ arithmetic expression
   scrmem_is_needed=true;
   bnkmem_is_needed=true;
   stack_is_needed=true;
+  
   // save $02 and $03 on stack (not processor stack)
   addAsm( str_LDA + "$02", 2, false );
   addAsm( str_JSR + "PUSH", 3, false );
@@ -11939,7 +11942,7 @@ return: RETURN ';'
   {
     addAsm( str_RTS );
   }
-| RETURN {addAsm(str_TAY);addAsm(str_TXA);addAsm( str_JSR+"PUSH",3,false);addAsm(str_TYA);addAsm(str_JSR+"PUSH",3,false);} expression  ';'
+| RETURN {stack_is_needed = true;addAsm(str_TAY);addAsm(str_TXA);addAsm( str_JSR+"PUSH",3,false);addAsm(str_TYA);addAsm(str_JSR+"PUSH",3,false);} expression  ';'
 {
   // if $3.name is NOT an XA ... remove the previous 5 lines
   if( !isXA($3.name) )
@@ -12227,29 +12230,6 @@ int main(int argc, char *argv[])
       restoreReturnAddress();
       addAsm( str_RTS );
     }
-  //if( stack_is_needed )
-  if( true )
-    {
-      addComment( "my rendition of a software stack at $CF00" );
-      addAsm( "STACKTMP:", 0, true );
-      addAsm( str_BYTE + string("$00"), 1, false );
-      addAsm( "PUSH:", 0, true );
-      addAsm( str_STX + "STACKTMP", 3, false );
-      addAsm( str_LDX + "$CF00", 3, false );
-      addAsm( str_INX );
-      addAsm( str_STA + "$CF00,X", 3, false );
-      addAsm( str_STX + "$CF00", 3, false );
-      addAsm( str_LDX + "STACKTMP", 3, false );
-      addAsm( str_RTS );
-      addAsm( "POP:", 0, true );
-      addAsm( str_STX + "STACKTMP", 3, false );
-      addAsm( str_LDX + "$CF00", 3, false );
-      addAsm( str_LDA + string(" $CF00,X"), 3, false );
-      addAsm( str_DEX );
-      addAsm( str_STX + "$CF00", 3, false );
-      addAsm( str_LDX + "STACKTMP", 3, false );
-      addAsm( str_RTS );
-    }
   if( word2dec_is_needed )
     {
       addAsm( "HTD_STR:", 0, true );
@@ -12361,6 +12341,7 @@ int main(int argc, char *argv[])
       saveReturnAddress();
       // ==================================================================================
       addAsm( str_LDA + "$05", 2, false );
+      stack_is_needed = true;
       addAsm( str_JSR + "PUSH", 3, false );
       
       // BNE: #$D0   BEQ: #$F0   BCC: #$B0   BCS: #$90
@@ -12769,6 +12750,7 @@ int main(int argc, char *argv[])
 
   if( scrmem_is_needed )
     {
+      stack_is_needed = true;
       addAsm( string("SCRMEM:\t\t") + commentmarker + "Get the screen mem location from the vic II", 0, true );
 
       saveReturnAddress();
@@ -13252,6 +13234,28 @@ int main(int argc, char *argv[])
       /* I chose $CFDF because it's right */
       /* before the input buffer for "scanf" */
       addAsm( str_STA + "$CFDF", 3, false );
+      addAsm( str_RTS );
+    }
+  if( stack_is_needed )
+    {
+      addComment( "my rendition of a software stack at $CF00" );
+      addAsm( "STACKTMP:", 0, true );
+      addAsm( str_BYTE + string("$00"), 1, false );
+      addAsm( "PUSH:", 0, true );
+      addAsm( str_STX + "STACKTMP", 3, false );
+      addAsm( str_LDX + "$CF00", 3, false );
+      addAsm( str_INX );
+      addAsm( str_STA + "$CF00,X", 3, false );
+      addAsm( str_STX + "$CF00", 3, false );
+      addAsm( str_LDX + "STACKTMP", 3, false );
+      addAsm( str_RTS );
+      addAsm( "POP:", 0, true );
+      addAsm( str_STX + "STACKTMP", 3, false );
+      addAsm( str_LDX + "$CF00", 3, false );
+      addAsm( str_LDA + string(" $CF00,X"), 3, false );
+      addAsm( str_DEX );
+      addAsm( str_STX + "$CF00", 3, false );
+      addAsm( str_LDX + "STACKTMP", 3, false );
       addAsm( str_RTS );
     }
 
