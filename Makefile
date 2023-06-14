@@ -136,7 +136,7 @@ terra:
 
 terraland:
 	cat ./terraland.c common.c > terraland.tmp
-	./compiler --kick --code-segment 7624 --data-segment 49152 --memory-locations --symbol-table < ./terraland.tmp > terraland.tmp.asm
+	./compiler --basic --kick --code-segment 7624 --data-segment 49152 --memory-locations --symbol-table < ./terraland.tmp > terraland.tmp.asm
 	cat ./terra3.hex cj-sid.asm terraland.tmp.asm > terraland7624.asm
 	java -jar KickAss.jar terraland7624.asm
 	rm -f ./terraland.tmp
@@ -150,7 +150,7 @@ dice:
 
 gravity:
 	cat ./gravity.c common.c > gravity.tmp
-	./compiler --kick --code-segment 4096 --data-segment 820 --memory-locations --symbol-table < ./gravity.tmp > gravity4096.asm
+	./compiler --basic --kick --code-segment 4096 --data-segment 820 --memory-locations --symbol-table < ./gravity.tmp > gravity4096.asm
 	java -jar KickAss.jar gravity4096.asm
 	rm -f gravity.tmp
 
@@ -159,7 +159,7 @@ keys:
 	java -jar KickAss.jar keys.asm
 
 city:
-	./compiler --kick --code-segment 2100 --data-segment 820 --no-asm-comments < ./city.c > city.asm
+	./compiler --basic --kick --code-segment 2100 --data-segment 820 --no-asm-comments < ./city.c > city.asm
 	java -jar KickAss.jar city.asm
 
 hires:
@@ -263,7 +263,8 @@ sound:
 
 array:
 	cat ./array.c common.c > array.tmp
-	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./array.tmp > array.asm
+	./compiler --kick --basic --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./array.tmp > array.asm
+	java -jar KickAss.jar array.asm
 
 getchar:
 	./compiler --code-segment 2100 --data-segment 820 --no-asm-comments  --memory-locations --symbol-table < ./getchar.c > getchar.asm
@@ -329,7 +330,7 @@ stack:
 
 recursive:
 	cat ./recursive.c common.c > recursive.tmp
-	./compiler --kick --code-segment 2100 --data-segment 820 --no-asm-comments --symbol-table < ./recursive.tmp > recursive.asm
+	./compiler --basic --kick --code-segment 2100 --data-segment 820 --no-asm-comments --symbol-table < ./recursive.tmp > recursive.asm
 	java -jar KickAss.jar recursive.asm
 	rm -f recursive.tmp
 
@@ -342,15 +343,20 @@ clearscreen:
 	./compiler --kick --code-segment 2100 --data-segment 820   < ./clearscreen.c > clearscreen.asm
 
 snake2100:
-	./compiler --code-segment 2100 --data-segment 820 --kick  < ./snake2100.c > snake2100.asm
+	./compiler --basic --code-segment 2100 --data-segment 820 --kick  < ./snake2100.c > snake2100.asm
 	java -jar KickAss.jar snake2100.asm
 
 
 printftest:
 	cat ./printftest.c common.c > printftest.tmp
-	./compiler --kick --code-segment 2100 --data-segment 820 --no-asm-comments --parser-comments --memory-locations --symbol-table < ./printftest.tmp > printftest.asm
+	./compiler --basic --kick --code-segment 2100 --data-segment 820 --no-asm-comments --parser-comments --memory-locations --symbol-table < ./printftest.tmp > printftest.asm
 	java -jar KickAss.jar printftest.asm
 	rm -f ./printftest.tmp
+
+
+printstest:
+	./compiler --basic --kick --code-segment 4096 --data-segment 820 --no-asm-comments < ./printstest.c > printstest.asm
+	java -jar KickAss.jar printstest.asm
 
 float:
 	cat ./floatmath.c common.c > floatmath.tmp
@@ -360,9 +366,10 @@ float:
 
 program:
 	cat ./poketest.c common.c > poketest.tmp
-	./compiler --kick --code-segment 8192 --data-segment 820 --symbol-table < ./poketest.tmp > poketest-tmp.asm
+	./compiler --basic --kick --code-segment 7045 --memory-locations --data-segment 820 --symbol-table < ./poketest.tmp > poketest-tmp.asm
+#	./compiler --code-segment 8192 --data-segment 820 --memory-locations --symbol-table < ./poketest.tmp > poketest-tmp.asm
 	cat poketest-tmp.asm ufo-sid.asm > poketest.asm
-	java -jar KickAss.jar poketest.asm
+	java -jar KickAss.jar -showmem  poketest.asm
 	rm -f poketest.tmp poketest-tmp.asm
 
 arith:

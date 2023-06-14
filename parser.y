@@ -157,52 +157,52 @@
     str_BMI = string( "BMI " );
     str_BNE = string( "BNE " );
     str_BPL = string( "BPL " );
-    str_BRK = string( "BRK " );
+    str_BRK = string( "BRK" );
     str_BVC = string( "BVC " );
     str_BVS = string( "BVS " );
-    str_CLC = string( "CLC " );
+    str_CLC = string( "CLC" );
     str_CLD = string( "CLD " );
-    str_CLI = string( "CLI " );
+    str_CLI = string( "CLI" );
     str_CLV = string( "CLV " );
     str_CMP = string( "CMP " );
     str_CPX = string( "CPX " );
     str_CPY = string( "CPY " );
     str_DCP = string( "DCP " );
     str_DEC = string( "DEC " );
-    str_DEX = string( "DEX " );
-    str_DEY = string( "DEY " );
+    str_DEX = string( "DEX" );
+    str_DEY = string( "DEY" );
     str_EOR = string( "EOR " );
     str_INC = string( "INC " );
-    str_INX = string( "INX " );
-    str_INY = string( "INY " );
+    str_INX = string( "INX" );
+    str_INY = string( "INY" );
     str_JMP = string( "JMP " );
     str_JSR = string( "JSR " );
     str_LDA = string( "LDA " );
     str_LDX = string( "LDX " );
     str_LDY = string( "LDY " );
     str_LSR = string( "LSR " );
-    str_NOP = string( "NOP " );
+    str_NOP = string( "NOP" );
     str_ORA = string( "ORA " );
-    str_PHA = string( "PHA " );
-    str_PHP = string( "PHP " );
-    str_PLA = string( "PLA " );
-    str_PLP = string( "PLP " );
+    str_PHA = string( "PHA" );
+    str_PHP = string( "PHP" );
+    str_PLA = string( "PLA" );
+    str_PLP = string( "PLP" );
     str_ROL = string( "ROL " );
     str_ROR = string( "ROR " );
     str_RTI = string( "RTI " );
-    str_RTS = string( "RTS " );
+    str_RTS = string( "RTS" );
     str_SBC = string( "SBC " );
     str_SEC = string( "SEC " );
     str_SED = string( "SED " );
-    str_SEI = string( "SEI " );
+    str_SEI = string( "SEI" );
     str_STA = string( "STA " );
     str_STX = string( "STX " );
     str_STY = string( "STY " );
-    str_TAX = string( "TAX " );
-    str_TAY = string( "TAY " );
-    str_TSX = string( "TSX " );
-    str_TXA = string( "TXA " );
-    str_TXS = string( "TXS " );
+    str_TAX = string( "TAX" );
+    str_TAY = string( "TAY" );
+    str_TSX = string( "TSX" );
+    str_TXA = string( "TXA" );
+    str_TXS = string( "TXS" );
     str_TYA = string( "TYA " );
     str_BYTE = string( ".BYTE " );
     commentmarker = " ; ";
@@ -731,6 +731,28 @@
     return return_value;
   }
 
+
+  void inlineFloatPush( string s, int addr=105)
+  {
+    //addComment( "FloatIMM -> Stack" );
+    string sign;
+    addDebugComment( string("Base address: ") + toHex(addr)  );
+    string stripped_float= stripFirst( s.c_str() );
+    string fp_in_hex = toBinaryFloat( atof( stripped_float.c_str() ) );
+    if( atof( stripped_float.c_str() ) == 0 ) fp_in_hex=string("0000000000");
+    int size_of_instruction=3;
+    if( addr < 255 ) size_of_instruction-=1;
+    int v=0;
+    for( int i=0; i<5; i++ )
+      {
+	addAsm( str_LDA+"#$" + fp_in_hex[v] + fp_in_hex[v+1], 2, false );
+	addAsm( str_PHA, 1, false );
+	v+=2;
+      }
+
+    return;
+  }
+
   // convert a string to an inline-float
   void inlineFloat( string s, int addr=105)
   {
@@ -1146,7 +1168,13 @@
   {
     bool return_value = false;
     if( s == string("MOB")) return_value = true;
-    //if( return_value )  cerr << "isMOB" << endl;
+    return return_value;
+  }
+
+  bool isRET( string s )
+  {
+    bool return_value = false;
+    if( s == string("RET")) return_value = true;
     return return_value;
   }
 
@@ -1482,7 +1510,7 @@
 	    cerr << "         Label Name > 8 characters: [" << asm_variables[i]->getIdentifier() << "]" << endl << endl 
 		 << "* * *            Unfortunately, this error is quite fatal.                 * * *" << endl
 		 << " * *   Try using the --kick option and assembling with the Kick Assembler   * *"  << endl;
-	    exit(-1);
+	    //exit(-1);
 	  }
       }
     return;
@@ -1576,20 +1604,20 @@
 	current_code_location+=asm_strings[i]->getLength()+1; // the +1 is for the null terminated zero
 
 	// Now find where (in the instruction vector) this string is being referenced
-	int j = asm_strings[i]->getIndex() -1; 
+	//int j = asm_strings[i]->getIndex() -1; 
 
-	int instruction_address = asm_instr[j]->getAddress();
+	//int instruction_address = asm_instr[j]->getAddress();
 	
-	asm_instr[j+1]->setString( str_LDA + string("#$") + string(asm_strings[i]->getH()));
-	asm_instr[j+1]->setSize( 2  );
+	//asm_instr[j+1]->setString( str_LDA + string("#$") + string(asm_strings[i]->getH()));
+	//asm_instr[j+1]->setSize( 2  );
 
-	asm_instr[j+2]->setString( str_STA + string( "$03") );
-	asm_instr[j+2]->setSize( 2  );
+	//asm_instr[j+2]->setString( str_STA + string( "$03") );
+	//asm_instr[j+2]->setSize( 2  );
 	
-	asm_instr[j+3]->setString( str_LDA + string("#$") + string(asm_strings[i]->getL()));
-	asm_instr[j+3]->setSize( 2  );
-	asm_instr[j+4]->setString( str_STA + string("$02"));
-	asm_instr[j+4]->setSize( 2  );
+	//asm_instr[j+3]->setString( str_LDA + string("#$") + string(asm_strings[i]->getL()));
+	//asm_instr[j+3]->setSize( 2  );
+	//asm_instr[j+4]->setString( str_STA + string("$02"));
+	//asm_instr[j+4]->setSize( 2  );
       }
   }
 
@@ -1844,8 +1872,6 @@ argumentlist: /*empty*/
 |
 | datatype ID
 {
-  // should be done once at the beginning of the list
-  // and store it in XY
   addComment(string("Argument: ") + $2.name);
   int t = getDataTypeValue($1.name); // datatype
   addAsmVariable(string($2.name), t);
@@ -1869,6 +1895,16 @@ argumentlist: /*empty*/
       break;
     case 8:
       // float
+      addAsm(str_PLA);
+      addAsm(str_STA+"$"+toHex(getAddressOf($2.name)+4), 3, false);
+      addAsm(str_PLA);
+      addAsm(str_STA+"$"+toHex(getAddressOf($2.name)+3), 3, false);
+      addAsm(str_PLA);
+      addAsm(str_STA+"$"+toHex(getAddressOf($2.name)+2), 3, false);
+      addAsm(str_PLA);
+      addAsm(str_STA+"$"+toHex(getAddressOf($2.name)+1), 3, false);
+      addAsm(str_PLA);
+      addAsm(str_STA+"$"+toHex(getAddressOf($2.name)), 3, false);     
       break;
     case 16:
       // MOV
@@ -1905,9 +1941,20 @@ argumentlist: /*empty*/
       break;
     case 8:
       // float
+      addAsm(str_PLA);
+      addAsm(str_STA+"$"+toHex(getAddressOf($2.name)+4), 3, false);
+      addAsm(str_PLA);
+      addAsm(str_STA+"$"+toHex(getAddressOf($2.name)+3), 3, false);
+      addAsm(str_PLA);
+      addAsm(str_STA+"$"+toHex(getAddressOf($2.name)+2), 3, false);
+      addAsm(str_PLA);
+      addAsm(str_STA+"$"+toHex(getAddressOf($2.name)+1), 3, false);
+      addAsm(str_PLA);
+      addAsm(str_STA+"$"+toHex(getAddressOf($2.name)), 3, false);     
+
       break;
     case 16:
-      // MOV
+      // MOB
       break;
       
     default:
@@ -1921,13 +1968,13 @@ argumentlist: /*empty*/
 
 parameterlist: /* empty */
 |
-|expression
+| expression
 {
   /* test */
   addComment(string("Parameter: ") + $1.name);
 
   
-   if( isUintID( $1.name ) )
+  if( isUintID($1.name) || isIntID($1.name))
     {
       addAsm( str_LDA + "$" + toHex( getAddressOf( $1.name ) ), 3, false );
       addAsm( str_PHA );
@@ -1960,12 +2007,32 @@ parameterlist: /* empty */
       addAsm( str_LDA + "#$" + toHex( tmp_H ), 2, false );
       addAsm( str_PHA );
     }
-  else if( isUintIMM( $1.name ) )
+  else if( isUintIMM($1.name) || isIntIMM($1.name) )
     {
       int tmp_v = atoi(stripFirst($1.name).c_str());
       
       addAsm( str_LDA + "#$" + toHex( tmp_v ), 2, false );
       addAsm( str_PHA );
+    }
+  else if( isFloatID($1.name) )
+    {
+
+      addAsm( str_LDA + "$" + toHex( getAddressOf($1.name) ), 3, false );
+      addAsm( str_PHA );
+      addAsm( str_LDA + "$" + toHex( getAddressOf($1.name)+1 ), 3, false );
+      addAsm( str_PHA );
+      addAsm( str_LDA + "$" + toHex( getAddressOf($1.name)+2 ), 3, false );
+      addAsm( str_PHA );
+      addAsm( str_LDA + "$" + toHex( getAddressOf($1.name)+3 ), 3, false );
+      addAsm( str_PHA );
+      addAsm( str_LDA + "$" + toHex( getAddressOf($1.name)+4 ), 3, false );
+      addAsm( str_PHA );
+    }
+  else if( isFloatIMM($1.name) )
+    {
+
+      inlineFloatPush( $1.name, 105 );
+      
     }
   else
     {
@@ -1974,34 +2041,30 @@ parameterlist: /* empty */
 }
 | parameterlist ',' expression
 {
-
-
   addComment(string("Last Parameter: ") + $3.name );
-
-  
-   if( isUintID( $3.name ) )
+  if( isUintID($3.name) || isIntID($3.name) )
     {
       addAsm( str_LDA + "$" + toHex( getAddressOf( $3.name ) ), 3, false );
       addAsm( str_PHA );
     }
-  else if( isA( $3.name ) )
+  else if( isA($3.name) )
     {
       addAsm( str_PHA );
     }
-  else if( isXA( $3.name ) )
+  else if( isXA($3.name) )
     {
       addAsm( str_PHA );
       addAsm( str_TXA );
       addAsm( str_PHA );
     }
-  else if( isWordID( $3.name ) )
+  else if( isWordID($3.name) )
     {
       addAsm( str_LDA + "$" + toHex( getAddressOf($3.name) ), 3, false );
       addAsm( str_PHA );
       addAsm( str_LDA + "$" + toHex( getAddressOf($3.name)+1 ), 3, false );
       addAsm( str_PHA );
     }
-  else if( isWordIMM( $3.name ) )
+  else if( isWordIMM($3.name) )
     {
       int tmp_v = atoi(stripFirst($3.name).c_str());
       int tmp_L = get_word_L(tmp_v);
@@ -2012,12 +2075,32 @@ parameterlist: /* empty */
       addAsm( str_LDA + "#$" + toHex( tmp_H ), 2, false );
       addAsm( str_PHA );
     }
-  else if( isUintIMM( $3.name ) )
+  else if( isUintIMM($3.name) || isIntIMM($3.name) )
     {
       int tmp_v = atoi(stripFirst($3.name).c_str());
       
       addAsm( str_LDA + "#$" + toHex( tmp_v ), 2, false );
       addAsm( str_PHA );
+    }
+    else if( isFloatID($3.name) )
+    {
+
+      addAsm( str_LDA + "$" + toHex( getAddressOf($3.name) ), 3, false );
+      addAsm( str_PHA );
+      addAsm( str_LDA + "$" + toHex( getAddressOf($3.name)+1 ), 3, false );
+      addAsm( str_PHA );
+      addAsm( str_LDA + "$" + toHex( getAddressOf($3.name)+2 ), 3, false );
+      addAsm( str_PHA );
+      addAsm( str_LDA + "$" + toHex( getAddressOf($3.name)+3 ), 3, false );
+      addAsm( str_PHA );
+      addAsm( str_LDA + "$" + toHex( getAddressOf($3.name)+4 ), 3, false );
+      addAsm( str_PHA );
+    }
+  else if( isFloatIMM($3.name) )
+    {
+
+      inlineFloatPush( $3.name, 105 );
+      
     }
   else
     {
@@ -3082,7 +3165,7 @@ body: WHILE
   scanf_is_needed=true;
   addAsm( str_JSR + "SCANF", 3, false );  
 };
-| tPRINTS '(' ID ')' ';'
+| tPRINTS '(' expression ')' ';'
 {
   addCommentSection( string("prints(") + string($3.name) + string( ");") );
   if( isUintID($3.name) )
@@ -3102,9 +3185,47 @@ body: WHILE
 
       popScope();
     }
+  else if( isWordIMM($3.name) )
+    {
+      printf_is_needed = true;
+      int tmp_v = atoi(stripFirst($3.name).c_str());
+      int tmp_L = get_word_L(tmp_v);
+      int tmp_H = get_word_H(tmp_v);
+      addAsm( str_LDA+"#$"+toHex(tmp_L), 2, false );
+      addAsm( str_STA+"$02", 2, false );
+      addAsm( str_LDA+"#$"+toHex(tmp_H), 2, false );
+      addAsm( str_STA+"$03", 2, false );
+      addAsm( str_JSR + "PRN", 3, false );
+    }
+  
+  else if( isWordID($3.name) )
+    {
+      printf_is_needed = true;
+      addAsm( str_LDA+$3.name, 3, false );
+      addAsm( str_STA+"$02", 2, false );
+      addAsm( str_LDA+$3.name+"+1", 3, false );
+      addAsm( str_STA+"$03", 2, false );
+      addAsm( str_JSR + "PRN", 3, false );
+    }
+  else if( isXA($3.name) )
+    {
+      addCompilerMessage( "If you're using a pointer here, you could pass the WordID instead to reduce the size of the code.", 0 );
+      printf_is_needed = true;
+      addAsm( str_STA + "$02", 2, false );
+      addAsm( str_STX + "$03", 2, false );
+      addAsm( str_LDY + "#$00", 2, false );
+      addAsm( str_LDA + "($02),Y", 2, false );
+      addAsm( str_PHA );
+      addAsm( str_INY );
+      addAsm( str_LDA + "($02),Y", 2, false );
+      addAsm( str_STA + "$03", 2, false );
+      addAsm( str_PLA );
+      addAsm( str_STA + "$02", 2, false );
+      addAsm( str_JSR + "PRN", 3, false );
+    }
   else
     {
-      addCompilerMessage( "prints of unknown type", 3 );
+      addCompilerMessage( string("prints of unknown type: ") + $3.name, 3 );
     }
 };
 | PRINTFF '(' expression ')' ';'
@@ -3114,11 +3235,10 @@ body: WHILE
     {
       addComment( "printf(UintID);" );
 
-      byt2str_is_needed = true;
       pushScope( "PRINTF(UintID)" );
       addAsm( str_LDA + $3.name, 3, false );
       addAsm( str_PHA );
-      addAsm( str_JSR + "BYT2STR", 3, false );
+      addAsm( str_JSR + "BYT2STR", 3, false ); byt2str_is_needed = true;
       addAsm( str_PLA );
       addAsm( str_TAX );
       addAsm( str_PLA );
@@ -3145,13 +3265,12 @@ body: WHILE
     }
   else if( isA($3.name) )
     {
-      byt2str_is_needed = true;
       pushScope( "PRINTF(A)" );
       addComment( "printf(A);" );
 
       //addAsm( str_LDA + string($3.name), 3, false );
       addAsm( str_PHA );
-      addAsm( str_JSR + "BYT2STR", 3, false );
+      addAsm( str_JSR + "BYT2STR", 3, false ); byt2str_is_needed = true;
       addAsm( str_PLA );
       addAsm( str_TAX );
       addAsm( str_PLA );
@@ -3182,7 +3301,6 @@ body: WHILE
     {
       addComment( "printf(IntID);" );
 
-      byt2str_is_needed = true;
       pushScope( "PRINTF" );
       addAsm( str_LDA + $3.name, 3, false );
       addAsm( str_PHA );
@@ -3200,7 +3318,7 @@ body: WHILE
       addAsm( str_EOR + "#$FF", 2, false );
       addAsm( str_PHA );
       addAsm( generateNewLabel() , 0, true ); // LABEL BB      
-      addAsm( str_JSR + "BYT2STR", 3, false );
+      addAsm( str_JSR + "BYT2STR", 3, false ); byt2str_is_needed = true;
 
       addAsm( str_PLA );
       addAsm( str_TAX );
@@ -3447,14 +3565,28 @@ body: WHILE
 {
   addCommentSection( string("printf(") + string($3.name) + string( ");") );
   // add the string stripped of its' quotes
-		
-  addString( string("STRLBL") + itos(string_number++), string($3.name).substr(1,string($3.name).length()-2), asm_instr.size() );
+  //addAsm( str_LDA + "$02", 2, false );
+  //addAsm( str_PHA );
+  //addAsm( str_LDA + "$03", 2, false );
+  //addAsm( str_PHA );
+  
+  addString( string("STRLBL") + itos(string_number), string($3.name).substr(1,string($3.name).length()-2), asm_instr.size() );
+  addAsm( str_LDA + "#<STRLBL" + itos(string_number), 2, false );
+  addAsm( str_STA + "$02", 2, false );
+  addAsm( str_LDA + "#>STRLBL" + itos(string_number++), 2, false );
+  addAsm( str_STA + "$03", 2, false );
+  
   // these will later be replaced during Process Strings
-  addAsm( str_NOP + commentmarker + "to be replaced", 1, false);
-  addAsm( str_NOP + commentmarker + "to be replaced", 1, false);
-  addAsm( str_NOP + commentmarker + "to be replaced", 1, false);
-  addAsm( str_NOP + commentmarker + "to be replaced", 1, false);
-  addAsm( str_JSR + "PRN", 3, false ); printf_is_needed = true;
+  //addAsm( str_NOP + commentmarker + "to be replaced", 1, false);
+  //addAsm( str_NOP + commentmarker + "to be replaced", 1, false);
+  //addAsm( str_NOP + commentmarker + "to be replaced", 1, false);
+  //addAsm( str_NOP + commentmarker + "to be replaced", 1, false);
+  addAsm( str_JSR + "PRN", 3, false );
+  //addAsm( str_PLA ); 
+  //addAsm( str_STA + "$03", 2, false );
+  //addAsm( str_PLA ); 
+  //addAsm( str_STA + "$02", 2, false );
+  printf_is_needed = true;
 };
 | tBYTE2HEX '(' expression ')' ';'
 {
@@ -3726,13 +3858,38 @@ body: WHILE
   addComment( "------------------------------------------------" );
 
 }
-| tSIDOFF '(' ')' ';'
+| tSIDOFF '(' expression ')' ';'
 {
-  addAsm( str_LDA + "#$00", 2, false );
-  addAsm( str_LDX + "#$18", 2, false );
-  addAsm( str_STA + "$D400,X", 3, false );
-  addAsm( str_DEX );
-  addAsm( str_BYTE + "$F0, $FA" + commentmarker + "BEQ -5", 2, false );
+  int tmp_addr = atoi(stripFirst($3.name).c_str());
+  if( isWordIMM($3.name) )
+    {
+      addAsm( str_SEI );
+      addAsm( str_LDA+"#$31", 2, false );
+      addAsm( str_LDX+"#$EA", 2, false );
+      addAsm( str_STA+"$0314", 3, false );
+      addAsm( str_STX+"$0315", 3, false );
+      addComment( "Taken from: https://www.lemon64.com/forum/viewtopic.php?t=48499" );
+      addComment( "vvvvvvvvvvvvvvvvvvvv");
+
+      addAsm( str_LDA+"#$81", 2, false );
+      addAsm( str_STA+"$DC0D", 3, false );
+      addAsm( str_LDA+"#$00", 2, false );
+      addAsm( str_STA+"$D01A", 3, false );
+      addAsm( str_INC+"$D019", 3, false );
+      addAsm( str_LDA+"$DC0D", 3, false );
+      addAsm( str_JSR+"$"+toHex(tmp_addr), 3, false );
+      addComment( "^^^^^^^^^^^^^^^^^^^");
+      addAsm( str_CLI );
+    }
+  else
+    {
+      addCompilerMessage(string("Parameter must be an immediate value") + $3.name,3);
+    }
+  /* addAsm( str_LDA + "#$00", 2, false ); */
+  /* addAsm( str_LDX + "#$18", 2, false ); */
+  /* addAsm( str_STA + "$D400,X", 3, false ); */
+  /* addAsm( str_DEX ); */
+  /* addAsm( str_BYTE + "$F0, $FA" + commentmarker + "BEQ -5", 2, false  ); */
   //addAsm(".byte #$F0, #$FA; BEQ -5", 2, false );
 };
 | tSIDIRQ '(' expression ',' expression ')' ';'
@@ -5289,7 +5446,6 @@ statement: datatype ID init
   else if( isNULL($3.name) )
     {
       addComment( "NULL expression... variable is ghosted" );
-
     }
   else if( string($3.name) == string("Slipstream"))
     {
@@ -5361,6 +5517,8 @@ statement: datatype ID init
 
   else if(isFloatDT($1.name) && isFloatID($2.name) && isXA($3.name))
     {
+      // TODO: This needs to be changed so that if isXA($3.name) then
+      // it uses that as the address of a float
       addComment( "FLOAT FloatID = XA" );
       int src_addr_L = get_word_L(hexToDecimal(stripFirst($3.name)));
       int src_addr_H = get_word_H(hexToDecimal(stripFirst($3.name)));
@@ -5370,8 +5528,12 @@ statement: datatype ID init
       addComment(toHex(getAddressOf($2.name)));
       
       //addCompilerMessage( "FloatID -> FloatID not yet implemented", 1 );
-      addAsm( str_LDA + "#$" + toHex(src_addr_L), 3, false );
-      addAsm( str_LDY + "#$" + toHex(src_addr_H), 3, false );
+      //addAsm( str_LDA + "#$" + toHex(src_addr_L), 3, false );
+      //addAsm( str_LDY + "#$" + toHex(src_addr_H), 3, false );
+      addAsm( str_PHA ); //move X -> Y
+      addAsm( str_TXA ); //
+      addAsm( str_TAY ); //
+      addAsm( str_PLA ); //
       addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
       addAsm( str_LDX + "#$" + toHex(dst_addr_L), 3, false );
       addAsm( str_LDY + "#$" + toHex(dst_addr_H), 3, false );
@@ -5666,7 +5828,7 @@ statement: datatype ID init
       addComment( "MOB Detected" );
 
       // check to make sure the first 2 values are in the proper range
-      if( mob_vector[0] > 7 || mob_vector[0] < 0 ) addCompilerMessage( "MOB # out of range (must be 0-7)", 3 );
+      //if( mob_vector[0] > 8 || mob_vector[0] < 1 ) addCompilerMessage( "MOB # out of range (must be 1-8)", 3 );
       if( mob_vector[1] > 255 || mob_vector[1] < 0 ) addCompilerMessage( "MOB Pointer out of range", 3 );
       pushScope("MOB");
       // store the pointer number in the variable with name $2.name
@@ -5685,9 +5847,12 @@ statement: datatype ID init
       // when using the default VIC bank it's the last 8 bytes of screen memory -- 2040 through 2047
 
       // sprite pointer = bank_mem + screen_mem + 0x03F7 + sprite_number
+      // mkpellegrino - 2023 06 14
+      // 0x03F7 -> into Address  
+      //addAsm( str_LDA + "#$F7", 2, false ); -- should be 0xF8
+      addAsm( str_LDA + "#$F8", 2, false );
+
       
-      // 0x03F7 -> into Address
-      addAsm( str_LDA + "#$F7", 2, false );
       addAsm( str_STA + getLabel( ((int)label_vector[label_major]), false ), 3, false );
       addAsm( str_LDA + "#$03", 2, false );
       addAsm( str_STA + getLabel( ((int)label_vector[label_major]), false )+ "+1", 3, false );
@@ -6348,39 +6513,51 @@ statement: datatype ID init
   else
     addCompilerMessage( "ASL of type not permitted... yet", 3 );
 };
+
 // THIS IS BROKEN - mkpellegrino 2023 02 15
-| ID '[' expression ']' init
+// 2023 06 13 - working on it
+
+| ID '[' expression {if(isA($3.name)){addAsm(str_PHA);}} ']' init
 {
+  string arg0 = string($1.name);
+  string arg1 = string($3.name);
+  string arg2 = string($6.name);
+
+  if( isA(arg1.c_str() ) && !isXA(arg2.c_str() ) )
+    {
+      // remove last instruction
+      // it should be a "pha"
+      deletePreviousAsm();
+    }
+  
   addComment( "Array Initialisation" );
   addParserComment( "RULE: statement: ID '[' expression ']' init" );
-  current_variable_type=getTypeOf($1.name);
-  current_variable_base_address = getAddressOf($1.name);
+  current_variable_type=getTypeOf(arg0.c_str());
+  current_variable_base_address = getAddressOf(arg0.c_str());
 
-  //string s = toHex( getAddressOf($1.name) ) + string( "[" ) + string( $3.name) + string("]") + string( $5.name );
+  //string s = toHex( getAddressOf(arg0.c_str()) ) + string( "[" ) + string( arg1.c_str()) + string("]") + string( arg2.c_str() );
   //addCompilerMessage( s, 0 );
   //cerr << current_variable_type << endl;
 
   
-  if( isUintID( $1.name ) && (isUintID($3.name) || isIntID($3.name)) && isA($5.name) )
+  if( isUintID( arg0.c_str() ) && (isUintID(arg1.c_str()) || isIntID(arg1.c_str())) && isA(arg2.c_str()) )
     {
       addComment( "UintID_array[(U)IntID] = A" );
 		 
-      int addr_of_index = getAddressOf($3.name);
-      addAsm( str_LDX + $3.name, 3, false );
+      int addr_of_index = getAddressOf(arg1.c_str());
+      addAsm( str_LDX + arg1.c_str(), 3, false );
       addAsm( str_STA + "$" + toHex( current_variable_base_address ) + ",X", 3, false );
     }
-  else if( isUintID($1.name)  && (isUintID($3.name) || isIntID($3.name)) && isXA($5.name) )
+  else if( isUintID(arg0.c_str())  && (isUintID(arg1.c_str()) || isIntID(arg1.c_str())) && isXA(arg2.c_str()) )
     {
-
-
-      addComment( "uintarray[(U)IntID] = XA;" );
+      addComment( "UINT array[(U)IntID] = XA;" );
       addCompilerMessage( "Setting UINT = WORD, losing high byte", 0 );
       addAsm( str_TAY );
       //addAsm( str_TXA );
       //addAsm( str_PHA );
 
-      int tmp_i = getAddressOf( $3.name );
-      int tmp_v = getAddressOf( $1.name );
+      int tmp_i = getAddressOf( arg1.c_str() );
+      int tmp_v = getAddressOf( arg0.c_str() );
 
       addAsm( str_LDA + "$" + toHex(tmp_i), 3, false ); 
       //addAsm( "ASL" );// 2* because it's a word array... not a byte array
@@ -6390,47 +6567,44 @@ statement: datatype ID init
       //addAsm( str_PLA );
       //addAsm( str_INX );
       //addAsm( str_STA + "$" + toHex( tmp_v ) + string( ",X" ), 3, false );
-
-
-
       
     }
-  else if( isUintID( $1.name ) && (isUintIMM($3.name) || isIntIMM($3.name)) && isA($5.name) )
+  else if( isUintID( arg0.c_str() ) && (isUintIMM(arg1.c_str()) || isIntIMM(arg1.c_str())) && isA(arg2.c_str()) )
     {
       addComment( "UintID_array[(U)IntIMM] = A" );
 
-      int tmp_index = atoi(stripFirst($3.name).c_str());
+      int tmp_index = atoi(stripFirst(arg1.c_str()).c_str());
       addAsm( str_LDX + "#$" + toHex(tmp_index), 2, false );
       addAsm( str_STA + "$" + toHex( current_variable_base_address ) +",X" , 3, false );
     }
-  else if( isUintID( $1.name ) && (isUintIMM($3.name) || isIntIMM($3.name)) && isUintID($5.name) )
+  else if( isUintID( arg0.c_str() ) && (isUintIMM(arg1.c_str()) || isIntIMM(arg1.c_str())) && isUintID(arg2.c_str()) )
     {
       addComment( "UintID_array[(U)IntIMM] = UintID" );
-      int tmp_v = getAddressOf($5.name);
-      int tmp_index = atoi(stripFirst($3.name).c_str());
+      int tmp_v = getAddressOf(arg2.c_str());
+      int tmp_index = atoi(stripFirst(arg1.c_str()).c_str());
       addAsm( str_LDA + "$" + toHex(tmp_v), 3, false );
       addAsm( str_LDX + "#$"  + toHex(tmp_index), 2, false );
       addAsm( str_STA + "$" + toHex( current_variable_base_address ) + ",X" , 3, false );
     }
-  else if( isUintID( $1.name ) && (isUintID($3.name) || isIntID($3.name)) && isUintID($5.name) )
+  else if( isUintID( arg0.c_str() ) && (isUintID(arg1.c_str()) || isIntID(arg1.c_str())) && isUintID(arg2.c_str()) )
     {
       addComment( "UintID_array[(U)IntID] = UintID" );
 	    
-      int tmp_v = getAddressOf($5.name);
-      int tmp_index = getAddressOf($3.name);
+      int tmp_v = getAddressOf(arg2.c_str());
+      int tmp_index = getAddressOf(arg1.c_str());
       addAsm( str_LDA + "$" + toHex(tmp_v), 3, false );
       addAsm( str_LDX + "$" + toHex(tmp_index), 3, false );
       addAsm( str_STA + "$" + toHex( current_variable_base_address ) + ",X", 3, false );
     }
-  else if( isWordID( $1.name ) && (isUintID($3.name) || isIntID($3.name)) && isXA($5.name) )
+  else if( isWordID( arg0.c_str() ) && (isUintID(arg1.c_str()) || isIntID(arg1.c_str())) && isXA(arg2.c_str()) )
     {
       addComment( "wordarray[(U)IntID] = XA;" );
 
       addAsm( str_TAY );
       addAsm( str_TXA );
       addAsm( str_PHA );
-      int tmp_i = getAddressOf( $3.name );
-      int tmp_v = getAddressOf( $1.name );
+      int tmp_i = getAddressOf( arg1.c_str() );
+      int tmp_v = getAddressOf( arg0.c_str() );
       addAsm( str_LDA + "$" + toHex(tmp_i), 3, false ); 
      addAsm( str_ASL );// 2* because it's a word array... not a byte array
       addAsm( str_TAX );
@@ -6440,13 +6614,13 @@ statement: datatype ID init
       addAsm( str_INX );
       addAsm( str_STA + "$" + toHex( tmp_v ) + ",X", 3, false );
     }
-  else if( isWordID( $1.name ) && (isUintID($3.name) || isIntID($3.name)) && isWordIMM($5.name) )
+  else if( isWordID( arg0.c_str() ) && (isUintID(arg1.c_str()) || isIntID(arg1.c_str())) && isWordIMM(arg2.c_str()) )
     {
       addComment( "WordID[UintID] = WordIMM;" );
 
-      int tmp_base = getAddressOf( $1.name );
-      int tmp_i = getAddressOf($3.name);
-      int tmp_w = atoi( stripFirst($5.name).c_str() );
+      int tmp_base = getAddressOf( arg0.c_str() );
+      int tmp_i = getAddressOf(arg1.c_str());
+      int tmp_w = atoi( stripFirst(arg2.c_str()).c_str() );
       addAsm( str_LDA + "$" + toHex( tmp_i ), 3, false );
      addAsm( str_ASL );  // 2* because it's a word array... not a byte array
       addAsm( str_TAX );
@@ -6456,13 +6630,13 @@ statement: datatype ID init
       addAsm( str_LDA + "#$" + toHex(get_word_H(tmp_w) ), 2, false );
       addAsm( str_STA + "$" + toHex( current_variable_base_address ) + string( ",X" ), 3, false );
     }
-  else if( isWordID($1.name) && (isUintID($3.name) || isIntID($3.name)) && isWordID($5.name) )
+  else if( isWordID(arg0.c_str()) && (isUintID(arg1.c_str()) || isIntID(arg1.c_str())) && isWordID(arg2.c_str()) )
    {
      addComment( "WordID[UintID] = WordID;" );
 
-      int tmp_base = getAddressOf( $1.name );
-      int tmp_i = getAddressOf($3.name);
-      int tmp_w = getAddressOf($5.name);
+      int tmp_base = getAddressOf( arg0.c_str() );
+      int tmp_i = getAddressOf(arg1.c_str());
+      int tmp_w = getAddressOf(arg2.c_str());
       addAsm( str_LDA + "$" + toHex( tmp_i ), 3, false ); 
      addAsm( str_ASL ); // 2* because it's a word array... not a byte array
       addAsm( str_TAX );
@@ -6474,13 +6648,13 @@ statement: datatype ID init
      
 
    }
-  else if( isWordID($1.name) && (isUintIMM($3.name) || isIntIMM($3.name)) && isWordID($5.name) )
+  else if( isWordID(arg0.c_str()) && (isUintIMM(arg1.c_str()) || isIntIMM(arg1.c_str())) && isWordID(arg2.c_str()) )
    {
      addComment( "WordID[UintIMM] = WordID;" );
 
-      int tmp_base = getAddressOf( $1.name );
-      int tmp_i = 2*atoi( stripFirst($3.name).c_str() );  // 2* because it's a word array... not a byte array
-      int tmp_w = getAddressOf($5.name);
+      int tmp_base = getAddressOf( arg0.c_str() );
+      int tmp_i = 2*atoi( stripFirst(arg1.c_str()).c_str() );  // 2* because it's a word array... not a byte array
+      int tmp_w = getAddressOf(arg2.c_str());
       addAsm( str_LDX + "#$" + toHex( tmp_i ), 2, false ); 
       addAsm( str_LDA + "#$" + toHex(get_word_L(tmp_w) ), 2, false );
       addAsm( str_STA + "$" + toHex( tmp_base ) + string( ",X" ), 3, false );
@@ -6490,13 +6664,13 @@ statement: datatype ID init
      
 
    }
-    else if( isWordID( $1.name ) && (isUintIMM($3.name) || isIntIMM($3.name)) && isWordIMM($5.name) )
+  else if( isWordID( arg0.c_str() ) && (isUintIMM(arg1.c_str()) || isIntIMM(arg1.c_str())) && isWordIMM(arg2.c_str()) )
     {
       addComment( "WordID[UintIMM] = WordIMM" );
-      int tmp_base = getAddressOf( $1.name );
-      int tmp_i = 2*atoi( stripFirst($3.name).c_str() );  // 2* because it's a word array... not a byte array
+      int tmp_base = getAddressOf( arg0.c_str() );
+      int tmp_i = 2*atoi( stripFirst(arg1.c_str()).c_str() );  // 2* because it's a word array... not a byte array
 
-      int tmp_w = atoi( stripFirst($5.name).c_str() );
+      int tmp_w = atoi( stripFirst(arg2.c_str()).c_str() );
       addAsm( str_LDX + "#$" + toHex( tmp_i ), 2, false ); 
 
       //addAsm( str_LDA + "$" + toHex( tmp_i ), 3, false );
@@ -6506,13 +6680,13 @@ statement: datatype ID init
       addAsm( str_LDA + "#$" + toHex(get_word_H(tmp_w) ), 2, false );
       addAsm( str_STA + "$" + toHex( current_variable_base_address ) + string( ",X" ), 3, false );
     }
-    else if( isWordID( $1.name ) && (isUintIMM($3.name) || isIntIMM($3.name)) && isXA($5.name) )
+  else if( isWordID( arg0.c_str() ) && (isUintIMM(arg1.c_str()) || isIntIMM(arg1.c_str())) && isXA(arg2.c_str()) )
     {
       addComment( "word array[(U)IntIMM] = XA;" );
-      int tmp_base = getAddressOf( $1.name );
-      int tmp_i = 2*atoi( stripFirst($3.name).c_str() );  // 2* because it's a word array... not a byte array
+      int tmp_base = getAddressOf( arg0.c_str() );
+      int tmp_i = 2*atoi( stripFirst(arg1.c_str()).c_str() );  // 2* because it's a word array... not a byte array
 
-      int tmp_w = atoi( stripFirst($5.name).c_str() );
+      int tmp_w = atoi( stripFirst(arg2.c_str()).c_str() );
 
       addAsm( str_TAY );
       addAsm( str_TXA );
@@ -6526,10 +6700,58 @@ statement: datatype ID init
       //addAsm( string("LDA #$" ) + toHex(get_word_H(tmp_w) ), 2, false );
       addAsm( str_STA + "$" + toHex( tmp_base ) + string( ",X" ), 3, false );
     }
-  else
+  else if(isWordID(arg0.c_str()) && isA(arg1.c_str()) && isXA(arg2.c_str()))
     {
-      addCompilerMessage( "Unable to initialise WORD ARRAY", 3 );
+      // TODO: Redo this with self modifying code
+      // so it compiles to something like:
+      // PLA
+      // STA $????
+      // PLA
+      // STA $????+1
+      addComment( "WORD array[A] = XA; (with an MRA)" );
+      int tmp_base_address = getAddressOf( arg0.c_str() );
+      
+      // arg1 (the array index) is on the processor stack      
+      addAsm( str_JSR + "PUSH", 3, false ); // push A from XA onto our stack
+      addAsm( str_TXA );
+      addAsm( str_JSR + "PUSH", 3, false ); // push X from XA onto our stack
+
+      addAsm( str_PLA );
+      addAsm( str_ASL+commentmarker+"*2 b/c its a WORD array", 1, false);
+      addAsm( str_TAY );
+      addAsm( str_INY+commentmarker+"b/c we will store X first",1,false);
+      addAsm( str_LDA + "$02" );
+      addAsm( str_PHA ); // push $02 onto processor stack
+      addAsm( str_LDA + "$03" );
+      addAsm( str_PHA ); // push $03 onto processor stack
+
+      addAsm( str_LDA + "#$" +  toHex(get_word_L(tmp_base_address)), 2, false );
+      addAsm( str_STA + "$02", 2, false );
+      addAsm( str_LDA + "#$" +  toHex(get_word_H(tmp_base_address)), 2, false );
+      addAsm( str_STA + "$03", 2, false );
+
+      addAsm( str_JSR + "POP", 3, false ); // pop X from XA off of our stack
+      addAsm( str_STA + "($02),Y", 3, false );
+      addAsm( str_DEY );
+      addAsm( str_JSR + "POP", 3, false ); // pop A from XA off of our stack
+      addAsm( str_STA + "($02),Y", 3, false );
+
+      // restore $02 and $03
+      addAsm( str_PLA );
+      addAsm( str_STA + "$03" );
+
+      addAsm( str_PLA );
+      addAsm( str_STA + "$02" );
+
     }
+    else
+      {
+	addCompilerMessage( "Unable to initialise WORD ARRAY", 3 );
+      }
+    
+  // $1.name     $3.name    $5.name
+
+
 };
 | ID init 
 {
@@ -10349,6 +10571,22 @@ arithmetic expression
       addAsm( str_LDA + "$" + toHex(getAddressOf($1.name)) + ",X", 3, false );
       strcpy($$.name, "A" );
     }
+
+    else if(isWordID($1.name) && isA($3.name))
+    {
+      addComment( "WordID '[' A ']' -> XA" );
+      addAsm( str_ASL ); //  because a word is twice as long as a byte!
+      addAsm( str_LDA + "$" + toHex(getAddressOf($1.name)) + ",X", 3, false );
+      addAsm( str_PHA );
+      addAsm( str_INX );
+      addAsm( str_LDA + "$" + toHex(getAddressOf($1.name)) + ",X", 3, false );
+      addAsm( str_TAX );
+      addAsm( str_PLA );
+
+      strcpy($$.name, "XA" );
+
+    }
+
   else if( isWordID( $1.name ) && (isUintIMM($3.name)||isIntIMM($3.name))  )
     {
        addComment( "WordID '[' (U)IntIMM ']' -> XA" );
@@ -11069,7 +11307,6 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
     {
       addCompilerMessage( "invalid MOB number: should be 0-7", 3 );
     }
-
   int sprite_area = atoi($4.name);
   if( sprite_area > 255 || sprite_area < 0 )
     {
@@ -11586,44 +11823,78 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
 };
 | ID '(' parameterlist ')' 
 {
-  addComment( "Call a function as an expression - Line 11571" );
+  addComment( "Call a function as an expression - Line 11618" );
   proposed_ids_vector.push_back( new id_and_line( $1.name, countn+1 ));
 
   
   addComment( "function call" );
   addAsm( str_JSR + $1.name, 3, false );
 
+
+  // move to ID init and datatype ID init
   addComment( "Pop Return Value off of Processor Stack - 2023 04 02" );
   //illegal_operations_are_needed = true;
+
+
+  //cerr << "return type: " << getTypeOfFunction( string($1.name) ) << endl;
+  //cerr << "ID: " << $1.name << endl;
+  //cerr << "OTHER: " << $$.name << endl << endl;
+  
   pushScope( "POPRTN" );
-  //addAsm( str_LDX + "#$00", 2, false );
+
+
+  // at this point the compiler will need to know what type the function returns
+  // it _could_ search through the rest of the source code until it finds it.
+  // 
+  
+  // THIS DOES NOT ACCOUNT FOR RETURNING ANYTHING OVER 2 BYTES
+  // Like Doubles, FLoats, or MOBs
   addAsm( str_PLA ); // the number of bytes in the stack
+
+  //  addAsm( str_CMP + "#$05", 2, false );
+  //addAsm( str_BEQ + getLabel( label_vector[label_major]+1,false), 2, false ); // branch to ***
+  
   addAsm( str_TAY );
 
   addAsm( str_LDA + "#$00", 2, false );
-  addAsm( str_LDX + "#$00", 2, false );
+   addAsm( str_LDX + "#$00", 2, false );
   
   addAsm( str_CPY + "#$00", 2, false );
-  addAsm( str_BEQ + getLabel( label_vector[label_major]+1,false), 2, false );
+  addAsm( str_BEQ + getLabel( label_vector[label_major]+1,false), 2, false ); // branch to ***
   addAsm( str_CPY + "#$01", 2, false );
-  addAsm( str_BEQ + getLabel( label_vector[label_major],false), 2, false );
+  addAsm( str_BEQ + getLabel( label_vector[label_major],false), 2, false ); // branch to %%%
   // get 1 value and put it in X
   addAsm( str_PLA );
   addAsm( str_TAX );
-  addAsm( generateNewLabel(), 0, true );  // if  0
+  addAsm( generateNewLabel(), 0, true );  // if 1                            %%%
   // get 1 value and put it in A
   addAsm( str_PLA );
-  addAsm( generateNewLabel(), 0, true );  // if  0
+  //addAsm( generateNewLabel(), 0, true );  // if  0                           ***
+
+  //addAsm( str_JMP + getLabel( label_vector[label_major]+1,false), 3, false ); 
+
+
+  addAsm( generateNewLabel(), 0, true );  // if  0                           ***
+  //addAsm( str_TSX );
+
+  //addAsm( str_PLA );
+  //addAsm( str_PLA );
+  //addAsm( str_PLA );
+  //addAsm( str_PLA );
+  //addAsm( str_PLA );
+  
+  //addAsm( str_TXA );
+  //addAsm( str_LDX + "#$01", 2, false ); // where the stack is
+  //addAsm( generateNewLabel(), 0, true );  // if  0                           ***
+
   popScope();
+
   addCommentBreak(2);
-  // restore the original argument
-  if( isUintID($3.name) || isIntID($3.name) || isA($3.name) || isUintIMM($3.name) || isIntIMM($3.name))
-    {
-      
 
-
-    }
+  // floats will store the address of the 5 bytes in XA
   strcpy($$.name, "XA" ); 
+
+
 };
 | tPEEK '(' expression ')'
 {
@@ -12018,6 +12289,16 @@ return: RETURN ';'
       addAsm( str_LDA+"#$02", 2, false );
       addAsm( str_PHA );
     }
+  else if( isFloatID($3.name) )
+    {
+      v = atoi(stripFirst($3.name).c_str());
+      addAsm( str_LDA+"$"+toHex(v+1), 3, false );
+      addAsm( str_PHA );
+      addAsm( str_LDA+"$"+toHex(v), 3, false );
+      addAsm( str_PHA );
+      addAsm( str_LDA+"#$05", 2, false );
+      addAsm( str_PHA );
+    }
   else
     {
       addCompilerMessage( "invalid return type", 3 );
@@ -12082,7 +12363,11 @@ int main(int argc, char *argv[])
       if( a == "--no-labels" ) arg_show_labels = false;
       if( a == "--short-branches" ) long_branches = false;
       if( a == "--debug" ) debug_flag_is_on = true;
-      if( a == "--basic" || a == "basicupstart" ) basic_upstart = true;
+      if( a == "--basic" || a == "--basicupstart" ) basic_upstart = true;
+      /* if( a == "--???" ) */
+      /* 	{ */
+
+      /* 	} */
       if( a == "--kick" )
 	{
 	  kick = true;
@@ -12162,9 +12447,9 @@ int main(int argc, char *argv[])
 
       addComment( "This is the SID Player Interrupt Routine" );
       addAsm( "SIDIRQ:", 0, true );
+      addAsm( str_ASL + "$D019", 3, false );
       addAsm( str_JSR + "$" + toHex( music_play_addr ) + commentmarker + "play_music routine", 3, false );
       //addAsm( str_JSR + "$1003", 3, false );
-      addAsm( str_ASL + "$D019", 3, false );
       addAsm( str_JMP + "$EA31" + commentmarker + "return to normal operation", 3, false );
     }
   if( bin2bit_is_needed )
@@ -13252,7 +13537,7 @@ int main(int argc, char *argv[])
       addAsm( "POP:", 0, true );
       addAsm( str_STX + "STACKTMP", 3, false );
       addAsm( str_LDX + "$CF00", 3, false );
-      addAsm( str_LDA + string(" $CF00,X"), 3, false );
+      addAsm( str_LDA + string("$CF00,X"), 3, false );
       addAsm( str_DEX );
       addAsm( str_STX + "$CF00", 3, false );
       addAsm( str_LDX + "STACKTMP", 3, false );
@@ -13272,7 +13557,7 @@ int main(int argc, char *argv[])
   current_code_location = code_start;  // reset the memory counter
   
   ProcessMemoryLocationsOfCode();
-  ProcessStrings();
+  //ProcessStrings();
   
   /* replace labels with addresses */
   if( !arg_show_labels ) ProcessLabels();

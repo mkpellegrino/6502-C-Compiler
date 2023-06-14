@@ -9,15 +9,15 @@ int main()
 
   uint g1 = rnd(1);
   
-  mob sprite1 = { 0, 192, 0, 24, 0, 0, 24, 0, 0, 36, 0, 0, 36, 0, 0, 66, 0, 0, 66, 0, 0, 153, 0, 0, 153, 0, 0, 153, 0, 17, 24, 136, 18, 0, 72, 20, 0, 40, 24, 0, 24, 16, 0, 8, 32, 0, 4, 64, 0, 2, 64, 102, 2, 63, 153, 252, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+  mob ship = { 1, 192, 0, 24, 0, 0, 24, 0, 0, 36, 0, 0, 36, 0, 0, 66, 0, 0, 66, 0, 0, 153, 0, 0, 153, 0, 0, 153, 0, 17, 24, 136, 18, 0, 72, 20, 0, 40, 24, 0, 24, 16, 0, 8, 32, 0, 4, 64, 0, 2, 64, 102, 2, 63, 153, 252, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
-  mob sprite2 = { 1, 193, 0, 96, 0, 0, 96, 0, 0, 0, 0, 0, 32, 0, 0, 64, 0, 0, 32, 0, 0, 64, 0, 0, 32, 0, 0, 64, 0, 0, 32, 0, 0, 64, 0, 0, 32, 0, 0, 64, 0, 0, 32, 0, 0, 64, 0, 0, 32, 0, 0, 64, 0, 0, 32, 0, 0, 64, 0, 0, 32, 0, 0, 64, 0 };
+  mob missle = { 2, 193, 0, 96, 0, 0, 96, 0, 0, 0, 0, 0, 32, 0, 0, 64, 0, 0, 32, 0, 0, 64, 0, 0, 32, 0, 0, 64, 0, 0, 32, 0, 0, 64, 0, 0, 32, 0, 0, 64, 0, 0, 32, 0, 0, 64, 0, 0, 32, 0, 0, 64, 0, 0, 32, 0, 0, 64, 0, 0, 32, 0, 0, 64, 0 };
 
-  mob sprite3 = { 2, 194, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 96, 6, 0, 96, 1, 129, 128, 1, 129, 128, 7, 255, 224, 7, 255, 224, 30, 126, 120, 30, 126, 120, 127, 255, 254, 127, 255, 254, 102, 0, 102, 102, 0, 102, 102, 0, 102, 102, 0, 102, 1, 231, 128, 1, 231, 128 };
+  mob alien1 = { 3, 194, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 96, 6, 0, 96, 1, 129, 128, 1, 129, 128, 7, 255, 224, 7, 255, 224, 30, 126, 120, 30, 126, 120, 127, 255, 254, 127, 255, 254, 102, 0, 102, 102, 0, 102, 102, 0, 102, 102, 0, 102, 1, 231, 128, 1, 231, 128 };
   
-  mob sprite4 = { 3, 195, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 96, 6, 0, 96, 1, 129, 128, 1, 129, 128, 7, 255, 224, 7, 255, 224, 30, 126, 120, 30, 126, 120, 127, 255, 254, 127, 255, 254, 102, 0, 102, 102, 0, 102, 102, 0, 102, 102, 0, 102, 1, 231, 128, 1, 231, 128 };
+  mob alien2 = { 4, 195, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 96, 6, 0, 96, 1, 129, 128, 1, 129, 128, 7, 255, 224, 7, 255, 224, 30, 126, 120, 30, 126, 120, 127, 255, 254, 127, 255, 254, 102, 0, 102, 102, 0, 102, 102, 0, 102, 102, 0, 102, 1, 231, 128, 1, 231, 128 };
 
-  mob sprite5 = { 4, 196, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 96, 6, 0, 96, 1, 129, 128, 1, 129, 128, 7, 255, 224, 7, 255, 224, 30, 126, 120, 30, 126, 120, 127, 255, 254, 127, 255, 254, 102, 0, 102, 102, 0, 102, 102, 0, 102, 102, 0, 102, 1, 231, 128, 1, 231, 128 };
+  mob alien3 = { 5, 196, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 96, 6, 0, 96, 1, 129, 128, 1, 129, 128, 7, 255, 224, 7, 255, 224, 30, 126, 120, 30, 126, 120, 127, 255, 254, 127, 255, 254, 102, 0, 102, 102, 0, 102, 102, 0, 102, 102, 0, 102, 1, 231, 128, 1, 231, 128 };
 
   //mob tf1 = { 2, 194, 64, 0, 2, 160, 0, 5, 160, 0, 5, 160, 0, 5, 160, 0, 5, 160, 62, 5, 160, 65, 5, 160, 156, 133, 160, 162, 133, 159, 85, 121, 128, 73, 1, 159, 85, 121, 160, 162, 133, 160, 156, 133, 160, 65, 5, 160, 62, 5, 160, 34, 5, 160, 0, 5, 160, 0, 5, 160, 0, 5, 64, 0, 2 };
 
@@ -25,15 +25,15 @@ int main()
 
   //mob tf3 = { 4, 196, 64, 0, 2, 160, 0, 5, 160, 0, 5, 160, 0, 5, 160, 0, 5, 160, 62, 5, 160, 65, 5, 160, 156, 133, 160, 162, 133, 159, 85, 121, 128, 73, 1, 159, 85, 121, 160, 162, 133, 160, 156, 133, 160, 65, 5, 160, 62, 5, 160, 34, 5, 160, 0, 5, 160, 0, 5, 160, 0, 5, 64, 0, 2 };
 
-  mob alm1 = { 5, 197, 0, 36, 0, 0, 36, 0, 0, 36, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 36, 0, 0, 36, 0, 0, 36, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 36, 0, 0, 36, 0, 0, 36, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 36, 0, 0, 36, 0, 0, 36, 0 };
+  mob alien1m = { 6, 197, 0, 36, 0, 0, 36, 0, 0, 36, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 36, 0, 0, 36, 0, 0, 36, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 36, 0, 0, 36, 0, 0, 36, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 36, 0, 0, 36, 0, 0, 36, 0 };
 
-  mob alm2 = { 6, 198, 0, 36, 0, 0, 36, 0, 0, 36, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 36, 0, 0, 36, 0, 0, 36, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 36, 0, 0, 36, 0, 0, 36, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 36, 0, 0, 36, 0, 0, 36, 0 };
+  mob alien2m = { 7, 198, 0, 36, 0, 0, 36, 0, 0, 36, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 36, 0, 0, 36, 0, 0, 36, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 36, 0, 0, 36, 0, 0, 36, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 36, 0, 0, 36, 0, 0, 36, 0 };
 
-  mob alm3 = { 7, 199, 0, 36, 0, 0, 36, 0, 0, 36, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 36, 0, 0, 36, 0, 0, 36, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 36, 0, 0, 36, 0, 0, 36, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 36, 0, 0, 36, 0, 0, 36, 0 };
+  mob alien3m = { 8, 199, 0, 36, 0, 0, 36, 0, 0, 36, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 36, 0, 0, 36, 0, 0, 36, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 36, 0, 0, 36, 0, 0, 36, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 36, 0, 0, 36, 0, 0, 36, 0 };
 
 
   lda( 0x00 );
-  uint ship;
+  //uint ship;
   uint a1fire;
   uint a2fire;
   uint a3fire;
@@ -42,28 +42,28 @@ int main()
   uint firey;
   uint timer;
 
-  uint missle = 1;
+  //uint missle = 1;
 
 
   lda( 0x02 );
-  uint alienspeed1;
-  uint alienspeed2;
-  uint alienspeed3;
-  uint alien1;
+  uint aspeed1;
+  uint aspeed2;
+  uint aspeed3;
+  //uint alien1;
   
-  uint alien2 = 3;
+  //uint alien2 = 3;
 
   lda( 0x04 );
-  uint alien3;
-  uint alienmisslespeed;
+  //uint alien3;
+  uint amspeed;
 
   lda( 0x05 );
-  uint playerspeed;
-  uint misslespeed;
-  uint alien1m;
+  uint plyvel;
+  uint missvel;
+  //uint alien1m;
   
-  uint alien2m = 6;
-  uint alien3m = 7;
+  //uint alien2m = 6;
+  //uint alien3m = 7;
 
   
   // player
@@ -86,16 +86,16 @@ int main()
   
 
   lda( 20 );
-  uint aliendirection1;
-  uint aliendistance1;
+  uint adir1;
+  uint adist1;
 
   lda( 30 );
-  uint aliendirection2;
-  uint aliendistance2;
+  uint adir2;
+  uint adist2;
 
   lda( 40 );
-  uint aliendirection3;
-  uint aliendistance3;
+  uint adir3;
+  uint adist3;
 
   uint s = rnd(1);
 
@@ -136,8 +136,8 @@ int main()
 	  checkLeft();
 	  checkRight();
 	  checkFire();
-	  updateMisslePosition();
-	  updateAlienMisslePosition();
+	  uMissPos();
+	  uAMissPos();
 	  alienFire();
 	  updateAlienPosition();
 	  updateStats();
@@ -165,6 +165,7 @@ void checkFire()
       if( firey == 0 )
 	{
 	  spriteon( 2 );
+	  //spritexy( missle, x, 240 );
 	  spritex( missle, x );
 	  spritey( missle, 240 );
 	  firey = 240;
@@ -255,61 +256,61 @@ void checkAlienHit()
 
 void updateAlienPosition()
 {
-  if( aliendistance1 > 0 )
+  if( adist1 > 0 )
     {
-      if( aliendirection1 > 128 )
+      if( adir1 > 128 )
 	{
-	  x2 = x2 + alienspeed1;
+	  x2 = x2 + aspeed1;
 	}
       else
 	{
-	  x2 = x2 - alienspeed1;
+	  x2 = x2 - aspeed1;
 	}
-      dec( aliendistance1 );
+      dec( adist1 );
       spritex( alien1, x2 );
     }
   else
     {
-      aliendistance1 = rnd(1);
-      aliendirection1 = rnd(1);
+      adist1 = rnd(1);
+      adir1 = rnd(1);
     }
 
-  if( aliendistance2 > 0 )
+  if( adist2 > 0 )
     {
-      if( aliendirection2 > 128 )
+      if( adir2 > 128 )
 	{
-	  x3 = x3 + alienspeed2;
+	  x3 = x3 + aspeed2;
 	}
       else
 	{
-	  x3 = x3 - alienspeed2;
+	  x3 = x3 - aspeed2;
 	}
-      dec( aliendistance2 );
+      dec( adist2 );
       spritex( alien2, x3 );
     }
   else
     {
-      aliendistance2 = rnd(1);
-      aliendirection2 = rnd(1);
+      adist2 = rnd(1);
+      adir2 = rnd(1);
     }
 
- if( aliendistance3 > 0 )
+ if( adist3 > 0 )
     {
-      if( aliendirection3 > 128 )
+      if( adir3 > 128 )
 	{
-	  x4 = x4 + alienspeed3;
+	  x4 = x4 + aspeed3;
 	}
       else
 	{
-	  x4 = x4 - alienspeed3;
+	  x4 = x4 - aspeed3;
 	}
-      dec( aliendistance3 );
+      dec( adist3 );
       spritex( alien3, x4 );
     }
   else
     {
-      aliendistance3 = rnd(1);
-      aliendirection3 = rnd(1);
+      adist3 = rnd(1);
+      adir3 = rnd(1);
     }
   return;
 }
@@ -319,9 +320,9 @@ void checkLeft()
   // move left if "u" is pressed and x > 20
   if( c == 30 )
     {
-      if( x > 23 )
+      if( x > 25 )
 	{
-	  x = x - playerspeed;
+	  x = x - plyvel;
 	  spritex( ship, x );
 	}
     }
@@ -335,7 +336,7 @@ void checkRight()
     {
       if( x < 240 )
 	{
-	  x = x + playerspeed;
+	  x = x + plyvel;
 	  spritex( ship, x );
 	}
     }
@@ -364,11 +365,11 @@ void updateStats()
   return;
 }
 
-void updateMisslePosition()
+void uMissPos()
 {
   if( firey > 0 )
     {
-      firey = firey - misslespeed;
+      firey = firey - missvel;
       spritey( missle, firey );
     }
   return;
@@ -409,11 +410,11 @@ void alienFire()
   return;
 }
 
-void updateAlienMisslePosition()
+void uAMissPos()
 {
   if( a1fire < 240 )
     {
-      a1fire = a1fire + alienmisslespeed;
+      a1fire = a1fire + amspeed;
       spritey( alien1m, a1fire );
     }
   
@@ -426,7 +427,7 @@ void updateAlienMisslePosition()
   
   if( a2fire < 240 )
     {
-      a2fire = a2fire + alienmisslespeed;
+      a2fire = a2fire + amspeed;
       spritey( alien2m, a2fire );
     }
     
@@ -439,7 +440,7 @@ void updateAlienMisslePosition()
 
   if( a3fire <240 )
     {
-      a3fire = a3fire + alienmisslespeed;
+      a3fire = a3fire + amspeed;
       spritey( alien3m, a3fire );
     }
   
@@ -464,7 +465,7 @@ void levelup()
 {
   inc( level );
   spriteset(0);
-  cls();
+  shortcls();
   cursorxy( 16, 6 );
   printf( "LEVEL " );
   printf( level );
@@ -472,11 +473,11 @@ void levelup()
   cursorxy( 13, 10 );
   printf( "PRESS ANY KEY" );
   pause();
-  cls();
-  inc( alienmisslespeed );
-  inc( alienspeed1 );
-  inc( alienspeed2 );
-  inc( alienspeed3 );
+  shortcls();
+  inc( amspeed );
+  inc( aspeed1 );
+  inc( aspeed2 );
+  inc( aspeed3 );
 
   y2 = y2 + 5;
   y3 = y3 + 5;
@@ -487,8 +488,9 @@ void levelup()
 
 void intro()
 {
-  cls();
-  poke( 646, 15 );
+  shortcls();
+  //poke( 646, 15 );
+  poke( 646, 1 );
   cursorxy( 13, 6 );
   printf( "THREE-ON-ONE" );
   cursorxy( 8, 8 );
@@ -509,7 +511,7 @@ void intro()
 void longdelay()
 {
   clearkb();
-  for( word ldxA = 0x0000; ldxA < 0xFC04; ldxA = ldxA + 1 )
+  for( word ldxA = 0x0000; ldxA < 0x0C04; ldxA = ldxA + 1 )
   {
     nop();
   }

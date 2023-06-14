@@ -1,16 +1,20 @@
-#include <stdio.h>
-
 int main()
-{  
-  uint y[10];
-  y[1] = 2;
-  y[3] = 8;
-  y[9] = 16;
-  for( uint l = 0; l < 10; l = l + 1 )
+{
+  word scraddr = getscr_addr();
+  word s[8];
+
+  s[0] = scraddr + 0x03F8;
+  for( uint i = 0; i < 7; inc(i) )
     {
-      printf( y[ l ] );
-      printf( " " );
+      s[i+0x01] = s[i]+0x0001;
     }
+
+  for( i = 0; i < 8; inc(i) )
+    {
+      printf( s[i] );
+      cr();      
+    }
+
   
   return;
 }
