@@ -233,6 +233,7 @@
   bool p2=false;
   bool p3=false;
 
+  bool sid_was_imported=false;
   bool basic_upstart=false;
   bool function_labels_are_still_needed=true;
   bool stack_is_needed=false;
@@ -298,8 +299,8 @@
   
   // helper functions
 
-  int music_init_addr = 4096;
-  int music_play_addr = 4102; 
+  int music_init_addr = 0;
+  int music_play_addr = 0; 
   stack <string> scope_stack;
   stack <string> var_scope_stack;
   stack <int> label_stack;
@@ -696,6 +697,10 @@
     return return_value;
   }
 
+  string stripQuotes( string s )
+  {
+    return string(s).substr(1,string(s).length()-2);
+  }
   // converts an integer into a string (in Hexadecimal)
   // (the hard way)
   string toHex( int i )
@@ -1833,7 +1838,7 @@
 
 //%parse-param { FILE* fp }
 %token VOID 
-%token <nd_obj>  tSPRPTR tPUSH tPOP tCOMMENT tDATA tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tSIDIRQ tSIDOFF tSTRTOFLOAT tSTRTOWORD tTOFLOAT tTOUINT tTOBIT tDEC tINC tROL tROR tLSR tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJUMP tSETSCR tJSR tIRQ tROMOUT tROMIN tLDA tASL tSPRITESET  tSPRITEOFF tSPRITETOGGLE tRND tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER tPRINTS PRINTFF SCANFF INT FLOAT WHILE FOR IF ELSE TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE tSQRT UNARY INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL tSCREEN tNULL tMEMCPY tSEED
+%token <nd_obj> tIMPORT tSPRPTR tPUSH tPOP tCOMMENT tDATA tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tSIDIRQ tSIDOFF tSTRTOFLOAT tSTRTOWORD tTOFLOAT tTOUINT tTOBIT tDEC tINC tROL tROR tLSR tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJUMP tSETSCR tJSR tIRQ tROMOUT tROMIN tLDA tASL tSPRITESET  tSPRITEOFF tSPRITETOGGLE tRND tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER tPRINTS PRINTFF SCANFF INT FLOAT WHILE FOR IF ELSE TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE tSQRT UNARY INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL tSCREEN tNULL tMEMCPY tSEED
 %type <nd_obj> headers main body return function datatype statement arithmetic relop program else 
    %type <nd_obj2> init value expression numberlist parameterlist argumentlist
       %type <nd_obj3> condition
@@ -3877,7 +3882,14 @@ body: WHILE
       addAsm( str_STA+"$D01A", 3, false );
       addAsm( str_INC+"$D019", 3, false );
       addAsm( str_LDA+"$DC0D", 3, false );
-      addAsm( str_JSR+"$"+toHex(tmp_addr), 3, false );
+      if( sid_was_imported )
+	{
+	  addAsm( str_JSR+"music.init", 3, false );
+	}
+      else
+	{
+	  addAsm( str_JSR+"$"+toHex(tmp_addr), 3, false );
+	}
       addComment( "^^^^^^^^^^^^^^^^^^^");
       addAsm( str_CLI );
     }
@@ -3896,30 +3908,33 @@ body: WHILE
 {
   if( isWordIMM( $3.name ) && isWordIMM( $5.name ) )
     {
-
-      // 2023 04 07 save old int
-      //addAsm( str_SEI );
-      //addAsm( str_LDA + "$0314", 3, false );
-      //addAsm( str_STA + "$02A7", 3, false );
-      //addAsm( str_LDA + "$0315", 3, false );
-      //addAsm( str_STA + "$02A8", 3, false );
-      //addAsm( str_CLI );
-      
-      
       music_init_addr = atoi( stripFirst( $3.name ).c_str() );
       music_play_addr = atoi( stripFirst( $5.name ).c_str() );
+
       sidirq_is_needed = true;
       //int addr = getAddressOf($3.name);
       
       addAsm( str_LDA + "#$00", 2, false );
       addAsm( str_TAX );
       addAsm( str_TAY );
-      addAsm( str_JSR + "$" + toHex( music_init_addr ) + commentmarker + "initialise the SID music", 3, false );
+      if( sid_was_imported )
+	{
+	  //addAsm( str_LDA + "#music.startSong-1", 2, false );
+	  addAsm( str_JSR + "music.init", 3, false );
+	}
+      else
+	{
+	  //addAsm( str_LDA + "$" + toHex( music_play_addr ) + "-1", 3, false );
+	  addAsm( str_JSR + "$" + toHex( music_init_addr ) + commentmarker + "initialise the SID music", 3, false );
+	}
+
       
       //addAsm( str_JSR + "$1000; initialize the sid music", 3, false );
       //
       addAsm( str_SEI );
-      
+
+
+
       addAsm( str_LDA + "#$7F", 2, false );
       addAsm( str_STA + "$DC0D", 3, false );
       addAsm( str_STA + "$DD0D", 3, false );
@@ -3943,7 +3958,25 @@ body: WHILE
       addAsm( str_STX + "$0315", 3, false );
 
       
+      /* addAsm( str_LDA + "#<SIDIRQ", 2, false ); */
+      /* addAsm( str_LDX + "#>SIDIRQ", 2, false ); */
+      /* addAsm( str_STA + "$0314", 3, false ); */
+      /* addAsm( str_STX + "$0315", 3, false ); */
+      
+      /* addAsm( str_ASL + "$D019", 3, false ); */
+      
+      /* addAsm( str_LDA + "#$7B", 2, false ); */
+      /* addAsm( str_STA + "$DC0D", 3, false ); */
+      
+      /* addAsm( str_LDA + "#$81", 2, false ); */
+      /* addAsm( str_STA + "$D01A", 3, false ); */
 
+      /* addAsm( str_LDA + "#$1B", 2, false );       */
+      /* addAsm( str_STA + "$D011", 3, false ); */
+
+      /* addAsm( str_LDA + "#$80", 2, false ); */
+      
+      /* addAsm( str_STY + "$D012", 3, false ); */
       
       addAsm( str_CLI );
     }
@@ -6927,6 +6960,97 @@ statement: datatype ID init
       addCompilerMessage( "ID initialisation error - invalid initialiser", 3 );
     } 
 
+};
+// import( 
+| tIMPORT '(' STR ',' STR ',' expression ')' 
+{
+  string arg0 = stripQuotes($3.name);
+  cerr << $7.name << endl;
+  string arg1 = string($5.name);
+  if( arg0 == string("BIN") || arg0 == string("bin") )
+    {
+
+      if( isWordIMM($7.name) )
+	{
+	  string s1 = string( ".import binary " ) + $5.name;
+	  asm_instruction * my_asm1 = new asm_instruction( s1 );
+	  my_asm1->setLabel(true);
+	  my_asm1->setSize(0);
+	  my_asm1->setAddress(0);
+	  asm_instr.insert( asm_instr.begin(), my_asm1 );
+	  
+	  
+	  string s0 = string( "* = $" ) + toHex(atoi(stripFirst($7.name).c_str()));
+	  asm_instruction * my_asm0 = new asm_instruction( s0 );
+	  my_asm0->setLabel(true);
+	  my_asm0->setSize(0);
+	  my_asm0->setAddress(0);
+	  asm_instr.insert( asm_instr.begin(), my_asm0 );
+	}
+      else
+	{
+	  addCompilerMessage( "argument MUST be WordIMM", 3 );
+	}
+
+    }
+  else if ( arg0 == string("SID") || arg0 == string("sid") )
+    {
+      if( isWordIMM($7.name) )
+	{
+       	  music_init_addr = 1;
+
+	  string s4 = string( ".fill music.size, music.getData(i)" );
+	  asm_instruction * my_asm4 = new asm_instruction(s4);
+	  my_asm4->setLabel(true);
+	  my_asm4->setSize(0);
+	  my_asm4->setAddress(0);
+	  asm_instr.insert( asm_instr.begin(), my_asm4 );
+
+	  
+	  string s3 = string( "*=music.location" );
+	  asm_instruction * my_asm3 = new asm_instruction(s3);
+	  my_asm3->setLabel(true);
+	  my_asm3->setSize(0);
+	  my_asm3->setAddress(0);
+	  asm_instr.insert( asm_instr.begin(), my_asm3 );
+	  
+
+
+	  
+	  string s2 = string( ".print \"init=$\"+toHexString(music.init)" );
+	  asm_instruction * my_asm2 = new asm_instruction( s2 );
+	  my_asm2->setLabel(true);
+	  my_asm2->setSize(0);
+	  my_asm2->setAddress(0);
+	  asm_instr.insert( asm_instr.begin(), my_asm2 );
+
+
+	  
+	  string s1 = string( ".print \"play=$\"+toHexString(music.play)" );
+	  asm_instruction * my_asm1 = new asm_instruction( s1 );
+	  my_asm1->setLabel(true);
+	  my_asm1->setSize(0);
+	  my_asm1->setAddress(0);
+	  asm_instr.insert( asm_instr.begin(), my_asm1 );
+	  
+	  string s0 = string( ".var music = LoadSid(" ) + $5.name + ")";
+	  asm_instruction * my_asm0 = new asm_instruction( s0 );
+	  my_asm0->setLabel(true);
+	  my_asm0->setSize(0);
+	  my_asm0->setAddress(0);
+	  asm_instr.insert( asm_instr.begin(), my_asm0 );
+	  sid_was_imported = true;
+	}
+      else
+	{
+	  addCompilerMessage( "argument MUST be WordIMM", 3 );
+	}
+    }
+  else
+    {
+      addCompilerMessage( "import must be of type: bin or sid", 3 );
+    }
+  
 };
 
 // here needs work
@@ -12448,7 +12572,15 @@ int main(int argc, char *argv[])
       addComment( "This is the SID Player Interrupt Routine" );
       addAsm( "SIDIRQ:", 0, true );
       addAsm( str_ASL + "$D019", 3, false );
-      addAsm( str_JSR + "$" + toHex( music_play_addr ) + commentmarker + "play_music routine", 3, false );
+
+      if( sid_was_imported )
+	{
+	  addAsm( str_JSR + "music.play" + commentmarker + "play_music routine", 3, false );
+	}
+      else
+	{
+	  addAsm( str_JSR + "$" + toHex( music_play_addr ) + commentmarker + "play_music routine", 3, false );
+	}
       //addAsm( str_JSR + "$1003", 3, false );
       addAsm( str_JMP + "$EA31" + commentmarker + "return to normal operation", 3, false );
     }

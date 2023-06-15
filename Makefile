@@ -125,8 +125,8 @@ terra:
 	cat ./terraform.c common.c > terra.tmp
 #	./compiler --code-segment 7632 --data-segment 40960 --memory-locations --symbol-table < ./terraform.c > terra.tmp.asm
 #	./compiler --code-segment 7624 --data-segment 40960 --memory-locations --symbol-table < ./terraform.c > terra.tmp.asm
-	./compiler  --basic --code-segment 7624 --data-segment 49152  --memory-locations --symbol-table --kick < ./terra.tmp > terra.tmp.asm
-	cat terra.tmp.asm cj-sid.asm > terra7624.asm
+	./compiler  --basic --code-segment 7624 --data-segment 49152 --kick < ./terra.tmp > terra7624.asm
+#	cat terra.tmp.asm cj-sid.asm > terra7624.asm
 #	cat terra.tmp.asm mysid.hex > terra7624.asm
 	java -jar KickAss.jar terra7624.asm
 
@@ -193,7 +193,7 @@ knight2:
 
 knight3:
 	cat ./knight3.c common.c > knight3.tmp
-	./compiler  --kick --basic --code-segment 4096 --data-segment 820 < ./knight3.tmp > knight3.asm
+	./compiler  --kick --basic --code-segment 8192 --data-segment 820 < ./knight3.tmp > knight3.asm
 	java -jar KickAss.jar knight3.asm
 	rm -f knight3.tmp
 
@@ -260,6 +260,12 @@ forloop:
 
 sound:
 	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./sound.c > sound.asm
+
+
+image:
+	cat ./image.c common.c > image.tmp
+	./compiler --kick --basic --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./image.tmp > image.asm
+	java -jar KickAss.jar image.asm
 
 array:
 	cat ./array.c common.c > array.tmp

@@ -9,6 +9,7 @@ digit [0-9]
 frmt  [{\t}|{\n}]
 
 %%
+"import"          { strcpy(yylval.nd_obj.name,(yytext)); return tIMPORT; }
 "sprptr"          { strcpy(yylval.nd_obj.name,(yytext)); return tSPRPTR; }
 "ptr"             { strcpy(yylval.nd_obj.name,(yytext)); return tPOINTER; }
 "irq"              { strcpy(yylval.nd_obj.name,(yytext)); return tIRQ; }
