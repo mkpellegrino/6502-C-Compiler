@@ -2241,7 +2241,7 @@ body: WHILE
 }
 ')' '{' body
 {
-  addAsm(str_JMP + getLabel( label_vector[label_major]-2, false) + commentmarker + string( " jump to top of WHILE loop" ), 3, false );
+  addAsm(str_JMP + getLabel( label_vector[label_major]-2, false) + commentmarker + "jump to top of WHILE loop", 3, false );
   addAsm( generateNewLabel(), 0, true );
   addAsm( str_PLA );
   popScope();
@@ -3954,27 +3954,6 @@ body: WHILE
       addAsm( str_LDX + "#>SIDIRQ", 2, false );
       addAsm( str_STA + "$0314", 3, false );
       addAsm( str_STX + "$0315", 3, false );
-
-      
-      /* addAsm( str_LDA + "#<SIDIRQ", 2, false ); */
-      /* addAsm( str_LDX + "#>SIDIRQ", 2, false ); */
-      /* addAsm( str_STA + "$0314", 3, false ); */
-      /* addAsm( str_STX + "$0315", 3, false ); */
-      
-      /* addAsm( str_ASL + "$D019", 3, false ); */
-      
-      /* addAsm( str_LDA + "#$7B", 2, false ); */
-      /* addAsm( str_STA + "$DC0D", 3, false ); */
-      
-      /* addAsm( str_LDA + "#$81", 2, false ); */
-      /* addAsm( str_STA + "$D01A", 3, false ); */
-
-      /* addAsm( str_LDA + "#$1B", 2, false );       */
-      /* addAsm( str_STA + "$D011", 3, false ); */
-
-      /* addAsm( str_LDA + "#$80", 2, false ); */
-      
-      /* addAsm( str_STY + "$D012", 3, false ); */
       
       addAsm( str_CLI );
     }
@@ -3985,42 +3964,81 @@ body: WHILE
 };
 | tSCREEN '(' expression ')' ';'
 {
+  pushScope( "SCREEN" );
   // exp1 shl 4 times
   // or it with d011
   // sta d011
   addComment( "screen(exp); : set bit 4 of $D011 to LSB of expression" );
-  addAsm( str_SEI );
+  //addAsm( str_SEI );
   if( isUintID( $3.name ) )
     {
       int v = getAddressOf( $3.name );
       addAsm( str_LDA + "$" + toHex(v), 3, false );
+
+      addAsm( str_LDA + "#$EF", 2, false );  
+      addAsm( str_AND + "$D011", 3, false );
+      addAsm( str_STA + getLabel( label_vector[label_major]+1, false) + commentmarker + "store A after the ORA instruction below", 3, false );
+      addAsm( str_LDA + "$" + toHex(v), 3, false );
+      addAsm( str_AND + "#$01", 2, false );
+      addAsm( str_ASL );
+      addAsm( str_ASL );
+      addAsm( str_ASL );
+      addAsm( str_ASL );
+      addAsm( str_ORA + getLabel( label_vector[label_major]+1, false) + commentmarker + "OR the argument with the old value of D011", 3, false );
+   
+      addAsm( generateNewLabel(), 0, true );
+      addAsm( str_BYTE + "$A9, $00" + commentmarker + "LDA IMM", 2, false );
+      addAsm( str_STA + "$D011", 3, false );
+
+      
     }
   else if( isUintIMM( $3.name ) )
     {
       int v = atoi( stripFirst($3.name).c_str());
       addAsm( str_LDA + "#$" + toHex(v), 2, false );
+
+
+      if( v == 0 )
+	{
+	  addAsm( str_LDA + "#$EF", 2, false );
+	  addAsm( str_AND + "$D011", 3, false );
+	  addAsm( str_STA + "$D011", 3, false );
+	}
+      else
+	{
+	  addAsm( str_LDA + "#$10", 2, false );
+	  addAsm( str_ORA + "$D011", 3, false );
+	  addAsm( str_STA + "$D011", 3, false );
+	}
     }
   else if( isA( $3.name ) )
     {
+      addAsm( str_PHA );
       // do nothing because the value is already in A
+      addAsm( str_LDA + "#$EF", 2, false );  
+      addAsm( str_AND + "$D011", 3, false );
+      addAsm( str_STA + getLabel( label_vector[label_major]+1, false) + commentmarker + "store A after the ORA instruction below", 3, false );
+      addAsm( str_PLA );
+      //addAsm( str_LDA + "$" + toHex(v), 3, false );
+      addAsm( str_AND + "#$01", 2, false );
+      addAsm( str_ASL );
+      addAsm( str_ASL );
+      addAsm( str_ASL );
+      addAsm( str_ASL );
+      addAsm( str_ORA + getLabel( label_vector[label_major]+1, false) + commentmarker + "OR the argument with the old value of D011", 3, false );
+   
+      addAsm( generateNewLabel(), 0, true );
+      addAsm( str_BYTE + "$A9, $00" + commentmarker + "LDA IMM", 2, false );
+      addAsm( str_STA + "$D011", 3, false );
+
     }
   else
     {
       addCompilerMessage( "incorrect type for blank must be UintID/IMM or A", 3 );
     }
-  addComment( "clear out all but bit 0" );
-  addAsm( str_AND + "#$01", 2, false );
-  addComment( "move bit 0 to bit 4" );
-  addAsm( str_ASL );
-  addAsm( str_ASL );
-  addAsm( str_ASL );
-  addAsm( str_ASL );
-  addComment( "put contents of D011 into A");
-  addComment( "along with bit 4 of A" );
-  addAsm( str_ORA + "$D011", 3, false );
-  addComment( "store the new value in D011" );
-  addAsm( str_STA + "$D011", 3, false );
-  addAsm( str_CLC );
+
+  
+  popScope();
 };
 | tIRQ '(' expression {if(isXA($3.name)){p0=true;addAsm( str_PHA );addAsm( str_TXA );addAsm( str_PHA );}} ',' expression ',' NUMBER ')' ';'
 {
@@ -4336,18 +4354,33 @@ body: WHILE
       addCompilerMessage( "wrong type for setting screen address", 3);
     }
 };
+
+| tJSR '(' expression ')' ';'
+{
+  addComment( "jsr(WordIMM);");
+  if( isWordIMM( $3.name ) )
+    {
+      int where_to = atoi(stripFirst($3.name).c_str());
+      if( where_to > 65535 || where_to < 0 ) addCompilerMessage( "invalid jsr (address out of range)", 3 );
+      addAsm(str_JSR + "$" + toHex(where_to), 3, false );
+    }
+  else
+    {
+      addCompilerMessage( "invalid JSR - argument needs to be a WordIMM", 3 );
+    }
+};
 // TODO : these two JSRs should really be just one rule
 // tJSR '(' expression ')' ';'
-| tJSR '(' NUMBER ')' ';'
-{
-  addCommentSection( "jsr(NUMBER)");
-  addAsm(str_JSR + "$"  + toHex( atoi($3.name)), 3, false );
-};
-| tJSR '(' HEX_NUM ')' ';'
-{
-  addCommentSection( "jsr(HEX_NUM)");
-  addAsm(str_JSR + "$" + stripFirst(stripFirst($3.name)), 3, false );
-};
+/* | tJSR '(' NUMBER ')' ';' */
+/* { */
+/*   addCommentSection( "jsr(NUMBER)"); */
+/*   addAsm(str_JSR + "$"  + toHex( atoi($3.name)), 3, false ); */
+/* }; */
+/* | tJSR '(' HEX_NUM ')' ';' */
+/* { */
+/*   addCommentSection( "jsr(HEX_NUM)"); */
+/*   addAsm(str_JSR + "$" + stripFirst(stripFirst($3.name)), 3, false ); */
+/* }; */
 | tBANK '(' expression ')' ';'
 {
   // see the commodore 64 programmers manual
