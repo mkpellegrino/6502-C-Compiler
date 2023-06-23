@@ -123,11 +123,8 @@ example:
 
 terra:
 	cat ./terraform.c common.c > terra.tmp
-#	./compiler --code-segment 7632 --data-segment 40960 --memory-locations --symbol-table < ./terraform.c > terra.tmp.asm
-#	./compiler --code-segment 7624 --data-segment 40960 --memory-locations --symbol-table < ./terraform.c > terra.tmp.asm
-	./compiler  --basic --code-segment 7624 --data-segment 49152 --kick < ./terra.tmp > terra7624.asm
-#	cat terra.tmp.asm cj-sid.asm > terra7624.asm
-#	cat terra.tmp.asm mysid.hex > terra7624.asm
+#	./compiler --basic --code-segment 17626 --data-segment 2062 --kick < ./terra.tmp > terra7624.asm
+	./compiler --basic --code-segment 17626 --data-segment 2062 --kick --symbol-table --memory-locations < ./terra.tmp > terra7624.asm
 	java -jar KickAss.jar terra7624.asm
 
 	rm -f ./terra.tmp
@@ -185,6 +182,16 @@ knight:
 	java -jar KickAss.jar knight.asm
 	rm -f knight.tmp
 
+bitmap:
+	cat ./bitmap.c common.c > bitmap.tmp
+	./compiler --kick --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./bitmap.tmp > bitmap.asm
+	java -jar KickAss.jar bitmap.asm
+	rm -f bitmap.tmp
+
+mul16:
+	./compiler --basic --kick --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./mul16.c > mul16.asm
+	java -jar KickAss.jar mul16.asm
+
 knight2:
 	cat ./knight2.c common.c > knight2.tmp
 	./compiler --kick --basic --code-segment 4096 --data-segment 820 < ./knight2.tmp > knight2.asm
@@ -198,8 +205,14 @@ knight3:
 	rm -f knight3.tmp
 
 collision:
-	./compiler --kick --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./collision.c > collision.asm
+	./compiler --basic --kick --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./collision.c > collision.asm
 	java -jar KickAss.jar collision.asm
+
+vscroll:
+	cat ./vscroll.c common.c > vscroll.tmp
+	./compiler --basic --kick --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./vscroll.tmp > vscroll.asm
+	java -jar KickAss.jar vscroll.asm
+	rm -f vscroll.tmp
 
 math:
 	cat ./math.c common.c > math.tmp

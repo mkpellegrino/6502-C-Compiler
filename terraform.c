@@ -1,5 +1,8 @@
 void main()
 {
+   import( "bin", "roadie3.bin", 0x1DC8 );
+   import( "sid", "cj.sid", 0x0000 );
+  
   lda( 0x00 );
   uint general8bit;
 
@@ -25,9 +28,11 @@ void main()
   word newX;
   uint checkNearParamY1;
   uint checkNearParamI;
+  
  
   word score = 0x0000;
- word checkNearParamX1;
+  word general16bit;
+  word checkNearParamX1;
   word wordToPrint;
 
   romout(6);
@@ -44,14 +49,15 @@ void main()
   // save voice 3
   uint D41B = peek( 0xD418 );
   
-  word clock = 820;
+  word clock = 257;
+  //word clock = 840;
   //subclock = 0x00;
   
   // initialise variables
   
   //uint randomnessclock;
   //word printWordAddr;
-  word jerrymoveclock;
+  word jerrymoveclock = rnd(1);
   //uint jerrymoveclock2;
   uint plotDigitBindex;
   uint plotDigitColourValue1001;
@@ -80,10 +86,8 @@ void main()
   uint X1;
   uint Y0;
   uint Y1;
-  //uint spriteI;
-
-  //word delay = 0x00CC;
-  //word cnX;
+  uint remaininglives = 0x03;
+  
   word num;
   
   lda( 100 );
@@ -98,6 +102,12 @@ void main()
   
   // restore voice 3
   poke( 0xD41B, D41B );
+
+  // steal your face logo
+  data steal1 = {0, 0, 0, 1, 1, 7, 7, 23,     0, 63, 122, 234, 234, 170, 170, 170,     0, 252, 174, 151, 183, 181, 253, 245,    0, 0, 0, 128, 128, 224, 224, 232};
+  data steal3 = {30, 30, 94, 94, 94, 94, 94, 94, 171, 171, 171, 171, 175, 191, 175, 191, 253, 245, 245, 245, 245, 213, 245, 213, 120, 122, 122, 122, 122, 122, 122, 122 };
+  data steal5 = {95, 87, 87, 87, 87, 87, 23, 23, 175, 175, 173, 253, 213, 245, 255, 235, 85, 85, 85, 87, 87, 95, 255, 235, 250, 234, 234, 234, 234, 234, 232, 232 };
+  data steal7 = {21, 5, 5, 1, 1, 0, 0, 0, 255, 255, 127, 95, 95, 95, 23, 0, 255, 255, 254, 250, 250, 250, 232, 0, 168, 160, 160, 128, 128, 0, 0, 0 };
 
   // digits
   data digits =
@@ -158,22 +168,25 @@ void main()
 
   //data zero = {'A'};
   data clockText = {'C', 'L', 'O', 'C', 'K' };
-  data scoreText = {'S', 'C', 'O', 'R', 'E' };  
-  data paused = {                'P', 'A', 'U', 'S', 'E', 'D' };
+  data scoreText = {'S', 'C', 'O', 'R', 'E' };
+  data livesText = {'L', 'I', 'V', 'E', 'S', ':' };
+  data paused = { 'P', 'A', 'U', 'S', 'E', 'D' };
   data pak =    { 'P', 'R', 'E', 'S', 'S', ' ', 'A', 'N', 'Y', ' ', 'K', 'E', 'Y' };
   data spaces = { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' };
   data hitY=    { 'H', 'I', 'T', ' ', 'Y', ' ', 'T', 'O', ' ', 'Q', 'U', 'I', 'T'} ;
-  data title = { 'R', 'O', 'A', 'D', 'I', 'E' };
   data directions1 = {'U', ':', ' ', 'L', 'E', 'F', 'T', ' ', ' ', ' ', 'O', ':', ' ', 'R', 'I', 'G', 'H', 'T'};
-  data directions1a= {'Q', ':', ' ', 'Q', 'U', 'I', 'T', ' ', ' ', ' ', 'W', ':', ' ', 'P', 'A', 'U', 'S', 'E'};
+  data directions1a = {'Q', ':', ' ', 'Q', 'U', 'I', 'T', ' ', ' ', ' ', 'W', ':', ' ', 'P', 'A', 'U', 'S', 'E'};
+  data directions1b = {'S', 'P', 'A', 'C', 'E', ' ', 'B', 'A', 'R', ':', ' ', ' ', 'J', 'U', 'M', 'P' };
   data directions2 = {'I', ':', ' ', 'P', 'I', 'C', 'K', ' ', 'U', 'P', ' ', ' ', ' ', 'K', ':', ' ', 'D', 'R', 'O', 'P' };
+			
   data directions3 = {'C', 'R', 'E', 'A', 'T', 'E', 'D', ' ', 'B', 'Y', ' ', 'M', 'I', 'C', 'H', 'A', 'E', 'L', ' ', 'P', 'E', 'L', 'L', 'E', 'G', 'R', 'I', 'N', 'O'};
   data directions5 = {'P', 'R', 'E', 'S', 'S', ' ', 'A', 'N', 'Y', ' ', 'K', 'E', 'Y', ' ', 'T', 'O', ' ', 'S', 'T', 'A', 'R', 'T' };
   data credit1 =    { 'C', 'A', 'S', 'E', 'Y', ' ', 'J', 'O', 'N', 'E', 'S', ' ', 'B', 'Y', ' ', 'T', 'H', 'E', ' ', 'G', 'R', 'A', 'T', 'E', 'F', 'U', 'L', ' ', 'D', 'E', 'A', 'D' };
   data credit2 =    { 'S', 'I', 'D', ' ', 'C', 'R', 'E', 'A', 'T', 'E', 'D', ' ', 'B', 'Y', ' ', 'I', 'V', 'A', 'N', ' ', 'K', 'O', 'H', 'L', 'E', 'R' };
   data endscreentext1 = {'G', 'A', 'M', 'E', ' ', 'O', 'V', 'E', 'R' };
   data endscreentext2 = {'P', 'R', 'E', 'S', 'S', ' ', 'Y', ' ', 'T', 'O', ' ', 'P', 'L', 'A', 'Y', ' ', 'A', 'G', 'A', 'I', 'N' };
-
+  data interscreen1 = {'Y', 'O', 'U', 'R', ' ', 'T', 'I', 'M', 'E', ' ', 'H', 'A', 'S', ' ', 'E', 'X', 'P', 'I', 'R', 'E', 'D' };
+  data interscreen2 = {'T', 'R', 'I', 'E', 'S', ' ', 'R', 'E', 'M', 'A', 'I', 'N', 'I', 'N', 'G' };
   word plotDigitAddr = digits;
 
   // jump table
@@ -242,6 +255,7 @@ void main()
   word scraddrX = scraddr + 0x03F0;
   
   clearhires();
+  //copyStartScreen();
   startScreen();
 
   seed();
@@ -288,7 +302,7 @@ void main()
   
   mob electricguitar = { 6, 13, 0, 192, 0, 0, 240, 0, 0, 240, 0, 0, 48, 0, 0, 48, 0, 0, 48, 0, 0, 48, 0, 0, 48, 0, 3, 48, 0, 14, 240, 192, 14, 243, 192, 14, 190, 192, 3, 170, 192, 3, 155, 0, 3, 171, 0, 14, 171, 0, 14, 154, 192, 14, 170, 192, 14, 254, 192, 3, 170, 192, 0, 255, 0};
   
-  mob mic2 = { 7, 14, 0, 0, 96,0, 31, 240,0, 2, 96,0, 4, 0,0, 4, 0,0, 8, 0,0, 8, 0,0, 24, 0,0, 24, 0,0, 40, 0,0, 40, 0,0, 72, 0,0, 72, 0,0, 136, 0,0, 136, 0,0, 8, 0,0, 8, 0,0, 8, 0,0, 127, 0,3, 128, 224,28, 0, 28};
+  // mob mic2 = { 7, 14, 0, 0, 96,0, 31, 240,0, 2, 96,0, 4, 0,0, 4, 0,0, 8, 0,0, 8, 0,0, 24, 0,0, 24, 0,0, 40, 0,0, 40, 0,0, 72, 0,0, 72, 0,0, 136, 0,0, 136, 0,0, 8, 0,0, 8, 0,0, 8, 0,0, 127, 0,3, 128, 224,28, 0, 28};
     
   // multicolour sprite mode for some of the sprites  %0111 1011
   poke( 0xD01C, 0x7B );
@@ -318,13 +332,14 @@ void main()
 
   uint c = getin();
   uint keepPlaying = 1;
-
+  
   sidirq( 0x1000, 0x1003 );
 
+
+
+  
   while( keepPlaying == 1 )
     {
-      //while( c != 62 )
-      ///{
 	  if( clock < 0x001E )
 	    {
 	      // border colour flicker
@@ -332,8 +347,17 @@ void main()
 	    }
 	  if( clock == 0x0000 )
 	    {
-	      // if time runs out - show the end-screen
-	      endscreen();
+	      // if time runs out & no more lives - show the end-screen
+	      dec(remaininglives);
+
+	      if( remaininglives == 0 )
+		{
+		  endscreen();
+		}
+	      else
+		{
+		  interscreen();
+		}
 	    }
 	  if( timer == 0 )
 	    {
@@ -363,8 +387,11 @@ void main()
 		    }
 		}
 
-	      positionai();
-	  
+	      
+	      //positionai();
+	      spritey( 1, jy );
+	      spritex( 1, jx );
+
 	      // ====================================
 	  
 	      if( standing == 0 )
@@ -421,13 +448,10 @@ void main()
 		  dec(clock);
 		}
 	      inc(subclock);
-	      // for testing only
 	      subclock = subclock & 3;
-	      //subclock = subclock & 0x0F;
 	    }
 
 	  inc( timer );
-	  //timer = timer & 0x7F;
 	  timer = timer & 0x3F;
       
 	  if( shouldbeblinking == 1 )
@@ -452,8 +476,6 @@ void main()
 	    }
       
 	  c = getin();
-	  //}
-	  //quitscreen();
     }
 
   bank(0);
@@ -463,18 +485,18 @@ void main()
   restoreregs();
 
   clearkb();
-
+  //sidoff( 0x1000 );
+  nosid();
   //sidoff(0x1000);
-  
   return;
 }
 
-void positionai()
-{
-  spritey( 1, jy );
-  spritex( 1, jx );
-  return;
-}
+//void positionai()
+//{
+//  spritey( 1, jy );
+//  spritex( 1, jx );
+//  return;
+//}
 
 void positionplayer()
 {
@@ -532,6 +554,7 @@ void calculateai()
 	  jerrydirection = 1;
 	}
       jerrymoveclock = rnd(1);
+      jerrymoveclock = jerrymoveclock / 2;
       //asl( jerrymoveclock );
       //asl( jerrymoveclock );
       
@@ -602,22 +625,22 @@ void calculateai()
   return;
 }
 
+
 void clearhires()
 {
   screen(0);
-  // this is for the single colour (11) -- this is ALWAYS at 0xD800 - 0x3FF
-  for( word mem1 = 0xD800; mem1 < 0xDBFF; mem1 = mem1 + 1 )
+  for( general16bit = 0xD800; general16bit < 0xDBFF; general16bit = general16bit + 1 )
     {
-      poke( mem1, 0 );
+      poke( general16bit, 0 );
     }  
-  for( mem1 = scraddr; mem1 < scraddrX; mem1 = mem1 + 1 )
+  for( general16bit = scraddr; general16bit < scraddrX; general16bit = general16bit + 1 )
     {
-      poke( mem1, 0x26 );
+      poke( general16bit, 0x26 );
     }
 
-  for( mem1 = bmpaddr; mem1 < bmpaddrX; mem1 = mem1 + 1 )
+  for( general16bit = bmpaddr; general16bit < bmpaddrX; general16bit = general16bit + 1 )
     {
-      poke( mem1, 0x00 );
+      poke( general16bit, 0x00 );
     }
   screen(1);
   return;
@@ -720,17 +743,10 @@ void plotNumber()
 {
   if( num == 0x0000 )
     {
-      //wordToPrint = zero;
-      //wordSize = 1;
-      //plotDigitX = 23;
-      //plotDigitY = 0;
       printWord();
 
       plotDigitBindex = 0;
       plotDigit();
-      //plotDigitBindex = asl(asl(asl(peek(0x02))));
-      //plotDigit();
-      //dec(plotDigitX);
     }
   else
     {
@@ -748,7 +764,6 @@ void plotNumber()
 void shownum()
 {
   // erase xy
-  //plotDigitX = 30;
   plotDigitY = 1;
 
   for( general8bit = 26; general8bit > 23; dec( general8bit ) )
@@ -757,9 +772,6 @@ void shownum()
       plotDigitBindex = 0x50;
       plotDigit();
     }
-
-
-  
   num = clock;
   plotDigitX = 26;
   plotNumber();
@@ -877,7 +889,6 @@ void checkIfBelow()
 {
   word myX = lsr(jx - 12);
   uint myY = jy - 49;
-  //lsr( myX );
   word myXp = myX + 8;
   word myXm = myX - 8;
   jerrybelow = getxy( myX, myY);
@@ -890,11 +901,6 @@ void checkIfBelow()
   dec(myY);
   jerrybelow = jerrybelow | getxy( myXp, myY);
   jerrybelow = jerrybelow | getxy( myXm, myY);
-  //jerrybelow = getxy( myX, myY );
-  //jerrybelow = jerrybelow | getxy( myXp, myY );
-  //jerrybelow = jerrybelow | getxy( myXm, myY );
-
-  //jerrybelow =  getxy( myX, myY ) |  getxy( myXp, myY + 1 ) |   getxy( myXm, myY + 1) | getxy( myXp, myY - 1 ) |   getxy( myXm, myY - 1) | getxy( myXp, myY) |   getxy( myXm, myY);
   return;
 }
 
@@ -976,6 +982,8 @@ void calculatejerjump()
 void createplatforms()
 {
   screen(0);
+  //sidoff( 0x1000 );
+  //nosid();
   
   // Draw the "X"'s on the Scaffolding
   data scafX =  {192, 192, 48, 48, 12, 12, 3, 3};
@@ -987,7 +995,7 @@ void createplatforms()
   plotshapeColourValue11 = 0x00;  
 
   plotshapeY = 1;
-  for(  uint cpI = 0; cpI < 4; inc( cpI ))
+  for(uint cpI = 0; cpI < 4; inc( cpI ))
     {
       plotshapeX = 0;
 
@@ -1022,6 +1030,9 @@ void createplatforms()
 	}
     }
 
+
+
+  // Draw the Tweeters in the Wall of sound
   data tweeter =
     {
       85, 125, 235, 125, 85, 215, 190, 215
@@ -1040,8 +1051,18 @@ void createplatforms()
   X1 = 24;
 
   // replace with the code of the function to save a few bytes
-  plotXYloop();
+  //plotXYloop();
+  for( plotshapeY = Y0; plotshapeY < Y1; inc( plotshapeY ) )
+    {
+      for( plotshapeX = X0; plotshapeX < X1; inc(plotshapeX) )
+	{
+	  plotshape();
+	}
+    }
 
+
+
+  // the actual platforms
   data fd =
     {
       // Bottom
@@ -1092,36 +1113,8 @@ void createplatforms()
 
   // Create Objects in the background
 
-  // steal your face logo
-  data steal1 = {0, 0, 0, 1, 1, 7, 7, 23,     0, 63, 122, 234, 234, 170, 170, 170,     0, 252, 174, 151, 183, 181, 253, 245,    0, 0, 0, 128, 128, 224, 224, 232};
-  data steal3 = {30, 30, 94, 94, 94, 94, 94, 94, 171, 171, 171, 171, 175, 191, 175, 191, 253, 245, 245, 245, 245, 213, 245, 213, 120, 122, 122, 122, 122, 122, 122, 122 };
-  data steal5 = {95, 87, 87, 87, 87, 87, 23, 23, 175, 175, 173, 253, 213, 245, 255, 235, 85, 85, 85, 87, 87, 95, 255, 235, 250, 234, 234, 234, 234, 234, 232, 232 };
-  data steal7 = {21, 5, 5, 1, 1, 0, 0, 0, 255, 255, 127, 95, 95, 95, 23, 0, 255, 255, 254, 250, 250, 250, 232, 0, 168, 160, 160, 128, 128, 0, 0, 0 };
 
-  plotshapeAddr = steal1;
-  plotshapeSize = 4;
-  // Blue and Red
-  plotshapeColourValue1001 = 0x62;
-  // White
-  plotshapeColourValue11 = 0x01;
-  plotshapeX = 18; 
-  plotshapeY = 0;
-  plotshape();
-
-  inc( plotshapeY );
-  //plotshapeY = 1;
-  plotshapeAddr = steal3;
-  plotshape();
-  
-  inc( plotshapeY );
-  //plotshapeY = 2;
-  plotshapeAddr = steal5;
-  plotshape();
-
-  inc( plotshapeY );
-  //plotshapeY = 3;
-  plotshapeAddr = steal7;
-  plotshape();
+  steal( 18, 0 );
 
   data speaker =
     {
@@ -1231,6 +1224,7 @@ void createplatforms()
   plotshape();
     
   // Draw the platforms - the 105 is the number of values in fd
+  // this includes the thick flooring
   for(  general8bit = 0; general8bit < 130; general8bit = general8bit + 5 )
     {
       for( uint fx = (fd)[general8bit]; fx < (fd)[general8bit+2]; inc(fx) )
@@ -1262,14 +1256,38 @@ void createplatforms()
   printWord();
 
 
+  // *****
   // put a zero for score
-  plotDigitY = 1;
-  plotDigitX = 15;
-  plotDigitBindex = 0x00;
-  plotDigitAddr=digits;
-  plotDigit();
+  if( score == 0x0000 )
+    {
+      plotDigitY = 1;
+      plotDigitX = 15;
+      plotDigitBindex = 0x00;
+      plotDigitAddr=digits;
+      plotDigit();
+    }
+  else
+    {
+      num = score;
+      plotDigitX = 15;
+      plotDigitY = 1;
+      plotNumber();
+    }
+
+
+  wordToPrint = livesText;
+  wordSize = 6;
+  plotDigitX = 32;
+  plotDigitY = 0;
+  printWord();
+
+  num = remaininglives;
+  plotDigitX = 39;
+  plotDigitY = 0;
+  plotNumber();
 
   screen(1);
+  //yessid();
   return;
 }
 
@@ -1292,18 +1310,6 @@ void plotYloopSkip()
   return;
 }
 
-void plotXYloop()
-{
-  for( plotshapeY = Y0; plotshapeY < Y1; inc( plotshapeY ) )
-    {
-      for( plotshapeX = X0; plotshapeX < X1; inc(plotshapeX) )
-	{
-	  plotshape();
-	}
-    }
-  return;
-}
-
 void plotshape()
 {
   uint plotshapeBindex = 0;
@@ -1321,12 +1327,12 @@ void plotshape()
     {
       poke( plotshapeColor1, plotshapeColourValue11 );
       poke( plotshapeColors2And3, plotshapeColourValue1001 );
-      plotshapeColor1 = plotshapeColor1 + 1;
-      plotshapeColors2And3 = plotshapeColors2And3 + 1;
+      plotshapeColor1 = plotshapeColor1 + 0x0001;
+      plotshapeColors2And3 = plotshapeColors2And3 + 0x0001;
       for( uint plotshapeI = 0; plotshapeI < 8; inc( plotshapeI ) )
 	{
 	  poke( plotshapePixels, (plotshapeAddr)[plotshapeBindex] );
-	  plotshapePixels = plotshapePixels + 1;
+	  plotshapePixels = plotshapePixels + 0x0001;
 	  inc( plotshapeBindex );
 	}
     }
@@ -1370,8 +1376,8 @@ void plotDigit()
   word plotDigitColor1 = plotDigitOffset + 0xD800;
   //word plotDigitColors2And3 = plotDigitOffset + 0x8400;
   word plotDigitColors2And3 = plotDigitOffset + scraddr;
-  poke( plotDigitColor1, 1 );
-  poke( plotDigitColors2And3, 0 );
+  poke( plotDigitColor1, 0x01 );
+  poke( plotDigitColors2And3, 0x00 );
 
   //word plotDigitPixels = asl(asl(asl(plotDigitOffset))) + 0xA000;
   word plotDigitPixels = asl(asl(asl(plotDigitOffset))) + bmpaddr;
@@ -1400,12 +1406,7 @@ void printWord()
 {
   //param printWordAddr
   
-  //word printWordAddr = letters;
   plotDigitAddr= letters;
-  //uint printWordI = 0x00;
-  //plotDigitBindex = 0x00;
-  
-  //while ( (printWordAddr)[printWordI] != 0x00 )
   for( uint printWordI = 0x00; printWordI < wordSize; inc(printWordI) )
     {
       uint currentChar = (wordToPrint)[printWordI];
@@ -1438,59 +1439,62 @@ void printWord()
 
 void startScreen()
 {
-  
-  wordToPrint = title;
-  wordSize = 6;
-  plotDigitX = 16;
-  plotDigitY = 5;
-  printWord();
 
+  cpy();
+  
   wordToPrint = directions1;
   wordSize = 18;
   plotDigitX = 11;
-  plotDigitY = 9;
+  plotDigitY = 16;
   printWord();
   
   wordToPrint = directions2;
   wordSize = 20;
   plotDigitX = 10;
-  plotDigitY = 10;
+  plotDigitY = 17;
   printWord();
+
 
   wordToPrint = directions1a;
   wordSize = 18;
   plotDigitX = 11;
-  plotDigitY = 11;
+  plotDigitY = 18;
   printWord();
 
+  
+  wordToPrint = directions1b;
+  wordSize = 16;
+  plotDigitX = 12;
+  plotDigitY = 19;
+  printWord();
   
   wordToPrint = directions3;
   wordSize = 29;
   plotDigitX = 3;
-  plotDigitY = 13;
+  plotDigitY = 11;
   printWord();
 
   num = 2023;
   plotDigitX = 36;
-  plotDigitY = 13;
+  plotDigitY = 11;
   plotNumber();
 
   wordToPrint = credit1;
   wordSize = 32;
   plotDigitX = 4;
-  plotDigitY = 16;
+  plotDigitY = 13;
   printWord();
 
   wordToPrint = credit2;
   wordSize = 26;
   plotDigitX = 7;
-  plotDigitY = 17;
+  plotDigitY = 14;
   printWord();
   
   wordToPrint = directions5;
   wordSize = 22;
   plotDigitX = 9;
-  plotDigitY = 20;
+  plotDigitY = 22;
   printWord();
 
   
@@ -1528,20 +1532,62 @@ void pausescreen()
   return;
 }
 
+void interscreen()
+{
+  //poke( ptr(interscreen2), dispLives);
+  poke( 0xD020, 9 );
+  spriteoff( 255 );
+  clearhires();
+  steal( 18, 3 );
+
+  wordToPrint = interscreen1;
+  wordSize = 21;
+  plotDigitX = 10;
+  plotDigitY = 9;
+  printWord();
+
+  num = remaininglives;
+  plotDigitX = 12;
+  plotDigitY = 11;
+  plotNumber();
+
+  wordToPrint = interscreen2;
+  wordSize = 15;
+  plotDigitX = 14;
+  plotDigitY = 11;
+  printWord();
+
+  wordToPrint = pak;
+  wordSize = 13;
+  plotDigitX = 14;
+  plotDigitY = 13;
+ 
+  printWord();
+
+  pause();
+
+  clearhires();
+  createplatforms();
+  //sidirq( 0x1000, 0x1003 );
+  init();
+
+
+  return;
+}
+
 void endscreen()
 {
 
   // silence the sid here
-  
-  sidoff(0x1000);
-  poke( 0xD400, 0 );
-  for( word iii = 0xD400; iii < 0x0D407; iii = iii + 0x0001)
-    {
-      poke( iii, 0 );
-    }
+  poke( 0xD020, 9 );
+
+  //sidoff(0x1000);
+
   spriteoff( 255 );
   
   clearhires();
+
+  steal( 18, 5 );
   
   wordToPrint = endscreentext1;
   wordSize = 9;
@@ -1549,20 +1595,21 @@ void endscreen()
   plotDigitY = 10;
   printWord();
 
-  wordToPrint = scoreText;
-  wordSize = 5;
-  plotDigitX = 16;
-  plotDigitY = 12;
-  printWord();
+  if( score > 0x0000 )
+    {
+      wordToPrint = scoreText;
+      wordSize = 5;
+      plotDigitX = 16;
+      plotDigitY = 12;
+      printWord();
 
+      num = score;
+      plotDigitX = 25;
+      plotDigitY = 12;
+      plotDigitAddr=digits;
 
-
-  num = score;
-  plotDigitX = 25;
-  plotDigitY = 12;
-  plotDigitAddr=digits;
-
-  plotNumber();
+      plotNumber();
+    }
 
   
   wordToPrint = endscreentext2;
@@ -1585,41 +1632,17 @@ void endscreen()
     {
       clearhires();
       // reinit everything
+      init();
+      remaininglives = 0x03;
 
-      y=100;
-      jy=100;
-
-  
-      x = 0x0020;
-      jx = 0x012C;
-
-      spritex( 0, x );
-      spritex( 1, jx );
-      spritey( 0, y );
-      spritey( 1, jy );
-      
-      for( general8bit=2; general8bit < 8; inc( general8bit ) )
-	{
-	  word tmpWord = 340;
-	  spritex( general8bit, tmpWord );
-	  spritey( general8bit, 0 );
-	}
-
-      
-      for( general8bit=0; general8bit < 24; inc( general8bit ) )
-      	{
-      	  subclock[general8bit] = 0;
-      	}
-
-      clock = 840;
-      spriteon( 255 );
       createplatforms();
       sidirq( 0x1000, 0x1003 );
-
+      
     }
   else
     {
-      sidoff( 0x1000 );
+      //sidoff( 0x1000 );
+
       keepPlaying = 0;
     }
 
@@ -1629,7 +1652,6 @@ void endscreen()
 
 void quitscreen()
 {
-  sidoff(0x1000);
 
   wordToPrint = hitY;
   wordSize = 13;
@@ -1644,6 +1666,12 @@ void quitscreen()
     }
   if( qsq == 'Y' )
     {
+        for( general16bit = 0xD400; general16bit < 0x0D407; general16bit = general16bit + 0x0001)
+	  {
+	    poke( general16bit, 0 );
+	  }
+	
+      //sidoff(0x1000);
       keepPlaying = 0;
     }
   else
@@ -1655,3 +1683,98 @@ void quitscreen()
   printWord();
   return;
 }
+
+void cpy()
+{
+  word oldLoc = 0x1DC8;
+  word newLoc = 0xA000;
+  for( general16bit = 0; general16bit < 0x0B40; inc( general16bit ) )
+    {
+      poke( newLoc, peek(oldLoc) );
+      newLoc = newLoc + 0x0001;
+      oldLoc = oldLoc + 0x0001;
+    }
+
+  for( general16bit = 0xD800; general16bit < 0xDBFF; inc(general16bit) )
+    {
+      poke( general16bit, 0xCC );
+    }
+
+  poke( 0xD021, 0x0C );
+  return;
+}
+
+
+void steal( uint stealx, uint stealy )
+{
+  plotshapeAddr = steal1;
+  plotshapeSize = 4;
+  // Blue and Red
+  plotshapeColourValue1001 = 0x62;
+  // White
+  plotshapeColourValue11 = 0x01;
+  plotshapeX = stealx; 
+  plotshapeY = stealy;
+  plotshape();
+
+  inc( plotshapeY );
+  //plotshapeY = 1;
+  plotshapeAddr = steal3;
+  plotshape();
+  
+  inc( plotshapeY );
+  //plotshapeY = 2;
+  plotshapeAddr = steal5;
+  plotshape();
+
+  inc( plotshapeY );
+  //plotshapeY = 3;
+  plotshapeAddr = steal7;
+  plotshape();
+
+  return;
+}
+
+void init()
+{
+  // reset all values and everything to play a level
+      y=100;
+      jy=100;
+      currentlyholding = 0;
+      shouldbeblinking = 0;
+      allArrowsOff();
+
+      x = 0x0020;
+      jx = 0x012C;
+
+      spritex( 0, x );
+      spritex( 1, jx );
+      spritey( 0, y );
+      spritey( 1, jy );
+      
+      for( general8bit=2; general8bit < 8; inc( general8bit ) )
+	{
+	  general16bit = 340;
+	  spritex( general8bit, general16bit );
+	  spritey( general8bit, 0 );
+	}
+
+      
+      for( general8bit=0; general8bit < 24; inc( general8bit ) )
+      	{
+      	  subclock[general8bit] = 0;
+      	}
+
+      //clock = 840;
+      clock = 257;
+      spriteon( 255 );
+
+  return;
+}
+
+void nosid()
+{
+  sidirq( 0x74F7, 0x74E6 );
+  return;
+}
+
