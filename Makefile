@@ -96,11 +96,22 @@ show:
 	./compiler --kick --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./showspr.tmp > showspr.asm
 	java -jar KickAss.jar showspr.asm
 
+fighter:
+	cat ./fighter.c common.c > fighter.tmp
+	./compiler --basic --kick --debug --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./fighter.tmp > fighter.asm
+	java -jar KickAss.jar fighter.asm
+
 
 coll:
 	cat ./spritecol.c common.c > spritecol.tmp
-	./compiler --kick --code-segment 2100 --data-segment 820 --memory-locations < ./spritecol.tmp > spritecol.asm
+	./compiler --basic --kick --code-segment 2100 --data-segment 820 --memory-locations < ./spritecol.tmp > spritecol.asm
 	java -jar KickAss.jar spritecol.asm
+
+textmode:
+	cat ./textmode.c common.c > textmode.tmp
+	./compiler --basic --kick --code-segment 2100 --data-segment 820 --memory-locations < ./textmode.tmp > textmode.asm
+	java -jar KickAss.jar textmode.asm
+
 
 poke2:
 	cat ./poke2.c common.c > poke2.tmp
@@ -124,8 +135,8 @@ example:
 terra:
 	cat ./terraform.c common.c > terra.tmp
 #	./compiler --basic --code-segment 17626 --data-segment 2062 --kick < ./terra.tmp > terra7624.asm
-	./compiler --basic --code-segment 17626 --data-segment 2062 --kick --symbol-table --memory-locations < ./terra.tmp > terra7624.asm
-	java -jar KickAss.jar terra7624.asm
+	./compiler --basic --debug --code-segment 17626 --data-segment 2062 --kick --symbol-table < ./terra.tmp > terra7624.asm
+	java -jar KickAss.jar -asminfo all -asminfofile terra-asminfo.txt -showmem -vicesymbols terra7624.asm
 
 	rm -f ./terra.tmp
 	rm -f ./terra.tmp.asm
@@ -192,6 +203,11 @@ mul16:
 	./compiler --basic --kick --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./mul16.c > mul16.asm
 	java -jar KickAss.jar mul16.asm
 
+roll:
+	./compiler --basic --kick --code-segment 2100 --data-segment 820 < ./roll.c > roll.asm
+	java -jar KickAss.jar roll.asm
+
+
 knight2:
 	cat ./knight2.c common.c > knight2.tmp
 	./compiler --kick --basic --code-segment 4096 --data-segment 820 < ./knight2.tmp > knight2.asm
@@ -200,7 +216,7 @@ knight2:
 
 knight3:
 	cat ./knight3.c common.c > knight3.tmp
-	./compiler  --kick --basic --code-segment 8192 --data-segment 820 < ./knight3.tmp > knight3.asm
+	./compiler --debug --kick --basic --code-segment 8192 --data-segment 26000 --memory-locations --symbol-table < ./knight3.tmp > knight3.asm
 	java -jar KickAss.jar knight3.asm
 	rm -f knight3.tmp
 
@@ -394,9 +410,15 @@ program:
 arith:
 	./compiler --kick --code-segment 2100 --data-segment 820  --memory-locations --no-asm-comments --symbol-table  < ./arithtests.c > arithtests.asm
 
-ifs:
-	./compiler --kick --code-segment 49152 --data-segment 828 --no-asm-comments < ./iftests.c > iftests.asm
+sidtest:
+	cat ./sidtest.c common.c > sidtest.tmp
+	./compiler --debug --basic --kick --code-segment 2100 --data-segment 828 --memory-locations < ./sidtest.tmp > sidtest.asm
+	java -jar KickAss.jar sidtest.asm
+
+iftests:
+	./compiler --debug --basic --kick --code-segment 2100 --data-segment 828 --memory-locations < ./iftests.c > iftests.asm
 	java -jar KickAss.jar iftests.asm
+	java -jar KickAss.jar iftests2.asm
 
 cond:
 	cat ./cond-tests.c common.c > cond-tests.tmp
