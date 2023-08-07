@@ -9,6 +9,18 @@ digit [0-9]
 frmt  [{\t}|{\n}]
 
 %%
+"fchrin"     { strcpy(yylval.nd_obj.name,(yytext)); return tFCHRIN; }
+"fchrout"     { strcpy(yylval.nd_obj.name,(yytext)); return tFCHROUT; }
+"fclrchn"     { strcpy(yylval.nd_obj.name,(yytext)); return tFCLRCHN; }
+"freadst"     { strcpy(yylval.nd_obj.name,(yytext)); return tFREADST; }
+"fchkout"     { strcpy(yylval.nd_obj.name,(yytext)); return tFCHKOUT; }
+"fchkin"     { strcpy(yylval.nd_obj.name,(yytext)); return tFCHKIN; }
+"fclose"         { strcpy(yylval.nd_obj.name,(yytext)); return tFCLOSE; }
+"fopen"         { strcpy(yylval.nd_obj.name,(yytext)); return tFOPEN; }
+"setlfs"         { strcpy(yylval.nd_obj.name,(yytext)); return tSETLFS; }
+"setfilename"         { strcpy(yylval.nd_obj.name,(yytext)); return tSETNAM; }
+"save"         { strcpy(yylval.nd_obj.name,(yytext)); return tSAVE; }
+"load"         { strcpy(yylval.nd_obj.name,(yytext)); return tLOAD; }
 "import"          { strcpy(yylval.nd_obj.name,(yytext)); return tIMPORT; }
 "sprptr"          { strcpy(yylval.nd_obj.name,(yytext)); return tSPRPTR; }
 "ptr"             { strcpy(yylval.nd_obj.name,(yytext)); return tPOINTER; }

@@ -54,24 +54,29 @@ raster3:
 	./compiler --kick --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./raster3.tmp > raster3.asm
 	rm -f raster3.tmp
 	java -jar KickAss.jar raster3.asm
+	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -delete raster3 -write raster3.prg raster3
 
 irqs:
 	cat ./irqs.c common.c > irqs.tmp
 	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table --kick  < ./irqs.tmp > irqs.asm
 	rm -f irqs.tmp
 	java -jar KickAss.jar irqs.asm
+	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -dele irqs -write irqs.prg irqs
+
 
 raster2:
 	cat ./raster2.c common.c > raster2.tmp
 	./compiler --kick --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./raster2.tmp > raster2.asm
 	rm -f raster2.tmp
 	java -jar KickAss.jar raster2.asm
+	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -dele raster2 -write raster2.prg raster2
 
 raster:
 	cat ./raster.c common.c > raster.tmp
 	./compiler --kick --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./raster.tmp > raster.asm
 	java -jar KickAss.jar raster.asm
 	rm -f raster.tmp
+	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -dele raster -write raster.prg raster
 
 charset:
 	cat ./charset.c common.c > charset.tmp
@@ -120,12 +125,12 @@ poke2:
 
 pong:
 	java -jar KickAss.jar pong.asm
+	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -dele pong -write pong.prg pong	
 
 banks:
 	cat ./banks.c common.c > banks.tmp
 	./compiler --kick --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./banks.tmp > banks.asm
 	java -jar KickAss.jar banks.asm
-
 
 example:
 	cat ./example.c common.c > example.tmp
@@ -134,13 +139,11 @@ example:
 
 terra:
 	cat ./terraform.c common.c > terra.tmp
-#	./compiler --basic --code-segment 17626 --data-segment 2062 --kick < ./terra.tmp > terra7624.asm
 	./compiler --basic --debug --code-segment 17626 --data-segment 2062 --kick --symbol-table < ./terra.tmp > terra7624.asm
 	java -jar KickAss.jar -asminfo all -asminfofile terra-asminfo.txt -showmem -vicesymbols terra7624.asm
-
 	rm -f ./terra.tmp
 	rm -f ./terra.tmp.asm
-
+	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -dele terra -write terra.prg terra
 
 terraland:
 	cat ./terraland.c common.c > terraland.tmp
@@ -149,6 +152,7 @@ terraland:
 	java -jar KickAss.jar terraland7624.asm
 	rm -f ./terraland.tmp
 	rm -f ./terraland.tmp.asm
+	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -dele terraland7624 -write terraland7624.prg terraland7624
 
 dice:
 	cat ./dice.c common.c > dice.tmp
@@ -165,16 +169,19 @@ gravity:
 keys:
 	./compiler --kick --code-segment 2100 --data-segment 820 --no-asm-comments < ./keys.c > keys.asm
 	java -jar KickAss.jar keys.asm
+	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -dele keys -write keys.prg keys
 
 city:
 	./compiler --basic --kick --code-segment 2100 --data-segment 820 --no-asm-comments < ./city.c > city.asm
 	java -jar KickAss.jar city.asm
+	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -delete city -write city.prg city
 
 hires:
 	cat ./hires.c common.c > hires.tmp
 	./compiler --kick --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./hires.tmp > hires.asm
 	java -jar KickAss.jar hires.asm
 	rm -f hires.tmp
+	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -dele hires -write hires.prg hires
 
 digits:
 	cat ./digits.c common.c > digits.tmp
@@ -193,11 +200,35 @@ knight:
 	java -jar KickAss.jar knight.asm
 	rm -f knight.tmp
 
+testload:
+	cat ./testload.c common.c > testload.tmp
+	./compiler --kick --basic --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./testload.tmp > testload.asm
+	java -jar KickAss.jar testload.asm
+	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -delete testload -write testload.prg testload
+	rm -f ./testload.tmp
+
+readdisk:
+	./compiler --kick --basic --code-segment 2100 --data-segment 820  < ./readdisk.c > readdisk.asm
+	java -jar KickAss.jar readdisk.asm
+	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -delete readdisk -write readdisk.prg readdisk
+
+testsave:
+	./compiler --kick --basic --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./testsave.c > testsave.asm
+	./compiler --kick --basic --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./saveworld.c > saveworld.asm
+	java -jar KickAss.jar testsave.asm
+	java -jar KickAss.jar saveworld.asm
+	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -delete testsave test3k -write testsave.prg testsave -write saveworld.prg saveworld
+
+diskwrite:
+	java -jar KickAss.jar writedata.asm
+	java -jar KickAss.jar readdata.asm
+
 bitmap:
 	cat ./bitmap.c common.c > bitmap.tmp
-	./compiler --kick --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./bitmap.tmp > bitmap.asm
+	./compiler --kick --basic --code-segment 2100 --data-segment 820 < ./bitmap.tmp > bitmap.asm
 	java -jar KickAss.jar bitmap.asm
 	rm -f bitmap.tmp
+	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -dele bitmap -write bitmap.prg bitmap
 
 mul16:
 	./compiler --basic --kick --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./mul16.c > mul16.asm
@@ -206,7 +237,7 @@ mul16:
 roll:
 	./compiler --basic --kick --code-segment 2100 --data-segment 820 < ./roll.c > roll.asm
 	java -jar KickAss.jar roll.asm
-
+	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -dele roll -write roll.prg roll
 
 knight2:
 	cat ./knight2.c common.c > knight2.tmp
@@ -216,9 +247,10 @@ knight2:
 
 knight3:
 	cat ./knight3.c common.c > knight3.tmp
-	./compiler --debug --kick --basic --code-segment 8192 --data-segment 26000 --memory-locations --symbol-table < ./knight3.tmp > knight3.asm
+	./compiler --debug --kick --basic --code-segment 8192 --data-segment 49152 --memory-locations --symbol-table < ./knight3.tmp > knight3.asm
 	java -jar KickAss.jar knight3.asm
 	rm -f knight3.tmp
+	/Applications/Vice64/tools/c1541 -attach KNIGHTSQUEST.d64 -delete knight3 -write knight3.prg knight3
 
 collision:
 	./compiler --basic --kick --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./collision.c > collision.asm
@@ -229,6 +261,7 @@ vscroll:
 	./compiler --basic --kick --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./vscroll.tmp > vscroll.asm
 	java -jar KickAss.jar vscroll.asm
 	rm -f vscroll.tmp
+	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -dele vscroll -write vscroll.prg vscroll
 
 math:
 	cat ./math.c common.c > math.tmp
@@ -285,6 +318,9 @@ forloop:
 	./compiler --code-segment 2100 --data-segment 820 --memory-locations < ./forloop.tmp > forloop.asm
 	rm -f forloop.tmp
 
+looptest:
+	./compiler --kick --code-segment 2100 --data-segment 820  < ./looptest.c > looptest.asm
+	java -jar KickAss.jar looptest.asm
 
 
 sound:
@@ -356,7 +392,7 @@ return:
 conway:
 	./compiler --kick --basic --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./conway.c > conway2100.asm
 	java -jar KickAss.jar conway2100.asm
-
+	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -dele conway -write conway.prg conway
 
 stack:
 	cat ./stack.c common.c > stack.tmp
@@ -368,6 +404,7 @@ recursive:
 	./compiler --basic --kick --code-segment 2100 --data-segment 820 --no-asm-comments --symbol-table < ./recursive.tmp > recursive.asm
 	java -jar KickAss.jar recursive.asm
 	rm -f recursive.tmp
+	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -dele recursive -write recursive.prg recursive
 
 bytemath:
 	cat ./bytemath.c common.c > bytemath.tmp
@@ -380,6 +417,7 @@ clearscreen:
 snake2100:
 	./compiler --basic --code-segment 2100 --data-segment 820 --kick  < ./snake2100.c > snake2100.asm
 	java -jar KickAss.jar snake2100.asm
+	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -dele snake2100 -write snake2100
 
 
 printftest:
@@ -406,6 +444,7 @@ program:
 	cat poketest-tmp.asm ufo-sid.asm > poketest.asm
 	java -jar KickAss.jar -showmem  poketest.asm
 	rm -f poketest.tmp poketest-tmp.asm
+	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -dele poketest -write poketest.prg poketest
 
 arith:
 	./compiler --kick --code-segment 2100 --data-segment 820  --memory-locations --no-asm-comments --symbol-table  < ./arithtests.c > arithtests.asm
@@ -435,6 +474,7 @@ vartests:
 	./compiler --kick --code-segment 2100 --data-segment 828 --memory-locations --symbol-table < ./vartests.tmp > vartests.asm
 	java -jar KickAss.jar vartests.asm
 	rm -f vartests.tmp
+	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -delete vartests -write vartests.prg vartests
 
 clean:
 #	mv -f parser.tab.c parser.tab.c.prev

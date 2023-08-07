@@ -1,6 +1,10 @@
 int main()
 {
+  //import( "bin", "knight03-splash-pixel-data.bin", 0xA000 );
+  //import( "bin", "knight03-splash-colour-data.bin", 0x8400 );
 
+
+  
   // the background colour should be controlled by a raster int
   // from 0-32 bg should be blue
   // from 33 - 120 bg should be grey
@@ -8,14 +12,14 @@ int main()
   // and then i don't care ... black maybe
 
   // setup background colours
-  irq( ptr(irqfunc1), 0x00, 1 );
+  //irq( ptr(irqfunc1), 0x00, 1 );
 
   saveregs();
 
   //import( "sid", "mymusic.sid", 0x0000 );
   //sidirq( 0x0000, 0x0000 );
   
-  poke( 0xD021, 5 );
+  poke( 0xD021, 0 );
   // directions
   //   0
   // 3   1
@@ -52,7 +56,12 @@ int main()
   uint specialBitFlag;
   uint monsterisinroom;
   uint treasureinroom;
+  uint healthpackinroom;
   uint treasurey;
+  uint healthpacky;
+  uint playerdied;
+  uint keepPlaying;
+  uint maxHP;
   
   // Blue and Red
   uint plotshapeColourValue1001;
@@ -67,17 +76,26 @@ int main()
   uint door2;
   uint door3;
 
+  uint textColour;
+  inc( textColour );
+  
   word nDoor = 0x0000;
   word expPts;
+  word playerGold;
   word sDoor;
   word general16bit;
   word clock;
   word plotNum;
   word treasurex;
+  word healthpackx;
+  word hpTimer;
   
   // start in room #1
   inc( currentRoom );
-  
+
+  // number of remaining lives;
+  uint lives = 0x03;
+
   word playerx = 0x0020;
   //uint playery = 0x40;
   uint playery = 0x80;
@@ -94,18 +112,17 @@ int main()
   general8bit = 0x00;
 
   seed();
-  shortcls();
-  // pause here
-  printf( "        PRESS ANY KEY TO BEGIN" );
-  while( general8bit == 0 )
-    {
-      sDoor=rnd(1);
-      general8bit = getchar();
-    }
+  //shortcls();
+  //printf( "\n        PRESS ANY KEY TO BEGIN" );
+  //while( general8bit == 0 )
+  //  {
+  //    sDoor=rnd(1);
+  //    general8bit = getchar();
+  // }
 
-  int playerHP = rnd(1) & 0x03;
+  uint playerHP = rnd(1) & 0x03;
   uint playerAC = rnd(1) & 0x03;
-  int monsterHP = rnd(1) & 0x03;
+  uint monsterHP = rnd(1) & 0x03;
   uint monsterAC = rnd(1) & 0x03;
   playerHP = playerHP + 13;
   playerAC = playerAC + 13;
@@ -115,7 +132,7 @@ int main()
   // multicolour bitmap mode
   poke( 0xD011, 0x3B );
   poke( 0xD016, 0x18 );
-  poke( 0xD018, 24 );
+  poke( 0xD018, 0x18 );
 
   romout(6);
     
@@ -123,6 +140,50 @@ int main()
   word bmpaddrX = bmpaddr + 0x1FF8;
   word scraddr = getscr_addr();
   word scraddrX = scraddr + 0x03EF;
+
+  screen(0);
+
+  setfilename( "SPLASH,S,R" );
+  setlfs( 3, 8, 3 );
+  fopen();
+  fchkin( 3 );
+
+  screen(0);
+  word addr = 0xA000;
+  for( word i = 0x0000; i < 0x1F40; i = i + 0x0001 )
+    {
+      poke( addr, fchrin() );
+      addr = addr + 0x0001;
+    }
+
+  addr = 0x8400;
+  for( i = 0x0000; i < 0x03E8; i = i + 0x0001 )
+    {
+      poke( addr, fchrin() );
+      addr = addr + 0x0001;
+    }
+
+  addr = 0xD800;
+  for( i = 0x0000; i < 0x03E8; i = i + 0x0001 )
+    {
+      poke( addr, fchrin() );
+      addr = addr + 0x0001;
+    }
+  fclose(3);
+  fclrchn();
+  asmcomment( "don't forget to write more text on the screen here!");
+  
+  screen(1);
+
+  asmcomment("seed the RNG" );
+  while( general8bit == 0 )
+    {
+      sDoor=rnd(1);
+      general8bit = getchar();
+    }
+  
+  // setup background colours
+  irq( ptr(irqfunc1), 0x00, 1 );
 
   clearhires();
   
@@ -134,8 +195,20 @@ int main()
   word sprptr5 = scraddr + 0x03FD;
 
   data scoreText = {'E', 'X', 'P', ':' };
+  data healthText = {'H', 'E', 'A', 'L', 'T', 'H', ':' };
+  data monsterHealthText = {'E', 'N', 'E', 'M', 'Y', ':' };
+  data livesText = {'L', 'I', 'V', 'E', 'S', ':' };
+  data spacesText = { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' };
   data zeroText = {'0'};
+  data goldText = {'G', 'O', 'L', 'D', ':' };
+  data youDiedText = {'Y', 'O', 'U', ' ', 'H', 'A', 'V', 'E', ' ', 'P', 'E', 'R', 'I', 'S', 'H', 'E', 'D' };
+  //               1    2    3    4    5    6    7    8    9    0    1    2    3    4    5    6    7    8    9    0    1    2    3    4    5
+  data pakText = {'P', 'R', 'E', 'S', 'S', ' ', 'A', 'N', 'Y', ' ', 'K', 'E', 'Y', ' ', 'T', 'O', ' ', 'C', 'O', 'N', 'T', 'I', 'N', 'U', 'E' };
+  // 17 chars
+  data lastTimeText = { 'F', 'O', 'R', ' ', 'T', 'H', 'E', ' ', 'L', 'A', 'S', 'T', ' ', 'T', 'I', 'M', 'E' };
   
+  data pressyText = {'P', 'R', 'E', 'S', 'S', ' ', 'Y', ' ', 'T', 'O', ' ', 'P', 'L', 'A', 'Y', ' ', 'A', 'G', 'A', 'I', 'N' };
+  data quitText = {'P', 'R', 'E', 'S', 'S', ' ', 'Q', ' ', 'T', 'O', ' ', 'Q', 'U', 'I', 'T' };
   asmcomment( "LETTER/DIGIT DEFINITIONS" );
   // digits
   data digits =
@@ -202,7 +275,7 @@ int main()
   // 1 - haven't visited
   // 1 - monster is in room
   // 1 - treasure
-  // 1 - 
+  // 1 - healthpack
   // 1 - 
   // 1 - 
   // 1 - 
@@ -223,30 +296,39 @@ int main()
   
   data world =
     {
-      0, 2, 0, 0,   0, 3, 4, 7, 0,   0,   0x60,
-      0, 3, 0, 1,   3, 4, 2, 3, 2,   0,   0xC0,
-      0, 4, 7, 2,   0, 0, 6, 0, 0,   2,   0xC0,
-      0, 0, 8, 3,   2, 3, 2, 3, 3,   5,   0x80,
-      0, 6, 9, 0,   3, 2, 3, 2, 2,   3,   0x80,
-      0, 0, 10, 5,  2, 2, 3, 3, 2,   1,   0x80,
-      3, 8, 11, 0,  3, 1, 2, 3, 4,   5,   0x80,
-      4, 0, 12, 7,  3, 0, 3, 0, 1,   2,   0x80,
-      5, 0, 13, 0,  2, 2, 1, 2, 2,   5,   0x80,
-      6, 11, 0, 0,  1, 3, 3, 2, 3,   0,   0x80,
-      7, 0, 0, 10,  0, 3, 0, 3, 1,   0,   0x80,
-      8, 0, 0, 0,   2, 1, 2, 3, 3,   0,   0x80,
-      9, 0, 17, 0,  3, 3, 3, 2, 1,   1,   0x80,
-      0, 15, 0, 0,  2, 2, 2, 2, 3,   0,   0x80,
-      0, 16, 19, 14,3, 3, 3, 3, 2,   4,   0x80,
-      0, 0, 20, 15, 2, 3, 3, 2, 3,   3,   0x80,
-      13, 18, 0, 0, 1, 3, 2, 2, 3,   0,   0x80,
-      0, 19, 21, 17,2, 2, 4, 4, 3,   2,   0x80,
-      15, 0, 0, 18, 2, 2, 2, 1, 3,   0,   0x80,
-      16, 0, 0, 0,  3, 2, 1, 3, 2,   0,   0x80,
-      18, 23, 0, 0, 2, 1, 2, 0, 0,   0,   0x80,
-      0, 23, 0, 21, 2, 3, 2, 3, 2,   0,   0x80,
-      0, 0, 0, 22,  3, 2, 3, 2, 3,   0,   0x80
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+      
     };
+
+  initWorld();
+  
+  //save( "WORLD,S,W", world, 253 );
+
+  //load( "WORLD,S,R", world, 253 );
+  
     
   
   asmcomment( "Bad Guy MOBs" );
@@ -263,6 +345,8 @@ int main()
   
   mob Aleft1 = { 0, 63, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 48, 0, 0, 252, 0, 0, 252, 0, 0, 236, 0, 0, 172, 0, 0, 172, 0, 0, 44, 0, 0, 247, 0, 16, 231, 0, 4, 103, 0, 1, 103, 0, 0, 100, 0, 0, 236, 0, 0, 255, 0, 0, 252, 0, 0, 252, 0, 0, 252, 0, 3, 252, 0 };
 
+  mob Aleft2 = { 0, 23, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 48, 0, 4, 252, 0, 4, 252, 0, 4, 236, 0, 4, 172, 0, 4, 172, 0, 4, 44, 0, 4, 247, 0, 4, 231, 0, 4, 151, 0, 22, 86, 0, 8, 84, 128, 12, 252, 0, 0, 252, 0, 3, 255, 0, 15, 207, 0, 15, 3, 192, 63, 15, 192 };
+
   mob Awalkup0 = { 0, 55, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 63, 0, 4, 255, 192, 4, 255, 192, 4, 255, 192, 4, 191, 128, 4, 46, 0, 4, 221, 192, 4, 221, 192, 6, 93, 96, 6, 93, 96, 10, 85, 104, 8, 255, 200, 12, 255, 200, 0, 243, 192, 0, 243, 192, 0, 243, 192, 0, 240, 0, 0, 240, 0 };
   
   mob Awalkup1 = { 0, 56, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 63, 0, 0, 255, 192, 0, 255, 192, 0, 255, 192, 0, 191, 128, 0, 46, 0, 0, 221, 192, 0, 221, 192, 6, 93, 96, 6, 93, 96, 10, 85, 96, 4, 255, 192, 12, 255, 192, 0, 243, 192, 0, 243, 192, 0, 243, 192, 0, 3, 192, 0, 3, 192 };
@@ -271,7 +355,6 @@ int main()
   
   mob Awalkdown1 = { 0, 58, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 252, 0, 3, 255, 0, 3, 255, 0, 2, 238, 0, 2, 170, 0, 0, 168, 0, 3, 87, 0, 3, 119, 0, 11, 87, 128, 9, 117, 144, 9, 85, 32, 3, 255, 32, 3, 255, 16, 3, 207, 48, 3, 207, 0, 3, 207, 0, 0, 15, 0, 0, 15, 0 };
 
-  mob Aleft2 = { 0, 23, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 48, 0, 4, 252, 0, 4, 252, 0, 4, 236, 0, 4, 172, 0, 4, 172, 0, 4, 44, 0, 4, 247, 0, 4, 231, 0, 4, 151, 0, 22, 86, 0, 8, 84, 128, 12, 252, 0, 0, 252, 0, 3, 255, 0, 15, 207, 0, 15, 3, 192, 63, 15, 192 };
   
   mob Alungel = { 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 15, 192, 0, 14, 192, 0, 10, 192, 0, 10, 192, 0, 7, 192, 0, 77, 192, 85, 106, 64, 0, 69, 64, 0, 63, 192, 0, 63, 192, 0, 60, 252, 0, 252, 252 };
   
@@ -318,37 +401,45 @@ int main()
   
   mob lungel = { 1, 53, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 204, 0, 0, 252, 0, 0, 124, 0, 0, 252, 0, 0, 60, 0, 0, 240, 0, 176, 20, 0, 14, 124, 0, 3, 87, 168, 0, 84, 240, 0, 84, 0, 0, 84, 0, 0, 84, 0, 0, 196, 0, 0, 196, 0, 3, 1, 0, 3, 1, 0, 15, 5, 0 };
 
+  asmcomment( "Items in Room MOBs" );
 
-  mob treasure =
-    {
-      2, 54,
+  mob treasure = { 2, 55, 96, 0, 0, 240, 48, 0, 240, 120, 0, 96, 120, 48, 0, 48, 120, 0, 0, 120, 12, 0, 48, 30, 48, 0, 30, 120, 0, 12, 120, 0, 0, 48, 96, 24, 0, 240, 60, 6, 240, 60, 15, 96, 24, 15, 0, 0, 6, 0, 0, 192, 0, 49, 227, 6, 121, 231, 143, 120, 199, 143, 48, 3, 6 };
 
-      96, 0,   0,   240,  48,   0,   240, 120,   0,   96, 120,  48,     0,  48, 120,
-      0,  0, 120,    12,   0,  48,    30,  48,   0,   30, 120,   0,    12, 120,   0,
-      0, 48,  96,    24,   0, 240,    60,   6, 240,   60,  15,  96,    24,  15,   0,
-      0,  6,   0,     0, 192,   0,    49, 227,   6,  121, 231, 143,   120, 199, 143,
-      48, 3,   6};
+  
+  mob healthPack = { 3, 56, 63, 255, 252, 213, 85, 87, 213, 85, 87, 213, 85, 87, 213, 85, 87, 213, 105, 87, 213, 105, 87, 213, 105, 87, 213, 105, 87, 214, 170, 151, 214, 170, 151, 214, 170, 151, 213, 105, 87, 213, 105, 87, 213, 105, 87, 213, 105, 87, 213, 85, 87, 213, 85, 87, 213, 85, 87, 213, 85, 87, 63, 255, 252};
+
+
+mob princess = { 4, 57, 192, 0, 12, 131, 51, 8, 131, 255, 8, 131, 87, 8, 131, 119, 8, 35, 255, 32, 8, 252, 128, 2, 254, 0, 0, 152, 0, 0, 168, 0, 0, 168, 0, 0, 252, 0, 0, 168, 0, 10, 170, 128, 42, 170, 160, 42, 170, 160, 170, 170, 168, 170, 170, 168, 0, 68, 0, 0, 68, 0, 3, 207, 0};
+
+
+
 
   // Sprite Memory starts at 0x8040
-  
-  // multicolour for sprites 00000111
-  poke( 0xD01C, 0x07 );
-  
+ 
+  // multicolour for sprites 00110111
+  poke( 0xD01C, 0x37 );
+ 
   // colours for all sprites (Light grey)
   poke( 0xD025, 0x0F );
 
   // Black for all sprites
   poke( 0xD026, 0x00 );
 
-  // Brown for sprite 3
+  // Brown for sprite 1
   spritecolour( 0x01, 0x09 );
 
-  // Brown for sprite 2 and 4 (the monster)
+  // Brown for sprite 0 and 2 (the monster)
   spritecolour( 0x00, 0x09 );
   spritecolour( 0x02, 0x09 );
 
-  // Yellow for sprite 5 (the coins)
+  // Yellow for sprite 3 (the coins)
   spritecolour( 0x03, 0x07 );
+
+  // Red for sprite 4 (the healthpack)
+  spritecolour( 0x04, 0x02 );
+
+  // Pink for sprite 5 (the princess)
+  spritecolour( 0x05, 0x0A );
 
   // turn on sprites   (b11111111 = 0xFF = all)
   spriteon( 0xFF );
@@ -373,15 +464,17 @@ int main()
   Awalkdownframe[0] = Awalkdown0;
   Awalkdownframe[1] = Awalkdown1;
 
-  uint Awalkingleftframe[3];
+  uint Awalkingleftframe[4];
   Awalkingleftframe[0] = Aleft0;
   Awalkingleftframe[1] = Aleft1;
   Awalkingleftframe[2] = Aleft2;
+  Awalkingleftframe[3] = Aleft1;
 
-  uint Awalkingrightframe[3];
+  uint Awalkingrightframe[4];
   Awalkingrightframe[0] = Aright0;
   Awalkingrightframe[1] = Aright1;
   Awalkingrightframe[2] = Aright2;
+  Awalkingrightframe[3] = Aright1;
   
   uint walkdownframe[8];
   walkdownframe[0] = walkdown0;
@@ -406,21 +499,22 @@ int main()
   walkrframe[3] = right1;
  
   //clearhires();
-
   // create scenery
   putStuffOnTheScreen();
 
 
-  poke( sprptr0, Astanding );
-  poke( sprptr1, standing );
-  poke( sprptr2, Astanding );
+  //poke( sprptr0, Astanding );
+  //poke( sprptr1, standing );
+  //poke( sprptr2, Astanding );
   poke( sprptr3, treasure );
+  poke( sprptr4, healthPack );
+  poke( sprptr5, princess );
   
   //pause();
   
   uint c = getin();
 
-  while( c != 62 )
+  while( keepPlaying != 0x01 )
     {
       if( clock == 0x0000 )
 	{
@@ -438,7 +532,7 @@ int main()
 			{
 			  // MOVE TO NEXT ROOM
 			  currentRoom = goW;
-			  playerx = 0x0143;
+			  playerx = 0x0140;
 			  putStuffOnTheScreen();
 			}
 		    }
@@ -457,9 +551,9 @@ int main()
 			{
 			  if( goE != 0 )
 			    {
-			      // MOVE TO NEXT ROOM
+			      asmcomment( "MOVE TO EAST ROOM" );
 			      currentRoom = goE;
-			      playerx = 0x0017;
+			      playerx = 0x0020;
 			      putStuffOnTheScreen();
 			    }
 			}
@@ -489,7 +583,7 @@ int main()
 					{
 					  // MOVE TO NEXT ROOM
 					  currentRoom = goN;
-					  playery = 205;
+					  playery = 202;
 					  putStuffOnTheScreen();
 					}
 				    }
@@ -519,7 +613,7 @@ int main()
 					{
 					  // MOVE TO NEXT ROOM
 					  currentRoom = goS;
-					  playery = 113;
+					  playery = 116;
 					  putStuffOnTheScreen();
 					}
 				    }
@@ -539,90 +633,68 @@ int main()
 				{
 				  direction = 7;
 				}
-
-			      // this should be fixed in parsey.y
-			      // so that we can compare:
-			      //    A relop UintIMM
-			      //    A relop IntIMM
-			      //    A relop UintID
-			      //    A relop IntID
-			      //    A relop A
-			      //    A relop XA
-			      //    A relop WordIMM
-			      //    A relop WordID
-			      //    A relop FloatID
-			      //    A relop FloatIMM
-
-			      // the code _should_ be:
-			      // if( myCollide() != 0 ) without the
-			      // intermediate variable (in this case) "t"
-			      uint t = proximity( monster0x, monster0y, 0x000A );
-			      if( t != 0x00 )
-				{
-				  // do the whole battle thing here
-				  dieRoll = rnd(1);
-
-				  if( dieRoll > 127 )
-				    {
-				      monster0x = 0x0064;
-				      monster0y = 0xC8;
-				      dec( monsterHP );
-				      inc(expPts);
-				      monsterisinroom = 0x00;
-
-				      asmcomment( "turn off the monster in current room" );
-				      clearSpecialBit( 6 );
-				      
-				      spriteoff( 0x05 );
-				      //spriteoff( 0x04 );
-				
-				      if( monsterHP == 0x00 )
-					{
-					  // monster dies
-					  inc( expPts );
-					}
-				      updateScore();
-
-				    }
-
-
-				  // dieroll = random roll out of 20
-				  // hitroll = random roll out of 6
-				  // if roll > monsterAC
-				  // monster loses hitroll from monsterHP
-				  // expPts++
-				  
-				  // if monsterHP <= 0 then monster dies
-
-
-				  // dieroll = random roll out of 20
-				  // hitroll = random roll out of 6
-				  // if roll > playerAC
-				  // player loses hitroll from playerHP
-
-				  // if playerHP <= 0 then player dies
-				  
-				
-				}
-
 			    }
 			  else
 			    {
-			      // standing
-			      direction = 5;
+			      if( c == 62 )
+				{
+				  pauseGameSequence();
+				}
+			      else
+				{
+				  // standing
+				  direction = 5;
+				}
 			    }
 			}
 		    }
 		}
 	    }
+
+	  if( monsterisinroom != 0x00 )
+	    {
+	      uint tmpProx1 = proximity( monster0x, monster0y, 0x000A );
+	      if( tmpProx1 != 0x00 )
+		{
+		  if( c == 60 )
+		    {
+		      playerAttack();
+		      monsterAttack();
+		    }
+		  else
+		    {
+		      monsterAttack();
+		    }
+		  tmpProx1 = 0x00;
+		}
+	    }
+	  // if monster is within proximity of player
+	  // monster can attack
+	  // ... not ALWAYS, but maybe, if rand() <= 0x20
+	  // there could also be a "currently-in-a-fight" flag
+	  // so if the player has started attacking, then
+	  // the monster goes on the offensive
 	}
       poke( 0xD01E, 0 );
       poke( 0xD019, 0 );
       animate();
       clock = clock + 0x0001;
-      clock = clock & 0x00FF;
+      hpTimer = hpTimer + 0x0001;
+      if( hpTimer == 0x0000 )
+	{
+	  inc(playerHP);
+	  updateHealth();
+	}
+      if( clock > 0x009F )
+	{
+	  clock = 0x0000;
+	}
+      //clock = clock & 0x007F;
 
+      //if( c != 62 )
+      //{
       c = getin();
+      //	}
     }
   //sidoff(0x0000);
 
@@ -633,7 +705,17 @@ int main()
   restoreregs();
   asmcomment( "Restore $0314/$0315 IRQ Vector" );
   irq( ptr(irqrestore), 0x00, 1 );
-
+  shortcls();
+  printf( "GAME OVER\n\nSTATS:\n" );
+  printf( "EXP: " );
+  printf( expPts );
+  cr();
+  printf( "GOLD: " );
+  printf( playerGold );
+  cr();
+  printf( "HEALTH: " );
+  printf( playerHP );
+  cr();
   return;
 }
 
@@ -669,10 +751,7 @@ void animate()
 	      poke( sprptr0, Awalkingrightframe[Acurrentrightframe] );
 	      poke( sprptr2, Awalkingrightframe[Acurrentrightframe] );
 	      inc(Acurrentrightframe);
-	      if( Acurrentrightframe > 2 )
-		{
-		  Acurrentrightframe = 0;
-		}
+	      Acurrentrightframe = Acurrentrightframe & 0x03;
 	    }
 
 	  if( Adirection == 3 )
@@ -680,10 +759,7 @@ void animate()
 	      poke( sprptr0, Awalkingleftframe[Acurrentleftframe] );
 	      poke( sprptr2, Awalkingleftframe[Acurrentleftframe] );
 	      inc(Acurrentleftframe);
-	      if( Acurrentleftframe > 2 )
-		{
-		  Acurrentleftframe = 0;
-		}
+	      Acurrentleftframe = Acurrentleftframe & 0x03;
 	    }
 	}
       
@@ -747,34 +823,17 @@ void animate()
 		}
 	    }
 	}
-      //if( monsterisinroom != 0 )
-      //{
-      //calcMonster0Position();
-      //}
-      //else
-      //{
-	  // mot sure about these arguments... it might be 1 and 3, I can't remmeber
-      //  spriteoff( 0x01 );
-      //  spriteoff( 0x03 );
-      //}
-      
-      // positiojn knight
       
       
       positionMOBS();
-      //spritex( 2, playerx );
-      //spritey( 2, playery );
 
+      asmcomment( "animate the torches by changing their colours" );		 
       for( general8bit = 0x00; general8bit < 5; inc(general8bit) )
 	{	  
 	  if( torchlocation[general8bit] == 0x01 )
 	    {
-	      word ad = scraddr + 0x00C9 + general8bit * 8;
+	      word ad = scraddr + 0x00F1 + general8bit * 8;
 	      uint ad1 = peek( ad );
-	      //rol( ad1 );
-	      //rol( ad1 );
-	      //rol( ad1 );
-	      //rol( ad1 );
 	      if( ad1 == 0x72 )
 		{
 		  ad1 = 0x27;
@@ -793,11 +852,7 @@ void animate()
 	      poke( ad, ad1 );
 	    }
 	}
-
-
     }
-
-  
   return;
 }
 
@@ -808,7 +863,6 @@ void clearhires()
   // 7 - Yellow 8 - Orange  9 - Brown A - Pink  B - Drk Gry C - Grey   D - Bright Green
   //                        E - Light Blue                   F - Light Grey
 
-  
   //screen(0);
   // this is for the single colour (11) -- this is ALWAYS at 0xD800 - 0x3FF
   for( general16bit = 0xD800; general16bit < 0xDBFF; general16bit = general16bit + 0x0001 )
@@ -833,11 +887,12 @@ void clearhires()
 void putStuffOnTheScreen()
 {
   screen(0);
+
+  monster0x = 0x0064;
+  monster0y = 0xC8;
+
   clearhires();
-  //screen(0);
-  // this data should be moved to the top of the program
-  //data empty = { 0, 0, 0, 0, 0, 0, 0, 0 };
-  // Bitmap Graphics Definitions
+
   asmcomment( "Bitmap Graphics Definitions" );
   
   data sdoor = { 213, 213, 253, 255, 255, 255, 255, 255, 85, 85, 85, 245, 255, 255, 255, 255, 85, 85, 85, 95, 255, 255, 255, 255, 87, 87, 127, 255, 255, 255, 255, 255 };
@@ -865,11 +920,12 @@ void putStuffOnTheScreen()
   data window3M = { 170, 170, 170, 170, 170, 170, 170, 255 };
   data window3R = { 171, 171, 171, 171, 171, 171, 171, 255 };
 
-  data paintingtop = {10, 8, 8, 8, 11, 8, 10, 10, 170, 255, 255, 255, 255, 165, 151, 149, 170, 0, 0, 0, 240, 0, 64, 80, 160, 32, 32, 32, 32, 32, 32, 32 };
+  data paintingtop = { 10, 8, 8, 8, 11, 8, 10, 10, 170, 255, 255, 255, 255, 165, 151, 149, 170, 0, 0, 0, 240, 0, 64, 80, 160, 32, 32, 32, 32, 32, 32, 32 };
 
   data paintingbot = { 8, 8, 8, 11, 11, 11, 11, 10, 93, 23, 253, 255, 255, 255, 255, 170, 1, 1, 67, 255, 252, 192, 192, 170, 96, 96, 224, 224, 32, 32, 32, 160 };
 
   data leftWallTop = { 252, 240, 192, 192, 192, 192, 192, 192 };
+  //data leftWallTop = { 255, 240, 192, 192, 192, 192, 192, 192 };
   data leftWallMid = { 192, 192, 192, 192, 192, 192, 192, 192 };
   data leftWallBot = { 192, 192, 192, 192, 192, 192, 240, 252 };
 
@@ -884,10 +940,9 @@ void putStuffOnTheScreen()
   // Drk Grey and Grey
   asmcomment( "Draw the brick wall" );
   plotshapeColourValue1001 = 0xBC;
-  
   // Black
   plotshapeColourValue11 = 0x00;
-  for( uint myY = 2; myY < 10; inc(myY) )
+  for( uint myY = 3; myY < 10; inc(myY) )
     {
       for( uint myX = 0; myX < 40; inc(myX) )
 	{
@@ -896,7 +951,7 @@ void putStuffOnTheScreen()
       	}
     }
   //pause();
-  asmcomment( "Draw the line at base of the brick  wall" );
+  asmcomment( "Draw the line at base of the brick wall" );
   for( general8bit = 0; general8bit < 160; inc(general8bit))
     {
       plot( general8bit, 78, 0xBC );
@@ -951,10 +1006,10 @@ void putStuffOnTheScreen()
 	}
       if( thing == 0x03 )
 	{
-	  torchlocation[jj] = 0x01;
 	  // save the spot where the torches are going
 	  // so that we can rol the colour byte of that
 	  // location to make them flicker
+	  torchlocation[jj] = 0x01;
 	}
       else
 	{
@@ -962,8 +1017,6 @@ void putStuffOnTheScreen()
 	}
       
       inc( roomIndex );
-      //pause();
-
     }
 
   if( goS != 0 )
@@ -974,8 +1027,6 @@ void putStuffOnTheScreen()
       sDoor = thing * 64;
       sDoor = sDoor + 16;
       inc( thing );
-      //pause();
-      
     }
 
   // also on or about line #201
@@ -983,33 +1034,43 @@ void putStuffOnTheScreen()
   // 1 - haven't visited (0x80)
   // 1 - monster is in room (0x40...)
   // 1 - treasure
-  // 1 - 
+  // 1 - health pack
   // 1 - 
   // 1 - 
   // 1 - 
   // 1 - 
 
-  asmcomment( "test each bit of last byte bof room data" );
+  asmcomment( "test each bit of last byte of room data" );
   inc( roomIndex );
   thing = (world)[roomIndex];
+
+
+  // VISITED ALREADY?
   thing2 = thing & 0x80;
+  // if this is the first time they've entered the room
+  // give them some exp points.
   if( thing2 != 0 )
     {
       inc( expPts );
+      asmcomment( "turn off the 'visited' bit" );
+      clearSpecialBit( 7 );
     }
 
   thing2 = thing & 0x40;
+
+  // MONSTER
   if( thing2 != 0 )
     {
       monsterisinroom = 0x01;
       spriteon( 5 );
-      //poke( 0xD015, 0x07 );
+      monsterHP = rnd() & 0x03;
+      monsterHP = monsterHP + 7;
+      updateMonsterHealth();
     }
   else
     {
       monsterisinroom = 0x00;
       spriteoff( 5 );
-      //poke( 0xD015, 0x04 );
     }
 
   // TREASURE
@@ -1024,7 +1085,7 @@ void putStuffOnTheScreen()
       treasurey = rnd();
       lsr(treasurey);
       lsr(treasurey);
-      treasurey = treasurey + 144;
+      treasurey = treasurey + 143;
 
       treasureinroom = 0x01;
       spriteon( 0x08 );
@@ -1035,11 +1096,28 @@ void putStuffOnTheScreen()
       treasureinroom = 0x00;
       spriteoff( 0x08 );
     }
-  
+
+  // HEALTH PACK
   thing2 = thing & 0x10;
   if( thing2 != 0 )
     {
-      nop();
+      healthpackx = rnd();
+      healthpackx = healthpackx + 0x0021;
+
+
+      // the y value needs to be from 123 - 160 or so.
+      healthpacky = rnd();
+      lsr(healthpacky);
+      lsr(healthpacky);
+      healthpacky = healthpacky + 143;
+
+      healthpackinroom = 0x01;
+      spriteon( 0x10 );
+    }
+  else
+    {
+      healthpackinroom = 0x00;
+      spriteoff( 0x10 );
     }
 
   thing2 = thing & 0x08;
@@ -1060,10 +1138,17 @@ void putStuffOnTheScreen()
       nop();
     }
 
+  // PRINCESS!!!
   thing2 = thing & 0x01;
   if( thing2 != 0 )
     {
-      nop();
+      spritex( 0x05, 0x0103 );
+      spritey( 0x05, 0x71 );
+      spriteon( 0x20 );
+    }
+  else
+    {
+      spriteoff( 0x20 );
     }
 
 
@@ -1074,27 +1159,55 @@ void putStuffOnTheScreen()
   //general16bit = general16bit + roomIndex;
   //general16bit = general16bit + roomIndex;
   //(world)[roomIndex] = 0;
-  asmcomment( "turn off the 'visited' bit" );
-  //poke( general16bit, thing & 0x7F );
-  clearSpecialBit( 7 );
 
   word wordToPrint = scoreText;
   wordSize = 4;
-  plotDigitX = 0;
-  plotDigitY = 0;
+  plotDigitX = 1;
+  plotDigitY = 1;
   printWord();
-  //pause();
-
+  
   updateScore();
-  //pause();
- 
+
+  wordToPrint = goldText;
+  wordSize = 5;
+  plotDigitX = 14;
+  plotDigitY = 23;
+  printWord();
+  
+  updateGold();
+
+  
+  
+  wordToPrint = healthText;
+  wordSize = 7;
+  plotDigitX = 29;
+  plotDigitY = 1;
+  printWord();
+  updateHealth();
+  
+  wordToPrint = livesText;
+  wordSize = 6;
+  plotDigitX = 31;
+  plotDigitY = 23;
+  printWord();
+
+  wordToPrint = monsterHealthText;
+  wordSize = 6;
+  plotDigitX = 1;
+  plotDigitY = 23;
+  inc(textColour);
+  printWord();
+  dec(textColour);
+
+
+  updateLives();
+  
   screen(1);
   return;
 }
 
 void putThing( uint whatThing, uint whereThing )
 {
-
   uint ptStartX = whereThing * 8;
 
   //if( whatThing == 0x00 )
@@ -1111,14 +1224,7 @@ void putThing( uint whatThing, uint whereThing )
 	  plotshape(rightWallMid, 39, general8bit, 1);  
 	}
       plotshape(rightWallBot, 39, 21, 1);
-
-      //for( general8bit = 154; general8bit < 160; inc(general8bit))
-      //{
-      //plot( general8bit, 79, 0xFF );
-      //}
       plot(159,79,0xFF);
-
-      
     }
 
   if( whatThing == 0x09 )
@@ -1130,31 +1236,24 @@ void putThing( uint whatThing, uint whereThing )
 	  plotshape(leftWallMid, 0, general8bit, 1);  
 	}
       plotshape(leftWallBot, 0, 21, 1);
-
-      //for( general8bit = 0x00; general8bit < 0x06; inc(general8bit))
-      //{
-      //  plot( general8bit, 79, 0xBC );
-      //}
       plot(0,79,0xFF);
-
     }
-  
+
+
+  // PAINTING
   if( whatThing == 0x07 )
     {
       // Brown & Yellow
       plotshapeColourValue1001 = 0x79;
       // White
       plotshapeColourValue11 = 0x00;
-      plotshape(paintingtop, ptStartX+2, 4, 4);  
-      plotshape(paintingbot, ptStartX+2, 5, 4);
-  
-
+      plotshape(paintingtop, ptStartX+2, 5, 4);  
+      plotshape(paintingbot, ptStartX+2, 6, 4);
     }
   
+  // STEAL YOUR FACE
   if( whatThing == 0x06 )
     {
-
-      // steal your face  
       // Blue and Red
       plotshapeColourValue1001 = 0x62;
       // White
@@ -1164,14 +1263,11 @@ void putThing( uint whatThing, uint whereThing )
       plotshape(steal3, ptStartX+2, 5, 4);
       plotshape(steal5, ptStartX+2, 6, 4);
       plotshape(steal7, ptStartX+2, 7, 4);
-
     }
   
+  // DOOR
   if( whatThing == 0x01 )
     {
-      
-      // DOOR (same as window except for the bottom)
-
       plotshapeColourValue1001 = 0xBB; 
       plotshapeColourValue11 = 0x00;
       
@@ -1186,18 +1282,17 @@ void putThing( uint whatThing, uint whereThing )
 	}    
     }
 
+  // ???
   if( whatThing == 0x05 )
     {
       plotshapeColourValue1001 = 0xBB; 
       plotshapeColourValue11 = 0x00;
       plotshape(sdoor, ptStartX+2, 22, 4);
-      //plotshape(sdoor, ptStartX+4, 15, 1);  
-
     }
 
+  // SUIT OF ARMOUR
   if( whatThing == 0x02 )
     {
-      // SUIT OF ARMOUR
       plotshapeColourValue1001 = 0xBC;
       plotshapeColourValue11 = 0x00;
       plotshape(armour0, ptStartX+2, 5, 4);  
@@ -1207,41 +1302,41 @@ void putThing( uint whatThing, uint whereThing )
       plotshape(armour4, ptStartX+2, 9, 4);
     }
 
+  // 2 TORCHES
   if( whatThing == 0x03 )
     {
-      // 2 TORCHES
       // yellow/red
       plotshapeColourValue1001 = 0x72; 
       plotshapeColourValue11 = 0x00;
       
-      plotshape(torch0, ptStartX+1, 5, 2);  
-      plotshape(torch1, ptStartX+1, 6, 1);  
+      plotshape(torch0, ptStartX+1, 6, 2);  
+      plotshape(torch1, ptStartX+1, 7, 1);  
 
-      plotshape(torch0, ptStartX+4, 5, 2);  
-      plotshape(torch1, ptStartX+4, 6, 1);  
+      plotshape(torch0, ptStartX+4, 6, 2);  
+      plotshape(torch1, ptStartX+4, 7, 1);  
     }
 
+  // WINDOW
   if( whatThing == 0x04 )
     {
-      // WINDOW
       plotshapeColourValue1001 = 0xBB; 
       plotshapeColourValue11 = 0x00;
       
-      plotshape(window0, ptStartX+2, 3, 4);
-      plotshape(window1L, ptStartX+2, 4, 1);  
-      plotshape(empty2, ptStartX+3, 4, 1);  
-      plotshape(empty2, ptStartX+4, 4, 1);  
-      plotshape(window1R, ptStartX+5, 4, 1);  
-
+      plotshape(window0, ptStartX+2, 4, 4);
       plotshape(window1L, ptStartX+2, 5, 1);  
       plotshape(empty2, ptStartX+3, 5, 1);  
       plotshape(empty2, ptStartX+4, 5, 1);  
-      plotshape(window1R, ptStartX+5, 5, 1);
+      plotshape(window1R, ptStartX+5, 5, 1);  
 
-      plotshape(window3L, ptStartX+2, 6, 1 );
-      plotshape(window3M, ptStartX+3, 6, 1 );
-      plotshape(window3M, ptStartX+4, 6, 1 );
-      plotshape(window3R, ptStartX+5, 6, 1 );
+      plotshape(window1L, ptStartX+2, 6, 1);  
+      plotshape(empty2, ptStartX+3, 6, 1);  
+      plotshape(empty2, ptStartX+4, 6, 1);  
+      plotshape(window1R, ptStartX+5, 6, 1);
+
+      plotshape(window3L, ptStartX+2, 7, 1 );
+      plotshape(window3M, ptStartX+3, 7, 1 );
+      plotshape(window3M, ptStartX+4, 7, 1 );
+      plotshape(window3R, ptStartX+5, 7, 1 );
     }
 
   if( whatThing == 0x0A )
@@ -1343,9 +1438,12 @@ void positionMOBS()
       if( treasurecontact == 0x01 )
 	{
 	  spriteoff( 0x08 );
-	  expPts = expPts + 0x000A;
+	  general16bit = rnd(1);
+	  playerGold = playerGold + general16bit; 
+	  inc(expPts);
 	  asmcomment( "turn off the treasure in current room" );
 	  clearSpecialBit( 5 );
+	  updateGold();
 	  updateScore();
 	  treasureinroom = 0x00;
 	}
@@ -1354,6 +1452,28 @@ void positionMOBS()
   // treasure
   spritex( 3, treasurex );
   spritey( 3, treasurey );
+
+
+  if( healthpackinroom == 0x01 )
+    {
+      uint healthpackcontact = proximity( healthpackx, healthpacky, 0x000A );
+      if( healthpackcontact == 0x01 )
+	{
+	  spriteoff( 0x10 );
+	  inc(playerHP);
+	  inc(playerHP);
+	  inc(playerHP);
+	  inc(playerHP);
+	  inc(playerHP);
+	  asmcomment( "turn off the healthpacks in current room" );
+	  clearSpecialBit( 4 );
+	  updateHealth();
+	  healthpackinroom = 0x00;
+	}
+    }
+  spritex( 4, healthpackx );
+  spritey( 4, healthpacky );
+
   return;
 }
 
@@ -1363,7 +1483,8 @@ void irqfunc1()
 
   // SKY BACKGROUND COLOUR (DARK BLUE)
   poke( 0xD021, 0x06 );
-  irq( ptr(irqfunc2), 65, 0 );
+  //irq( ptr(irqfunc2), 65, 0 );
+  irq( ptr(irqfunc2), 73, 0 );
   poke( 0xD019, 0x01 );
   jmp( 0xEA7E );
   return;
@@ -1413,12 +1534,11 @@ void plotDigit()
 {
   word plotDigitOffset = plotDigitX + plotDigitY * 40;
   word plotDigitColor1 = plotDigitOffset + 0xD800;
-  //word plotDigitColors2And3 = plotDigitOffset + 0x8400;
   word plotDigitColors2And3 = plotDigitOffset + scraddr;
-  poke( plotDigitColor1, 0x01 );
+  //poke( plotDigitColor1, 0x01 );
+  poke( plotDigitColor1, textColour );
   poke( plotDigitColors2And3, 0x00 );
 
-  //word plotDigitPixels = asl(asl(asl(plotDigitOffset))) + 0xA000;
   word plotDigitPixels = asl(asl(asl(plotDigitOffset))) + bmpaddr;
 
   for( uint plotDigitI = 0; plotDigitI < 8; inc( plotDigitI ) )
@@ -1490,25 +1610,114 @@ void plotNumber()
 void updateScore()
 {
   plotDigitX = 9;
+  plotDigitY = 1;
   plotNum = expPts;
   plotNumber();
 
+  if( expPts >= 0x0019 )
+    {
+      maxHP = 25;
+    }
+  if( expPts >= 0x001E )
+    {
+      maxHP = 30;
+    }
+  if( expPts >= 0x0032 )
+    {
+      maxHP = 35;
+    }
+  
+  return;
+}
 
+void updateLives()
+{
+  plotDigitX = 38;
+  plotDigitY = 23;
+  plotNum = lives;
+  plotNumber();
+  return;
+}
+
+void updateHealth()
+{
+  wordToPrint = spacesText;
+  wordSize = 3;
+  plotDigitX = 37;
+  plotDigitY = 1;
+  printWord();
+
+  if( playerHP > maxHP )
+    {
+      playerHP = maxHP;
+    }
+  
+  // green
+  textColour = 0x05;
+  if( playerHP < 0x0A )
+    {
+      // yellow
+      textColour = 0x07;
+    }
+  if( playerHP < 0x07 )
+    {
+      // red
+      textColour = 0x02;
+    }
+  if( playerHP == maxHP )
+    {
+      // Bright Green
+      textColour = 0x0D;
+    }
+  
+  plotDigitX = 38;
+  plotDigitY = 1;
+  plotNum = playerHP;
+  plotNumber();
+  // white
+  textColour = 0x01;
+  return;
+}
+
+void updateGold()
+{
+  plotDigitX = 23;
+  plotDigitY = 23;
+  plotNum = playerGold;
+  plotNumber();
+  return;
+}
+
+
+void updateMonsterHealth()
+{
+
+  wordToPrint = spacesText;
+  wordSize = 5;
+  plotDigitX = 7;
+  plotDigitY = 23;
+  printWord();
+
+  plotDigitX = 8;
+  plotDigitY = 23;  
+  plotNum = monsterHP;
+  inc(textColour);
+  plotNumber();
+  dec(textColour);
   return;
 }
 
 void setSpecialBit( uint specialBit )
 {
+  // arg: 0 -> 7
   specialBitFlag = 0x01;
   for( general8bit = 0x00; general8bit < specialBit; inc( general8bit) )
     {
       asl( specialBitFlag );
     }
-
   dec( currentRoom );
   roomIndex = currentRoom * 11;
   inc( currentRoom );
-				      
   general16bit = world + roomIndex;
   general16bit = general16bit + 0x000A;
   general8bit = peek( general16bit );
@@ -1518,29 +1727,21 @@ void setSpecialBit( uint specialBit )
 
 void clearSpecialBit( uint specialBit2 )
 {
+  // arg: 0 -> 7
   specialBitFlag = 0xFE;
   for( general8bit = 0x00; general8bit < specialBit2; inc( general8bit) )
     {
       rol( specialBitFlag );
     }
-
   dec( currentRoom );
   roomIndex = currentRoom * 11;
   inc( currentRoom );
-				      
   general16bit = world + roomIndex;
   general16bit = general16bit + 0x000A;
   general8bit = peek( general16bit );
   poke( general16bit, general8bit & specialBitFlag  );
   return;
 }
-
-
-
-
-
-
-
 
 uint proximity(word proxX, uint proxY, word proxLimit)
 {
@@ -1578,3 +1779,287 @@ uint proximity(word proxX, uint proxY, word proxLimit)
   return proximityReturn;
 }
 
+void monsterAttack()
+{
+  // do the whole battle/attack thing here
+  general8bit = rnd();
+  if( general8bit > 200 )
+    {
+      if( Adirection < 0x03 )
+	{
+	  poke( sprptr0, Alunger );
+	  poke( sprptr2, Alunger );
+	}
+      else
+	{
+	  poke( sprptr0, Alungel );
+	  poke( sprptr2, Alungel );
+	}
+      general8bit = general8bit & 0x07;
+      playerHP = playerHP - general8bit;
+      if( playerHP > 0x40 )
+	{
+	  playerHP = 0x00;
+	}
+
+      
+      if( playerHP == 0x00 )
+	{
+	  dec( lives );
+	  if( lives != 0x00 )
+	    {
+	      deathSequence();
+	    }
+	  else
+	    {
+	      gameOverSequence();
+	    }
+	}
+      updateHealth();
+    }
+  return;
+}
+
+
+void playerAttack()
+{
+  // do the whole battle/attack thing here
+  general8bit = rnd();
+
+  /// for debugging purposes only
+  /// display the "dice-roll"
+  //inc(textColour);
+  //inc(textColour);
+  //plotDigitX = 12;
+  //plotDigitY = 1;
+  //plotNum = general8bit;
+  //plotNumber();
+  //dec(textColour);
+  //dec(textColour);
+
+  
+  if( general8bit > 100 )
+    {
+      general8bit = general8bit & 0x07;
+      monsterHP = monsterHP - general8bit;
+      
+      if( monsterHP > 0x40 )
+	{
+	  monsterHP = 0x00;
+	}
+
+      if( monsterHP == 0x00 )
+	{
+	  inc( expPts );
+	  inc( expPts );
+	  clearSpecialBit( 6 );
+	  // 0x05 = b00000101
+	  spriteoff( 0x05 );
+	  monsterisinroom = 0x00;
+	}
+      inc( expPts );
+      updateScore();
+      updateMonsterHealth();
+    }
+  return;
+}
+
+
+void deathSequence()
+{
+  uint D01B = peek( 0xD01B );
+  poke( 0xD01B, 0xFF );
+  playerx = 0x0020;
+  playery = 0x80;
+  hpTimer = 0x0001;  
+  currentRoom = 0x01;
+  playerHP = rnd() & 0x03;
+  playerHP = playerHP + 13;
+
+
+  wordToPrint = youDiedText;
+  wordSize = 17;
+  plotDigitX = 12;
+  plotDigitY = 11;
+  printWord();
+
+  delay();
+  
+  wordToPrint = pakText;
+  wordSize = 25;
+  plotDigitX = 8;
+  plotDigitY = 13;
+  printWord();
+
+  clearkb();
+  uint qsq = getchar();
+  
+  while( qsq == 0 )
+    {
+      qsq = getchar();
+    }
+
+  poke( 0xD01B, D01B );
+  putStuffOnTheScreen();
+
+  return;
+}
+
+
+void pauseGameSequence()
+{
+
+  wordToPrint = quitText;
+  wordSize = 15;
+  plotDigitX = 12;
+  plotDigitY = 13;
+  printWord();
+
+
+  clearkb();
+  qsq = getchar();
+  
+  while( qsq == 0 )
+    {
+      qsq = getchar();
+    }
+  
+  if( qsq == 'Q' )
+    {
+      keepPlaying = 0x01;
+    }
+  else
+    {
+      wordToPrint = spacesText;
+      wordSize = 15;
+      plotDigitX = 12;
+      plotDigitY = 13;
+      printWord();
+    }
+  return;
+}
+
+void gameOverSequence()
+{
+  updateLives();
+  updateHealth();
+  
+  wordToPrint = youDiedText;
+  wordSize = 17;
+  plotDigitX = 12;
+  plotDigitY = 11;
+  printWord();
+
+  wordToPrint = lastTimeText;
+  wordSize = 17;
+  plotDigitX = 12;
+  plotDigitY = 13;
+  printWord();
+
+  delay();
+  
+  
+  wordToPrint = pressyText;
+  wordSize = 21;
+  plotDigitX = 10;
+  plotDigitY = 15;
+  printWord();
+  
+  spriteoff( 0x02 );
+
+  clearkb();
+  qsq = getchar();
+  
+  while( qsq == 0 )
+    {
+      qsq = getchar();
+    }
+  
+  if( qsq == 'Y' )
+    {
+      wordToPrint = spacesText;
+      wordSize = 17;
+      plotDigitX = 12;
+      plotDigitY = 11;
+      printWord();
+      
+      wordToPrint = spacesText;
+      wordSize = 21;
+      plotDigitX = 10;
+      plotDigitY = 13;
+      printWord();
+      
+      initWorld();
+      
+      spriteon( 0x02 );
+      putStuffOnTheScreen();   
+    }
+  else 
+    {
+      keepPlaying = 0x01;
+    }
+  
+
+
+  return;
+}
+
+void initWorld()
+{
+  data world2 =
+    {
+      0, 2, 0, 0,   0, 3, 4, 7, 0,   0,   0x71,
+      0, 3, 0, 1,   3, 4, 2, 3, 2,   0,   0xE0,
+      0, 4, 7, 2,   0, 0, 6, 0, 0,   2,   0xD0,
+      0, 0, 8, 3,   2, 3, 2, 3, 3,   5,   0xE0,
+      0, 6, 9, 0,   3, 2, 3, 2, 2,   3,   0xD0,
+      0, 0, 10, 5,  2, 2, 3, 3, 2,   1,   0xE0,
+      3, 8, 11, 0,  3, 1, 2, 3, 4,   5,   0xD0,
+      4, 0, 12, 7,  3, 0, 3, 0, 1,   2,   0xE0,
+      5, 0, 13, 0,  2, 2, 1, 2, 2,   5,   0xD0,
+      6, 11, 0, 0,  1, 3, 3, 2, 3,   0,   0xE0,
+      7, 0, 0, 10,  0, 3, 0, 3, 1,   0,   0xD0,
+      8, 0, 0, 0,   2, 1, 2, 3, 3,   0,   0xE0,
+      9, 0, 17, 0,  3, 3, 3, 2, 1,   1,   0xD0,
+      0, 15, 0, 0,  2, 2, 2, 2, 3,   0,   0xE0,
+      0, 16, 19, 14,3, 3, 3, 3, 2,   4,   0xD0,
+      0, 0, 20, 15, 2, 3, 3, 2, 3,   3,   0xE0,
+      13, 18, 0, 0, 1, 3, 2, 2, 3,   0,   0xD0,
+      0, 19, 21, 17,2, 2, 4, 4, 3,   2,   0xE0,
+      15, 0, 0, 18, 2, 2, 2, 1, 3,   0,   0xD0,
+      16, 0, 0, 0,  3, 2, 1, 3, 2,   0,   0xE0,
+      18, 23, 0, 0, 2, 1, 2, 0, 0,   0,   0xD0,
+      0, 23, 0, 21, 2, 3, 2, 3, 2,   0,   0xE0,
+      0, 0, 0, 22,  3, 2, 3, 2, 3,   0,   0xFF
+    };
+
+  for(  uint initWorldi = 0; initWorldi < 253; inc( initWorldi ) )
+    {
+      word a = world + initWorldi;
+      word b = world2 + initWorldi;
+      poke( a, peek( b ) );
+    }
+
+  currentRoom = 0x01;
+  playerHP = rnd() & 0x03;
+  playerHP = playerHP + 13;
+    
+  lives = 0x03;
+  expPts = 0x00;
+  playerGold = 0x0000;
+  playerx = 0x0020;
+  playery = 0x80;
+
+  maxHP = 0x14;
+
+  return;
+}
+
+void delay()
+{
+  for( word delayW = 0; delayW < 0x3FFF; delayW = delayW + 0x0001 )
+    {
+      nop();
+    }
+  return;
+}
