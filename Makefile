@@ -247,10 +247,27 @@ knight2:
 
 knight3:
 	cat ./knight3.c common.c > knight3.tmp
-	./compiler --debug --kick --basic --code-segment 8192 --data-segment 49152 --memory-locations --symbol-table < ./knight3.tmp > knight3.asm
+	./compiler --debug --kick --basic --code-segment 2061 --data-segment 17650  --memory-locations < ./knight3.tmp > knight3.asm
 	java -jar KickAss.jar knight3.asm
 	rm -f knight3.tmp
-	/Applications/Vice64/tools/c1541 -attach KNIGHTSQUEST.d64 -delete knight3 -write knight3.prg knight3
+	/Applications/Vice64/tools/c1541 -attach KNIGHTSQUEST.d64 -delete savesprites -delete loadsprites -delete knight3 -write knight3.prg knight3
+
+sprites: savesprites loadsprites
+
+savesprites:
+	cat ./savesprites.c common.c > savesprites.tmp
+	./compiler --debug --kick --basic --code-segment 8192 --data-segment 49152 < ./savesprites.tmp > savesprites.asm
+	java -jar KickAss.jar savesprites.asm
+	rm -f savesprites.tmp
+	/Applications/Vice64/tools/c1541 -attach KNIGHTSQUEST.d64 -delete knight3 -delete loadsprites -delete savesprites -delete sprites1 -write savesprites.prg savesprites
+
+loadsprites:
+	cat ./loadsprites.c common.c > loadsprites.tmp
+	./compiler --kick --basic --code-segment 2100 --data-segment 49152 < ./loadsprites.tmp > loadsprites.asm
+	java -jar KickAss.jar loadsprites.asm
+	rm -f loadsprites.tmp
+	/Applications/Vice64/tools/c1541 -attach KNIGHTSQUEST.d64 -delete loadsprites -write loadsprites.prg loadsprites
+
 
 collision:
 	./compiler --basic --kick --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./collision.c > collision.asm

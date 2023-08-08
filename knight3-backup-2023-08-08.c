@@ -1,7 +1,7 @@
 int main()
 {
 
-  data scoreText = {'E', 'X', 'P', ':' };
+    data scoreText = {'E', 'X', 'P', ':' };
   data healthText = {'H', 'E', 'A', 'L', 'T', 'H', ':' };
   data monsterHealthText = {'E', 'N', 'E', 'M', 'Y', ':' };
   data livesText = {'L', 'I', 'V', 'E', 'S', ':' };
@@ -223,26 +223,35 @@ int main()
 
   screen(0);
 
-  asmcomment( "LOAD THE SPLASH SCREEN INTO MEMORY" );
   setfilename( "SPLASH,S,R" );
   setlfs( 3, 8, 3 );
   fopen();
   fchkin( 3 );
 
-  for( word i = 0xA000; i < 0xBF40; i = i + 0x0001 )
+  word addr = 0xA000;
+  for( word i = 0x0000; i < 0x1F40; i = i + 0x0001 )
     {
-      poke( i, fchrin() );
+      poke( addr, fchrin() );
+      addr = addr + 0x0001;
     }
-  for( i = 0x8400; i < 0x87E8; i = i + 0x0001 )
+
+
+  addr = 0x8400;
+  for( i = 0x0000; i < 0x03E8; i = i + 0x0001 )
     {
-      poke( i, fchrin() );
+      poke( addr, fchrin() );
+      addr = addr + 0x0001;
     }
-  for( i = 0xD800; i < 0xDBE8; i = i + 0x0001 )
+
+  addr = 0xD800;
+  for( i = 0x0000; i < 0x03E8; i = i + 0x0001 )
     {
-      poke( i, fchrin() );
+      poke( addr, fchrin() );
+      addr = addr + 0x0001;
     }
   fclose(3);
   fclrchn();
+  asmcomment( "don't forget to write more text on the screen here!");
 
   wordToPrint = pakText;
   wordSize = 25;
@@ -275,8 +284,6 @@ int main()
   word sprptr3 = scraddr + 0x03FB;
   word sprptr4 = scraddr + 0x03FC;
   word sprptr5 = scraddr + 0x03FD;
-  //word sprptr6 = scraddr + 0x03FE;
-  //word sprptr7 = scraddr + 0x03FF;
 
 
   asmcomment( "WORLD DEFINITION" );
@@ -333,21 +340,95 @@ int main()
       
     };
 
-  initWorld();  
-    
-  asmcomment( "LOAD MOBS INTO MEMORY" );
-  setfilename( "SPRITES1,S,R" );
-  setlfs( 3, 8, 3 );
-  fopen();
-  fchkin( 3 );
-
-  for( word saddr = 0x8800; saddr < 0x90C0; saddr = saddr + 0x0001 )
-    {
-      poke( saddr, fchrin() );
-    }
+  initWorld();
   
-  fclose(3);
-  fclrchn();
+  //save( "WORLD,S,W", world, 253 );
+
+  //load( "WORLD,S,R", world, 253 );
+  
+    
+  
+  asmcomment( "Bad Guy MOBs" );
+ 
+  mob Astanding = { 0, 54, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 16, 0, 252, 16, 3, 255, 16, 3, 255, 16, 2, 238, 16, 2, 170, 16, 0, 168, 16, 3, 87, 16, 11, 119, 144, 11, 87, 84, 41, 117, 176, 33, 85, 32, 35, 255, 48, 3, 207, 0, 3, 207, 0, 3, 207, 0, 3, 207, 0, 3, 207, 0 };
+
+  mob Aright0 = { 0, 59, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 12, 0, 0, 63, 0, 0, 63, 0, 0, 59, 0, 0, 58, 0, 0, 58, 0, 0, 56, 0, 0, 223, 0, 0, 219, 0, 48, 214, 0, 14, 213, 128, 9, 21, 32, 0, 127, 0, 0, 63, 0, 0, 255, 192, 0, 243, 192, 3, 192, 240, 3, 240, 252 };
+  
+  mob Aright1 = { 0, 60, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 12, 0, 0, 63, 0, 0, 63, 0, 0, 59, 0, 0, 58, 0, 0, 58, 0, 0, 56, 0, 0, 223, 0, 0, 219, 4, 0, 217, 16, 0, 217, 64, 0, 25, 0, 0, 59, 0, 0, 255, 0, 0, 63, 0, 0, 63, 0, 0, 63, 0, 0, 63, 192 };
+
+  mob Aright2 = { 0, 61, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 12, 0, 0, 63, 16, 0, 63, 16, 0, 59, 16, 0, 58, 16, 0, 58, 16, 0, 56, 16, 0, 223, 16, 0, 219, 16, 0, 229, 16, 0, 149, 148, 2, 21, 32, 0, 63, 48, 0, 63, 0, 0, 255, 192, 0, 243, 192, 3, 192, 240, 3, 240, 252 };
+
+  mob Aleft0 = { 0, 62, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 48, 0, 0, 252, 0, 0, 252, 0, 0, 236, 0, 0, 172, 0, 0, 172, 0, 0, 44, 0, 0, 247, 0, 0, 231, 0, 0, 91, 0, 2, 86, 112, 8, 84, 176, 0, 253, 64, 0, 245, 0, 3, 215, 0, 3, 95, 0, 13, 67, 192, 63, 15, 192 };
+  
+  mob Aleft1 = { 0, 63, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 48, 0, 0, 252, 0, 0, 252, 0, 0, 236, 0, 0, 172, 0, 0, 172, 0, 0, 44, 0, 0, 247, 0, 16, 231, 0, 4, 103, 0, 1, 103, 0, 0, 100, 0, 0, 236, 0, 0, 255, 0, 0, 252, 0, 0, 252, 0, 0, 252, 0, 3, 252, 0 };
+
+  mob Aleft2 = { 0, 23, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 48, 0, 4, 252, 0, 4, 252, 0, 4, 236, 0, 4, 172, 0, 4, 172, 0, 4, 44, 0, 4, 247, 0, 4, 231, 0, 4, 151, 0, 22, 86, 0, 8, 84, 128, 12, 252, 0, 0, 252, 0, 3, 255, 0, 15, 207, 0, 15, 3, 192, 63, 15, 192 };
+
+  mob Awalkup0 = { 0, 55, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 63, 0, 4, 255, 192, 4, 255, 192, 4, 255, 192, 4, 191, 128, 4, 46, 0, 4, 221, 192, 4, 221, 192, 6, 93, 96, 6, 93, 96, 10, 85, 104, 8, 255, 200, 12, 255, 200, 0, 243, 192, 0, 243, 192, 0, 243, 192, 0, 240, 0, 0, 240, 0 };
+  
+  mob Awalkup1 = { 0, 56, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 63, 0, 0, 255, 192, 0, 255, 192, 0, 255, 192, 0, 191, 128, 0, 46, 0, 0, 221, 192, 0, 221, 192, 6, 93, 96, 6, 93, 96, 10, 85, 96, 4, 255, 192, 12, 255, 192, 0, 243, 192, 0, 243, 192, 0, 243, 192, 0, 3, 192, 0, 3, 192 };
+
+  mob Awalkdown0 = { 0, 57, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 252, 0, 3, 255, 0, 3, 255, 0, 2, 238, 0, 2, 170, 16, 0, 168, 16, 3, 87, 16, 3, 119, 16, 11, 87, 144, 9, 117, 144, 9, 85, 144, 35, 255, 32, 35, 255, 16, 3, 207, 48, 3, 207, 0, 3, 207, 0, 3, 192, 0, 3, 192, 0 };
+  
+  mob Awalkdown1 = { 0, 58, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 252, 0, 3, 255, 0, 3, 255, 0, 2, 238, 0, 2, 170, 0, 0, 168, 0, 3, 87, 0, 3, 119, 0, 11, 87, 128, 9, 117, 144, 9, 85, 32, 3, 255, 32, 3, 255, 16, 3, 207, 48, 3, 207, 0, 3, 207, 0, 0, 15, 0, 0, 15, 0 };
+
+  
+  mob Alungel = { 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 15, 192, 0, 14, 192, 0, 10, 192, 0, 10, 192, 0, 7, 192, 0, 77, 192, 85, 106, 64, 0, 69, 64, 0, 63, 192, 0, 63, 192, 0, 60, 252, 0, 252, 252 };
+  
+  mob Alunger = { 0, 25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 192, 0, 3, 240, 0, 3, 176, 0, 3, 160, 0, 3, 160, 0, 3, 208, 0, 3, 113, 0, 1, 185, 85, 1, 177, 0, 2, 252, 0, 2, 252, 0, 63, 60, 0, 63, 63, 0 };
+
+  
+  asmcomment( "Player MOBs" );
+  
+  mob standing = { 1, 1, 0, 204, 192, 128, 255, 192, 128, 213, 192, 128, 221, 192, 128, 255, 192, 128, 63, 0, 32, 63, 0, 32, 12, 0, 32, 85, 64, 53, 110, 80, 32, 123, 68, 8, 29, 4, 8, 25, 4, 8, 29, 208, 8, 21, 0, 8, 55, 0, 2, 51, 0, 2, 51, 0, 2, 51, 0, 2, 51, 0, 2, 81, 64 };
+
+  mob walkup0 = { 1, 2, 0, 204, 194, 0, 255, 194, 0, 255, 194, 0, 255, 194, 0, 255, 194, 0, 63, 2, 0, 63, 2, 0, 12, 2, 0, 85, 66, 1, 85, 87, 1, 85, 66, 1, 21, 2, 1, 21, 2, 1, 21, 2, 1, 21, 2, 3, 55, 2, 0, 51, 2, 0, 51, 2, 0, 48, 2, 0, 48, 2, 0, 16, 2 };
+
+  mob walkup1 = { 1, 3, 0, 204, 192, 0, 255, 194, 0, 255, 194, 0, 255, 194, 0, 255, 194, 0, 63, 2, 0, 63, 2, 0, 12, 2, 0, 85, 66, 1, 85, 87, 1, 85, 66, 1, 21, 2, 1, 21, 2, 3, 21, 2, 0, 21, 2, 0, 55, 2, 0, 51, 2, 0, 51, 2, 0, 51, 2, 0, 48, 0, 0, 16, 0 };
+  
+  mob walkup2 = { 1, 4, 0, 0, 0, 0, 204, 192, 0, 255, 194, 0, 255, 194, 0, 255, 194, 0, 63, 2, 0, 63, 2, 0, 12, 2, 0, 85, 66, 1, 85, 87, 1, 85, 66, 1, 21, 2, 0, 21, 2, 0, 21, 2, 0, 21, 2, 0, 55, 2, 0, 51, 2, 0, 3, 2, 0, 3, 0, 0, 3, 0, 0, 1, 0 };
+
+  mob walkup3 = { 1, 5, 0, 0, 0, 0, 204, 192, 0, 255, 194, 0, 255, 194, 0, 255, 194, 0, 63, 2, 0, 63, 2, 0, 12, 2, 0, 85, 66, 1, 85, 87, 1, 85, 66, 1, 21, 2, 1, 21, 2, 3, 21, 2, 0, 21, 2, 0, 55, 2, 0, 51, 2, 0, 51, 2, 0, 51, 0, 0, 3, 0, 0, 1, 0 };
+    
+  mob walkup4 = { 1, 6, 0, 204, 192, 0, 255, 194, 0, 255, 194, 0, 255, 194, 0, 255, 194, 0, 63, 2, 0, 63, 2, 0, 12, 2, 0, 85, 66, 1, 85, 87, 1, 85, 66, 1, 21, 2, 1, 21, 2, 1, 21, 2, 1, 21, 2, 3, 55, 2, 0, 51, 2, 0, 51, 2, 0, 51, 2, 0, 51, 2, 0, 1, 0 };
+
+  mob walkdown0 = { 1, 7, 32, 204, 192, 32, 255, 192, 32, 213, 192, 32, 221, 192, 32, 255, 192, 32, 63, 0, 32, 63, 0, 32, 12, 0, 32, 85, 64, 53, 110, 80, 32, 123, 80, 32, 29, 16, 32, 25, 16, 32, 29, 16, 32, 21, 16, 32, 55, 48, 32, 51, 0, 32, 51, 0, 32, 3, 0, 32, 3, 0, 32, 1, 0 };
+  
+  mob walkdown1 = { 1, 8, 0, 204, 192, 32, 255, 192, 32, 213, 192, 32, 221, 192, 32, 255, 192, 32, 63, 0, 32, 63, 0, 32, 12, 0, 32, 85, 64, 53, 110, 80, 32, 123, 80, 32, 29, 16, 32, 25, 16, 32, 29, 48, 32, 21, 0, 32, 55, 0, 32, 51, 0, 32, 51, 0, 32, 51, 0, 0, 3, 0, 0, 1, 0 };
+  
+  mob walkdown2 = { 1, 9, 0, 0, 0, 0, 204, 192, 32, 255, 192, 32, 213, 192, 32, 221, 192, 32, 63, 0, 32, 63, 0, 32, 12, 0, 32, 85, 64, 53, 110, 80, 32, 123, 80, 32, 29, 16, 32, 25, 0, 32, 29, 0, 32, 21, 0, 32, 55, 0, 32, 51, 0, 32, 48, 0, 0, 48, 0, 0, 48, 0, 0, 16, 0 };
+  
+  mob walkdown3 = { 1, 10, 0, 0, 0, 0, 204, 192, 32, 255, 192, 32, 213, 192, 32, 221, 192, 32, 63, 0, 32, 63, 0, 32, 12, 0, 32, 85, 64, 53, 110, 80, 32, 123, 80, 32, 29, 16, 32, 25, 16, 32, 29, 48, 32, 21, 0, 32, 55, 0, 32, 51, 0, 32, 51, 0, 0, 51, 0, 0, 48, 0, 0, 16, 0 };
+  
+  mob walkdown4 = { 1, 11, 0, 204, 192, 32, 255, 192, 32, 213, 192, 32, 221, 192, 32, 255, 192, 32, 63, 0, 32, 63, 0, 32, 12, 0, 32, 85, 64, 53, 110, 80, 32, 123, 80, 32, 29, 16, 32, 25, 16, 32, 29, 16, 32, 21, 16, 32, 55, 48, 32, 51, 0, 32, 51, 0, 32, 51, 0, 32, 48, 0, 0, 16, 0 };
+  
+  mob left0 = { 1, 12, 0, 204, 0, 0, 252, 0, 0, 124, 0, 0, 252, 0, 0, 252, 0, 128, 60, 0, 128, 240, 0, 128, 16, 0, 32, 84, 0, 32, 84, 0, 35, 116, 0, 12, 92, 0, 8, 87, 0, 8, 84, 192, 8, 84, 0, 2, 112, 0, 2, 124, 0, 2, 76, 0, 1, 79, 0, 5, 131, 0, 1, 140, 0 };
+  
+  mob left1 = { 1, 13, 0, 0, 0, 0, 204, 0, 0, 252, 0, 0, 124, 0, 0, 252, 0, 0, 252, 0, 0, 60, 0, 0, 240, 0, 8, 84, 0, 8, 116, 0, 2, 116, 0, 2, 116, 0, 0, 116, 0, 0, 212, 0, 3, 84, 0, 0, 96, 0, 0, 120, 0, 0, 120, 0, 0, 78, 0, 1, 14, 0, 5, 60, 128 };
+  
+  mob left2 = { 1, 14, 0, 204, 0, 0, 252, 0, 0, 124, 0, 0, 252, 0, 0, 252, 0, 0, 60, 0, 0, 240, 0, 0, 16, 0, 0, 84, 0, 0, 84, 0, 0, 116, 0, 3, 212, 2, 12, 87, 40, 0, 86, 192, 0, 84, 0, 2, 176, 0, 0, 244, 0, 0, 196, 0, 3, 197, 0, 15, 1, 0, 3, 4, 0 };
+
+  mob right0 = { 1, 15, 0, 51, 0, 0, 63, 0, 0, 61, 0, 0, 63, 32, 0, 63, 32, 0, 60, 32, 0, 15, 32, 0, 4, 48, 0, 21, 224, 0, 23, 8, 0, 29, 8, 0, 21, 8, 0, 213, 8, 3, 21, 8, 0, 21, 8, 0, 12, 2, 0, 31, 2, 0, 19, 2, 0, 83, 194, 0, 64, 242, 0, 16, 194 };
+  
+  mob right1 = { 1, 50, 0, 0, 0, 0, 51, 0, 0, 63, 0, 0, 61, 0, 0, 63, 0, 0, 63, 0, 0, 60, 0, 0, 15, 0, 0, 21, 32, 0, 29, 32, 0, 29, 128, 0, 29, 128, 0, 30, 0, 0, 23, 0, 0, 25, 0, 0, 9, 0, 0, 45, 0, 0, 45, 0, 0, 177, 0, 0, 176, 64, 2, 60, 80 };
+  
+  mob right2 = { 1, 51, 0, 51, 0, 0, 63, 0, 0, 61, 0, 0, 63, 0, 0, 63, 0, 0, 60, 0, 0, 15, 0, 0, 4, 0, 0, 21, 0, 0, 21, 0, 0, 29, 192, 128, 53, 48, 40, 213, 0, 3, 149, 0, 0, 41, 0, 0, 14, 128, 0, 61, 0, 0, 49, 0, 0, 241, 64, 0, 192, 80, 0, 48, 64 };
+  
+  mob lunger = { 1, 52, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 51, 0, 0, 63, 0, 0, 61, 0, 0, 63, 0, 0, 60, 0, 0, 15, 0, 0, 20, 58, 0, 126, 176, 42, 167, 192, 13, 21, 0, 0, 21, 0, 0, 21, 0, 0, 31, 0, 0, 19, 0, 0, 19, 0, 0, 64, 192, 0, 64, 192, 0, 80, 240 };
+  
+  mob lungel = { 1, 53, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 204, 0, 0, 252, 0, 0, 124, 0, 0, 252, 0, 0, 60, 0, 0, 240, 0, 176, 20, 0, 14, 124, 0, 3, 87, 168, 0, 84, 240, 0, 84, 0, 0, 84, 0, 0, 84, 0, 0, 196, 0, 0, 196, 0, 3, 1, 0, 3, 1, 0, 15, 5, 0 };
+
+  asmcomment( "Items in Room MOBs" );
+
+  mob treasure = { 2, 55, 96, 0, 0, 240, 48, 0, 240, 120, 0, 96, 120, 48, 0, 48, 120, 0, 0, 120, 12, 0, 48, 30, 48, 0, 30, 120, 0, 12, 120, 0, 0, 48, 96, 24, 0, 240, 60, 6, 240, 60, 15, 96, 24, 15, 0, 0, 6, 0, 0, 192, 0, 49, 227, 6, 121, 231, 143, 120, 199, 143, 48, 3, 6 };
+
+  
+  mob healthPack = { 3, 56, 63, 255, 252, 213, 85, 87, 213, 85, 87, 213, 85, 87, 213, 85, 87, 213, 105, 87, 213, 105, 87, 213, 105, 87, 213, 105, 87, 214, 170, 151, 214, 170, 151, 214, 170, 151, 213, 105, 87, 213, 105, 87, 213, 105, 87, 213, 105, 87, 213, 85, 87, 213, 85, 87, 213, 85, 87, 213, 85, 87, 63, 255, 252};
+
+
+mob princess = { 4, 57, 192, 0, 12, 131, 51, 8, 131, 255, 8, 131, 87, 8, 131, 119, 8, 35, 255, 32, 8, 252, 128, 2, 254, 0, 0, 152, 0, 0, 168, 0, 0, 168, 0, 0, 252, 0, 0, 168, 0, 10, 170, 128, 42, 170, 160, 42, 170, 160, 170, 170, 168, 170, 170, 168, 0, 68, 0, 0, 68, 0, 3, 207, 0};
+
+
 
 
   // Sprite Memory starts at 0x8040
@@ -382,72 +463,69 @@ int main()
 
   positionMOBS();
 
-  
-  uint walkupframe[6];
-  walkupframe[0] = 33;
-  walkupframe[1] = 34;
-  walkupframe[2] = 35;
-  walkupframe[3] = 36;
-  walkupframe[4] = 35;
-  walkupframe[5] = 34;
-
-  uint walkdownframe[6];
-  walkdownframe[0] = 37;
-  walkdownframe[1] = 38;
-  walkdownframe[2] = 39;
-  walkdownframe[3] = 40;
-  walkdownframe[4] = 39;
-  walkdownframe[5] = 38;
-
-  uint walklframe[4];
-  walklframe[0] = 41;
-  walklframe[1] = 42;
-  walklframe[2] = 43;
-  walklframe[3] = 42;
-  
-  uint walkrframe[4];
-  walkrframe[0] = 44;
-  walkrframe[1] = 45;
-  walkrframe[2] = 46;
-  walkrframe[3] = 45;
-
-
-
-    uint Awalkingrightframe[4];
-  Awalkingrightframe[0] = 49;
-  Awalkingrightframe[1] = 50;
-  Awalkingrightframe[2] = 51;
-  Awalkingrightframe[3] = 50;
-  
-
-    uint Awalkingleftframe[4];
-  Awalkingleftframe[0] = 52;
-  Awalkingleftframe[1] = 53;
-  Awalkingleftframe[2] = 54;
-  Awalkingleftframe[3] = 53;
+  uint walkupframe[8];
+  walkupframe[0] = walkup0;
+  walkupframe[1] = walkup1;
+  walkupframe[2] = walkup2;
+  walkupframe[3] = walkup3;
+  walkupframe[4] = walkup4;
+  walkupframe[5] = walkup3;
+  walkupframe[6] = walkup2;
+  walkupframe[7] = walkup1;
 
   uint Awalkupframe[2];
-  Awalkupframe[0] = 55;
-  Awalkupframe[1] = 56;
+  Awalkupframe[0] = Awalkup0;
+  Awalkupframe[1] = Awalkup1;
 
   uint Awalkdownframe[2];
-  Awalkdownframe[0] = 57;
-  Awalkdownframe[1] = 58;
+  Awalkdownframe[0] = Awalkdown0;
+  Awalkdownframe[1] = Awalkdown1;
 
+  uint Awalkingleftframe[4];
+  Awalkingleftframe[0] = Aleft0;
+  Awalkingleftframe[1] = Aleft1;
+  Awalkingleftframe[2] = Aleft2;
+  Awalkingleftframe[3] = Aleft1;
+
+  uint Awalkingrightframe[4];
+  Awalkingrightframe[0] = Aright0;
+  Awalkingrightframe[1] = Aright1;
+  Awalkingrightframe[2] = Aright2;
+  Awalkingrightframe[3] = Aright1;
   
+  uint walkdownframe[8];
+  walkdownframe[0] = walkdown0;
+  walkdownframe[1] = walkdown1;
+  walkdownframe[2] = walkdown2;
+  walkdownframe[3] = walkdown3;
+  walkdownframe[4] = walkdown4;
+  walkdownframe[5] = walkdown3;
+  walkdownframe[6] = walkdown2;
+  walkdownframe[7] = walkdown1;
 
+  uint walklframe[4];
+  walklframe[0] = left0;
+  walklframe[1] = left1;
+  walklframe[2] = left2;
+  walklframe[3] = left1;
+  
+  uint walkrframe[4];
+  walkrframe[0] = right0;
+  walkrframe[1] = right1;
+  walkrframe[2] = right2;
+  walkrframe[3] = right1;
  
   //clearhires();
   // create scenery
-  // treasure
-  poke( sprptr3, 61 );
-  // healthpack
-  poke( sprptr4, 62 );
-  // princess
-  poke( sprptr5, 63 );
-
   putStuffOnTheScreen();
 
+
+  //poke( sprptr0, Astanding );
+  //poke( sprptr1, standing );
+  //poke( sprptr2, Astanding );
+  poke( sprptr3, treasure );
+  poke( sprptr4, healthPack );
+  poke( sprptr5, princess );
   
   //pause();
   
@@ -707,10 +785,7 @@ void animate()
 	  // NORTH
 	  poke( sprptr1, walkupframe[currentupframe] );
 	  inc(currentupframe);
-	  if( currentupframe == 6 )
-	    {
-	      currentupframe = 0;
-	    }
+	  currentupframe = currentupframe & 0x07;
 	}
       else
 	{
@@ -728,10 +803,7 @@ void animate()
 		{
 		  poke( sprptr1, walkdownframe[currentdownframe] );
 		  inc(currentdownframe);
-		  if( currentdownframe ==  6)
-		    {
-		      currentdownframe = 0;
-		    }
+		  currentdownframe = currentdownframe & 0x07;
 		}
 	      else
 		{
@@ -746,22 +818,21 @@ void animate()
 		    {
 		      if( direction == 5 )
 			{
-			  // standing
-			  poke( sprptr1, 32 );
+			  poke( sprptr1, standing );
 			}
 		      else
 			{
 			  if( direction == 6 )
 			    {
-			      // lunge left
-			      poke( sprptr1, 48 );
+			      // attack left
+			      poke( sprptr1, lungel );
 			    }
 			  else
 			    {
 			      if( direction == 7 )
 				{
-				  // lunge right
-				  poke( sprptr1, 47 );
+				  // attack right
+				  poke( sprptr1, lunger );
 				}
 			    }
 			}
@@ -878,6 +949,9 @@ void putStuffOnTheScreen()
   data rightWallTop = { 63, 15, 3, 3, 3, 3, 3, 3 };
   data rightWallMid = { 3, 3, 3, 3, 3, 3, 3, 3 };
   data rightWallBot = { 3, 3, 3, 3, 3, 3, 15, 63 };
+
+  // 01 = gold/yellow
+  //data treasure = { 16, 84, 16, 0, 0, 4, 21, 4, 16, 84, 16, 4, 21, 4, 0, 0 };
 
   // Top Wall
   // Drk Grey and Grey
@@ -1096,7 +1170,12 @@ void putStuffOnTheScreen()
 
 
   asmcomment( "reset the number of expPts the player gets for entering the room that they enter" );
+
+  //world[roomIndex] = 0;
   general16bit = world + roomIndex;
+  //general16bit = general16bit + roomIndex;
+  //general16bit = general16bit + roomIndex;
+  //(world)[roomIndex] = 0;
 
   wordToPrint = scoreText;
   wordSize = 4;
@@ -1725,14 +1804,13 @@ void monsterAttack()
     {
       if( Adirection < 0x03 )
 	{
-	  
-	  poke( sprptr0, 60 );
-	  poke( sprptr2, 60 );
+	  poke( sprptr0, Alunger );
+	  poke( sprptr2, Alunger );
 	}
       else
 	{
-	  poke( sprptr0, 59 );
-	  poke( sprptr2, 59 );
+	  poke( sprptr0, Alungel );
+	  poke( sprptr2, Alungel );
 	}
       general8bit = general8bit & 0x07;
       playerHP = playerHP - general8bit;
