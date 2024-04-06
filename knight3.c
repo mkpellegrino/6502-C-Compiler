@@ -1,6 +1,68 @@
 int main()
 {
+  asmcomment( "Bitmap Graphics Definitions" );  
+  data sdoor = { 213, 213, 253, 255, 255, 255, 255, 255, 85, 85, 85, 245, 255, 255, 255, 255, 85, 85, 85, 95, 255, 255, 255, 255, 87, 87, 127, 255, 255, 255, 255, 255 };
+  data empty2 = { 170, 170, 170, 170, 170, 170, 170, 170 };
+  data steal1 = {0, 0, 0, 1, 1, 7, 7, 23,     0, 63, 122, 234, 234, 170, 170, 170,     0, 252, 174, 151, 183, 181, 253, 245,    0, 0, 0, 128, 128, 224, 224, 232};
+  data steal3 = {30, 30, 94, 94, 94, 94, 94, 94, 171, 171, 171, 171, 175, 191, 175, 191, 253, 245, 245, 245, 245, 213, 245, 213, 120, 122, 122, 122, 122, 122, 122, 122 };
+  data steal5 = {95, 87, 87, 87, 87, 87, 23, 23, 175, 175, 173, 253, 213, 245, 255, 235, 85, 85, 85, 87, 87, 95, 255, 235, 250, 234, 234, 234, 234, 234, 232, 232 };
+  data steal7 = {21, 5, 5, 1, 1, 0, 0, 0, 255, 255, 127, 95, 95, 95, 23, 0, 255, 255, 254, 250, 250, 250, 232, 0, 168, 160, 160, 128, 128, 0, 0, 0 };
+  data wall2 = { 106, 106, 106, 106, 106, 106, 106, 85, 170, 170, 170, 170, 170, 170, 170, 85 };
+  data door1to4 = { 255, 255, 255, 255, 255, 255, 255, 255 };
+  data door0topL = { 3, 3, 15, 15, 63, 63, 255, 255 };
+  data door0topR = { 192, 192, 240, 240, 252, 252, 255, 255 };
+  data armour0 = { 0, 0, 0, 0, 3, 3, 3, 3, 63, 255, 255, 255, 255, 255, 255, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+  data armour1 = { 3, 3, 3, 3, 3, 3, 3, 3, 255, 255, 255, 255, 255, 255, 255, 255, 192, 0, 0, 0, 0, 0, 0, 255, 3, 3, 3, 3, 3, 3, 3, 255 };
+  data armour2 = { 63, 255, 195, 195, 195, 195, 195, 255, 255, 255, 255, 255, 255, 255, 255, 255, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 3, 3, 3, 3, 3, 3 };
+  data armour3 = { 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0, 192, 192, 192, 192, 192, 192, 192, 192, 3, 3, 3, 3, 3, 3, 3, 3 };
+  data armour4 = { 3, 3, 3, 3, 3, 3, 255, 255, 0, 0, 0, 0, 0, 0, 0, 0, 192, 192, 192, 192, 192, 192, 255, 255, 3, 3, 3, 3, 3, 3, 3, 3 };
+  data torch0 = { 1, 5, 26, 25, 6, 6, 63, 15, 0, 128, 144, 96, 64, 128, 240, 192 };
+  data torch1 = { 3, 3, 3, 3, 3, 3, 3, 3 };
 
+
+  data cuff0 = { 149, 157, 157, 140, 140, 176, 176, 186, 1, 1, 1, 0, 0, 0, 0, 170, 80, 208, 208, 192, 192, 48, 48, 186 };
+  data cuff1 = { 176, 192, 192, 192, 192, 240, 192, 170, 0, 0, 0, 0, 0, 0, 0, 170, 48, 12, 12, 12, 12, 51, 12, 170 };
+
+
+  data window0 = { 64, 64, 64, 67, 78, 78, 122, 122, 0, 0, 255, 170, 170, 170, 170, 170, 64, 64, 255, 170, 170, 170, 170, 170, 0, 0, 192, 176, 172, 172, 171, 171 };
+  data window1L = { 122, 122, 122, 122, 122, 122, 122, 122 };
+  data window1R = { 171, 171, 171, 171, 171, 171, 171, 171 };
+  data window3L = { 122, 122, 122, 122, 122, 122, 122, 127 };
+  data window3M = { 170, 170, 170, 170, 170, 170, 170, 255 };
+  data window3R = { 171, 171, 171, 171, 171, 171, 171, 255 };
+
+  data paintingtop = { 10, 8, 8, 8, 11, 8, 10, 10, 170, 255, 255, 255, 255, 165, 151, 149, 170, 0, 0, 0, 240, 0, 64, 80, 160, 32, 32, 32, 32, 32, 32, 32 };
+
+  data paintingbot = { 8, 8, 8, 11, 11, 11, 11, 10, 93, 23, 253, 255, 255, 255, 255, 170, 1, 1, 67, 255, 252, 192, 192, 170, 96, 96, 224, 224, 32, 32, 32, 160 };
+
+
+  data painting2top = {170, 128, 128, 128, 128, 128, 128, 128, 170, 0, 0, 63, 253, 245, 246, 245, 170, 0, 0, 240, 112, 92, 108, 156, 170, 2, 2, 2, 2, 2, 2, 2 };
+
+  data painting2bot = { 128, 128, 128, 130, 130, 130, 138, 170, 245, 253, 250, 250, 186, 186, 250, 170, 80, 64, 168, 106, 170, 110, 174, 170, 2, 2, 2, 2, 130, 130, 130, 170 };
+
+
+  data leftWallTop = { 252, 240, 192, 192, 192, 192, 192, 192 };
+  data leftWallMid = { 192, 192, 192, 192, 192, 192, 192, 192 };
+  data leftWallBot = { 192, 192, 192, 192, 192, 192, 240, 252 };
+
+  data rightWallTop = { 63, 15, 3, 3, 3, 3, 3, 3 };
+  data rightWallMid = { 3, 3, 3, 3, 3, 3, 3, 3 };
+  data rightWallBot = { 3, 3, 3, 3, 3, 3, 15, 63 };
+
+
+  data fleurdelistop = { 255, 234, 234, 234, 234, 214, 214, 213, 255, 150, 150, 85, 85, 85, 85, 150, 255, 171, 171, 171, 171, 151, 151, 87 };
+  data fleurdelisbot = { 217, 218, 234, 234, 234, 234, 234, 255, 85, 85, 150, 150, 150, 105, 170, 255, 103, 167, 171, 171, 171, 171, 171, 255 };
+
+
+  data shieldtop = { 192, 255, 192, 192, 200, 194, 200, 192, 48, 207, 168, 32, 32, 170, 32, 32, 76, 252, 12, 12, 140, 12, 140, 12 };
+    
+  data shieldbot = { 112, 112, 112, 76, 76, 67, 64, 85, 32, 32, 32, 32, 168, 3, 204, 117, 48, 48, 48, 192, 192, 64, 64, 85 };
+
+
+  data keyonwall = { 60, 195, 195, 60, 12, 60, 12, 60 };
+
+  asmcomment( "Text Definitions" );
+  
   data scoreText = {'E', 'X', 'P', ':' };
   data healthText = {'H', 'E', 'A', 'L', 'T', 'H', ':' };
   data monsterHealthText = {'E', 'N', 'E', 'M', 'Y', ':' };
@@ -76,9 +138,6 @@ int main()
   
   word plotDigitAddr = digits;
 
-  //import( "bin", "knight03-splash-pixel-data.bin", 0xA000 );
-  //import( "bin", "knight03-splash-colour-data.bin", 0x8400 );
-
 
   
   // the background colour should be controlled by a raster int
@@ -91,10 +150,13 @@ int main()
   //irq( ptr(irqfunc1), 0x00, 1 );
 
   saveregs();
-
-  //import( "sid", "mymusic.sid", 0x0000 );
-  //sidirq( 0x0000, 0x0000 );
   
+  
+  //irq( ptr(playsid), 0x32, 1 );
+
+  
+  //sidirq( 0x0000, 0x0000 );
+  poke( 0xD020, 0x0B );
   poke( 0xD021, 0 );
   // directions
   //   0
@@ -123,6 +185,7 @@ int main()
   uint plotDigitX;
   uint plotDigitY;
   uint wordSize;
+  uint rndinit;
   
   uint thing;
   uint thing2;
@@ -133,14 +196,19 @@ int main()
   uint monsterisinroom;
   uint treasureinroom;
   uint healthpackinroom;
+  uint princessisinroom;
+  uint keyinroom;
   uint treasurey;
+  uint keyy;
   uint healthpacky;
+  uint princessy;
   uint playerdied;
   uint keepPlaying;
   uint maxHP;
-  
+  uint playerHasKey;
+  uint playerAttackFlag;
   // Blue and Red
-  uint plotshapeColourValue1001;
+  uint plotshapeColourValue0110;
   // White
   uint plotshapeColourValue11;
 
@@ -164,6 +232,8 @@ int main()
   word plotNum;
   word treasurex;
   word healthpackx;
+  word keyx;
+  word princessx;
   word hpTimer;
   word wordToPrint;
   
@@ -188,7 +258,7 @@ int main()
     }
   general8bit = 0x00;
 
-  seed();
+  //seed();
   //shortcls();
   //printf( "\n        PRESS ANY KEY TO BEGIN" );
   //while( general8bit == 0 )
@@ -203,12 +273,8 @@ int main()
   uint monsterAC = rnd(1) & 0x03;
   playerHP = playerHP + 13;
   playerAC = playerAC + 13;
-  //pause();
+
   bank( 2 );
-
-
-  asmcomment( "shift the screen up a pixel & hires mode" );
-
   // multicolour bitmap mode
   poke( 0xD011, 0x38 );
   poke( 0xD016, 0x18 );
@@ -253,21 +319,50 @@ int main()
   
   screen(1);
 
-  asmcomment("seed the RNG" );
+  asmcomment("seed the RNG by repeatedly calling rnd until player presses a key" );
   while( general8bit == 0 )
     {
       sDoor=rnd(1);
       general8bit = getchar();
     }
 
-  asmcomment( "shift the screen back down a pixel" );
-  poke( 0xD011, 0x3B );
+  seed();
+  mySeed();
 
+  // setup music
+  asmcomment("load the SID data into memory from disk" );
+  setfilename( "2VOICES,S,R" );
+  setlfs( 3, 8, 3 );
+  fopen();
+  fchkin( 3 );
   
-  // setup background colours
-  irq( ptr(irqfunc1), 0x00, 1 );
+  for( general8bit = 0; general8bit < 0x7E; inc(general8bit) )
+    {
+      // reuse dieRoll because it's not
+      // being used for anything yet
+      dieRoll = fchrin();
+    }
+  
+  //read in the SID data
+  for( general16bit = 0xC000; general16bit < 0xC873; general16bit = general16bit + 0x0001 )
+  {
+    poke( general16bit, fchrin() );
+  }
 
-  clearhires();
+  asmcomment( "close the file" );
+  fclose(3);
+  fclrchn();
+
+  asmcomment( "init SID play" );
+  jsr( 0xC000 );
+
+  asmcomment( "shift the screen back down a pixel" );
+
+  // setup background colours  
+  irq( ptr(irqfunc1), 0x00, 1 );
+  screen(0);
+  //clearhires();
+  poke( 0xD011, 0x3B );
   
   word sprptr0 = scraddr + 0x03F8;
   word sprptr1 = scraddr + 0x03F9;
@@ -275,21 +370,21 @@ int main()
   word sprptr3 = scraddr + 0x03FB;
   word sprptr4 = scraddr + 0x03FC;
   word sprptr5 = scraddr + 0x03FD;
-  //word sprptr6 = scraddr + 0x03FE;
+  word sprptr6 = scraddr + 0x03FE;
   //word sprptr7 = scraddr + 0x03FF;
 
 
   asmcomment( "WORLD DEFINITION" );
   // N, E, S, W,   Wall0, Wall1, Wall2, Wall3, Wall4,     Wall5 (front 1-5),
   //
-  // 1 - haven't visited
+  // 1 - haven't visited yet (0x80)
   // 1 - monster is in room
   // 1 - treasure
   // 1 - healthpack
+  // 1 - key
   // 1 - 
   // 1 - 
-  // 1 - 
-  // 1 - 
+  // 1 - princess (0x01)
 
 
   // 0 = nothing
@@ -300,7 +395,7 @@ int main()
   // 5 = 
   // 6 = steal your face
   // 7 = painting
-
+  // 11 - painting 2
 
 
   
@@ -341,11 +436,15 @@ int main()
   fopen();
   fchkin( 3 );
 
-  for( word saddr = 0x8800; saddr < 0x90C0; saddr = saddr + 0x0001 )
+  for( word saddr = 0x8800; saddr < 0x9000; saddr = saddr + 0x0001 )
     {
       poke( saddr, fchrin() );
     }
-  
+  // read the "KEY" sprite in for sprite pointer value of 1
+  for( saddr = 0x8000; saddr < 0x8040; saddr = saddr + 0x0001 )
+    {
+      poke( saddr, fchrin() );
+    }
   fclose(3);
   fclrchn();
 
@@ -376,6 +475,10 @@ int main()
 
   // Pink for sprite 5 (the princess)
   spritecolour( 0x05, 0x0A );
+
+  // Grey for sprite 6 (the key)
+  spritecolour( 0x06, 0x0C );
+
 
   // turn on sprites   (b11111111 = 0xFF = all)
   spriteon( 0xFF );
@@ -439,13 +542,16 @@ int main()
  
   //clearhires();
   // create scenery
+  
   // treasure
   poke( sprptr3, 61 );
   // healthpack
   poke( sprptr4, 62 );
   // princess
   poke( sprptr5, 63 );
-
+  // key
+  poke( sprptr6, 0 );
+  
   putStuffOnTheScreen();
 
   
@@ -453,8 +559,17 @@ int main()
   
   uint c = getin();
 
+
+
+  // ==========
+  
   while( keepPlaying != 0x01 )
     {
+      if( c == 60 )
+      {
+        playerAttackFlag = 0x01;
+      }
+      
       if( clock == 0x0000 )
 	{
 	  if( c == 30 )
@@ -590,15 +705,50 @@ int main()
 		}
 	    }
 
+	  if( princessisinroom != 0x00 )
+	    {
+	      if( playerHasKey == 0x01 )
+		{
+		  uint tmpProx1 = proximity( princessx, princessy, 0x000A );
+		  if( tmpProx1 != 0x00 )
+		    {
+
+		      // This should make the player go to the next level
+		      //  in the next level the healthpack should increase
+		      // hit points by more than the previous level.
+		      // monsters should have more hitpoints (and should be faster)
+		      // there should be something like spells or shields or some new item
+		      
+		      princessisinroom = 0x00;
+
+		      //princess
+		      clearSpecialBit( 0x00 );
+		      // key bit
+		      clearSpecialBit( 0x08 );
+		      
+		      spriteoff( 0x20 );
+		      expPts = expPts + 0x0100;
+		      updateScore();
+		      playerHasKey = 0x00;
+		      putThing( 0xA0, 0x00 );
+		      
+		    }
+		}
+
+	    }
+	  
 	  if( monsterisinroom != 0x00 )
 	    {
-	      uint tmpProx1 = proximity( monster0x, monster0y, 0x000A );
+	      tmpProx1 = proximity( monster0x, monster0y, 0x000A );
 	      if( tmpProx1 != 0x00 )
 		{
 		  if( c == 60 )
 		    {
 		      playerAttack();
-		      monsterAttack();
+		      if( monsterHP > 0x00 )
+			{
+			  monsterAttack();
+			}
 		    }
 		  else
 		    {
@@ -638,12 +788,16 @@ int main()
   //sidoff(0x0000);
 
   clearkb();
+  asmcomment( "turn off all sprites" );
   spriteset(0x00);
+  asmcomment( "restore rom settings" );
   romin();
+  asmcomment( "go back to vic bank 0" );
   bank(0);  
-  restoreregs();
   asmcomment( "Restore $0314/$0315 IRQ Vector" );
-  irq( ptr(irqrestore), 0x00, 1 );
+  irq( ptr(irqrestore), 0x00, 0 );
+  
+  restoreregs();
   shortcls();
   printf( "GAME OVER\n\nSTATS:\n" );
   printf( "EXP: " );
@@ -834,55 +988,14 @@ void putStuffOnTheScreen()
 {
   screen(0);
 
-  monster0x = 0x0064;
-  monster0y = 0xC8;
 
   clearhires();
 
-  asmcomment( "Bitmap Graphics Definitions" );
-  
-  data sdoor = { 213, 213, 253, 255, 255, 255, 255, 255, 85, 85, 85, 245, 255, 255, 255, 255, 85, 85, 85, 95, 255, 255, 255, 255, 87, 87, 127, 255, 255, 255, 255, 255 };
-  data empty2 = { 170, 170, 170, 170, 170, 170, 170, 170 };
-  data steal1 = {0, 0, 0, 1, 1, 7, 7, 23,     0, 63, 122, 234, 234, 170, 170, 170,     0, 252, 174, 151, 183, 181, 253, 245,    0, 0, 0, 128, 128, 224, 224, 232};
-  data steal3 = {30, 30, 94, 94, 94, 94, 94, 94, 171, 171, 171, 171, 175, 191, 175, 191, 253, 245, 245, 245, 245, 213, 245, 213, 120, 122, 122, 122, 122, 122, 122, 122 };
-  data steal5 = {95, 87, 87, 87, 87, 87, 23, 23, 175, 175, 173, 253, 213, 245, 255, 235, 85, 85, 85, 87, 87, 95, 255, 235, 250, 234, 234, 234, 234, 234, 232, 232 };
-  data steal7 = {21, 5, 5, 1, 1, 0, 0, 0, 255, 255, 127, 95, 95, 95, 23, 0, 255, 255, 254, 250, 250, 250, 232, 0, 168, 160, 160, 128, 128, 0, 0, 0 };
-  data wall2 = { 106, 106, 106, 106, 106, 106, 106, 85, 170, 170, 170, 170, 170, 170, 170, 85 };
-  data door1to4 = { 255, 255, 255, 255, 255, 255, 255, 255 };
-  data door0topL = { 3, 3, 15, 15, 63, 63, 255, 255 };
-  data door0topR = { 192, 192, 240, 240, 252, 252, 255, 255 };
-  data armour0 = { 0, 0, 0, 0, 3, 3, 3, 3, 63, 255, 255, 255, 255, 255, 255, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-  data armour1 = { 3, 3, 3, 3, 3, 3, 3, 3, 255, 255, 255, 255, 255, 255, 255, 255, 192, 0, 0, 0, 0, 0, 0, 255, 3, 3, 3, 3, 3, 3, 3, 255 };
-  data armour2 = { 63, 255, 195, 195, 195, 195, 195, 255, 255, 255, 255, 255, 255, 255, 255, 255, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 3, 3, 3, 3, 3, 3 };
-  data armour3 = { 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0, 192, 192, 192, 192, 192, 192, 192, 192, 3, 3, 3, 3, 3, 3, 3, 3 };
-  data armour4 = { 3, 3, 3, 3, 3, 3, 255, 255, 0, 0, 0, 0, 0, 0, 0, 0, 192, 192, 192, 192, 192, 192, 255, 255, 3, 3, 3, 3, 3, 3, 3, 3 };
-  data torch0 = { 1, 5, 26, 25, 6, 6, 63, 15, 0, 128, 144, 96, 64, 128, 240, 192 };
-  data torch1 = { 3, 3, 3, 3, 3, 3, 3, 3 };
-
-  data window0 = { 64, 64, 64, 67, 78, 78, 122, 122, 0, 0, 255, 170, 170, 170, 170, 170, 64, 64, 255, 170, 170, 170, 170, 170, 0, 0, 192, 176, 172, 172, 171, 171 };
-  data window1L = { 122, 122, 122, 122, 122, 122, 122, 122 };
-  data window1R = { 171, 171, 171, 171, 171, 171, 171, 171 };
-  data window3L = { 122, 122, 122, 122, 122, 122, 122, 127 };
-  data window3M = { 170, 170, 170, 170, 170, 170, 170, 255 };
-  data window3R = { 171, 171, 171, 171, 171, 171, 171, 255 };
-
-  data paintingtop = { 10, 8, 8, 8, 11, 8, 10, 10, 170, 255, 255, 255, 255, 165, 151, 149, 170, 0, 0, 0, 240, 0, 64, 80, 160, 32, 32, 32, 32, 32, 32, 32 };
-
-  data paintingbot = { 8, 8, 8, 11, 11, 11, 11, 10, 93, 23, 253, 255, 255, 255, 255, 170, 1, 1, 67, 255, 252, 192, 192, 170, 96, 96, 224, 224, 32, 32, 32, 160 };
-
-  data leftWallTop = { 252, 240, 192, 192, 192, 192, 192, 192 };
-  //data leftWallTop = { 255, 240, 192, 192, 192, 192, 192, 192 };
-  data leftWallMid = { 192, 192, 192, 192, 192, 192, 192, 192 };
-  data leftWallBot = { 192, 192, 192, 192, 192, 192, 240, 252 };
-
-  data rightWallTop = { 63, 15, 3, 3, 3, 3, 3, 3 };
-  data rightWallMid = { 3, 3, 3, 3, 3, 3, 3, 3 };
-  data rightWallBot = { 3, 3, 3, 3, 3, 3, 15, 63 };
-
+    
   // Top Wall
   // Drk Grey and Grey
   asmcomment( "Draw the brick wall" );
-  plotshapeColourValue1001 = 0xBC;
+  plotshapeColourValue0110 = 0xBC;
   // Black
   plotshapeColourValue11 = 0x00;
   for( uint myY = 3; myY < 10; inc(myY) )
@@ -901,44 +1014,49 @@ void putStuffOnTheScreen()
     }
   //pause();
   // 0 = nothing
-  // 1 = door
+  // 1 = NORTH DOor
   // 2 = armour
   // 3 = torches
   // 4 = window
+  // 5 - SOUTH DOOR
   // 6 = steal your face
   // 7 = painting
+  // 8 EAST DOOR
+  // 9 WEST DOOR
+  // 0x0A = Player-Has-Key Icon
+  // ...    0xA0 removes the player-has-key icon
+  // 0x0C = Fleur-de-lis
+  // 0x0D = Shield
+  // 0x0E = Handcuffs
   
   // find room definition
   dec( currentRoom );
-  
   roomIndex = currentRoom * 11;
   inc( currentRoom );
 
+
   
   goN = (world)[roomIndex];
-
-  
-  
+ 
   inc( roomIndex );
   goE = (world)[roomIndex];
-
   if( goE == 0x00 )
     {
       putThing( 0x08, 0x00 );
-      //pause();
     }
+
+  
   inc( roomIndex );
   goS = (world)[roomIndex];
-  inc( roomIndex );
-  goW = (world)[roomIndex];
-  inc( roomIndex );
   
+  inc( roomIndex );
+  goW = (world)[roomIndex];  
   if( goW == 0x00 )
     {
       putThing( 0x09, 0x00 );
-      //pause();
     }
   
+  inc( roomIndex );  
   for( uint jj = 0x00; jj<0x05; inc( jj ) )
     {
       thing = (world)[roomIndex];
@@ -976,12 +1094,12 @@ void putStuffOnTheScreen()
   // bits of last byte
   // 1 - haven't visited (0x80)
   // 1 - monster is in room (0x40...)
-  // 1 - treasure
-  // 1 - health pack
+  // 1 - treasure (0x20)
+  // 1 - health pack (0x10)
+  // 1 - key (0x08)
   // 1 - 
   // 1 - 
-  // 1 - 
-  // 1 - 
+  // 1 - princess
 
   asmcomment( "test each bit of last byte of room data" );
   inc( roomIndex );
@@ -1000,13 +1118,22 @@ void putStuffOnTheScreen()
     }
 
   thing2 = thing & 0x40;
-
   // MONSTER
   if( thing2 != 0 )
     {
+      monster0x = myRand();
+      monster0x = monster0x + 0x0021;
+
+      // the y value needs to be from 123 - 160 or so.
+      monster0y = myRand();
+      lsr(monster0y);
+      lsr(monster0y);
+      monster0y = monster0y + 143;
+
       monsterisinroom = 0x01;
       spriteon( 5 );
-      monsterHP = rnd() & 0x03;
+      //monsterHP = myRand() & 0x03;
+      monsterHP = monsterHP & 0x03;
       monsterHP = monsterHP + 7;
       updateMonsterHealth();
     }
@@ -1020,19 +1147,18 @@ void putStuffOnTheScreen()
   thing2 = thing & 0x20;
   if( thing2 != 0 )
     {
-      treasurex = rnd();
+      treasurex = myRand();
       treasurex = treasurex + 0x0021;
 
 
       // the y value needs to be from 123 - 160 or so.
-      treasurey = rnd();
+      treasurey = myRand();
       lsr(treasurey);
       lsr(treasurey);
-      treasurey = treasurey + 143;
+      treasurey = treasurey + 140;
 
       treasureinroom = 0x01;
       spriteon( 0x08 );
-      //putThing( 0x0A, 0x00 );
     }
   else
     {
@@ -1044,15 +1170,15 @@ void putStuffOnTheScreen()
   thing2 = thing & 0x10;
   if( thing2 != 0 )
     {
-      healthpackx = rnd();
+      healthpackx = myRand();
       healthpackx = healthpackx + 0x0021;
 
 
       // the y value needs to be from 123 - 160 or so.
-      healthpacky = rnd();
+      healthpacky = myRand();
       lsr(healthpacky);
       lsr(healthpacky);
-      healthpacky = healthpacky + 143;
+      healthpacky = healthpacky + 140;
 
       healthpackinroom = 0x01;
       spriteon( 0x10 );
@@ -1063,10 +1189,30 @@ void putStuffOnTheScreen()
       spriteoff( 0x10 );
     }
 
+  // KEY
+  // if the items that are in a room and their sprite #'s were the same
+  // we could just use "thing" to turn on sprites for each room
+  // spriteon( thing )  or something like that
   thing2 = thing & 0x08;
   if( thing2 != 0 )
     {
-      nop();
+      keyx = myRand();
+      keyx = keyx + 0x0021;
+
+
+      // the y value needs to be from 123 - 160 or so.
+      keyy = myRand();
+      lsr(keyy);
+      lsr(keyy);
+      keyy = keyy + 143;
+
+      keyinroom = 0x01;
+      spriteon( 0x40 );
+    }
+  else
+    {
+      keyinroom = 0x00;
+      spriteoff( 0x40);
     }
 
   thing2 = thing & 0x04;
@@ -1085,12 +1231,17 @@ void putStuffOnTheScreen()
   thing2 = thing & 0x01;
   if( thing2 != 0 )
     {
-      spritex( 0x05, 0x0103 );
-      spritey( 0x05, 0x71 );
+      princessisinroom = 0x01;
+      // the x should be the same as the cuffs
+      princessx = 0x0027;
+      princessy = 0x70;
+      spritex( 0x05, princessx );
+      spritey( 0x05, princessy );
       spriteon( 0x20 );
     }
   else
     {
+      princessisinroom = 0x00;
       spriteoff( 0x20 );
     }
 
@@ -1139,6 +1290,12 @@ void putStuffOnTheScreen()
 
 
   updateLives();
+
+  if( playerHasKey == 0x01 )
+    {
+      putThing( 0x0A, 0x00 );
+    }
+
   
   screen(1);
   return;
@@ -1153,6 +1310,7 @@ void putThing( uint whatThing, uint whereThing )
   //    nop();
   //  }
 
+  // RIGHT WALL
   if( whatThing == 0x08 )
     {
       plotshapeColourValue11 = 0x00;
@@ -1165,6 +1323,7 @@ void putThing( uint whatThing, uint whereThing )
       plot(159,79,0xFF);
     }
 
+  // LEFT WALL
   if( whatThing == 0x09 )
     {
       plotshapeColourValue11 = 0x00;
@@ -1182,18 +1341,30 @@ void putThing( uint whatThing, uint whereThing )
   if( whatThing == 0x07 )
     {
       // Brown & Yellow
-      plotshapeColourValue1001 = 0x79;
-      // White
+      plotshapeColourValue0110 = 0x79;
+      // black
       plotshapeColourValue11 = 0x00;
       plotshape(paintingtop, ptStartX+2, 5, 4);  
       plotshape(paintingbot, ptStartX+2, 6, 4);
     }
+
+  // PAINTING2
+  if( whatThing == 11 )
+    {
+      // Brown & Yellow
+      plotshapeColourValue0110 = 0x79;
+      // black
+      plotshapeColourValue11 = 0x00;
+      plotshape(painting2top, ptStartX+2, 5, 4);  
+      plotshape(painting2bot, ptStartX+2, 6, 4);
+    }
+
   
   // STEAL YOUR FACE
   if( whatThing == 0x06 )
     {
       // Blue and Red
-      plotshapeColourValue1001 = 0x62;
+      plotshapeColourValue0110 = 0x62;
       // White
       plotshapeColourValue11 = 0x01;
 
@@ -1203,10 +1374,10 @@ void putThing( uint whatThing, uint whereThing )
       plotshape(steal7, ptStartX+2, 7, 4);
     }
   
-  // DOOR
+  // NORTH DOOR
   if( whatThing == 0x01 )
     {
-      plotshapeColourValue1001 = 0xBB; 
+      plotshapeColourValue0110 = 0xBB; 
       plotshapeColourValue11 = 0x00;
       
       plotshape(window0, ptStartX+2, 6, 4);
@@ -1220,10 +1391,10 @@ void putThing( uint whatThing, uint whereThing )
 	}    
     }
 
-  // ???
+  // SOUTH DOOR
   if( whatThing == 0x05 )
     {
-      plotshapeColourValue1001 = 0xBB; 
+      plotshapeColourValue0110 = 0xBB; 
       plotshapeColourValue11 = 0x00;
       plotshape(sdoor, ptStartX+2, 22, 4);
     }
@@ -1231,7 +1402,7 @@ void putThing( uint whatThing, uint whereThing )
   // SUIT OF ARMOUR
   if( whatThing == 0x02 )
     {
-      plotshapeColourValue1001 = 0xBC;
+      plotshapeColourValue0110 = 0xBC;
       plotshapeColourValue11 = 0x00;
       plotshape(armour0, ptStartX+2, 5, 4);  
       plotshape(armour1, ptStartX+2, 6, 4);
@@ -1244,7 +1415,7 @@ void putThing( uint whatThing, uint whereThing )
   if( whatThing == 0x03 )
     {
       // yellow/red
-      plotshapeColourValue1001 = 0x72; 
+      plotshapeColourValue0110 = 0x72; 
       plotshapeColourValue11 = 0x00;
       
       plotshape(torch0, ptStartX+1, 6, 2);  
@@ -1257,7 +1428,7 @@ void putThing( uint whatThing, uint whereThing )
   // WINDOW
   if( whatThing == 0x04 )
     {
-      plotshapeColourValue1001 = 0xBB; 
+      plotshapeColourValue0110 = 0xBB; 
       plotshapeColourValue11 = 0x00;
       
       plotshape(window0, ptStartX+2, 4, 4);
@@ -1277,14 +1448,53 @@ void putThing( uint whatThing, uint whereThing )
       plotshape(window3R, ptStartX+5, 7, 1 );
     }
 
+  // KEY ON WALL
   if( whatThing == 0x0A )
     {
-      // TREASURE
-      plotshapeColourValue1001 = 0x77; 
-      plotshapeColourValue11 = 0x00;
-      //      plotshape(treasure, 150, 11, 2 );
+      plotshapeColourValue0110 = 0x77; 
+      plotshapeColourValue11 = 0x07;
+      plotshape(keyonwall, 149, 20, 1 );
     }
 
+  // Lose Key
+  if( whatThing == 0xA0 )
+    {
+      plotshapeColourValue0110 = 0x00; 
+      plotshapeColourValue11 = 0x00;
+      plotshape(keyonwall, 149, 20, 1 );
+  
+    }
+  
+  // Fleur-de-lis
+  if( whatThing == 0x0C )
+    {
+      plotshapeColourValue0110 = 0x72; 
+      plotshapeColourValue11 = 0x00;
+      plotshape(fleurdelistop, ptStartX+2, 4, 3 );
+      plotshape(fleurdelisbot, ptStartX+2, 5, 3 );
+    }
+
+  // Shield
+  if( whatThing == 0x0D )
+    {
+      plotshapeColourValue0110 = 0xB2; 
+      plotshapeColourValue11 = 0x00;
+      plotshape(shieldtop, ptStartX+2, 6, 3 );
+      plotshape(shieldbot, ptStartX+2, 7, 3 );
+    }
+
+  // CUFFS
+  if( whatThing == 0x0E )
+    {
+      plotshapeColourValue0110 = 0x9B; 
+      plotshapeColourValue11 = 0x00;
+      plotshape(cuff0, ptStartX+2, 6, 3 );
+      plotshape(cuff1, ptStartX+2, 7, 3 );
+      princessx = ptStartX+2;
+      //spritex( 0x05, princessx );
+    }
+  
+  
   return;
 }
 
@@ -1302,7 +1512,7 @@ void plotshape(word plotshapeAddr, uint plotshapeX, uint plotshapeY, uint plotsh
   for( uint plotshapeJ = 0; plotshapeJ < plotshapeSize; inc(plotshapeJ) )
     {
       poke( plotshapeColor1, plotshapeColourValue11 );
-      poke( plotshapeColors2And3, plotshapeColourValue1001 );
+      poke( plotshapeColors2And3, plotshapeColourValue0110 );
       plotshapeColor1 = plotshapeColor1 + 1;
       plotshapeColors2And3 = plotshapeColors2And3 + 1;
       for( uint plotshapeI = 0; plotshapeI < 8; inc( plotshapeI ) )
@@ -1369,8 +1579,22 @@ void positionMOBS()
   spritex( 1, playerx );
   spritey( 1, playery );
 
+  
+  //plotDigitX = 10;
+  //plotDigitY = 2;
+  //plotNum = playerx;
+  //textColour = 0x08;
+  //plotNumber();
+  // white
+  //textColour = 0x01;
+
+  
   if( treasureinroom == 0x01 )
     {
+      // treasure
+      spritex( 3, treasurex );
+      spritey( 3, treasurey );
+
       //uint treasurecontact = playerWithinTen(150, 150);
       uint treasurecontact = proximity( treasurex, treasurey, 0x000A );
       if( treasurecontact == 0x01 )
@@ -1387,13 +1611,12 @@ void positionMOBS()
 	}
     }
   
-  // treasure
-  spritex( 3, treasurex );
-  spritey( 3, treasurey );
-
 
   if( healthpackinroom == 0x01 )
     {
+      spritex( 4, healthpackx );
+      spritey( 4, healthpacky );
+
       uint healthpackcontact = proximity( healthpackx, healthpacky, 0x000A );
       if( healthpackcontact == 0x01 )
 	{
@@ -1409,8 +1632,31 @@ void positionMOBS()
 	  healthpackinroom = 0x00;
 	}
     }
-  spritex( 4, healthpackx );
-  spritey( 4, healthpacky );
+
+  if( keyinroom == 0x01 )
+    {
+      spritex( 6, keyx );
+      spritey( 6, keyy );
+
+      uint keycontact = proximity( keyx, keyy, 0x000A );
+
+      if( keycontact == 0x01 )
+	{
+	  spriteoff( 0x40 );
+	  inc(expPts);
+	  inc(expPts);
+	  inc(expPts);
+	  inc(expPts);
+	  inc(expPts);
+	  asmcomment( "turn off the key in current room" );
+
+	  clearSpecialBit( 3 );
+	  updateScore();
+	  keyinroom = 0x00;
+	  playerHasKey = 0x01;
+	  putThing( 0x0A, 0x00 );
+	}
+    }
 
   return;
 }
@@ -1419,11 +1665,12 @@ void positionMOBS()
 void irqfunc1()
 {
 
-  // SKY BACKGROUND COLOUR (DARK BLUE)
-  poke( 0xD021, 0x06 );
+  // SKY BACKGROUND COLOUR (Black)
+  poke( 0xD021, 0x00 );
   //irq( ptr(irqfunc2), 65, 0 );
   irq( ptr(irqfunc2), 73, 0 );
-  poke( 0xD019, 0x01 );
+  //poke( 0xD019, 0x01 );
+  asl( 0xD019 );
   jmp( 0xEA7E );
   return;
 }
@@ -1432,8 +1679,41 @@ void irqfunc2()
 {
   // WALL BACKGROUND COLOUR (GREY)
   poke( 0xD021, 0x0C );
+
+  asmcomment( "call the SID player routine" );
+  jsr( 0xC006 );
+  if( playerAttackFlag > 0x00 )
+    {
+      asmcomment("player attack sound effect");
+      // voice 2
+      poke( 0xD40B, 0x81 );
+      //poke( 0xD412, 0x81 );
+      // AD
+      poke( 0xD40C, 0x11 );
+      //poke( 0xD413, 0x00 );
+      // SR
+      poke( 0xD40D, 0xF1 );
+      //poke( 0xD414, 0xF0 );
+      // Frequency
+      // Voice 2
+      poke( 0xD408, 0x0F );
+      poke( 0xD407, 0x43 );
+
+      // Voice 3
+      //poke( 0xD40F, 0x22 );
+      //poke( 0xD40E, 0x4B );
+
+      dec( playerAttackFlag );
+      //      inc( 0xD020 );
+
+    }
+  //else
+  //  {
+  //    poke( 0xD412, 0x80 );      
+  //  }
   irq( ptr(irqfunc3), 129, 0 );
-  poke( 0xD019, 0x01 );
+
+  asl( 0xD019 );
   jmp( 0xEA7E );
   return;
 }
@@ -1443,11 +1723,12 @@ void irqfunc3()
   // FLOOR BG COLOUR (DARK GREY)
   poke( 0xD021, 0x0B );
   irq( ptr(irqfunc4), 226, 0 );
-  poke( 0xD019, 0x01 );
+
+  asl( 0xD019 );
+
   jmp( 0xEA7E );
   return;
 }
-
 
 void irqfunc4()
 {
@@ -1455,15 +1736,17 @@ void irqfunc4()
   poke( 0xD021, 0x00 );
   
   irq( ptr(irqfunc1), 0x00, 0 );
-  
-  poke( 0xD019, 0x01 );
+  asl( 0xD019 );
+
+  //poke( 0xD019, 0x01 );
   jmp( 0xEA31 );
   return;
 }
 
 void irqrestore()
 {
-  poke( 0xD019, 0x01 );
+  asl( 0xD019 );
+  //poke( 0xD019, 0x01 );
   jmp( 0xEA31 );
   return;
 }
@@ -1614,6 +1897,7 @@ void updateHealth()
   plotNumber();
   // white
   textColour = 0x01;
+
   return;
 }
 
@@ -1720,7 +2004,7 @@ uint proximity(word proxX, uint proxY, word proxLimit)
 void monsterAttack()
 {
   // do the whole battle/attack thing here
-  general8bit = rnd();
+  general8bit = myRand();
   if( general8bit > 200 )
     {
       if( Adirection < 0x03 )
@@ -1763,7 +2047,7 @@ void monsterAttack()
 void playerAttack()
 {
   // do the whole battle/attack thing here
-  general8bit = rnd();
+  general8bit = myRand();
 
   /// for debugging purposes only
   /// display the "dice-roll"
@@ -1812,7 +2096,8 @@ void deathSequence()
   playery = 0x80;
   hpTimer = 0x0001;  
   currentRoom = 0x01;
-  playerHP = rnd() & 0x03;
+  //playerHP = myRand() & 0x03;
+  playerHP = playerHP & 0x03;
   playerHP = playerHP + 13;
 
 
@@ -1944,43 +2229,25 @@ void gameOverSequence()
 }
 
 void initWorld()
-{
-  data world2 =
-    {
-      0, 2, 0, 0,   0, 3, 4, 7, 0,   0,   0x71,
-      0, 3, 0, 1,   3, 4, 2, 3, 2,   0,   0xE0,
-      0, 4, 7, 2,   0, 0, 6, 0, 0,   2,   0xD0,
-      0, 0, 8, 3,   2, 3, 2, 3, 3,   5,   0xE0,
-      0, 6, 9, 0,   3, 2, 3, 2, 2,   3,   0xD0,
-      0, 0, 10, 5,  2, 2, 3, 3, 2,   1,   0xE0,
-      3, 8, 11, 0,  3, 1, 2, 3, 4,   5,   0xD0,
-      4, 0, 12, 7,  3, 0, 3, 0, 1,   2,   0xE0,
-      5, 0, 13, 0,  2, 2, 1, 2, 2,   5,   0xD0,
-      6, 11, 0, 0,  1, 3, 3, 2, 3,   0,   0xE0,
-      7, 0, 0, 10,  0, 3, 0, 3, 1,   0,   0xD0,
-      8, 0, 0, 0,   2, 1, 2, 3, 3,   0,   0xE0,
-      9, 0, 17, 0,  3, 3, 3, 2, 1,   1,   0xD0,
-      0, 15, 0, 0,  2, 2, 2, 2, 3,   0,   0xE0,
-      0, 16, 19, 14,3, 3, 3, 3, 2,   4,   0xD0,
-      0, 0, 20, 15, 2, 3, 3, 2, 3,   3,   0xE0,
-      13, 18, 0, 0, 1, 3, 2, 2, 3,   0,   0xD0,
-      0, 19, 21, 17,2, 2, 4, 4, 3,   2,   0xE0,
-      15, 0, 0, 18, 2, 2, 2, 1, 3,   0,   0xD0,
-      16, 0, 0, 0,  3, 2, 1, 3, 2,   0,   0xE0,
-      18, 23, 0, 0, 2, 1, 2, 0, 0,   0,   0xD0,
-      0, 23, 0, 21, 2, 3, 2, 3, 2,   0,   0xE0,
-      0, 0, 0, 22,  3, 2, 3, 2, 3,   0,   0xFF
-    };
+{ 
+  setfilename( "WORLD1,S,R" );
+  setlfs( 3, 8, 3 );
+  fopen();
+  fchkin( 3 );
 
+  word addr = world;
   for(  uint initWorldi = 0; initWorldi < 253; inc( initWorldi ) )
     {
-      word a = world + initWorldi;
-      word b = world2 + initWorldi;
-      poke( a, peek( b ) );
+      poke( addr, fchrin() );
+      addr = addr + 1;
     }
+  
+  fclose(3);
+  fclrchn();
 
   currentRoom = 0x01;
-  playerHP = rnd() & 0x03;
+  //playerHP = myRand() & 0x03;
+  playerHP = playerHP & 0x03;
   playerHP = playerHP + 13;
     
   lives = 0x03;
@@ -1994,6 +2261,50 @@ void initWorld()
   return;
 }
 
+void mySeed()
+{
+  if( rndinit == 0 )
+    {
+      // this must be called before SID music
+      // is setup because the rnd() function
+      // uses the SID chip
+      uint rvIndex = 0;
+      data randomValues =
+	{
+	  0, 0, 0, 0, 0, 0, 0, 0, 
+	  0, 0, 0, 0, 0, 0, 0, 0, 
+	  0, 0, 0, 0, 0, 0, 0, 0, 
+	  0, 0, 0, 0, 0, 0, 0, 0, 
+	  0, 0, 0, 0, 0, 0, 0, 0, 
+	  0, 0, 0, 0, 0, 0, 0, 0, 
+	  0, 0, 0, 0, 0, 0, 0, 0, 
+	  0, 0, 0, 0, 0, 0, 0, 0
+	};
+      word mySeedAddr = randomValues;
+  
+      for( uint mySeedi = 0x00; mySeedi < 0x40; inc( mySeedi ) )
+	{
+	  poke( mySeedAddr, rnd() );
+	  mySeedAddr = mySeedAddr + 0x0001;
+	}
+      rndinit = 0x01;
+    }
+  return;
+}
+
+// return a value from one of the 64 random values pre-determined at
+// the start of the program.
+uint myRand()
+{
+  uint myRandReturnValue = randomValues[rvIndex];
+  inc(rvIndex);
+  if( rvIndex > 0x40 )
+    {
+      rvIndex = 0x00;
+    }
+  return myRandReturnValue;
+}
+
 void delay()
 {
   for( word delayW = 0; delayW < 0x3FFF; delayW = delayW + 0x0001 )
@@ -2002,3 +2313,4 @@ void delay()
     }
   return;
 }
+

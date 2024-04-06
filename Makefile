@@ -51,14 +51,14 @@ memcpy:
 
 raster3:
 	cat ./raster3.c common.c > raster3.tmp
-	./compiler --kick --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./raster3.tmp > raster3.asm
+	./compiler --basic --kick --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./raster3.tmp > raster3.asm
 	rm -f raster3.tmp
 	java -jar KickAss.jar raster3.asm
 	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -delete raster3 -write raster3.prg raster3
 
 irqs:
 	cat ./irqs.c common.c > irqs.tmp
-	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table --kick  < ./irqs.tmp > irqs.asm
+	./compiler --basic  --code-segment 2100 --data-segment 820 --memory-locations --symbol-table --kick  < ./irqs.tmp > irqs.asm
 	rm -f irqs.tmp
 	java -jar KickAss.jar irqs.asm
 	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -dele irqs -write irqs.prg irqs
@@ -95,11 +95,15 @@ pokes:
 	java -jar KickAss.jar pokes.asm
 	rm -fR pokes.tmp
 
-
 show:
 	cat ./showspr.c common.c > showspr.tmp
 	./compiler --kick --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./showspr.tmp > showspr.asm
 	java -jar KickAss.jar showspr.asm
+
+testprg:
+	cat ./testprg.c common.c > testprg.tmp
+	./compiler --basic --kick --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./testprg.tmp > testprg.asm
+	java -jar KickAss.jar testprg.asm
 
 fighter:
 	cat ./fighter.c common.c > fighter.tmp
@@ -107,10 +111,16 @@ fighter:
 	java -jar KickAss.jar fighter.asm
 
 
-coll:
+spritecol:
 	cat ./spritecol.c common.c > spritecol.tmp
 	./compiler --basic --kick --code-segment 2100 --data-segment 820 --memory-locations < ./spritecol.tmp > spritecol.asm
 	java -jar KickAss.jar spritecol.asm
+
+spritecol2:
+	cat ./spritecol2.c common.c > spritecol2.tmp
+	./compiler --basic --kick --code-segment 2100 --data-segment 49152 --memory-locations < ./spritecol2.tmp > spritecol2.asm
+	java -jar KickAss.jar spritecol2.asm
+
 
 textmode:
 	cat ./textmode.c common.c > textmode.tmp
@@ -247,10 +257,18 @@ knight2:
 
 knight3:
 	cat ./knight3.c common.c > knight3.tmp
-	./compiler --debug --kick --basic --code-segment 2061 --data-segment 17650  --memory-locations < ./knight3.tmp > knight3.asm
+	./compiler --kick --basic --code-segment 2061 --data-segment 20000 < ./knight3.tmp > knight3.asm
 	java -jar KickAss.jar knight3.asm
 	rm -f knight3.tmp
 	/Applications/Vice64/tools/c1541 -attach KNIGHTSQUEST.d64 -delete savesprites -delete loadsprites -delete knight3 -write knight3.prg knight3
+
+rndfx:
+	cat ./rndfx.c common.c > rndfx.tmp
+	./compiler --kick --basic --code-segment 2061 --data-segment 828 < ./rndfx.tmp > rndfx.asm
+	java -jar KickAss.jar rndfx.asm
+	rm -f rndfx.tmp
+	/Applications/Vice64/tools/c1541 -attach RNDSID.d64 -delete rndfx -write rndfx.prg rndfx
+	/Applications/Vice64/tools/c1541 -attach RNDSID.d64 -delete rndsid -write rndsid.sid rndsid,s
 
 sprites: savesprites loadsprites
 
@@ -259,7 +277,7 @@ savesprites:
 	./compiler --debug --kick --basic --code-segment 8192 --data-segment 49152 < ./savesprites.tmp > savesprites.asm
 	java -jar KickAss.jar savesprites.asm
 	rm -f savesprites.tmp
-	/Applications/Vice64/tools/c1541 -attach KNIGHTSQUEST.d64 -delete knight3 -delete loadsprites -delete savesprites -delete sprites1 -write savesprites.prg savesprites
+	/Applications/Vice64/tools/c1541 -attach KNIGHTSQUEST.d64 -delete knight3 -delete loadsprites -delete savesprites -delete sprites1 -delete world1 -write savesprites.prg savesprites
 
 loadsprites:
 	cat ./loadsprites.c common.c > loadsprites.tmp
@@ -341,7 +359,9 @@ looptest:
 
 
 sound:
-	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./sound.c > sound.asm
+	cat ./sound.c common.c > sound.tmp
+	./compiler --kick --basic --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./sound.tmp > sound.asm
+	java -jar KickAss.jar sound.asm
 
 
 image:
@@ -466,15 +486,31 @@ program:
 arith:
 	./compiler --kick --code-segment 2100 --data-segment 820  --memory-locations --no-asm-comments --symbol-table  < ./arithtests.c > arithtests.asm
 
+sidirq:
+	cat ./sidirq.c common.c > sidirq.tmp
+	./compiler --basic --kick --code-segment 2100 --data-segment 49152 --memory-locations --symbol-table < ./sidirq.tmp > sidirq.asm
+	java -jar KickAss.jar -showmem sidirq.asm
+	/Applications/Vice64/tools/c1541 -attach SID.d64 -dele sidirq -write sidirq.prg sidirq 
+
+twosids:
+	cat ./twosids.c common.c > twosids.tmp
+	./compiler --basic --kick --code-segment 2100 --data-segment 49152 --memory-locations --symbol-table < ./twosids.tmp > twosids.asm
+	java -jar KickAss.jar -showmem twosids.asm
+	/Applications/Vice64/tools/c1541 -attach SID.d64 -dele twosids -write twosids.prg twosids 
+
+
 sidtest:
 	cat ./sidtest.c common.c > sidtest.tmp
 	./compiler --debug --basic --kick --code-segment 2100 --data-segment 828 --memory-locations < ./sidtest.tmp > sidtest.asm
 	java -jar KickAss.jar sidtest.asm
+	./compiler --basic --kick --code-segment 2100 --data-segment 828 < ./sidinfo.c > sidinfo.asm
+	java -jar KickAss.jar sidinfo.asm
 
-iftests:
-	./compiler --debug --basic --kick --code-segment 2100 --data-segment 828 --memory-locations < ./iftests.c > iftests.asm
+
+iftests: iftests.c
+	cat ./iftests.c common.c > iftests.tmp
+	./compiler --basic --kick --code-segment 2100 --data-segment 828 --memory-locations --symbol-table < ./iftests.tmp > iftests.asm
 	java -jar KickAss.jar iftests.asm
-	java -jar KickAss.jar iftests2.asm
 
 cond:
 	cat ./cond-tests.c common.c > cond-tests.tmp
