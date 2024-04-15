@@ -1,5 +1,16 @@
 int main()
 {
+  uint joystickdata=NULL;
+  uint buttonpress=NULL;
+  uint joystickenabled=NULL;
+
+  uint JSportA=NULL;
+  uint JSbtnPressA=NULL;
+  uint JSnorth=NULL;
+  uint JSsouth=NULL;
+  uint JSeast=NULL;
+  uint JSwest=NULL;
+
   asmcomment( "Bitmap Graphics Definitions" );  
   data sdoor = { 213, 213, 253, 255, 255, 255, 255, 255, 85, 85, 85, 245, 255, 255, 255, 255, 85, 85, 85, 95, 255, 255, 255, 255, 87, 87, 127, 255, 255, 255, 255, 255 };
   data empty2 = { 170, 170, 170, 170, 170, 170, 170, 170 };
@@ -155,7 +166,6 @@ int main()
   //irq( ptr(playsid), 0x32, 1 );
 
   
-  //sidirq( 0x0000, 0x0000 );
   poke( 0xD020, 0x0B );
   poke( 0xD021, 0 );
   // directions
@@ -319,14 +329,28 @@ int main()
   
   screen(1);
 
+  
   asmcomment("seed the RNG by repeatedly calling rnd until player presses a key" );
+  seed();
   while( general8bit == 0 )
     {
       sDoor=rnd(1);
       general8bit = getchar();
+      buttonpress =  peek(0xDC00) & 0x10;
+      if( buttonpress == 0x00 )
+	{
+	  inc( general8bit );
+	}
     }
-
-  seed();
+  if( general8bit == 0x01 )
+    {
+      joystickenabled = 0x01;
+    }
+  else
+    {
+      joystickenabled = 0x00;
+    }
+  
   mySeed();
 
   // setup music
@@ -338,23 +362,23 @@ int main()
   
   for( general8bit = 0; general8bit < 0x7E; inc(general8bit) )
     {
-      // reuse dieRoll because it's not
+      // reuse uint dieRoll because it's not
       // being used for anything yet
       dieRoll = fchrin();
     }
   
   //read in the SID data
   for( general16bit = 0xC000; general16bit < 0xC873; general16bit = general16bit + 0x0001 )
-  {
-    poke( general16bit, fchrin() );
-  }
+    {
+      poke( general16bit, fchrin() );
+    }
 
   asmcomment( "close the file" );
   fclose(3);
   fclrchn();
 
   asmcomment( "init SID play" );
-  jsr( 0xC000 );
+  //jsr( 0xC000 );
 
   asmcomment( "shift the screen back down a pixel" );
 
@@ -516,14 +540,14 @@ int main()
 
 
 
-    uint Awalkingrightframe[4];
+  uint Awalkingrightframe[4];
   Awalkingrightframe[0] = 49;
   Awalkingrightframe[1] = 50;
   Awalkingrightframe[2] = 51;
   Awalkingrightframe[3] = 50;
   
 
-    uint Awalkingleftframe[4];
+  uint Awalkingleftframe[4];
   Awalkingleftframe[0] = 52;
   Awalkingleftframe[1] = 53;
   Awalkingleftframe[2] = 54;
@@ -559,20 +583,70 @@ int main()
   
   uint c = getin();
 
-
-
   // ==========
   
   while( keepPlaying != 0x01 )
     {
+
       if( c == 60 )
-      {
-        playerAttackFlag = 0x01;
-      }
+	{
+	  playerAttackFlag = 0x01;
+	}
       
       if( clock == 0x0000 )
 	{
+	  getJS();
+
+	  if( c == 60 )
+	    {
+	      JSbtnPressA = 0x00;
+	    }
+	  //asmcomment( "ifif" );
+	  if( c == 33 )
+	    {
+	      // UP
+	      JSnorth = 0x00;
+	    }
+	  //asmcomment( "ifif" );
+	  if( c == 37 )
+	    {
+	      // DOWN
+	      JSsouth = 0x00;
+	    }
+	  //asmcomment( "ifif" );
 	  if( c == 30 )
+	    {
+	      // LEFT
+	      JSwest = 0x00;
+	    }
+	  //asmcomment( "ifif" );
+	  if( c == 38 )
+	    {
+	      // RIGHT
+	      JSeast = 0x00;
+	    }
+	  asmcomment( "HELLO!" );
+	  direction = 0x05;
+
+
+	  if( JSbtnPressA == 0x00 )
+	    {
+	      // spacebar
+	      if( prevdirection == 3 )
+		{
+		  direction = 6;
+		}
+	      else
+		{
+		  direction = 7;
+		}
+	      JSnorth = 0x01;
+	      JSsouth = 0x01;
+	      JSeast = 0x01;
+	      JSwest = 0x01;
+	    }
+
+	  if( JSwest == 0x00 )
 	    {
 	      // left
 	      direction = 3;
@@ -580,130 +654,112 @@ int main()
 	      if( playerx > 0x0017 )
 		{
 		  playerx = playerx - 0x0003;
-		  if( playerx < 0x0018 )
-		    {
-		      if( goW != 0 )
-			{
-			  // MOVE TO NEXT ROOM
-			  currentRoom = goW;
-			  playerx = 0x0140;
-			  putStuffOnTheScreen();
-			}
-		    }
 		}
 	    }
-	  else
+	  if( playerx < 0x0018 )
 	    {
-	      if( c == 38 )
+	      if( goW != 0 )
 		{
-		  // right
-		  prevdirection = 1;
-		  if( playerx < 0x0143 )
+		  // MOVE TO NEXT ROOM
+		  currentRoom = goW;
+		  playerx = 0x0140;
+		  putStuffOnTheScreen();
+		}
+	    }
+	  if( playerx > 0x0142 )
+	    {
+	      if( goE != 0 )
+		{
+		  asmcomment( "MOVE TO EAST ROOM" );
+		  currentRoom = goE;
+		  playerx = 0x0020;
+		  putStuffOnTheScreen();
+		}
+	    }
+
+	  //asmcomment( "ifif" );
+	  if( JSeast == 0x00 )
+	    {
+	      // right
+	      prevdirection = 1;
+	      if( playerx < 0x0143 )
+		{
+		  playerx = playerx + 0x0003;
+		}
+	      direction = 1;
+	    }
+	  
+	  //asmcomment( "ifif" );
+	  if( JSnorth == 0x00 )
+	    {
+	      // NORTH
+	      direction = 0;
+		      
+	      if( playery > 113 )
+		{
+		  dec(playery);
+		  dec(playery);
+		  dec(playery);
+
+		  if( playery < 114 )
 		    {
-		      playerx = playerx + 0x0003;
-		      if( playerx > 0x0142 )
+		      if( goN != 0 )
 			{
-			  if( goE != 0 )
+			  if( playerx > nDoor )
 			    {
-			      asmcomment( "MOVE TO EAST ROOM" );
-			      currentRoom = goE;
-			      playerx = 0x0020;
+			      if( playerx < nDoor + 0x0040 )
+				{
+				  // MOVE TO NEXT ROOM
+				  currentRoom = goN;
+				  playery = 202;
+				  putStuffOnTheScreen();
+				}
+			    }
+			}
+		    }			    
+		}
+	    }
+	  //asmcomment( "ifif" );
+	  if( JSsouth == 0x00 )
+	    {
+	      // SOUTH
+	      direction = 2;
+	      if( playery < 204 )
+		{
+		  inc(playery);
+		  inc(playery);
+		  inc(playery);
+		}
+	      if( playery > 204 )
+		{
+		  if( goS != 0 )
+		    {
+		      if( playerx > sDoor )
+			{
+			  if( playerx < sDoor + 0x0020 )
+			    {
+			      // MOVE TO NEXT ROOM
+			      currentRoom = goS;
+			      playery = 116;
 			      putStuffOnTheScreen();
 			    }
 			}
 		    }
-		  direction = 1;
-		}
-	      else
-		{
-		  if( c == 33 )
-		    {
-		      // NORTH
-		      direction = 0;
-		      
-		      if( playery > 113 )
-			{
-			  dec(playery);
-			  dec(playery);
-			  dec(playery);
-
-			  if( playery < 114 )
-			    {
-			      if( goN != 0 )
-				{
-				  if( playerx > nDoor )
-				    {
-				      if( playerx < nDoor + 0x0040 )
-					{
-					  // MOVE TO NEXT ROOM
-					  currentRoom = goN;
-					  playery = 202;
-					  putStuffOnTheScreen();
-					}
-				    }
-				}
-			    }			    
-			}
-		    }
-		  else
-		    {
-		      if( c == 37 )
-			{
-			  // SOUTH
-			  direction = 2;
-			  if( playery < 204 )
-			    {
-			      inc(playery);
-			      inc(playery);
-			      inc(playery);
-			    }
-			  if( playery > 204 )
-			    {
-			      if( goS != 0 )
-				{
-				  if( playerx > sDoor )
-				    {
-				      if( playerx < sDoor + 0x0020 )
-					{
-					  // MOVE TO NEXT ROOM
-					  currentRoom = goS;
-					  playery = 116;
-					  putStuffOnTheScreen();
-					}
-				    }
-				}
-			    }
-			}
-		      else
-			{
-			  if( c == 60 )
-			    {
-			      // spacebar
-			      if( prevdirection == 3 )
-				{
-				  direction = 6;
-				}
-			      else
-				{
-				  direction = 7;
-				}
-			    }
-			  else
-			    {
-			      if( c == 62 )
-				{
-				  pauseGameSequence();
-				}
-			      else
-				{
-				  // standing
-				  direction = 5;
-				}
-			    }
-			}
-		    }
 		}
 	    }
+	  //asmcomment( "ifif" );
+	  
+	  if( c == 62 )
+	    {
+	      pauseGameSequence();
+	    }
+	  //else
+	  // {
+	      // standing
+	  //  direction = 5;
+	  //}
+
+	  //asmcomment( "ifif" );
 
 	  if( princessisinroom != 0x00 )
 	    {
@@ -736,7 +792,7 @@ int main()
 		}
 
 	    }
-	  
+	  //asmcomment( "ifif" );	  
 	  if( monsterisinroom != 0x00 )
 	    {
 	      tmpProx1 = proximity( monster0x, monster0y, 0x000A );
@@ -774,16 +830,14 @@ int main()
 	  inc(playerHP);
 	  updateHealth();
 	}
-      if( clock > 0x009F )
-	{
-	  clock = 0x0000;
-	}
-      //clock = clock & 0x007F;
-
-      //if( c != 62 )
+      //if( clock > 0x007F )
       //{
+      //  clock = 0x0000;
+      //}
+      clock = clock & 0x003F;
+
       c = getin();
-      //	}
+      
     }
   //sidoff(0x0000);
 
@@ -795,7 +849,7 @@ int main()
   asmcomment( "go back to vic bank 0" );
   bank(0);  
   asmcomment( "Restore $0314/$0315 IRQ Vector" );
-  irq( ptr(irqrestore), 0x00, 0 );
+  irq( ptr(irqrestore), 0x00, 1 );
   
   restoreregs();
   shortcls();
@@ -1207,6 +1261,9 @@ void putStuffOnTheScreen()
       keyy = keyy + 143;
 
       keyinroom = 0x01;
+      //spritex( 0x06, keyx );
+      //spritey( 0x06, keyy );
+
       spriteon( 0x40 );
     }
   else
@@ -1232,8 +1289,8 @@ void putStuffOnTheScreen()
   if( thing2 != 0 )
     {
       princessisinroom = 0x01;
-      // the x should be the same as the cuffs
-      princessx = 0x0027;
+      
+      // the x should be the same as the CUFFS
       princessy = 0x70;
       spritex( 0x05, princessx );
       spritey( 0x05, princessy );
@@ -1265,8 +1322,6 @@ void putStuffOnTheScreen()
   
   updateGold();
 
-  
-  
   wordToPrint = healthText;
   wordSize = 7;
   plotDigitX = 29;
@@ -1288,7 +1343,6 @@ void putStuffOnTheScreen()
   printWord();
   dec(textColour);
 
-
   updateLives();
 
   if( playerHasKey == 0x01 )
@@ -1296,7 +1350,6 @@ void putStuffOnTheScreen()
       putThing( 0x0A, 0x00 );
     }
 
-  
   screen(1);
   return;
 }
@@ -1304,11 +1357,6 @@ void putStuffOnTheScreen()
 void putThing( uint whatThing, uint whereThing )
 {
   uint ptStartX = whereThing * 8;
-
-  //if( whatThing == 0x00 )
-  //  {
-  //    nop();
-  //  }
 
   // RIGHT WALL
   if( whatThing == 0x08 )
@@ -1336,7 +1384,6 @@ void putThing( uint whatThing, uint whereThing )
       plot(0,79,0xFF);
     }
 
-
   // PAINTING
   if( whatThing == 0x07 )
     {
@@ -1358,7 +1405,6 @@ void putThing( uint whatThing, uint whereThing )
       plotshape(painting2top, ptStartX+2, 5, 4);  
       plotshape(painting2bot, ptStartX+2, 6, 4);
     }
-
   
   // STEAL YOUR FACE
   if( whatThing == 0x06 )
@@ -1462,7 +1508,6 @@ void putThing( uint whatThing, uint whereThing )
       plotshapeColourValue0110 = 0x00; 
       plotshapeColourValue11 = 0x00;
       plotshape(keyonwall, 149, 20, 1 );
-  
     }
   
   // Fleur-de-lis
@@ -1490,11 +1535,11 @@ void putThing( uint whatThing, uint whereThing )
       plotshapeColourValue11 = 0x00;
       plotshape(cuff0, ptStartX+2, 6, 3 );
       plotshape(cuff1, ptStartX+2, 7, 3 );
-      princessx = ptStartX+2;
-      //spritex( 0x05, princessx );
+      princessx = ptStartX + 0x0005;      
+      princessx = princessx * 0x08;
+      princessx = princessx + 0x0001;
     }
-  
-  
+    
   return;
 }
 
@@ -1527,7 +1572,6 @@ void plotshape(word plotshapeAddr, uint plotshapeX, uint plotshapeY, uint plotsh
 
 void calcMonster0Position()
 {
-  
   if( monster0y < playery )
     {
       Adirection = 0x02;
@@ -1549,8 +1593,6 @@ void calcMonster0Position()
       Adirection = 3;
       monster0x = monster0x - 0x0001;
     }
-  
-
   
   if( monster0y > playery )
     {
@@ -1667,9 +1709,7 @@ void irqfunc1()
 
   // SKY BACKGROUND COLOUR (Black)
   poke( 0xD021, 0x00 );
-  //irq( ptr(irqfunc2), 65, 0 );
   irq( ptr(irqfunc2), 73, 0 );
-  //poke( 0xD019, 0x01 );
   asl( 0xD019 );
   jmp( 0xEA7E );
   return;
@@ -1680,8 +1720,8 @@ void irqfunc2()
   // WALL BACKGROUND COLOUR (GREY)
   poke( 0xD021, 0x0C );
 
-  asmcomment( "call the SID player routine" );
-  jsr( 0xC006 );
+  //asmcomment( "call the SID player routine" );
+  //jsr( 0xC006 );
   if( playerAttackFlag > 0x00 )
     {
       asmcomment("player attack sound effect");
@@ -1707,10 +1747,6 @@ void irqfunc2()
       //      inc( 0xD020 );
 
     }
-  //else
-  //  {
-  //    poke( 0xD412, 0x80 );      
-  //  }
   irq( ptr(irqfunc3), 129, 0 );
 
   asl( 0xD019 );
@@ -1746,14 +1782,16 @@ void irqfunc4()
 void irqrestore()
 {
   asl( 0xD019 );
-  //poke( 0xD019, 0x01 );
   jmp( 0xEA31 );
   return;
 }
 
 void plotDigit()
 {
-  word plotDigitOffset = plotDigitX + plotDigitY * 40;
+  //word plotDigitOffset = plotDigitX + plotDigitY * 40;
+  word plotDigitOffset = plotDigitY * 40;
+  plotDigitOffset = plotDigitOffset + plotDigitX;
+  
   word plotDigitColor1 = plotDigitOffset + 0xD800;
   word plotDigitColors2And3 = plotDigitOffset + scraddr;
   //poke( plotDigitColor1, 0x01 );
@@ -1773,8 +1811,7 @@ void plotDigit()
 
 void printWord()
 {
-  //param printWordAddr
-  
+  asmcomment( "void printWord()" );
   plotDigitAddr= letters;
   for( uint printWordI = 0x00; printWordI < wordSize; inc(printWordI) )
     {
@@ -2121,6 +2158,11 @@ void deathSequence()
   while( qsq == 0 )
     {
       qsq = getchar();
+      getJS();
+      if( buttonpress == 0x00 )
+	{
+	  qsq = 0x01;
+	}
     }
 
   poke( 0xD01B, D01B );
@@ -2146,6 +2188,11 @@ void pauseGameSequence()
   while( qsq == 0 )
     {
       qsq = getchar();
+      getJS();
+      if( buttonpress == 0x00 )
+	{
+	  qsq = 0x01;
+	}      
     }
   
   if( qsq == 'Q' )
@@ -2197,6 +2244,11 @@ void gameOverSequence()
   while( qsq == 0 )
     {
       qsq = getchar();
+      getJS();
+      if( buttonpress == 0x00 )
+	{
+	  qsq = 0x01;
+	}
     }
   
   if( qsq == 'Y' )
@@ -2246,8 +2298,10 @@ void initWorld()
   fclrchn();
 
   currentRoom = 0x01;
-  //playerHP = myRand() & 0x03;
+  playerHP = myRand();
   playerHP = playerHP & 0x03;
+
+  //playerHP = playerHP & 0x03;
   playerHP = playerHP + 13;
     
   lives = 0x03;
@@ -2303,6 +2357,21 @@ uint myRand()
       rvIndex = 0x00;
     }
   return myRandReturnValue;
+}
+
+void getJS()
+{
+  joystickdata = peek( 0xDC00 ) & 0x0F;
+  buttonpress = peek( 0xDC00 ) & 0x10;
+
+  JSportA = peek(0xDC00);
+  JSbtnPressA = JSportA & 0x10;
+  JSnorth = JSportA & 0x01;
+  JSsouth = JSportA & 0x02;
+  JSwest = JSportA & 0x04;
+  JSeast = JSportA & 0x08;
+
+  return;
 }
 
 void delay()

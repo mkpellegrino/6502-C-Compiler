@@ -25,6 +25,12 @@ args:
 	java -jar KickAss.jar args.asm
 	rm -f args.tmp
 
+walker8:
+	cat ./walker8.c common.c > walker8.tmp
+	./compiler --basic --code-segment 2100 --data-segment 820 --kick --no-asm-comments --memory-locations < ./walker8.tmp > walker8.asm
+	java -jar KickAss.jar walker8.asm
+	rm -f walker8.tmp
+
 pointers:
 	cat ./pointers.c common.c > pointers.tmp
 	./compiler --code-segment 2100 --data-segment 820 --kick < ./pointers.tmp > pointers.asm
@@ -66,7 +72,7 @@ irqs:
 
 raster2:
 	cat ./raster2.c common.c > raster2.tmp
-	./compiler --kick --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./raster2.tmp > raster2.asm
+	./compiler --kick --basic --code-segment 2100 --data-segment 820 --no-asm-comments --symbol-table < ./raster2.tmp > raster2.asm
 	rm -f raster2.tmp
 	java -jar KickAss.jar raster2.asm
 	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -dele raster2 -write raster2.prg raster2
@@ -244,10 +250,22 @@ mul16:
 	./compiler --basic --kick --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./mul16.c > mul16.asm
 	java -jar KickAss.jar mul16.asm
 
+datatest:
+	cat datatest.c common.c > datatest.tmp
+	./compiler --basic --kick --code-segment 2100 --data-segment 820 --no-asm-comments --memory-locations < ./datatest.c > datatest.asm
+	java -jar KickAss.jar datatest.asm
+
 roll:
 	./compiler --basic --kick --code-segment 2100 --data-segment 820 < ./roll.c > roll.asm
 	java -jar KickAss.jar roll.asm
 	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -dele roll -write roll.prg roll
+
+knightold:
+	cat knight3.bak.c common.c > knight.tmp
+	./compiler --kick --basic --code-segment 2061 --data-segment 21000 --no-asm-comments --memory-locations < ./knight.tmp > knight.asm
+	java -jar KickAss.jar knight.asm
+	rm -f knight.tmp
+	/Applications/Vice64/tools/c1541 -attach KNIGHTSQUEST.d64 -delete savedata -delete knight3 -delete knight -write knight.prg knight
 
 knight2:
 	cat ./knight2.c common.c > knight2.tmp
@@ -257,27 +275,35 @@ knight2:
 
 knight3:
 	cat ./knight3.c common.c > knight3.tmp
-	./compiler --kick --basic --code-segment 2061 --data-segment 20000 < ./knight3.tmp > knight3.asm
+	./compiler --kick --basic --code-segment 2061 --data-segment 21000  --memory-locations < ./knight3.tmp > knight3.asm
 	java -jar KickAss.jar knight3.asm
 	rm -f knight3.tmp
-	/Applications/Vice64/tools/c1541 -attach KNIGHTSQUEST.d64 -delete savesprites -delete loadsprites -delete knight3 -write knight3.prg knight3
+	/Applications/Vice64/tools/c1541 -attach KNIGHTSQUEST.d64 -delete knight -delete savedata -delete knight3 -write knight3.prg knight3
+
+joystick:
+	cat ./joystick.c ./common.c > joystick.tmp
+	./compiler --kick --basic --code-segment 2061 --data-segment 820 --no-asm-comments < ./joystick.tmp > joystick.asm
+	java -jar KickAss.jar joystick.asm
+	java -jar KickAss.jar joystick-tiny.asm
+	rm -f joystick.tmp
+	/Applications/Vice64/tools/c1541 -attach JOYSTICK.d64 -delete joystick -write joystick.prg joystick
 
 rndfx:
 	cat ./rndfx.c common.c > rndfx.tmp
 	./compiler --kick --basic --code-segment 2061 --data-segment 828 < ./rndfx.tmp > rndfx.asm
 	java -jar KickAss.jar rndfx.asm
+	java -jar KickAss.jar rndfx2.asm
 	rm -f rndfx.tmp
 	/Applications/Vice64/tools/c1541 -attach RNDSID.d64 -delete rndfx -write rndfx.prg rndfx
+	/Applications/Vice64/tools/c1541 -attach RNDSID.d64 -delete rndfx2 -write rndfx2.prg rndfx2
 	/Applications/Vice64/tools/c1541 -attach RNDSID.d64 -delete rndsid -write rndsid.sid rndsid,s
 
-sprites: savesprites loadsprites
-
-savesprites:
-	cat ./savesprites.c common.c > savesprites.tmp
-	./compiler --debug --kick --basic --code-segment 8192 --data-segment 49152 < ./savesprites.tmp > savesprites.asm
-	java -jar KickAss.jar savesprites.asm
-	rm -f savesprites.tmp
-	/Applications/Vice64/tools/c1541 -attach KNIGHTSQUEST.d64 -delete knight3 -delete loadsprites -delete savesprites -delete sprites1 -delete world1 -write savesprites.prg savesprites
+savedata: 
+	cat ./savedata.c common.c > savedata.tmp
+	./compiler --kick --basic --code-segment 8192 --data-segment 49152 < ./savedata.tmp > savedata.asm
+	java -jar KickAss.jar savedata.asm
+	rm -f savedata.tmp
+	/Applications/Vice64/tools/c1541 -attach KNIGHTSQUEST.d64 -delete knight3 -delete loadsprites -delete savedata -delete savesprites -delete sprites1 -delete world1 -write savedata.prg savedata -write knight3.prg knight3
 
 loadsprites:
 	cat ./loadsprites.c common.c > loadsprites.tmp
@@ -286,6 +312,9 @@ loadsprites:
 	rm -f loadsprites.tmp
 	/Applications/Vice64/tools/c1541 -attach KNIGHTSQUEST.d64 -delete loadsprites -write loadsprites.prg loadsprites
 
+functions:
+	./compiler --basic --kick --code-segment 2100 --data-segment 820 --memory-locations --symbol-table --no-asm-comments < ./functions.c > functions.asm
+	java -jar KickAss.jar functions.asm
 
 collision:
 	./compiler --basic --kick --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./collision.c > collision.asm
@@ -293,17 +322,43 @@ collision:
 
 vscroll:
 	cat ./vscroll.c common.c > vscroll.tmp
-	./compiler --basic --kick --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./vscroll.tmp > vscroll.asm
+	./compiler --basic --kick --code-segment 2100 --data-segment 820 --no-asm-comments --memory-locations --symbol-table < ./vscroll.tmp > vscroll.asm
 	java -jar KickAss.jar vscroll.asm
+	java -jar KickAss.jar vertical-scroll.asm
 	rm -f vscroll.tmp
 	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -dele vscroll -write vscroll.prg vscroll
 
+
+vscroll2:
+	cat ./vscroll2.c common.c > vscroll2.tmp
+	./compiler --basic --kick --code-segment 2100 --data-segment 820  --symbol-table < ./vscroll2.tmp > vscroll2.asm
+	java -jar KickAss.jar vscroll2.asm
+	rm -f vscroll2.tmp
+	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -dele vscroll2 -write vscroll2.prg vscroll2
+
+strings:
+	cat ./strings.c > strings.tmp
+#	cat ./strings.c common.c > strings.tmp
+	./compiler --basic --code-segment 2100 --data-segment 820 --memory-locations --symbol-table --kick < ./strings.tmp > strings.asm
+	java -jar KickAss.jar strings.asm
+	java -jar KickAss.jar strings2.asm
+	rm -f ./strings.tmp
+
+hscroll:
+	./compiler --basic --code-segment 2100 --data-segment 820 --no-asm-comments --kick < ./hscroll.c > hscroll.asm
+	java -jar KickAss.jar hscroll.asm
+	java -jar KickAss.jar horizontal-scroll.asm
+
 math:
-	cat ./math.c common.c > math.tmp
+	./compiler --basic --code-segment 2100 --data-segment 820 --symbol-table --kick < ./cosine.c > cosine.asm
+	java -jar KickAss.jar cosine.asm
+	cat ./math.c > math.tmp
 #	cat ./division.c common.c > division.tmp
 	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table --kick < ./math.tmp > math.asm
 #	./compiler --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./division.tmp > division.asm
 	java -jar KickAss.jar math.asm
+	java -jar KickAss.jar math2.asm
+	java -jar KickAss.jar hscroll.asm
 
 
 odds:
@@ -326,7 +381,7 @@ rocket:
 
 general:
 	cat ./general.c common.c > general.tmp
-	./compiler --kick --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./general.tmp > general.asm
+	./compiler --basic --kick --code-segment 2100 --data-segment 820 --no-asm-comments  --symbol-table < ./general.tmp > general.asm
 	java -jar KickAss.jar general.asm
 	rm -f general.tmp
 
@@ -427,9 +482,13 @@ return:
 	rm -f return.tmp
 
 conway:
-	./compiler --kick --basic --code-segment 2100 --data-segment 820 --memory-locations --symbol-table < ./conway.c > conway2100.asm
+	./compiler --kick --basic --code-segment 2100 --data-segment 820 --symbol-table --no-asm-comments < ./conway.c > conway2100.asm
+	./compiler --kick --basic --code-segment 2100 --data-segment 820 --symbol-table --no-asm-comments < ./conway.c > conway-new.asm
 	java -jar KickAss.jar conway2100.asm
-	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -dele conway -write conway.prg conway
+	java -jar KickAss.jar conway-new.asm
+	java -jar KickAss.jar conway-tiny.asm
+	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -dele conway -write conway2100.prg conway
+	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -dele conwayt -write conway-tiny.prg conwayt
 
 stack:
 	cat ./stack.c common.c > stack.tmp
