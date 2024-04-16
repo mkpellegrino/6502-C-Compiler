@@ -1590,12 +1590,11 @@
     string lda02 = string("lda $02");
     string pha = string("pha");
     string lda03 = string("lda $03");
-    string php = string("php");
-    
-    
-      for( int i=0; i<asm_instr.size(); i++ )
-      {
+    string php = string("php");    
 
+    for( int i=0; i<asm_instr.size(); i++ )
+      {
+	// POP-PUSH removal (IFIF)
 	if( cmpstr( asm_instr[i]->getString(), plp ) &&
 	    cmpstr( asm_instr[i+1]->getString(), pla ) &&
 	    cmpstr( asm_instr[i+2]->getString(), sta03 ) &&
@@ -1607,22 +1606,68 @@
 	    cmpstr( asm_instr[i+8]->getString(), pha ) &&
 	    cmpstr( asm_instr[i+9]->getString(), php ))
 	  {
-	    // POP-PUSH removal (IFIF)
 	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+10);
-	    //asm_instr[i]->setString( "// IFIF IFIF IFIF\n\t" + asm_instr[i]->getString() );
+	    addCompilerMessage( "removing POP-PUSH IFIF" );
 	  }
-
-	    
-	
-	//if( cmpstr( asm_instr[i]->getString().substr(0,3), string("plp") ) )
-	//  {
-	//    cerr << "found plp on line: " << i << ": " << asm_instr[i]->getString() << endl;
-	//  }
       }
+
+    string jmp = string("jmp");
+    string lbl = string("LBL");
+
+    for( int i=0; i<asm_instr.size(); i++ )
+      {
+	// Unnecessary JMP removal
+	if( cmpstr( asm_instr[i]->getString(), jmp ) &&
+	    cmpstr( asm_instr[i+1]->getString(), lbl ) &&
+	    cmpstr( asm_instr[i+2]->getString(), lbl ) )
+	  {
+	    // it's a jmp-lbl-lbl
+	    // todo: now we need to check to make sure that the jump is to one of the
+	    // two labels
+	    // split the jmp line by spaces
+	    // split the lbl lines by colons
+	    // compare
+	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+1);
+	    addCompilerMessage( "removing unnecessary JMP (keeping the labels)" );
+	  }
+      }
+
+    string rts = string("rts");
+    for( int i=0; i<asm_instr.size(); i++ )
+      {
+	// Unnecessary JMP removal
+	if( cmpstr( asm_instr[i]->getString(), rts ) &&
+	    cmpstr( asm_instr[i+1]->getString(), rts ) )
+	  {
+	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+1);
+	    addCompilerMessage( "removing double returns" );
+	  }
+      }
+    
+    for( int i=0; i<asm_instr.size(); i++ )
+      {
+	if( cmpstr( asm_instr[i]->getString(), pla ) &&
+	    cmpstr( asm_instr[i+1]->getString(), pha ) )
+	  {
+	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+2);
+	    addCompilerMessage( "removing pop pushes" );
+	  }
+      }
+
+    for( int i=0; i<asm_instr.size(); i++ )
+      {
+	if( cmpstr( asm_instr[i]->getString(), pha ) &&
+	    cmpstr( asm_instr[i+1]->getString(), pla ) )
+	  {
+	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+2);
+	    addCompilerMessage( "removing push pops" );
+	  }
+      }
+
     return;
   }
-  void ProcessFunctions()
-  {
+    void ProcessFunctions()
+    {
     
     // delete fuunctions that are both called and defined
     bool a_function_has_been_removed=false;
@@ -2187,8 +2232,6 @@ parameterlist: /* empty */
   addComment(string("Parameter: ") + $1.name);
   if( isUintID($1.name) || isIntID($1.name))
     {
-      //addAsm( str_LDA + "$" + toHex( getAddressOf( $1.name ) ), 3, false );
-
       // 2024 04 14 - mkpellegrino
       addAsm( str_LDA + getNameOf(getAddressOf( $1.name )), 3, false );
       //addAsm( str_LDA + $1.name, 3, false );
@@ -2206,13 +2249,11 @@ parameterlist: /* empty */
     }
   else if( isWordID( $1.name ) )
     {
-      //addAsm( str_LDA + "$" + toHex( getAddressOf($1.name) ), 3, false );
       // 2024 04 14 - mkpellegrino
       addAsm( str_LDA + getNameOf(getAddressOf( $1.name )), 3, false );
       //addAsm( str_LDA + $1.name, 3, false );
 
       addAsm( str_PHA );
-      //addAsm( str_LDA + "$" + toHex( getAddressOf($1.name)+1 ), 3, false );
       // 2024 04 14 - mkpellegrino
       addAsm( str_LDA + getNameOf(getAddressOf( $1.name )) + "+1", 3, false );
       //addAsm( str_LDA + $1.name + "+1", 3, false );
@@ -2239,25 +2280,28 @@ parameterlist: /* empty */
     }
   else if( isFloatID($1.name) )
     {
-
+      int addr = atoi(stripFirst($1.name).c_str());
+      string OP1 = getNameOf(addr);
+      // 2024 04 15 - mkpellegrino
+      
       //addAsm( str_LDA + "$" + toHex( getAddressOf($1.name) ), 3, false );
-      addAsm( str_LDA + $1.name, 3, false );
+      addAsm( str_LDA + OP1, 3, false );
 
       addAsm( str_PHA );
       //addAsm( str_LDA + "$" + toHex( getAddressOf($1.name)+1 ), 3, false );
-      addAsm( str_LDA + $1.name + "+1", 3, false );
+      addAsm( str_LDA + OP1 + "+1", 3, false );
 
       addAsm( str_PHA );
       //addAsm( str_LDA + "$" + toHex( getAddressOf($1.name)+2 ), 3, false );
-      addAsm( str_LDA + $1.name + "+2", 3, false );
+      addAsm( str_LDA + OP1 + "+2", 3, false );
       
       addAsm( str_PHA );
       //addAsm( str_LDA + "$" + toHex( getAddressOf($1.name)+3 ), 3, false );
-      addAsm( str_LDA + $1.name + "+3", 3, false );
+      addAsm( str_LDA + OP1 + "+3", 3, false );
       
       addAsm( str_PHA );
       //addAsm( str_LDA + "$" + toHex( getAddressOf($1.name)+4 ), 3, false );
-      addAsm( str_LDA + $1.name + "+4", 3, false );
+      addAsm( str_LDA + OP1+ "+4", 3, false );
       
       addAsm( str_PHA );
     }
@@ -3580,10 +3624,12 @@ body: WHILE
     {
       pushScope( "PRINTS" );
       int addr = getAddressOf( $3.name );
+      string OP3 = getNameOf(addr);
+      
       addAsm( str_LDX + "#$00", 2, false );
       addAsm( generateNewLabel() + commentmarker + string( "\t\t\ttop of prints"), 0, true ); // LABEL BB
 
-      addAsm( str_LDA + "$" + toHex( addr ) + string(",X"), 3, false );
+      addAsm( str_LDA + OP3 + string(",X"), 3, false );
       addAsm( str_CMP + "#$00", 2, false );
       addAsm( str_BEQ + getLabel( label_vector[label_major],false), 2, false ); 
       addAsm( str_JSR + "$FFD2", 3, false );
@@ -3609,9 +3655,12 @@ body: WHILE
   else if( isWordID($3.name) )
     {
       printf_is_needed = true;
-      addAsm( str_LDA+$3.name, 3, false );
+      int addr = getAddressOf( $3.name );
+      string OP3 = getNameOf(addr);
+     
+      addAsm( str_LDA + OP3, 3, false );
       addAsm( str_STA+"$02", 2, false );
-      addAsm( str_LDA+$3.name+"+1", 3, false );
+      addAsm( str_LDA + OP3 + "+1", 3, false );
       addAsm( str_STA+"$03", 2, false );
       addAsm( str_JSR + "PRN", 3, false );
     }
@@ -8257,11 +8306,13 @@ arithmetic expression
   
   if( isXA($1.name) && (!isXA($4.name) && !isA($4.name) ) )
     {
+      // 2024 04 15 - ??????  I deleted the first delete
+      // but this needs to be verified.
+      if( arg_asm_comments ) deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
-      deletePreviousAsm();
-      addComment( "Deleted previous 4 LOC" );
+      addComment( "Deleted previous 3 instructions" );
     }
 
   // 
@@ -11139,7 +11190,7 @@ arithmetic expression
 	    }
 	  else
 	    {
-	      addAsm( str_LDA+"#$" + toHex ( tmp_int3  ) + commentmarker + "***", 2, false );
+	      addAsm( str_LDA+"#$" + toHex ( tmp_int3  ), 2, false );
 	      strcpy($$.name, "_A" );
 	    }
 	}
