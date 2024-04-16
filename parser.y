@@ -1639,8 +1639,8 @@
 	if( cmpstr( asm_instr[i]->getString(), rts ) &&
 	    cmpstr( asm_instr[i+1]->getString(), rts ) )
 	  {
-	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+1);
-	    addCompilerMessage( "removing double returns" );
+	    //asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+1);
+	    addCompilerMessage( "found double return" );
 	  }
       }
     
