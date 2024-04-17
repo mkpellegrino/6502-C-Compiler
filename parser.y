@@ -1631,18 +1631,6 @@
 	    addCompilerMessage( "removing unnecessary JMP (keeping the labels)" );
 	  }
       }
-
-    string rts = string("rts");
-    for( int i=0; i<asm_instr.size(); i++ )
-      {
-	// Unnecessary JMP removal
-	if( cmpstr( asm_instr[i]->getString(), rts ) &&
-	    cmpstr( asm_instr[i+1]->getString(), rts ) )
-	  {
-	    //asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+1);
-	    addCompilerMessage( "found double return" );
-	  }
-      }
     
     for( int i=0; i<asm_instr.size(); i++ )
       {
@@ -1654,6 +1642,19 @@
 	  }
       }
 
+
+    
+    for( int i=0; i<asm_instr.size(); i++ )
+      {
+	if( cmpstr( asm_instr[i]->getString(), string("	pla ") ) &&
+	    cmpstr( asm_instr[i+1]->getString(), string("	pha ") ) )
+	  {
+	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+2);
+	    addCompilerMessage( "removing pop pushes" );
+	  }
+	if( asm_instr[i]->getString() == string("	pla ") ) addCompilerMessage( "found pla" );
+      }
+
     for( int i=0; i<asm_instr.size(); i++ )
       {
 	if( cmpstr( asm_instr[i]->getString(), pha ) &&
@@ -1661,6 +1662,24 @@
 	  {
 	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+2);
 	    addCompilerMessage( "removing push pops" );
+	  }
+      }
+    for( int i=0; i<asm_instr.size(); i++ )
+      {
+	if( cmpstr( asm_instr[i]->getString(), sta02 ) &&
+	    cmpstr( asm_instr[i+1]->getString(), lda02 ) )
+	  {
+	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+2);
+	    addCompilerMessage( "removing sta02-lda02's" );
+	  }
+      }
+    for( int i=0; i<asm_instr.size(); i++ )
+      {
+	if( cmpstr( asm_instr[i]->getString(), sta03 ) &&
+	    cmpstr( asm_instr[i+1]->getString(), lda03 ) )
+	  {
+	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+2);
+	    addCompilerMessage( "removing sta03-lda03's" );
 	  }
       }
 
@@ -13290,7 +13309,7 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
 };
 | ID '(' parameterlist ')' 
 {
-  addComment( "Call a function as an expression - Line 12521" );
+  addComment( "Call a function as an expression - Line 13281" );
   proposed_ids_vector.push_back( new id_and_line( $1.name, countn+1 ));
 
   
@@ -15371,7 +15390,7 @@ int main(int argc, char *argv[])
   Optimize();
   ProcessComments();
   ProcessVariables();
-  ProcessFunctions();
+  //ProcessFunctions();
   ProcessMemoryLocationsOfCode();
   ProcessStrings();
   //ProcessMobs();
