@@ -282,6 +282,7 @@
   bool arg_unsafe_ifs=false;
   bool arg_show_labels=true;
   bool arg_asm_comments=true;
+  bool arg_optimize=true;
   bool arg_parser_comments=false;
   
   string current_state;
@@ -1591,6 +1592,7 @@
     string pha = string("pha");
     string lda03 = string("lda $03");
     string php = string("php");    
+    string clc = string("clc");    
 
     for( int i=0; i<asm_instr.size(); i++ )
       {
@@ -1646,13 +1648,12 @@
     
     for( int i=0; i<asm_instr.size(); i++ )
       {
-	if( cmpstr( asm_instr[i]->getString(), string("	pla ") ) &&
-	    cmpstr( asm_instr[i+1]->getString(), string("	pha ") ) )
+	if( cmpstr( asm_instr[i]->getString(), string("pla ") ) &&
+	    cmpstr( asm_instr[i+1]->getString(), string("pha ") ) )
 	  {
 	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+2);
 	    addCompilerMessage( "removing pop pushes" );
 	  }
-	if( asm_instr[i]->getString() == string("	pla ") ) addCompilerMessage( "found pla" );
       }
 
     for( int i=0; i<asm_instr.size(); i++ )
@@ -1680,6 +1681,16 @@
 	  {
 	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+2);
 	    addCompilerMessage( "removing sta03-lda03's" );
+	  }
+      }
+
+    for( int i=0; i<asm_instr.size(); i++ )
+      {
+	if( cmpstr( asm_instr[i]->getString(), clc ) &&
+	    cmpstr( asm_instr[i+1]->getString(), clc ) )
+	  {
+	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+2);
+	    addCompilerMessage( "removing doubled up CLC's" );
 	  }
       }
 
@@ -13860,6 +13871,7 @@ int main(int argc, char *argv[])
       cerr << "command line arg: " << i << " " << a << endl;
 #endif
       if( a == "--memory-locations" ) arg_memory_locations  = true;
+      if( a == "--no-optimize" ) arg_optimize = false;
       if( a == "--no-asm-comments" ) arg_asm_comments = false;
       if( a == "--parser-comments" ) arg_parser_comments = true;
       //if( a == "--symbol-table" ) symbol_table_is_needed = true;
@@ -13903,6 +13915,7 @@ int main(int argc, char *argv[])
 	       << "\t--memory-locations\twill show the memory addresses of the assembler instructions\n" 
 	       << "\t--no-labels\t\twill supress the labels (and turn them into memory addresses)\n" 
 	       << "\t--no-asm-comments\twill supress most comments pertaining to flow of control\n" 
+	       << "\t--no-optimize\twill generate code with NO optimizations\n" 
 	       << "\t--parser-comments\twill show the comments intended to help debug the parser\n"
 	       << "\t--kick\t\t\tcreate .asm file that is compatible with Kick Assembler\n"
 	       << "\t--basic\t\t\tput BASIC Upstart code at $0801\n"
@@ -15387,7 +15400,7 @@ int main(int argc, char *argv[])
     {
       if( !kick ) cout << ".OPT ILLEGALS" << endl;
     }
-  Optimize();
+  if( arg_optimize ) Optimize();
   ProcessComments();
   ProcessVariables();
   //ProcessFunctions();
