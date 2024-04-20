@@ -222,16 +222,15 @@ int main()
   // White
   uint plotshapeColourValue11;
 
+  uint textColour;
+  inc( textColour );
   //   0
   // 3   1
   //   2
-  uint door0;
-  uint door1;
-  uint door2;
-  uint door3;
-
-  uint textColour;
-  inc( textColour );
+  uint door0=NULL;
+  uint door1=NULL;
+  uint door2=NULL;
+  uint door3=NULL;
   
   word nDoor = 0x0000;
   word expPts;
@@ -297,8 +296,7 @@ int main()
   word scraddr = getscr_addr();
   word scraddrX = scraddr + 0x03EF;
 
-  screen(0);
-
+  screen(0x00);
   asmcomment( "LOAD THE SPLASH SCREEN INTO MEMORY" );
   setfilename( "SPLASH,S,R" );
   setlfs( 3, 8, 3 );
@@ -325,15 +323,17 @@ int main()
   plotDigitX = 8;
   plotDigitY = 24;
   printWord();
-
   
-  screen(1);
+  screen(0x01);
 
   
   asmcomment("seed the RNG by repeatedly calling rnd until player presses a key" );
   seed();
   while( general8bit == 0 )
     {
+      // it doesn't matter that this is sDoor...
+      // it's just an unused (at the moment)
+      // memory location to put the new random value
       sDoor=rnd(1);
       general8bit = getchar();
       buttonpress =  peek(0xDC00) & 0x10;
@@ -342,16 +342,24 @@ int main()
 	  inc( general8bit );
 	}
     }
-  if( general8bit == 0x01 )
-    {
-      joystickenabled = 0x01;
-    }
-  else
-    {
-      joystickenabled = 0x00;
-    }
-  
   mySeed();
+
+  // 2024 04 19 - mkpellegrino
+  asmcomment( "shift the screen back down a pixel" );
+  poke( 0xD011, 0x3B );
+ 
+  screen(0);
+
+  // joystick should ALWAYS be enabled
+  //if( general8bit == 0x01 )
+  //  {
+  //    joystickenabled = 0x01;
+  //  }
+  //else
+  //  {
+  //    joystickenabled = 0x00;
+  //  }
+  // mySeed();
 
   // setup music
   asmcomment("load the SID data into memory from disk" );
@@ -378,15 +386,18 @@ int main()
   fclrchn();
 
   asmcomment( "init SID play" );
-  //jsr( 0xC000 );
+  jsr( 0xC000 );
 
-  asmcomment( "shift the screen back down a pixel" );
-
+ 
   // setup background colours  
   irq( ptr(irqfunc1), 0x00, 1 );
-  screen(0);
+  
+  //screen(0);
   //clearhires();
-  poke( 0xD011, 0x3B );
+
+  // 2024 04 19 - mkpellegrino
+  //asmcomment( "shift the screen back down a pixel" );
+  //poke( 0xD011, 0x3B );
   
   word sprptr0 = scraddr + 0x03F8;
   word sprptr1 = scraddr + 0x03F9;
@@ -577,61 +588,55 @@ int main()
   poke( sprptr6, 0 );
   
   putStuffOnTheScreen();
-
+  // after this screen should be back on
   
   //pause();
   
   uint c = getin();
 
   // ==========
+  // screen back on
+  //screen(0x01);
   
   while( keepPlaying != 0x01 )
     {
 
-      if( c == 60 )
-	{
-	  playerAttackFlag = 0x01;
-	}
-      
       if( clock == 0x0000 )
 	{
 	  getJS();
-
+	  asmcomment( "convert keypresses into joystick button-presses");
 	  if( c == 60 )
 	    {
 	      JSbtnPressA = 0x00;
 	    }
-	  //asmcomment( "ifif" );
 	  if( c == 33 )
 	    {
 	      // UP
 	      JSnorth = 0x00;
 	    }
-	  //asmcomment( "ifif" );
 	  if( c == 37 )
 	    {
 	      // DOWN
 	      JSsouth = 0x00;
 	    }
-	  //asmcomment( "ifif" );
 	  if( c == 30 )
 	    {
 	      // LEFT
 	      JSwest = 0x00;
 	    }
-	  //asmcomment( "ifif" );
 	  if( c == 38 )
 	    {
 	      // RIGHT
 	      JSeast = 0x00;
 	    }
-	  asmcomment( "HELLO!" );
-	  direction = 0x05;
 
+	  direction = 0x05;
 
 	  if( JSbtnPressA == 0x00 )
 	    {
 	      // spacebar
+	      playerAttackFlag = 0x01;
+
 	      if( prevdirection == 3 )
 		{
 		  direction = 6;
@@ -670,14 +675,12 @@ int main()
 	    {
 	      if( goE != 0 )
 		{
-		  asmcomment( "MOVE TO EAST ROOM" );
 		  currentRoom = goE;
 		  playerx = 0x0020;
 		  putStuffOnTheScreen();
 		}
 	    }
 
-	  //asmcomment( "ifif" );
 	  if( JSeast == 0x00 )
 	    {
 	      // right
@@ -689,7 +692,6 @@ int main()
 	      direction = 1;
 	    }
 	  
-	  //asmcomment( "ifif" );
 	  if( JSnorth == 0x00 )
 	    {
 	      // NORTH
@@ -719,7 +721,6 @@ int main()
 		    }			    
 		}
 	    }
-	  //asmcomment( "ifif" );
 	  if( JSsouth == 0x00 )
 	    {
 	      // SOUTH
@@ -747,20 +748,10 @@ int main()
 		    }
 		}
 	    }
-	  //asmcomment( "ifif" );
-	  
 	  if( c == 62 )
 	    {
 	      pauseGameSequence();
 	    }
-	  //else
-	  // {
-	      // standing
-	  //  direction = 5;
-	  //}
-
-	  //asmcomment( "ifif" );
-
 	  if( princessisinroom != 0x00 )
 	    {
 	      if( playerHasKey == 0x01 )
@@ -780,7 +771,9 @@ int main()
 		      //princess
 		      clearSpecialBit( 0x00 );
 		      // key bit
-		      clearSpecialBit( 0x08 );
+		      // 2024 04 19 - mkpellegrino
+		      clearSpecialBit( 0x07 );
+		      //clearSpecialBit( 0x08 );
 		      
 		      spriteoff( 0x20 );
 		      expPts = expPts + 0x0100;
@@ -792,13 +785,13 @@ int main()
 		}
 
 	    }
-	  //asmcomment( "ifif" );	  
 	  if( monsterisinroom != 0x00 )
 	    {
 	      tmpProx1 = proximity( monster0x, monster0y, 0x000A );
 	      if( tmpProx1 != 0x00 )
 		{
-		  if( c == 60 )
+		  //if( c == 60 )
+		  if( JSbtnPressA == 0x00 )
 		    {
 		      playerAttack();
 		      if( monsterHP > 0x00 )
@@ -1017,7 +1010,6 @@ void clearhires()
   // 7 - Yellow 8 - Orange  9 - Brown A - Pink  B - Drk Gry C - Grey   D - Bright Green
   //                        E - Light Blue                   F - Light Grey
 
-  //screen(0);
   // this is for the single colour (11) -- this is ALWAYS at 0xD800 - 0x3FF
   for( general16bit = 0xD800; general16bit < 0xDBFF; general16bit = general16bit + 0x0001 )
     {
@@ -1033,15 +1025,13 @@ void clearhires()
     {
       poke( general16bit, 0x00 );
     }
-  //screen(1);
   return;
 }
 
 
 void putStuffOnTheScreen()
 {
-  screen(0);
-
+  screen(0x00);
 
   clearhires();
 
@@ -1350,7 +1340,7 @@ void putStuffOnTheScreen()
       putThing( 0x0A, 0x00 );
     }
 
-  screen(1);
+  screen(0x01);
   return;
 }
 
@@ -1721,10 +1711,12 @@ void irqfunc2()
   poke( 0xD021, 0x0C );
 
   //asmcomment( "call the SID player routine" );
-  //jsr( 0xC006 );
+  jsr( 0xC006 );
   if( playerAttackFlag > 0x00 )
     {
       asmcomment("player attack sound effect");
+
+      // SOUND EFFECT
       // voice 2
       poke( 0xD40B, 0x81 );
       //poke( 0xD412, 0x81 );
@@ -1970,17 +1962,19 @@ void setSpecialBit( uint specialBit )
 {
   // arg: 0 -> 7
   specialBitFlag = 0x01;
-  for( general8bit = 0x00; general8bit < specialBit; inc( general8bit) )
+  for( general8bit = 0x00; general8bit < specialBit; inc(general8bit) )
     {
       asl( specialBitFlag );
     }
+  
   dec( currentRoom );
   roomIndex = currentRoom * 11;
   inc( currentRoom );
   general16bit = world + roomIndex;
   general16bit = general16bit + 0x000A;
-  general8bit = peek( general16bit );
-  poke( general16bit, general8bit | specialBitFlag  );
+  
+  general8bit = peek(general16bit) | specialBitFlag;
+  poke( general16bit, general8bit );
   return;
 }
 
@@ -1988,7 +1982,7 @@ void clearSpecialBit( uint specialBit2 )
 {
   // arg: 0 -> 7
   specialBitFlag = 0xFE;
-  for( general8bit = 0x00; general8bit < specialBit2; inc( general8bit) )
+  for( general8bit = 0x00; general8bit < specialBit2; inc(general8bit))
     {
       rol( specialBitFlag );
     }
@@ -1997,8 +1991,9 @@ void clearSpecialBit( uint specialBit2 )
   inc( currentRoom );
   general16bit = world + roomIndex;
   general16bit = general16bit + 0x000A;
-  general8bit = peek( general16bit );
-  poke( general16bit, general8bit & specialBitFlag  );
+  asmcomment( "HERE" );
+  general8bit = peek( general16bit ) & specialBitFlag;
+  poke( general16bit, general8bit  );
   return;
 }
 

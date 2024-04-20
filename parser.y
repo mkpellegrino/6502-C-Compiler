@@ -507,6 +507,33 @@
     return;
   }
 
+  void addOptimizationMessage(string msg, int linen, int level = 0)
+  {
+    /* level 0 - info */
+    /* level 1 - warning */
+    /* level 2 - error */
+    /* level 3 - critical */
+
+    switch( level )
+      {
+      case 0:
+	cerr << "*** message *** asm instruction number: " << linen << " *** " << msg << " ***" << endl;
+	break;
+      case 1:
+	cerr << "*** warning *** asm instruction number: " << linen << " *** " << msg << " ***" << endl;
+	break;
+      case 2:
+	cerr << "*** ERROR *** asm instruction number: " << linen << " *** " << msg << " ***" << endl;
+	break;
+      case 3:
+	cerr << "***  C R I T I C A L   E R R O R  *** asm instruction number: " << linen << " *** " << msg << " ***" << endl;
+	exit(-1);
+	break;
+      }
+    return;
+  }
+
+  
 
   int get_word_H(int x )
   {
@@ -1609,7 +1636,7 @@
 	    cmpstr( asm_instr[i+9]->getString(), php ))
 	  {
 	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+10);
-	    addCompilerMessage( "removing POP-PUSH IFIF" );
+	    addOptimizationMessage( "removing POP-PUSH IFIF", i);
 	  }
       }
 
@@ -1630,7 +1657,7 @@
 	    // split the lbl lines by colons
 	    // compare
 	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+1);
-	    addCompilerMessage( "removing unnecessary JMP (keeping the labels)" );
+	    addOptimizationMessage( "removing unnecessary JMP (keeping the labels)", i);
 	  }
       }
     
@@ -1640,19 +1667,17 @@
 	    cmpstr( asm_instr[i+1]->getString(), pha ) )
 	  {
 	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+2);
-	    addCompilerMessage( "removing pop pushes" );
+	    addOptimizationMessage( "removing pop pushes", i);
 	  }
       }
-
-
     
     for( int i=0; i<asm_instr.size(); i++ )
       {
-	if( cmpstr( asm_instr[i]->getString(), string("pla ") ) &&
-	    cmpstr( asm_instr[i+1]->getString(), string("pha ") ) )
+	if( cmpstr( asm_instr[i]->getString(), string("pla") ) &&
+	    cmpstr( asm_instr[i+1]->getString(), string("pha") ) )
 	  {
 	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+2);
-	    addCompilerMessage( "removing pop pushes" );
+	    addOptimizationMessage( "removing pop pushes", i);
 	  }
       }
 
@@ -1662,7 +1687,7 @@
 	    cmpstr( asm_instr[i+1]->getString(), pla ) )
 	  {
 	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+2);
-	    addCompilerMessage( "removing push pops" );
+	    addOptimizationMessage( "removing push pops" , i);
 	  }
       }
     for( int i=0; i<asm_instr.size(); i++ )
@@ -1671,7 +1696,7 @@
 	    cmpstr( asm_instr[i+1]->getString(), lda02 ) )
 	  {
 	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+2);
-	    addCompilerMessage( "removing sta02-lda02's" );
+	    addOptimizationMessage( "removing sta02-lda02's", i);
 	  }
       }
     for( int i=0; i<asm_instr.size(); i++ )
@@ -1680,7 +1705,7 @@
 	    cmpstr( asm_instr[i+1]->getString(), lda03 ) )
 	  {
 	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+2);
-	    addCompilerMessage( "removing sta03-lda03's" );
+	    addOptimizationMessage( "removing sta03-lda03's", i);
 	  }
       }
 
@@ -1690,9 +1715,30 @@
 	    cmpstr( asm_instr[i+1]->getString(), clc ) )
 	  {
 	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+2);
-	    addCompilerMessage( "removing doubled up CLC's" );
+	    addOptimizationMessage( "removing doubled up CLC's", i);
 	  }
       }
+
+    // round 2
+    for( int i=0; i<asm_instr.size(); i++ )
+      {
+	if( cmpstr( asm_instr[i]->getString(), string("pla") ) &&
+	    cmpstr( asm_instr[i+1]->getString(), string("pha") ) )
+	  {
+	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+2);
+	    addOptimizationMessage( "removing pop pushes (round 2)", i);
+	  }
+      }
+    for( int i=0; i<asm_instr.size(); i++ )
+      {
+	if( cmpstr( asm_instr[i]->getString(), string("pha") ) &&
+	    cmpstr( asm_instr[i+1]->getString(), string("pla") ) )
+	  {
+	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+2);
+	    addOptimizationMessage( "removing pop pushes (round 2)", i);
+	  }
+      }
+
 
     return;
   }
@@ -4538,7 +4584,7 @@ body: WHILE
   addCompilerMessage( "\tjmp( 0xEA31 );  // RTN CTL",0);
   addCompilerMessage( "           OR", 0 );
   addCompilerMessage( "\tjmp( 0xEA7E );  // RTN CTL\n\n\n",0);
-  addComment( " tIRQ '(' expression ',' expression ',' NUMBER ')' ';'" );
+  addComment( "tIRQ '(' expression ',' expression ',' NUMBER ')' ';'" );
   int addr = getAddressOf( $3.name );
   int b = atoi($8.name);
 
@@ -7753,8 +7799,12 @@ statement: datatype ID init
   //addAsm( str_SEI );
   if( isUintID( $3.name ) )
     {
+      // 2024 04 19 - mkpellegrino
+      int instr_size = 3;
       int v = getAddressOf( $3.name );
-      addAsm( str_LDA + "$" + toHex(v), 3, false );
+      if( v < 256 ) instr_size = 2;
+      addAsm( str_LDA + getNameOf(v), instr_size, false );
+      //addAsm( str_LDA + "$" + toHex(v), 3, false );
 
       addAsm( str_LDA + "#$EF", 2, false );  
       addAsm( str_AND + "$D011", 3, false );
@@ -7779,16 +7829,16 @@ statement: datatype ID init
       int v = atoi( stripFirst($3.name).c_str());
 
       //addAsm( str_LDA + "#$" + toHex(v), 2, false );
-
-
       if( v == 0 )
 	{
+	  addComment( "Turning Screen Off" );
 	  addAsm( str_LDA + "#$EF", 2, false );
 	  addAsm( str_AND + "$D011", 3, false );
 	  addAsm( str_STA + "$D011", 3, false );
 	}
       else
 	{
+	  addComment( "Turning Screen On" );
 	  addAsm( str_LDA + "#$10", 2, false );
 	  addAsm( str_ORA + "$D011", 3, false );
 	  addAsm( str_STA + "$D011", 3, false );
@@ -7811,13 +7861,13 @@ statement: datatype ID init
       addAsm( str_ORA + getLabel( label_vector[label_major]+1, false) + commentmarker + "OR the argument with the old value of D011", 3, false );
    
       addAsm( generateNewLabel(), 0, true );
-      addAsm( str_BYTE + "$A9, $00" + commentmarker + "LDA IMM", 2, false );
+      addAsm( str_BYTE + "$A9, $00" + commentmarker + str_LDA + "IMM", 2, false );
       addAsm( str_STA + "$D011", 3, false );
 
     }
   else
     {
-      addCompilerMessage( "incorrect type for blank must be UintID/IMM or A", 3 );
+      addCompilerMessage( "incorrect type for 'screen' must be UintID/IMM or A", 3 );
     }
   popScope();
 };
@@ -12206,6 +12256,8 @@ arithmetic expression
     }
   else if(  (isUintID($1.name)||isIntID($1.name)) && isUintIMM($3.name) )
     {
+      addComment( "(U)intID | UintIMM" );
+
       int OP1_addr = getAddressOf($1.name);
       int addr = atoi(stripFirst($3.name).c_str());
       addAsm( str_LDA+"#$" + toHex(addr), 2, false  );      
@@ -12214,9 +12266,28 @@ arithmetic expression
     }
   else if(  (isUintID($1.name)||isIntID($1.name)) && isA($3.name) )
     {
+      addComment( "(U)intID | A" );
+
       // value is already in Accumulator
       addAsm( str_ORA + "$" + stripFirst($1.name), 3, false);
       strcpy( $$.name, "_A" );
+    }
+  else if( isA($1.name) && isUintID($3.name) )
+    {
+      addComment( "A | UintID" );
+
+      int addr = getAddressOf($3.name);
+      if( addr > 255 )
+	{
+	  addAsm( str_ORA + "$" + toHex(addr), 3, false);
+	}
+      else
+	{
+	  addAsm( str_ORA + "$" + toHex(addr), 2, false);
+	}
+      strcpy( $$.name, "_A" );
+
+
     }
 
   else
@@ -12229,6 +12300,8 @@ arithmetic expression
   addComment("expression tbwAND expression");
   if( isWordID($1.name) && isWordID($3.name) )
     {
+      addComment( "WordID & WordID" );
+
       // preserve one of the operands
       int addr1 = getAddressOf($1.name);
       int addr2 = getAddressOf($3.name);
@@ -12244,6 +12317,8 @@ arithmetic expression
     }
   else if( isWordID($1.name) && isXA($3.name) )
     {
+      addComment( "WordID & XA" );
+
       int addr = getAddressOf($1.name);
       int instr_size = 3;
       if( addr < 256 ) instr_size = 2;
@@ -12260,6 +12335,8 @@ arithmetic expression
     }
   else if( isWordID($1.name) && isWordIMM($3.name) )
     {
+      addComment( "WordID & WordIMM" );
+
       int addr = atoi(stripFirst($3.name).c_str());
       addAsm( str_LDA+"#$" + toHex(get_word_L(addr)), 2, false  );      
       addAsm( str_AND + "$" + stripFirst($1.name), 3, false);
@@ -12272,6 +12349,9 @@ arithmetic expression
     }
   else if( (isUintID($1.name)||isIntID($1.name)) && isUintID($3.name) )
     {
+
+      addComment( "(U)intID & UintID" );
+
       int addr1 = getAddressOf($1.name);
       int addr2 = getAddressOf($3.name);
       
@@ -12282,6 +12362,7 @@ arithmetic expression
     }
   else if( (isUintID($1.name)||isIntID($1.name)) && isUintIMM($3.name) )
     {
+      addComment( "(U)intID & UintIMM" );
       int addr1 = getAddressOf($1.name);
 
       
@@ -12293,6 +12374,8 @@ arithmetic expression
     }
   else if( isUintID($1.name) && isA($3.name) )
     {
+      addComment( "UintID & A" );
+
       int addr = getAddressOf($1.name);
       if( addr > 255 )
 	{
@@ -12306,8 +12389,10 @@ arithmetic expression
 	}
       strcpy( $$.name, "_A" );
     }
-  else if( isA( $1.name) && isUintID($3.name) )
+  else if( isA($1.name) && isUintID($3.name) )
     {
+      addComment( "A & UintID" );
+
       int addr = getAddressOf($3.name);
       if( addr > 255 )
 	{
@@ -12323,12 +12408,16 @@ arithmetic expression
     }
   else if( (isUintIMM($1.name)||isIntIMM($1.name))  && isA($3.name) )
     {
+      addComment( "(U)intIMM & A" );
+
       int OP1 = atoi(stripFirst($1.name).c_str());
       addAsm( str_AND + "#$" + toHex(OP1), 2, false );
       strcpy( $$.name, "_A" );
     }
   else if( isA($1.name) && (isUintIMM($3.name)|isIntIMM($3.name)) )
     {
+      addComment( "A & (U)intIMM" );
+
       int OP2 = atoi(stripFirst($3.name).c_str());
       addAsm( str_AND + "#$" + toHex(OP2), 2, false );
       strcpy( $$.name, "_A" );
