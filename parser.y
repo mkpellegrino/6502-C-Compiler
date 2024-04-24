@@ -284,6 +284,7 @@
   bool arg_asm_comments=true;
   bool arg_optimize=true;
   bool arg_parser_comments=false;
+  int scanf_buffer_size=16;
   
   string current_state;
 
@@ -1616,24 +1617,30 @@
     string sta03 = string("sta $03");
     string sta02 = string("sta $02");
     string lda02 = string("lda $02");
+    string ldaZero = string( "lda #$00" );
     string pha = string("pha");
     string lda03 = string("lda $03");
     string php = string("php");    
-    string clc = string("clc");    
+    string clc = string("clc");
+    string sta = string("sta");
 
+
+    
     for( int i=0; i<asm_instr.size(); i++ )
       {
 	// POP-PUSH removal (IFIF)
-	if( cmpstr( asm_instr[i]->getString(), plp ) &&
-	    cmpstr( asm_instr[i+1]->getString(), pla ) &&
-	    cmpstr( asm_instr[i+2]->getString(), sta03 ) &&
-	    cmpstr( asm_instr[i+3]->getString(), pla ) &&
-	    cmpstr( asm_instr[i+4]->getString(), sta02 ) &&
-	    cmpstr( asm_instr[i+5]->getString(), lda02 ) &&
-	    cmpstr( asm_instr[i+6]->getString(), pha ) &&
-	    cmpstr( asm_instr[i+7]->getString(), lda03 ) &&
-	    cmpstr( asm_instr[i+8]->getString(), pha ) &&
-	    cmpstr( asm_instr[i+9]->getString(), php ))
+	if(
+	   cmpstr( asm_instr[i]->getString(), plp ) &&
+	   cmpstr( asm_instr[i+1]->getString(), pla ) &&
+	   cmpstr( asm_instr[i+2]->getString(), sta03 ) &&
+	   cmpstr( asm_instr[i+3]->getString(), pla ) &&
+	   cmpstr( asm_instr[i+4]->getString(), sta02 ) &&
+	   cmpstr( asm_instr[i+5]->getString(), lda02 ) &&
+	   cmpstr( asm_instr[i+6]->getString(), pha ) &&
+	   cmpstr( asm_instr[i+7]->getString(), lda03 ) &&
+	   cmpstr( asm_instr[i+8]->getString(), pha ) &&
+	   cmpstr( asm_instr[i+9]->getString(), php )
+	   )
 	  {
 	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+10);
 	    addOptimizationMessage( "removing POP-PUSH IFIF", i);
@@ -1719,6 +1726,64 @@
 	  }
       }
 
+    // lda #$00, sta, lda#$00
+    for( int i=0; i<asm_instr.size(); i++ )
+      {
+	if(
+	   cmpstr( asm_instr[i]->getString(), ldaZero ) &&
+	   cmpstr( asm_instr[i+1]->getString().substr(0,3), string("sta") ) &&
+	   cmpstr( asm_instr[i+2]->getString(), ldaZero )
+	   )
+	  {
+	    addOptimizationMessage( "removing redundant lda #$00", i);
+	    asm_instr.erase(asm_instr.begin()+i+2,asm_instr.begin()+i+3);
+	  }
+      }
+    for( int i=0; i<asm_instr.size(); i++ )
+      {
+	if(
+	   cmpstr( asm_instr[i]->getString(), ldaZero ) &&
+	   cmpstr( asm_instr[i+1]->getString().substr(0,3), string("sta") ) &&
+	   cmpstr( asm_instr[i+2]->getString().substr(0,3), string("sta") ) &&
+	   cmpstr( asm_instr[i+3]->getString(), ldaZero )
+	   )
+	  {
+	    addOptimizationMessage( "removing redundant lda #$00 (2)", i);
+	    asm_instr.erase(asm_instr.begin()+i+3,asm_instr.begin()+i+4);
+	  }
+      }
+    for( int i=0; i<asm_instr.size(); i++ )
+      {
+	if(
+	   cmpstr( asm_instr[i]->getString(), ldaZero ) &&
+	   cmpstr( asm_instr[i+1]->getString().substr(0,3), string("sta") ) &&
+	   cmpstr( asm_instr[i+2]->getString().substr(0,3), string("sta") ) &&
+	   cmpstr( asm_instr[i+3]->getString().substr(0,3), string("sta") ) &&
+	   cmpstr( asm_instr[i+4]->getString(), ldaZero )
+	   )
+	  {
+	    addOptimizationMessage( "removing redundant lda #$00 (3)", i);
+	    asm_instr.erase(asm_instr.begin()+i+4,asm_instr.begin()+i+5);
+	  }
+      }
+
+        for( int i=0; i<asm_instr.size(); i++ )
+      {
+	if(
+	   cmpstr( asm_instr[i]->getString(), ldaZero ) &&
+	   cmpstr( asm_instr[i+1]->getString().substr(0,3), string("sta") ) &&
+	   cmpstr( asm_instr[i+2]->getString().substr(0,3), string("sta") ) &&
+	   cmpstr( asm_instr[i+3]->getString().substr(0,3), string("sta") ) &&
+	   cmpstr( asm_instr[i+4]->getString().substr(0,3), string("sta") ) &&
+	   cmpstr( asm_instr[i+5]->getString(), ldaZero )
+	   )
+	  {
+	    addOptimizationMessage( "removing redundant lda #$00 (4)", i);
+	    asm_instr.erase(asm_instr.begin()+i+5,asm_instr.begin()+i+6);
+	  }
+      }
+
+    
     // round 2
     for( int i=0; i<asm_instr.size(); i++ )
       {
@@ -3599,7 +3664,7 @@ body: WHILE
       addAsm( str_LDA + string($3.name), 3, false );
      addAsm( str_ASL ); // 2x
       addAsm( str_TAX );
-      addAsm( str_LDA+"#$" + stripFirst(string($5.name)), 2, false );
+      addAsm( str_LDA+"#$" + toHex(atoi(stripFirst(string($5.name)).c_str())), 2, false );
       addAsm( str_STA + "$D001,X" + commentmarker + "set the y-coord", 3, false );
 
     }
@@ -3663,27 +3728,72 @@ body: WHILE
 };
 | SCANFF '(' ID ')' ';'
 {
-  addCommentSection("scanf(ID)");
-  getkey_is_needed=true;
-  scanf_is_needed=true;
-  memcpy_is_needed=true;
-  addAsm( str_JSR + "SCANF", 3, false );  
-  addAsm( str_LDA + "#<SCANFBUF-2", 2, false );
-  addAsm( str_STA + "$FB", 2, false );
-  addAsm( str_LDA + "#>SCANFBUF-2", 2, false );
-  addAsm( str_STA + "$FC", 2, false );
+  if( isWordID( $3.name ) )
+    {
+      addComment("scanf(WordID)");
+      getkey_is_needed=true;
+      scanf_is_needed=true;
+      memcpy_is_needed=true;
+      addAsm( str_JSR + "SCANF", 3, false );  
+      addAsm( str_LDA + "#<SCANFBUF-2", 2, false );
+      addAsm( str_STA + "$FB", 2, false );
+      addAsm( str_LDA + "#>SCANFBUF-2", 2, false );
+      addAsm( str_STA + "$FC", 2, false );
 
-  int addr = getAddressOf($3.name);
+      int addr = getAddressOf($3.name);
+      
+      
+      addAsm( str_LDA + $3.name, 2, false);
+      addAsm( str_STA + "$FD", 2, false );
+      addAsm( str_LDA + $3.name + "+1", 2, false);
+      addAsm( str_STA + "$FE", 2, false );
+      
+      //addAsm( str_LDA + "#$" + toHex( get_word_L( addr-1 )), 2, false );
+      //addAsm( str_STA + "$FD", 2, false );
+      //addAsm( str_LDA + "#$" + toHex( get_word_H( addr-1 )), 2, false );
+      //addAsm( str_STA + "$FE", 2, false );
 
-  addAsm( str_LDA + "#$" + toHex( get_word_L( addr-1 )), 2, false );
-  addAsm( str_STA + "$FD", 2, false );
-  addAsm( str_LDA + "#$" + toHex( get_word_H( addr-1 )), 2, false );
-  addAsm( str_STA + "$FE", 2, false );
+      addComment( string("Copy ") + itos(scanf_buffer_size) + " bytes from Scan Buffer to memory location" );
+      //addAsm( str_LDA + "#$0F", 2, false );
+      addAsm( str_LDA + "#$" + toHex(scanf_buffer_size), 2, false );
+      addAsm( str_PHA );
+      //addAsm( str_LDY + "#$" + toHex( get_word_H( addr )), 2, false );
+      addAsm( str_JSR + "MEMCPY", 3, false );
+    }
+  else
+    {
+      addCommentSection("scanf(ID)");
+      getkey_is_needed=true;
+      scanf_is_needed=true;
+      memcpy_is_needed=true;
+      addAsm( str_JSR + "SCANF", 3, false );  
+      addAsm( str_LDA + "#<SCANFBUF-2", 2, false );
+      addAsm( str_STA + "$FB", 2, false );
+      addAsm( str_LDA + "#>SCANFBUF-2", 2, false );
+      addAsm( str_STA + "$FC", 2, false );
 
-  addAsm( str_LDA + "#$0F", 2, false );
-  addAsm( str_PHA );
-  //addAsm( str_LDY + "#$" + toHex( get_word_H( addr )), 2, false );
-  addAsm( str_JSR + "MEMCPY", 3, false );
+      int addr = getAddressOf($3.name);
+
+      //addAsm( str_LDA + "#$" + toHex( get_word_L( addr-1 )), 2, false );
+      //addAsm( str_STA + "$FD", 2, false );
+      //addAsm( str_LDA + "#$" + toHex( get_word_H( addr-1 )), 2, false );
+      //addAsm( str_STA + "$FE", 2, false );
+
+      addAsm( str_LDA + "#<" + $3.name+"-1", 2, false);
+      addAsm( str_STA + "$FD", 2, false );
+      addAsm( str_LDA + "#>" + $3.name+"-1", 2, false);
+      addAsm( str_STA + "$FE", 2, false );
+
+
+      addComment( string("Copy ") + itos(scanf_buffer_size) + " bytes from Scan Buffer to memory location" );
+
+      addAsm( str_LDA + "#$" + toHex(scanf_buffer_size), 2, false );
+
+      //addAsm( str_LDA + "#$0F", 2, false );
+      addAsm( str_PHA );
+      //addAsm( str_LDY + "#$" + toHex( get_word_H( addr )), 2, false );
+      addAsm( str_JSR + "MEMCPY", 3, false );
+    }
   
 };
 | SCANFF '(' STR ')' ';'
@@ -4422,8 +4532,9 @@ body: WHILE
       else
 	{
 	  // 2024 04 14 - mkpellegrino
-	  addAsm( str_JSR+getNameOf(tmp_addr), 3, false );
-	  //addAsm( str_JSR+"$"+toHex(tmp_addr), 3, false );
+	  //addAsm( str_JSR+getNameOf(tmp_addr), 3, false );
+	  // 2024 04 24 - mkpellegrino (undid that change)
+	  addAsm( str_JSR+"$"+toHex(tmp_addr), 3, false );
 	}
       addComment( "^^^^^^^^^^^^^^^^^^^");
       addAsm( str_CLI );
@@ -13794,6 +13905,12 @@ value: FLOAT_NUM
     case '#':
       strcpy( $$.name, "u35" );
       break;
+    case '-':
+      strcpy( $$.name, "u45" );
+      break;
+    case '=':
+      strcpy( $$.name, "u61" );
+      break;
     default:
       strcpy( $$.name, "u0" );
       break;
@@ -13968,10 +14085,16 @@ int main(int argc, char *argv[])
       if( a == "--short-branches" ) long_branches = false;
       if( a == "--debug" ) { debug_flag_is_on = true; debug_comments_are_needed = true; }
       if( a == "--basic" || a == "--basicupstart" ) basic_upstart = true;
-      /* if( a == "--???" ) */
-      /* 	{ */
-
-      /* 	} */
+      if( a == "--scanf-buffer-size" )
+	{
+	  scanf_buffer_size = atoi( argv[i+1] );
+	  if( scanf_buffer_size > 254 || scanf_buffer_size < 1 )
+	    {
+	      addCompilerMessage( "invalid scanf buffer size, defaulting to 16.", 0 );
+	      scanf_buffer_size = 16;
+	    }
+	  i++;
+	}
       if( a == "--unsafeifs" )
 	{
 	  arg_unsafe_ifs = true;
@@ -14010,7 +14133,8 @@ int main(int argc, char *argv[])
 	       << "\t--basic\t\t\tput BASIC Upstart code at $0801\n"
 	       << "\t--help\t\t\tthis message\n" 
 	       << "\t--code-segment address\tsets the start of code segment to a memory addres (default is 49152)\n"
-	       << "\t--data-segment address\tsets the start of data segment to a memory addres (default is 828)\n\n" << endl;
+	       << "\t--data-segment address\tsets the start of data segment to a memory addres (default is 828)\n"
+	       << "\t--scanf_buffer_size (1-254)\tthe size of the buffer needed for scanf... default is 16.\n\n" << endl;
 	  exit(-1);
 	}
     }
@@ -15324,12 +15448,12 @@ int main(int argc, char *argv[])
   
   if( scanf_is_needed )
     {
-      addAsm( string("SCANF:\t\t\t\t") + commentmarker + "Robust Scanf", 0, true );
-      //addAsm( "SCANF:\t\t" + commentmarker + "Robust Scanf", 0, true );
-      addAsm( commentmarker + "Taken from: https://codebase64.org/doku.php?id=base:robust_string_input", 0, true );
-      addAsm( commentmarker + "Code by: Schema", 0, true );
-      addAsm( commentmarker + "I modified it _slightly_ to make the naming conventions of the labels", 0, true );
-      addAsm( commentmarker + "consistent with the rest of the code.", 0, true );
+      addComment( "Robust Scanf" );
+      addAsm( string("SCANF:"), 0, true );
+      addComment( "Taken from: https://codebase64.org/doku.php?id=base:robust_string_input" );
+      addComment( "Code by: Schema" );
+      addComment( "I modified it _slightly_ to make the naming conventions of the labels" );
+      addComment( "consistent with the rest of the code." );
       addAsm( str_LDA + "#>TEXT", 2, false );
       addAsm( str_LDX + "#<TEXT", 2, false );
       addAsm( str_LDY + "#38", 2, false );
@@ -15434,11 +15558,29 @@ int main(int argc, char *argv[])
       addAsm("SCANFBUF:", 0, true );
       if( kick )
 	{
-	  addAsm( str_BYTE + "$00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00", 16, false );
+	  string sbs = str_BYTE;
+	  for(int i=0; i<scanf_buffer_size; i++ )
+	    {
+	      sbs+=string("$00");
+	      if( i<scanf_buffer_size-1 )
+	      {
+		sbs+=string(", ");
+	      }
+	    }
+	  addAsm( sbs, scanf_buffer_size, false );
+	  //addAsm( str_BYTE + "$00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00", 16, false );
 	}
       else
 	{
-	  addAsm(str_BYTE + "\"                \"", 16, false );
+	  string sbs = str_BYTE + "\"";
+	  for(int i=0; i<scanf_buffer_size; i++ )
+	    {
+	      sbs+=string(" ");
+	    }
+	  sbs+=string("\"");
+	  addAsm( sbs, scanf_buffer_size, false );
+
+	  addAsm(str_BYTE + "\"                \"", scanf_buffer_size, false );
 	}
       addAsm(str_BYTE + "$00", 1, false );
 
