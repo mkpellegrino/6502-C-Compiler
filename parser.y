@@ -7152,9 +7152,9 @@ statement: datatype ID init
       int a = getAddressOf($3.name);
       int size_of_instruction = 3;
       if( a+1 < 256 ) size_of_instruction = 2;
-      addAsm( string("ROR $") + toHex(a+1), size_of_instruction, false );
+      addAsm( str_ROR + "$" + toHex(a+1), size_of_instruction, false );
       if( a > 255 ) size_of_instruction = 3;
-      addAsm( string("ROR $") + toHex(a), size_of_instruction, false );
+      addAsm( str_ROR +"$" + toHex(a), size_of_instruction, false );
       addAsm( str_CLC ); // 1/2/23
     }
   else addCompilerMessage( "ROR of type not permitted... yet", 3 );
@@ -7432,7 +7432,7 @@ statement: datatype ID init
       if( a+1 < 256 ) size_of_instruction = 2;
       addAsm( str_LSR + "$" + toHex(a+1), size_of_instruction, false );
       if( a < 256 ) size_of_instruction = 2;
-      addAsm( string("ROR $") + toHex(a), size_of_instruction, false );
+      addAsm( str_ROR + "$"  + toHex(a), size_of_instruction, false );
     }
   else if( isWordIMM( $3.name ) )
     {
