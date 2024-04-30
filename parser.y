@@ -1622,8 +1622,11 @@
     string lda03 = string("lda $03");
     string php = string("php");    
     string clc = string("clc");
+    string sec = string("sec");
     string sta = string("sta");
-
+    string jmp = string("jmp");
+    string rts = string("rts");
+    string lbl = string("LBL");
 
     
     for( int i=0; i<asm_instr.size(); i++ )
@@ -1647,12 +1650,9 @@
 	  }
       }
 
-    string jmp = string("jmp");
-    string lbl = string("LBL");
 
     for( int i=0; i<asm_instr.size(); i++ )
       {
-	// Unnecessary JMP removal
 	if( cmpstr( asm_instr[i]->getString(), jmp ) &&
 	    cmpstr( asm_instr[i+1]->getString(), lbl ) &&
 	    cmpstr( asm_instr[i+2]->getString(), lbl ) )
@@ -1667,7 +1667,44 @@
 	    addOptimizationMessage( "removing unnecessary JMP (keeping the labels)", i);
 	  }
       }
+
+    // clc lbl clc
+    for( int i=0; i<asm_instr.size(); i++ )
+      {
+	if( cmpstr( asm_instr[i]->getString(), clc ) &&
+	    cmpstr( asm_instr[i+1]->getString(), lbl ) &&
+	    cmpstr( asm_instr[i+2]->getString(), clc ) )
+	  {
+	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+1);
+	    addOptimizationMessage( "removing doubled up CLC's (split by label)", i);
+
+	  }
+      }
+
+    // clc lbl sec
+    for( int i=0; i<asm_instr.size(); i++ )
+      {
+	if( cmpstr( asm_instr[i]->getString(), clc ) &&
+	    cmpstr( asm_instr[i+1]->getString(), lbl ) &&
+	    cmpstr( asm_instr[i+2]->getString(), sec ) )
+	  {
+	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+1);
+	    addOptimizationMessage( "removing CLC paired with SEC (split by label)", i);
+
+	  }
+      }
+
     
+    for( int i=0; i<asm_instr.size(); i++ )
+      {
+	if( cmpstr( asm_instr[i]->getString(), jmp ) &&
+	    cmpstr( asm_instr[i+1]->getString(), rts ) )
+	  {
+	    asm_instr.erase(asm_instr.begin()+i+1,asm_instr.begin()+i+2);
+	    addOptimizationMessage( "removing jump return (jump remains)", i);
+	  }
+      }
+
     for( int i=0; i<asm_instr.size(); i++ )
       {
 	if( cmpstr( asm_instr[i]->getString(), pla ) &&
@@ -3091,8 +3128,6 @@ body: WHILE
 | tSPRITEXY '(' expression ',' expression ',' expression ')' ';'
 {
   addComment( string( "spritexy( ") + $3.name + ", " + $5.name + ", " + $7.name +  " );"  );
-
-
   int base_address = 53248;
   int sprite_address = 0;
   int x_coord = 0;
@@ -3116,6 +3151,140 @@ body: WHILE
       y_coord = atoi( stripFirst($7.name).c_str() );
       addAsm( str_LDA + "#$" + toHex( y_coord) , 2, false );
       addAsm( str_STA + "$" + toHex( sprite_address+1 ), 3, false );
+
+      int sprite_number = atoi( stripFirst($3.name).c_str());
+      switch( sprite_number )
+	{
+	case 0:
+	  addAsm( str_LDA + "#$FE", 2, false );
+	  break;
+	case 1:
+	  addAsm( str_LDA + "#$FD", 2, false );
+	  break;
+	case 2:
+	  addAsm( str_LDA + "#$FB", 2, false );
+	  break;
+	case 3:
+	  addAsm( str_LDA + "#$F7", 2, false );
+	  break;
+	case 4:
+	  addAsm( str_LDA + "#$EF", 2, false );
+	  break;
+	case 5:
+	  addAsm( str_LDA + "#$DF", 2, false );
+	  break;
+	case 6:
+	  addAsm( str_LDA + "#$BF", 2, false );
+	  break;
+	case 7:
+	  addAsm( str_LDA + "#$7F", 2, false );
+	  break;
+	default:
+	  addCompilerMessage( "invalid sprite number", 2 );
+	}
+      addAsm( str_AND + "$D010", 3, false );      
+      addAsm( str_STA + "$D010", 3, false );
+    }
+  else if((isIntIMM($3.name) && isWordID($5.name) && isIntIMM($7.name)) ||
+	  (isIntIMM($3.name) && isWordID($5.name) && isUintIMM($7.name)) ||
+	  (isUintIMM($3.name) && isWordID($5.name) && isIntIMM($7.name)) ||
+	  (isUintIMM($3.name) && isWordID($5.name) && isUintIMM($7.name)))
+    {
+      sprite_address = atoi( stripFirst($3.name).c_str() );
+      sprite_address*=2;
+      sprite_address+=base_address;
+
+      int addr = hexToDecimal($5.name);
+      // 2024 04 30 - mkpellegrino
+      addAsm( str_LDA + getNameOf(addr) , 3, false );
+      addAsm( str_STA + "$" + toHex( sprite_address ), 3, false );
+      
+      addAsm( str_LDA + "#$" + toHex(atoi(stripFirst($7.name).c_str())) , 2, false );
+      addAsm( str_STA + "$" + toHex( sprite_address+1 ), 3, false );
+
+      // need to put the high byte
+      // in 0xD010 as a bit
+   
+      // find out which sprite number we're talking about
+      int sprite_number = atoi( stripFirst($3.name).c_str() );
+
+
+      //============================================0--0-
+      // High Byte
+      // 2024 04 27 - mkpellegrino
+      addAsm( str_LDA + "#$01", 2, false );
+      addAsm( str_BIT + getNameOf(addr)+"+1", 3, false );
+      addAsm( str_BEQ + "!+", 2, false );
+
+
+      // 2024 04 26 - mkpellegrino
+      // hardcoded IMMs
+      switch( sprite_number )
+	{
+	case 7:
+	  addAsm( str_LDA + "#$80", 2, false);
+	  addAsm( str_ORA + "$D010", 3, false );
+	  addAsm( str_JMP + "!++", 3, false );
+	  addAsm( string("!:"), 0, true );
+	  addAsm( str_LDA + "#$7F", 2, false);
+	  break;
+	case 6:
+	  addAsm( str_LDA + "#$40", 2, false);
+	  addAsm( str_ORA + "$D010", 3, false );
+	  addAsm( str_JMP + "!++", 3, false );
+	  addAsm( string("!:"), 0, true );
+	  addAsm( str_LDA + "#$BF", 2, false);
+	  break;
+	case 5:
+	  addAsm( str_LDA + "#$20", 2, false);
+	  addAsm( str_ORA + "$D010", 3, false );
+	  addAsm( str_JMP + "!++", 3, false );
+	  addAsm( string("!:"), 0, true );
+	  addAsm( str_LDA + "#$DF", 2, false);
+	  break;
+	case 4:
+	  addAsm( str_LDA + "#$10", 2, false);
+	  addAsm( str_ORA + "$D010", 3, false );
+	  addAsm( str_JMP + "!++", 3, false );
+	  addAsm( string("!:"), 0, true );
+	  addAsm( str_LDA + "#$EF", 2, false);
+	  break;
+	case 3:
+	  addAsm( str_LDA + "#$08", 2, false);
+	  addAsm( str_ORA + "$D010", 3, false );
+	  addAsm( str_JMP + "!++", 3, false );
+	  addAsm( string("!:"), 0, true );
+	  addAsm( str_LDA + "#$F7", 2, false);
+	  break;
+	case 2:
+	  addAsm( str_LDA + "#$04", 2, false);
+	  addAsm( str_ORA + "$D010", 3, false );
+	  addAsm( str_JMP + "!++", 3, false );
+	  addAsm( string("!:"), 0, true );
+	  addAsm( str_LDA + "#$FB", 2, false);
+	  break;
+	case 1:
+	  addAsm( str_LDA + "#$02", 2, false);
+	  addAsm( str_ORA + "$D010", 3, false );
+	  addAsm( str_JMP + "!++", 3, false );
+	  addAsm( string("!:"), 0, true );
+	  addAsm( str_LDA + "#$FD", 2, false);
+	  break;
+	case 0:
+	  addAsm( str_LDA + "#$01", 2, false);
+	  addAsm( str_ORA + "$D010", 3, false );
+	  addAsm( str_JMP + "!++", 3, false );
+	  addAsm( string("!:"), 0, true );
+	  addAsm( str_LDA + "#$FE", 2, false);
+	  break;
+	default:
+	  addCompilerMessage( "Non-sprite number used as IMMEDIATE value\nRange is: 0 to 7", 3 );
+	  break;
+	}
+
+      addAsm( str_AND + "$D010", 3, false );
+      addAsm( string("!:"), 0, true );
+      addAsm( str_STA + "$D010", 3, false );
     }
   else if((isIntIMM($3.name) && isWordID($5.name) && isIntID($7.name)) ||
 	  (isIntIMM($3.name) && isWordID($5.name) && isUintID($7.name)) ||
@@ -3128,16 +3297,100 @@ body: WHILE
 
       int addr = hexToDecimal($5.name);
 
-      addAsm( str_LDA + "$" + toHex(addr) , 3, false );
+      addAsm( str_LDA + getNameOf(addr) , 3, false );
       addAsm( str_STA + "$" + toHex( sprite_address ), 3, false );
       // need to put the high byte
       // in 0xD010 as a bit
-      addCompilerMessage( "Use spritex( UintIMM, Word ) instead", 0 );
-      addAsm( str_STA + "$" + toHex(addr+1), 3, false );
-      addAsm( str_STA + "$D010", 3, false );
       
-      addAsm( str_LDA + string($7.name) , 3, false );
+      //addAsm( str_STA + getNameOf(addr)+"+1", 3, false );
+      addAsm( str_LDA + getNameOf(hexToDecimal(stripFirst($7.name).c_str())) , 3, false );
       addAsm( str_STA + "$" + toHex( sprite_address+1 ), 3, false );
+
+
+
+
+
+
+      //============================================0--0-
+      // High Byte
+      // 2024 04 27 - mkpellegrino
+      addAsm( str_LDA + "#$01", 2, false );
+      addAsm( str_BIT + getNameOf(addr)+"+1", 3, false );
+      addAsm( str_BEQ + "!+", 2, false );
+
+      // find out which sprite number we're talking about
+      int sprite_number = atoi( stripFirst($3.name).c_str() );
+
+      // 2024 04 26 - mkpellegrino
+      // hardcoded IMMs
+      switch( sprite_number )
+	{
+	case 7:
+	  addAsm( str_LDA + "#$80", 2, false);
+	  addAsm( str_ORA + "$D010", 3, false );
+	  addAsm( str_JMP + "!++", 3, false );
+	  addAsm( string("!:"), 0, true );
+	  addAsm( str_LDA + "#$7F", 2, false);
+	  break;
+	case 6:
+	  addAsm( str_LDA + "#$40", 2, false);
+	  addAsm( str_ORA + "$D010", 3, false );
+	  addAsm( str_JMP + "!++", 3, false );
+	  addAsm( string("!:"), 0, true );
+	  addAsm( str_LDA + "#$BF", 2, false);
+	  break;
+	case 5:
+	  addAsm( str_LDA + "#$20", 2, false);
+	  addAsm( str_ORA + "$D010", 3, false );
+	  addAsm( str_JMP + "!++", 3, false );
+	  addAsm( string("!:"), 0, true );
+	  addAsm( str_LDA + "#$DF", 2, false);
+	  break;
+	case 4:
+	  addAsm( str_LDA + "#$10", 2, false);
+	  addAsm( str_ORA + "$D010", 3, false );
+	  addAsm( str_JMP + "!++", 3, false );
+	  addAsm( string("!:"), 0, true );
+	  addAsm( str_LDA + "#$EF", 2, false);
+	  break;
+	case 3:
+	  addAsm( str_LDA + "#$08", 2, false);
+	  addAsm( str_ORA + "$D010", 3, false );
+	  addAsm( str_JMP + "!++", 3, false );
+	  addAsm( string("!:"), 0, true );
+	  addAsm( str_LDA + "#$F7", 2, false);
+	  break;
+	case 2:
+	  addAsm( str_LDA + "#$04", 2, false);
+	  addAsm( str_ORA + "$D010", 3, false );
+	  addAsm( str_JMP + "!++", 3, false );
+	  addAsm( string("!:"), 0, true );
+	  addAsm( str_LDA + "#$FB", 2, false);
+	  break;
+	case 1:
+	  addAsm( str_LDA + "#$02", 2, false);
+	  addAsm( str_ORA + "$D010", 3, false );
+	  addAsm( str_JMP + "!++", 3, false );
+	  addAsm( string("!:"), 0, true );
+	  addAsm( str_LDA + "#$FD", 2, false);
+	  break;
+	case 0:
+	  addAsm( str_LDA + "#$01", 2, false);
+	  addAsm( str_ORA + "$D010", 3, false );
+	  addAsm( str_JMP + "!++", 3, false );
+	  addAsm( string("!:"), 0, true );
+	  addAsm( str_LDA + "#$FE", 2, false);
+	  break;
+	default:
+	  addCompilerMessage( "Non-sprite number used as IMMEDIATE value\nRange is: 0 to 7", 3 );
+	  break;
+	}
+
+      addAsm( str_AND + "$D010", 3, false );
+      addAsm( string("!:"), 0, true );
+      addAsm( str_STA + "$D010", 3, false );
+
+      
     }
   else if((isIntIMM($3.name) && isIntIMM($5.name) && isIntID($7.name)) ||
 	  (isIntIMM($3.name) && isIntIMM($5.name) && isUintID($7.name)) ||
@@ -3156,6 +3409,42 @@ body: WHILE
       addAsm( str_STA + "$" + toHex( sprite_address ), 3, false );
       addAsm( str_LDA + string($7.name) , 3, false );
       addAsm( str_STA + "$" + toHex( sprite_address+1 ), 3, false );
+
+      int sprite_number = atoi( stripFirst($3.name).c_str());
+      switch( sprite_number )
+	{
+	case 0:
+	  addAsm( str_LDA + "#$FE", 2, false );
+	  break;
+	case 1:
+	  addAsm( str_LDA + "#$FD", 2, false );
+	  break;
+	case 2:
+	  addAsm( str_LDA + "#$FB", 2, false );
+	  break;
+	case 3:
+	  addAsm( str_LDA + "#$F7", 2, false );
+	  break;
+	case 4:
+	  addAsm( str_LDA + "#$EF", 2, false );
+	  break;
+	case 5:
+	  addAsm( str_LDA + "#$DF", 2, false );
+	  break;
+	case 6:
+	  addAsm( str_LDA + "#$BF", 2, false );
+	  break;
+	case 7:
+	  addAsm( str_LDA + "#$7F", 2, false );
+	  break;
+	default:
+	  addCompilerMessage( "invalid sprite number", 2 );
+	}
+      addAsm( str_AND + "$D010", 3, false );      
+      addAsm( str_STA + "$D010", 3, false );
+
+
+      
     }
   else if((isIntIMM($3.name) && isIntID($5.name) && isIntID($7.name)) ||
 	  (isIntIMM($3.name) && isIntID($5.name) && isUintID($7.name)) ||
@@ -3173,6 +3462,41 @@ body: WHILE
       addAsm( str_STA + "$" + toHex( sprite_address ), 3, false );
       addAsm( str_LDA + string($7.name) , 3, false );
       addAsm( str_STA + "$" + toHex( sprite_address+1 ), 3, false );
+
+            int sprite_number = atoi( stripFirst($3.name).c_str());
+      switch( sprite_number )
+	{
+	case 0:
+	  addAsm( str_LDA + "#$FE", 2, false );
+	  break;
+	case 1:
+	  addAsm( str_LDA + "#$FD", 2, false );
+	  break;
+	case 2:
+	  addAsm( str_LDA + "#$FB", 2, false );
+	  break;
+	case 3:
+	  addAsm( str_LDA + "#$F7", 2, false );
+	  break;
+	case 4:
+	  addAsm( str_LDA + "#$EF", 2, false );
+	  break;
+	case 5:
+	  addAsm( str_LDA + "#$DF", 2, false );
+	  break;
+	case 6:
+	  addAsm( str_LDA + "#$BF", 2, false );
+	  break;
+	case 7:
+	  addAsm( str_LDA + "#$7F", 2, false );
+	  break;
+	default:
+	  addCompilerMessage( "invalid sprite number", 2 );
+	}
+      addAsm( str_AND + "$D010", 3, false );      
+      addAsm( str_STA + "$D010", 3, false );
+
+      
     }
   else if((isIntIMM($3.name) && isIntID($5.name) && isIntIMM($7.name)) ||
 	  (isIntIMM($3.name) && isIntID($5.name) && isUintIMM($7.name)) ||
@@ -3191,6 +3515,39 @@ body: WHILE
       y_coord = atoi( stripFirst($7.name).c_str() );
       addAsm( str_LDA + "#$" + toHex( y_coord), 2, false );
       addAsm( str_STA + "$" + toHex( sprite_address+1 ), 3, false );
+
+      int sprite_number = atoi( stripFirst($3.name).c_str());
+      switch( sprite_number )
+	{
+	case 0:
+	  addAsm( str_LDA + "#$FE", 2, false );
+	  break;
+	case 1:
+	  addAsm( str_LDA + "#$FD", 2, false );
+	  break;
+	case 2:
+	  addAsm( str_LDA + "#$FB", 2, false );
+	  break;
+	case 3:
+	  addAsm( str_LDA + "#$F7", 2, false );
+	  break;
+	case 4:
+	  addAsm( str_LDA + "#$EF", 2, false );
+	  break;
+	case 5:
+	  addAsm( str_LDA + "#$DF", 2, false );
+	  break;
+	case 6:
+	  addAsm( str_LDA + "#$BF", 2, false );
+	  break;
+	case 7:
+	  addAsm( str_LDA + "#$7F", 2, false );
+	  break;
+	default:
+	  addCompilerMessage( "invalid sprite number", 2 );
+	}
+      addAsm( str_AND + "$D010", 3, false );      
+      addAsm( str_STA + "$D010", 3, false );
     }
   else if((isIntID($3.name) && isIntID($5.name) && isIntID($7.name)) ||
 	  (isIntID($3.name) && isIntID($5.name) && isUintID($7.name)) ||
@@ -3202,6 +3559,8 @@ body: WHILE
 	  (isUintID($3.name) && isUintID($5.name) && isUintID($7.name)) )
     {
       addComment( "All 3 parameters are variables" );
+
+      // TODO: FIX THIS TO NOT USE ADDRESS
       addAsm( str_LDA + string($3.name), 3, false );
       addAsm( str_CLC );
       addAsm( str_ASL ); // 2x
@@ -3210,7 +3569,11 @@ body: WHILE
       addAsm( str_STA + "$D000,X" + commentmarker + "set the x-coord", 3, false );
       addAsm( str_INX );
       addAsm( str_LDA + string($7.name), 3, false );
-      addAsm( str_STA + "$D000,X" + commentmarker + "set the y-coord", 3, false );      
+      addAsm( str_STA + "$D000,X" + commentmarker + "set the y-coord (Low Byte Only)", 3, false );
+      // TODO: Set 9th BIT to 0
+
+
+      
     }
   else if( (isIntID($3.name) && isIntIMM($5.name) && isIntIMM($7.name)) ||
 	  (isIntID($3.name) && isIntIMM($5.name) && isUintIMM($7.name)) ||
@@ -3221,7 +3584,8 @@ body: WHILE
 	  (isUintID($3.name) && isUintIMM($5.name) && isIntIMM($7.name)) ||
 	  (isUintID($3.name) && isUintIMM($5.name) && isUintIMM($7.name)) )
     {
-      addComment( "All 3 parameters are variables" );
+      addComment( "spritexy( (U)IntID, (U)IntIMM, (U)IntIMM )" );
+      // TODO: FIX THIS TO NOT USE ADDRESS
       addAsm( str_LDA + string($3.name), 3, false );
       addAsm( str_CLC );
       addAsm( str_ASL ); // 2x
@@ -3231,11 +3595,62 @@ body: WHILE
 
       addAsm( str_INX );
       addAsm( str_LDA + "#$" + stripFirst(string($7.name)), 2, false );
-      addAsm( str_STA + "$D000,X" + commentmarker + "set the y-coord", 3, false );
+      addAsm( str_STA + "$D000,X" + commentmarker + "set the y-coord (Low Byte Only)", 3, false );
+      // TODO: Set 9th BIT to 0
+
     }
+  else if( (isIntID($3.name) && isWordIMM($5.name) && isIntIMM($7.name)) ||
+	   (isIntID($3.name) && isWordIMM($5.name) && isUintIMM($7.name)) ||
+	   (isUintID($3.name) && isWordIMM($5.name) && isIntIMM($7.name)) ||
+	   (isUintID($3.name) && isWordIMM($5.name) && isUintIMM($7.name)) )
+    {
+      addComment( "spritexy( (U)IntID, WordIMM, (U)IntIMM )" );
+      addCompilerMessage( "spritexy( (U)IntID, WordIMM, (U)IntIMM ) -- Doesn't Set 9th bit", 1);
+      addAsm( str_LDA + getNameOf(hexToDecimal($3.name)), 3, false );
+      addAsm( str_CLC );
+      addAsm( str_ASL ); // 2x
+      addAsm( str_TAX );
+
+      addAsm( str_LDA + "#$" + toHex(get_word_L(atoi(stripFirst(string($5.name)).c_str()))), 2, false );
+      
+      addAsm( str_STA + "$D000,X" + commentmarker + "set the x-coord", 3, false );
+
+      addAsm( str_INX );
+      addAsm( str_LDA + "#$" + toHex(atoi(stripFirst(string($7.name)).c_str())), 2, false );
+      addAsm( str_STA + "$D000,X" + commentmarker + "set the y-coord", 3, false );
+
+      // TODO: Set 9th BIT to WHATEVER IT SHOULD BE
+      //addAsm( str_LDA + "#$" + toHex(get_word_H(atoi(stripFirst(string($5.name)).c_str()))), 2, false );
+
+
+    }  
+  else if( (isIntIMM($3.name) && isWordIMM($5.name) && isIntIMM($7.name)) ||
+	   (isIntIMM($3.name) && isWordIMM($5.name) && isUintIMM($7.name)) ||
+	   (isUintIMM($3.name) && isWordIMM($5.name) && isIntIMM($7.name)) ||
+	   (isUintIMM($3.name) && isWordIMM($5.name) && isUintIMM($7.name)) )
+    {
+      addComment( "spritexy( (U)IntIMM, WordIMM, (U)IntIMM )" );
+      addCompilerMessage( "spritexy( (U)IntIMM, WordIMM, (U)IntIMM ) -- Doesn't set 9th bit", 1);
+      addAsm( str_LDA + "#$" + toHex(atoi(stripFirst($3.name).c_str())), 2, false );
+      addAsm( str_CLC );
+      addAsm( str_ASL ); // 2x
+      addAsm( str_TAX );
+      addAsm( str_LDA + "#$" + toHex(get_word_L(atoi(stripFirst(string($5.name)).c_str()))), 2, false );
+
+      //addAsm( str_LDA + "#$" + toHex(atoi(stripFirst($5.name).c_str())), 2, false );
+      addAsm( str_STA + "$D000,X" + commentmarker + "set the x-coord", 3, false );
+
+      addAsm( str_INX );
+      addAsm( str_LDA + "#$" + toHex(atoi(stripFirst($7.name).c_str())), 2, false );
+      addAsm( str_STA + "$D000,X" + commentmarker + "set the y-coord", 3, false );
+
+      // TODO: SET 9TH BIT to WHATEVER IT SHOULD BE
+      //addAsm( str_LDA + "#$" + toHex(get_word_H(atoi(stripFirst(string($5.name)).c_str()))), 2, false );
+
+    }  
   else
     {
-      addCompilerMessage( "unidentified argument type in spritexy" );
+      addCompilerMessage( "unidentified argument type in spritexy", 3 );
     }
 };
 | tSPRITEX '(' expression ',' expression ')' ';'
@@ -3267,7 +3682,7 @@ body: WHILE
       addAsm( str_AND + "$D010", 3, false );
       addAsm( str_STA + "$D010", 3, false );
     }
-  else if(isA($3.name) &&  isWordID($5.name))
+  else if(isA($3.name) && isWordID($5.name))
     {
       addComment( "spritex( A, WordID );" );
       
@@ -3289,10 +3704,12 @@ body: WHILE
       /// this next line isn't correct... it should be loading the original "A" again
       //addAsm( str_LDA + "$" + toHex( value_addr ), 3, false ); // this is the LOW byte of the X coord
       addAsm( str_PLA );
-      addComment( "top-of-loop" );
+      // addComment( "top-of-loop" );
+      addAsm( "!:", 0, true );
       addAsm( str_ASL  );
       addAsm( str_DEX );
-      addAsm( str_BYTE + "$D0, $FC" + commentmarker + string("BNE top-of-loop"), 2, false );
+      addAsm( str_BNE + "!-", 2, false );
+      //addAsm( str_BYTE + "$D0, $FC" + commentmarker + string("BNE top-of-loop"), 2, false );
       addAsm( str_ORA + "$D010,X", 3, false );
       addAsm( str_STA + "$D010,X", 3, false );
     }
@@ -3301,7 +3718,7 @@ body: WHILE
 
       int sprite_base = 53248;
       
-      addComment( "spritex( UINTIMM, WORDIMM );" );
+      addComment( "spritex( (U)IntIMM, WordIMM );" );
 
       int tmp_sn = atoi(stripFirst($3.name).c_str());
       int tmp_coord = atoi(stripFirst($5.name).c_str());
@@ -3329,7 +3746,7 @@ body: WHILE
     }
   else if(isUintID($3.name) && isWordID($5.name))
     {
-      addComment( "spritex( UINTID, WORDID );" );
+      addComment( "spritex( (U)IntID, WordID );" );
       bin2bit_is_needed = true;
       
       int sprite_addr = getAddressOf( $3.name );
@@ -3343,10 +3760,16 @@ body: WHILE
       addAsm( str_STA + "$D000,X", 3, false );
 
       // the high byte
-      addAsm( str_LDA + "$" + toHex( sprite_addr ), 3, false );
+      // 2024 04 27 - mkpellegrini
+      addAsm( str_LDA + getNameOf( sprite_addr ), 3, false );
+      //addAsm( str_LDA + "$" + toHex( sprite_addr ), 3, false );
+
       addAsm( str_PHA );
       addAsm( str_JSR + "BIN2BIT", 3, false);
-      addAsm( str_PLA );  
+      addAsm( str_PLA );
+
+
+      
       addAsm(str_EOR + "#$FF", 2, false );
       addAsm( str_AND + "$D010", 3, false );
       addAsm( str_STA + "$02", 2, false );
@@ -3365,7 +3788,7 @@ body: WHILE
   else if(isUintID($3.name) && isXA($5.name))
     {
       //============================================
-      addComment( "spritex( UINTID, XA );" );
+      addComment( "spritex( (U)IntID, XA );" );
       addAsm( str_TAY );
       
       // save $02 & $03 & $05
@@ -3398,10 +3821,11 @@ body: WHILE
       //addAsm( str_LDA + "$02", 2, false );
       //addAsm( str_TXA );
       //addAsm( str_LSR );
+      
+      // 2024 04 29 - Change this to the other code
       addAsm( str_PHA );
       addAsm( str_JSR + "BIN2BIT", 3, false);
       addAsm( str_PLA );
-      
       addAsm( str_EOR + "#$FF", 2, false );
       addAsm( str_AND + "$D010", 3, false );
       addAsm( str_STA + "$05", 2, false );
@@ -3468,124 +3892,242 @@ body: WHILE
     }
   else if(isUintIMM($3.name) && isWordID($5.name))
     {
-      addComment( "spritex( IMM, WORDID );" );
+      addComment( "spritex( (U)IntIMM, WordID );" );
 
       sprite_address = atoi( stripFirst($3.name).c_str() );
       sprite_address*=2;
       sprite_address+=base_address;
       int addr = hexToDecimal($5.name);
       // 2024 04 14 - mkpellegrino
+      // Low Byte
       addAsm( str_LDA + getNameOf(addr) , 3, false );
-      //addAsm( str_LDA + "$" + toHex(addr) , 3, false );
-      
       addAsm( str_STA + "$" + toHex( sprite_address ), 3, false );
 
 
-      // need to put the high byte
-      // in 0xD010 as a bit
-      // 2023 01 01 - mkpellegrino
-      //we should _really_ OR the sprite number's bit with the current value
-      //addAsm( string("LDX $") + toHex(addr+1), 3, false );
-      //addAsm( "CPX #$00", 2, false );
-      //addAsm( ".byte #$F0, #$08", 2, false );
-      
-      // load the Hibyte into A
-      // 2024 04 14 - mkpellegrino
-      addAsm( str_LDA + getNameOf(addr)+"+1", 3, false );
-      //addAsm( str_LDA + "$" + toHex(addr+1), 3, false );
-      addAsm( str_STA + "$2A", 2, false );
+      // High Byte
+      // 2024 04 27 - mkpellegrino
       addAsm( str_LDA + "#$01", 2, false );
+      addAsm( str_BIT + getNameOf(addr)+"+1", 3, false );
+      addAsm( str_BEQ + "!+", 2, false );
+
       // find out which sprite number we're talking about
       int sprite_number = atoi( stripFirst($3.name).c_str() );
+
+      // 2024 04 26 - mkpellegrino
+      // hardcoded IMMs
       switch( sprite_number )
 	{
 	case 7:
-	 addAsm( str_ASL );
-	  addAsm(str_ASL + "$2A", 2, false );
+	  addAsm( str_LDA + "#$80", 2, false);
+	  addAsm( str_ORA + "$D010", 3, false );
+	  addAsm( str_JMP + "!++", 3, false );
+	  addAsm( string("!:"), 0, true );
+	  addAsm( str_LDA + "#$7F", 2, false);
+	  break;
 	case 6:
-	 addAsm( str_ASL );
-	  addAsm(str_ASL + "$2A", 2, false );
+	  addAsm( str_LDA + "#$40", 2, false);
+	  addAsm( str_ORA + "$D010", 3, false );
+	  addAsm( str_JMP + "!++", 3, false );
+	  addAsm( string("!:"), 0, true );
+	  addAsm( str_LDA + "#$BF", 2, false);
+	  break;
 	case 5:
-	 addAsm( str_ASL );
-	  addAsm(str_ASL + "$2A", 2, false );
+	  addAsm( str_LDA + "#$20", 2, false);
+	  addAsm( str_ORA + "$D010", 3, false );
+	  addAsm( str_JMP + "!++", 3, false );
+	  addAsm( string("!:"), 0, true );
+	  addAsm( str_LDA + "#$DF", 2, false);
+	  break;
 	case 4:
-	 addAsm( str_ASL );
-	  addAsm(str_ASL + "$2A", 2, false );
+	  addAsm( str_LDA + "#$10", 2, false);
+	  addAsm( str_ORA + "$D010", 3, false );
+	  addAsm( str_JMP + "!++", 3, false );
+	  addAsm( string("!:"), 0, true );
+	  addAsm( str_LDA + "#$EF", 2, false);
+	  break;
 	case 3:
-	 addAsm( str_ASL );
-	  addAsm(str_ASL + "$2A", 2, false );
+	  addAsm( str_LDA + "#$08", 2, false);
+	  addAsm( str_ORA + "$D010", 3, false );
+	  addAsm( str_JMP + "!++", 3, false );
+	  addAsm( string("!:"), 0, true );
+	  addAsm( str_LDA + "#$F7", 2, false);
+	  break;
 	case 2:
-	 addAsm( str_ASL );
-	  addAsm(str_ASL + "$2A", 2, false );
+	  addAsm( str_LDA + "#$04", 2, false);
+	  addAsm( str_ORA + "$D010", 3, false );
+	  addAsm( str_JMP + "!++", 3, false );
+	  addAsm( string("!:"), 0, true );
+	  addAsm( str_LDA + "#$FB", 2, false);
+	  break;
 	case 1:
-	 addAsm( str_ASL );
-	  addAsm(str_ASL + "$2A", 2, false );
+	  addAsm( str_LDA + "#$02", 2, false);
+	  addAsm( str_ORA + "$D010", 3, false );
+	  addAsm( str_JMP + "!++", 3, false );
+	  addAsm( string("!:"), 0, true );
+	  addAsm( str_LDA + "#$FD", 2, false);
+	  break;
 	case 0:
+	  addAsm( str_LDA + "#$01", 2, false);
+	  addAsm( str_ORA + "$D010", 3, false );
+	  addAsm( str_JMP + "!++", 3, false );
+	  addAsm( string("!:"), 0, true );
+	  addAsm( str_LDA + "#$FE", 2, false);
 	  break;
 	default:
 	  addCompilerMessage( "Non-sprite number used as IMMEDIATE value\nRange is: 0 to 7", 3 );
 	  break;
 	}
 
-      // now A contains the correct bit
-      //addAsm( str_PHA );
-      
-      addAsm(str_EOR + "#$FF", 2, false );
       addAsm( str_AND + "$D010", 3, false );
-      addAsm( str_STA + "$A7", 2, false );  // Zero Page 0xA7 is used during RS232 comms
-      //addAsm( str_PLA );
-      //addAsm( str_LDA + "$" + toHex(addr+1), 3, false );
-      addAsm( str_LDA + "$2A", 2, false );
-      addAsm( str_CLC );
-      addAsm( str_ADC + "$A7", 2, false );
+      addAsm( string("!:"), 0, true );
       addAsm( str_STA + "$D010", 3, false );
+      
     }
   else if( (isIntIMM($3.name) && isIntID($5.name)) ||
 	   (isIntIMM($3.name) && isUintID($5.name)) ||
 	   (isUintIMM($3.name) && isIntID($5.name)) ||
 	   (isUintIMM($3.name) && isUintID($5.name)) )
     {
-      addComment( "spritex( IMM, UINT/INT ID );" );
-
+      addComment( "spritex( (U)IntIMM, (U)IntID );" );
+      // 2024 04 29 - mkpellegrino
+      int sprite_number = atoi( stripFirst($3.name).c_str() );
+      
+      
       sprite_address = atoi( stripFirst($3.name).c_str() );
       sprite_address*=2;
       sprite_address+=base_address;
-      addAsm( str_LDA + string($5.name) , 3, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($5.name)), 3, false );
       addAsm( str_STA + "$" + toHex( sprite_address ), 3, false );
+
+      // turn off the 9th bit
+      switch( sprite_number )
+	{
+	case 7:
+	  addAsm( str_LDA + "#$7F", 2, false );
+	  break;
+	case 6:
+	  addAsm( str_LDA + "#$BF", 2, false );
+	  break;
+	case 5:
+	  addAsm( str_LDA + "#$DF", 2, false );
+	  break;
+	case 4:
+	  addAsm( str_LDA + "#$EF", 2, false );
+	  break;
+	case 3:
+	  addAsm( str_LDA + "#$F7", 2, false );
+	  break;
+	case 2:
+	  addAsm( str_LDA + "#$FB", 2, false );
+	  break;
+	case 1:
+	  addAsm( str_LDA + "#$FD", 2, false );
+	  break;
+	case 0:
+	  addAsm( str_LDA + "#$FE", 2, false );
+	  break;
+	}
+      addAsm( str_AND + "$D010", 3, false );
+      addAsm( str_STA + "$D010", 3, false );
+      
     }
   else if( (isUintID($3.name) && isUintID($5.name)) ||
 	   (isUintID($3.name) && isIntID($5.name)) ||
 	   (isIntID($3.name) && isUintID($5.name)) ||
 	   (isIntID($3.name) && isIntID($5.name)) )
     {
-      addComment( "spritex( UINTID, UINT/INT ID );" );
-
-      addAsm( str_LDA + string($3.name), 3, false );
+      addComment( "spritex( (U)IntID, (U)IntID );" );
+      // 2024 04 29 - mkpellegrino
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
       addAsm( str_CLC );
-     addAsm( str_ASL ); // 2x
+      addAsm( str_ASL ); // 2x
       addAsm( str_TAX );
-      addAsm( str_LDA + string($5.name), 3, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($5.name)), 3, false );
       addAsm( str_STA + "$D000,X" + commentmarker + "set the x-coord", 3, false );
-      
+
+      // turn OFF the high bit if necessary
+      // turn the sprite # into a binary number
+      addComment( "turn off the 9th bit in $D010" );
+      addAsm( str_LDA + "#$01", 2, false );
+      addAsm( str_LDX + getNameOf(getAddressOf($3.name)), 3, false );
+      addAsm( str_INX, 1, false );
+      addAsm( str_DEX, 1, false );
+      addAsm( "!:", 0, true );
+      addAsm( str_BEQ + "!+", 2, false );
+      addAsm( str_ASL, 1, false );
+      addAsm( str_DEX, 1, false );
+      addAsm( str_JMP + "!-", 2, false );
+      addAsm( "!:", 0, true );
+
+      // now A contains the bit
+      addAsm( str_EOR + "#$FF", 2, false );
+      // mask out the high bit for x
+      addAsm( str_AND + "$D010", 3, false ); 
+      addAsm( str_STA + "$D010", 3, false ); 
     }
   else if( (isUintID($3.name) && isUintIMM($5.name)) ||
 	   (isUintID($3.name) && isIntIMM($5.name)) ||
 	   (isIntID($3.name) && isUintIMM($5.name)) ||
 	   (isIntID($3.name) && isIntIMM($5.name)) )
     {
-      addComment( "spritex( UINT/INT ID, IMM );" );
-	    
-      addAsm( str_LDA + string($3.name), 3, false );
+      addComment( "spritex( (U)IntID, (U)IntIMM );" );
+   
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
       addAsm( str_CLC );
-     addAsm( str_ASL ); // 2x
+      addAsm( str_ASL ); // 2x
       addAsm( str_TAX );
-      addAsm( str_LDA+"#$" + stripFirst(string($5.name)), 2, false );
+      addAsm( str_LDA+"#$" + toHex(atoi(stripFirst(string($5.name)).c_str())), 2, false );
       addAsm( str_STA + "$D000,X" + commentmarker + "set the x-coord", 3, false );
+
+            // turn OFF the high bit if necessary
+      // turn the sprite # into a binary number
+      addComment( "turn off the 9th bit in $D010" );
+      addAsm( str_LDA + "#$01", 2, false );
+      addAsm( str_LDX + getNameOf(getAddressOf($3.name)), 3, false );
+      addAsm( str_INX, 1, false );
+      addAsm( str_DEX, 1, false );
+      addAsm( "!:", 0, true );
+      addAsm( str_BEQ + "!+", 2, false );
+      addAsm( str_ASL, 1, false );
+      addAsm( str_DEX, 1, false );
+      addAsm( str_JMP + "!-", 2, false );
+      addAsm( "!:", 0, true );
+
+      // now A contains the bit
+      addAsm( str_EOR + "#$FF", 2, false );
+      // mask out the high bit for x
+      addAsm( str_AND + "$D010", 3, false ); 
+      addAsm( str_STA + "$D010", 3, false ); 
 
     }
   else if( isUintID($3.name) && isWordIMM($5.name) )
     {
-      addCompilerMessage( "spritex( UintID, WordIMM ) not YET implemented!", 3 );
+      // 2024 04 29 - mkpellegrino
+      addCompilerMessage( "spritex( UintID, WordIMM )");
+
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
+      addAsm( str_CLC );
+      addAsm( str_ASL ); // 2x
+      addAsm( str_TAX );
+      addAsm( str_LDA + "#$" + toHex(get_word_L(atoi(stripFirst($5.name).c_str()))), 2, false );
+      addAsm( str_STA + "$D000,X" + commentmarker + "set the x-coord", 3, false );
+
+            // turn OFF the high bit if necessary
+      // turn the sprite # into a binary number
+      addComment( "turn off the 9th bit in $D010" );
+      addAsm( str_LDA + "#$" + toHex(get_word_H(atoi(stripFirst($5.name).c_str()))), 2, false );
+      addAsm( str_LDX + getNameOf(getAddressOf($3.name)), 3, false );
+      addAsm( str_INX, 1, false );
+      addAsm( str_DEX, 1, false );
+      addAsm( "!:", 0, true );
+      addAsm( str_BEQ + "!+", 2, false );
+      addAsm( str_ASL, 1, false );
+      addAsm( str_DEX, 1, false );
+      addAsm( str_JMP + "!-", 2, false );
+      addAsm( "!:", 0, true );
+
+      addAsm( str_ORA + "$D010", 3, false ); 
+      addAsm( str_STA + "$D010", 3, false ); 
     }
   else
     {
@@ -4089,10 +4631,11 @@ body: WHILE
 
       addAsm( str_LDA + "HTD_STR,X", 3, false );
       addAsm( str_CMP + "#$00", 2, false );
-      addAsm( str_BYTE + string("$F0, $07") + commentmarker + "BEQ #$07", 2, false );  // beq to pop scope
+      addAsm( str_BEQ + "!+", 2, false );
       addAsm( str_INX );
       addAsm( str_JSR + "$FFD2", 3, false );
       addAsm( str_JMP + getLabel( label_vector[label_major]-1,false), 3, false );
+      addAsm( "!:", 0, true );
       popScope();
     }
   else if( isXA($3.name) )
@@ -4610,94 +5153,13 @@ body: WHILE
       addCompilerMessage( "invalid address of music routine", 3 );
     }
 };
-/* | tSCREEN '(' expression ')' ';' */
-/* { */
-/*   pushScope( "SCREEN" ); */
-/*   // exp1 shl 4 times */
-/*   // or it with d011 */
-/*   // sta d011 */
-/*   addComment( "screen(exp); : set bit 4 of $D011 to LSB of expression" ); */
-/*   //addAsm( str_SEI ); */
-/*   if( isUintID( $3.name ) ) */
-/*     { */
-/*       int v = getAddressOf( $3.name ); */
-/*       addAsm( str_LDA + "$" + toHex(v), 3, false ); */
-
-/*       addAsm( str_LDA + "#$EF", 2, false );   */
-/*       addAsm( str_AND + "$D011", 3, false ); */
-/*       addAsm( str_STA + getLabel( label_vector[label_major]+1, false) + commentmarker + "store A after the ORA instruction below", 3, false ); */
-/*       addAsm( str_LDA + "$" + toHex(v), 3, false ); */
-/*       addAsm( str_AND + "#$01", 2, false ); */
-/*       addAsm( str_ASL ); */
-/*       addAsm( str_ASL ); */
-/*       addAsm( str_ASL ); */
-/*       addAsm( str_ASL ); */
-/*       addAsm( str_ORA + getLabel( label_vector[label_major]+1, false) + commentmarker + "OR the argument with the old value of D011", 3, false ); */
-   
-/*       addAsm( generateNewLabel(), 0, true ); */
-/*       addAsm( str_BYTE + "$A9, $00" + commentmarker + "LDA IMM", 2, false ); */
-/*       addAsm( str_STA + "$D011", 3, false ); */
-
-      
-/*     } */
-/*   else if( isUintIMM( $3.name ) ) */
-/*     { */
-/*       int v = atoi( stripFirst($3.name).c_str()); */
-/*       //addAsm( str_LDA + "#$" + toHex(v), 2, false ); */
-
-
-/*       if( v == 0 ) */
-/* 	{ */
-/* 	  addAsm( str_LDA + "#$EF", 2, false ); */
-/* 	  addAsm( str_AND + "$D011", 3, false ); */
-/* 	  addAsm( str_STA + "$D011", 3, false ); */
-/* 	} */
-/*       else */
-/* 	{ */
-/* 	  addAsm( str_LDA + "#$10", 2, false ); */
-/* 	  addAsm( str_ORA + "$D011", 3, false ); */
-/* 	  addAsm( str_STA + "$D011", 3, false ); */
-/* 	} */
-/*     } */
-/*   else if( isA( $3.name ) ) */
-/*     { */
-/*       addAsm( str_PHA ); */
-/*       // do nothing because the value is already in A */
-/*       addAsm( str_LDA + "#$EF", 2, false );   */
-/*       addAsm( str_AND + "$D011", 3, false ); */
-/*       addAsm( str_STA + getLabel( label_vector[label_major]+1, false) + commentmarker + "store A after the ORA instruction below", 3, false ); */
-/*       addAsm( str_PLA ); */
-/*       //addAsm( str_LDA + "$" + toHex(v), 3, false ); */
-/*       addAsm( str_AND + "#$01", 2, false ); */
-/*       addAsm( str_ASL ); */
-/*       addAsm( str_ASL ); */
-/*       addAsm( str_ASL ); */
-/*       addAsm( str_ASL ); */
-/*       addAsm( str_ORA + getLabel( label_vector[label_major]+1, false) + commentmarker + "OR the argument with the old value of D011", 3, false ); */
-   
-/*       addAsm( generateNewLabel(), 0, true ); */
-/*       addAsm( str_BYTE + "$A9, $00" + commentmarker + "LDA IMM", 2, false ); */
-/*       addAsm( str_STA + "$D011", 3, false ); */
-
-/*     } */
-/*   else */
-/*     { */
-/*       addCompilerMessage( "incorrect type for blank must be UintID/IMM or A", 3 ); */
-/*     } */
-/*   popScope(); */
-/* }; */
-| tIRQ '(' expression {if(isXA($3.name)){p0=true;addAsm( str_PHA );addAsm( str_TXA );addAsm( str_PHA );}} ',' expression ',' NUMBER ')' ';'
-{
-  addCompilerMessage( "Don't forget to acknowledge the interrupt", 0 );
-  addCompilerMessage( "in your function and then return control", 0 );
-  addCompilerMessage( "back to the processor!\n\n" );
-  addCompilerMessage( "\tpoke( 0xD019, 0x01 ); // ACK",0);
-  addCompilerMessage( "\tjmp( 0xEA31 );  // RTN CTL",0);
-  addCompilerMessage( "           OR", 0 );
-  addCompilerMessage( "\tjmp( 0xEA7E );  // RTN CTL\n\n\n",0);
+| tIRQ '(' expression {if(isXA($3.name)){p0=true;addAsm( str_PHA );addAsm( str_TXA );addAsm( str_PHA );}} ',' expression ',' expression ')' ';'{
+  addCompilerMessage( "Don't forget to acknowledge the interrupt: asl(0xD019);", 0 );
   addComment( "tIRQ '(' expression ',' expression ',' NUMBER ')' ';'" );
+  
   int addr = getAddressOf( $3.name );
-  int b = atoi($8.name);
+  
+  int b = atoi(stripFirst($8.name).c_str());
 
   if(  b == 255 || b == -1 )
     {
@@ -4705,13 +5167,6 @@ body: WHILE
       addAsm( str_SEI );
       addAsm( str_LDA + "#$00", 2, false );
       addAsm( str_STA + "$D01A", 3, false );
-      //addAsm( str_LDA + "#$FE", 2, false );
-      //addAsm( str_AND + "$D01A", 3, false );
-      //addAsm( str_STA + "$D01A", 3, false );
-      //addAsm( str_LDA + "#$31", 2, false );
-      //addAsm( str_STA + "$0314",3, false );
-      //addAsm( str_LDA + "#$EA", 2, false );
-      //addAsm( str_STA + "$0315",3, false );
       addAsm( str_CLI );
     }
   else if( isWordIMM($3.name) && isUintIMM($6.name) )
@@ -4834,7 +5289,7 @@ body: WHILE
       addAsm( str_LDA + "$DD0D", 3, false );
       
        addComment( "Enable Raster Interrupts" );
-     addAsm( str_LDA + "#$01", 2, false );
+       addAsm( str_LDA + "#$01", 2, false );
       addAsm( str_STA + "$D01A", 3, false );
       addComment( "Raster line to generate the Interrupt at" );
       addAsm( str_LDA+"#$" + toHex(rasterline), 2, false );
@@ -14095,7 +14550,7 @@ int main(int argc, char *argv[])
 	    }
 	  i++;
 	}
-      if( a == "--unsafeifs" )
+      if( a == "--unsafe-ifs" )
 	{
 	  arg_unsafe_ifs = true;
 	}
