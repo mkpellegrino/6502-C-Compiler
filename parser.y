@@ -8510,7 +8510,7 @@ statement: datatype ID init
 		 
       int addr_of_index = getAddressOf(arg1.c_str());
       addAsm( str_LDX + arg1.c_str(), 3, false );
-      addAsm( str_STA + "$" + toHex( current_variable_base_address ) + ",X", 3, false );
+      addAsm( str_STA + getNameOf( current_variable_base_address ) + ",X", 3, false );
     }
   else if( isUintID(arg0.c_str())  && (isUintID(arg1.c_str()) || isIntID(arg1.c_str())) && isXA(arg2.c_str()) )
     {
@@ -8539,16 +8539,16 @@ statement: datatype ID init
 
       int tmp_index = atoi(stripFirst(arg1.c_str()).c_str());
       addAsm( str_LDX + "#$" + toHex(tmp_index), 2, false );
-      addAsm( str_STA + "$" + toHex( current_variable_base_address ) +",X" , 3, false );
+      addAsm( str_STA + getNameOf( current_variable_base_address ) +",X" , 3, false );
     }
   else if( isUintID( arg0.c_str() ) && (isUintIMM(arg1.c_str()) || isIntIMM(arg1.c_str())) && isUintID(arg2.c_str()) )
     {
       addComment( "UintID_array[(U)IntIMM] = UintID" );
       int tmp_v = getAddressOf(arg2.c_str());
       int tmp_index = atoi(stripFirst(arg1.c_str()).c_str());
-      addAsm( str_LDA + "$" + toHex(tmp_v), 3, false );
+      addAsm( str_LDA + getNameOf(tmp_v), 3, false );
       addAsm( str_LDX + "#$"  + toHex(tmp_index), 2, false );
-      addAsm( str_STA + "$" + toHex( current_variable_base_address ) + ",X" , 3, false );
+      addAsm( str_STA + getNameOf( current_variable_base_address ) + ",X" , 3, false );
     }
   else if( isUintID( arg0.c_str() ) && (isUintID(arg1.c_str()) || isIntID(arg1.c_str())) && isUintID(arg2.c_str()) )
     {
@@ -8556,9 +8556,9 @@ statement: datatype ID init
 	    
       int tmp_v = getAddressOf(arg2.c_str());
       int tmp_index = getAddressOf(arg1.c_str());
-      addAsm( str_LDA + "$" + toHex(tmp_v), 3, false );
-      addAsm( str_LDX + "$" + toHex(tmp_index), 3, false );
-      addAsm( str_STA + "$" + toHex( current_variable_base_address ) + ",X", 3, false );
+      addAsm( str_LDA + getNameOf(tmp_v), 3, false );
+      addAsm( str_LDX + getNameOf(tmp_index), 3, false );
+      addAsm( str_STA + getNameOf( current_variable_base_address ) + ",X", 3, false );
     }
   else if( isWordID( arg0.c_str() ) && (isUintID(arg1.c_str()) || isIntID(arg1.c_str())) && isXA(arg2.c_str()) )
     {
@@ -8658,11 +8658,11 @@ statement: datatype ID init
       addAsm( str_TYA );
       addAsm( str_LDX + "#$" + toHex( tmp_i ), 2, false ); 
       //addAsm( string("LDA #$" ) + toHex(get_word_L(tmp_w) ), 2, false );
-      addAsm( str_STA + "$" + toHex( tmp_base ) + string( ",X" ), 3, false );
+      addAsm( str_STA + getNameOf( tmp_base ) + string( ",X" ), 3, false );
       addAsm( str_INX );
       addAsm( str_PLA );
       //addAsm( string("LDA #$" ) + toHex(get_word_H(tmp_w) ), 2, false );
-      addAsm( str_STA + "$" + toHex( tmp_base ) + string( ",X" ), 3, false );
+      addAsm( str_STA + getNameOf( tmp_base ) + string( ",X" ), 3, false );
     }
   else if(isWordID(arg0.c_str()) && isA(arg1.c_str()) && isXA(arg2.c_str()))
     {
@@ -9490,13 +9490,8 @@ expression: expression
   else if(isXA($1.name))
     {addComment("OP1 (word)");addAsm( str_PHA );addAsm( str_TXA );addAsm( str_PHA );}
 }
-arithmetic expression
-{   /*if(isA($1.name) && isA($4.name)){addAsm( str_PHA );}*/addComment("OP2");}
+arithmetic expression {addComment("OP2");}
 {
-  //addNode( string($3.name) ); nl++;
-  //addNode( string($1.name) );
-  //addNode( string($4.name) ); nl--;
-
   
   if( isXA($1.name) && (!isXA($4.name) && !isA($4.name) ) )
     {
@@ -9540,7 +9535,9 @@ arithmetic expression
       addAsm( str_CLC );
     }
 
+
   
+  // WordID op XA
   if( isWordID($1.name) && isXA($4.name) )
     {
       if( op == string("-") )
@@ -9618,7 +9615,7 @@ arithmetic expression
 	}
       else
 	{
-	  addCompilerMessage( string("WordID ")  + op + string(" XA"), 0 );
+	  addCompilerMessage( string("WordID ") + op + string(" XA --> XA"), 0 );
 	  addCompilerMessage( "Math operation not implemented... yet.", 3 );
 	}
 	
@@ -9678,9 +9675,6 @@ arithmetic expression
 	{
 	  addComment( "UintID / WordIMM" );
 	  addCompilerMessage( "Math Operation not implemented for UintID / WordIMM (yet)", 3 );
-
-	  //strcpy($$.name, "_XA" );
-
 	}
       else
 	{
@@ -9902,9 +9896,9 @@ arithmetic expression
     }
   else if( isUintID($1.name) && isXA($4.name) )
     {
-      addComment( "isUintID($1.name) && isXA($4.name) -- 2" );
       if( op == string("+") )
 	{
+	  addComment( "UIntID + XA --> XA");
 	  int addr = getAddressOf( $1.name );
 	  int instr_size = 3;
 	  if( addr < 256 ) instr_size = 2;
@@ -9920,18 +9914,16 @@ arithmetic expression
 	}
       else if( op == string("-") )
 	{
+	  addComment( "UIntID - XA --> XA");
 	  int addr = getAddressOf( $1.name );
 	  int instr_size = 3;
 	  if( addr < 256 ) instr_size = 2;
-	  addComment( "UintID - XA" );
 	  addCompilerMessage( "UintID - XA not yet supported", 3 );
 	}
       else
 	{
 	  addCompilerMessage( string("Uint ")  + op + string(" XA"), 0 );
-
 	  addCompilerMessage( "Math operation not implemented yet.", 3 );
-
 	}
 
     }
@@ -9939,7 +9931,7 @@ arithmetic expression
     {
       if( op == string("-") )
 	{
-	  addComment( "XA - Word" );
+	  addComment( "XA - WordID" );
 	  int tmp_base = getAddressOf( $4.name );
 	  //addCompilerMessage( "XA - WordID", 0 );
 	  //addAsm( str_SEC );
@@ -10170,7 +10162,7 @@ arithmetic expression
 	      strcpy($$.name, "_XA");
 	      break;
 	    case 5:
-	      addComment( "2023 03 21 - Multiply XA by WordIMM (5)" );
+	      addComment( "2023 03 21 - XA * WordIMM (5)" );
 	      // save $02 and $03
 	      addAsm( str_TAY );
 	      addAsm( str_LDA + "$02", 2, false );
@@ -10210,7 +10202,7 @@ arithmetic expression
 	      break;
 
 	    case 3:
-	      addComment( "2023 03 21 - Multiply XA bye UintIMM (3)" );
+	      addComment( "2023 03 21 - XA * UintIMM (3)" );
 	      // save $02 and $03
 	      addAsm( str_TAY );
 	      addAsm( str_LDA + "$02", 2, false );
@@ -10252,7 +10244,7 @@ arithmetic expression
 
 	      break;
 	    case 10:
-	      addComment( "2023 03 21 - Multiply XA by UintIMM (10)" );
+	      addComment( "2023 03 21 - XA * UintIMM (10)" );
 	      // save $02 and $03
 	      addAsm( str_TAY );
 	      addAsm( str_LDA + "$02", 2, false );
@@ -10313,34 +10305,22 @@ arithmetic expression
 	      
 	      mul16_is_needed = true;
 	      addComment( "XA * UintIMM" );
-
-
-	      //addAsm( str_STX + "$FC", 2, false );
 	      addAsm( str_STX + "_MUL16_FC", 3, false);
-	      
-	      //addAsm( str_STA + "$FB", 2, false );
 	      addAsm( str_STA + "_MUL16_FB", 3, false);
-
 	      addAsm( str_LDA+"#$" + toHex(tmp_v), 2, false );
-	      //addAsm( str_STA + "$FD", 2, false);
 	      addAsm( str_STA + "_MUL16_FD", 3, false);
-
 	      addAsm( str_LDA + "#$00", 2, false );
-	      //addAsm( str_STA + "$FE", 2, false);
 	      addAsm( str_STA + "_MUL16_FE", 3, false);
-	      
 	      addAsm( str_JSR + "MUL16", 3, false );
 	      addAsm( str_LDA + "MUL16R", 3, false );
 	      addAsm( str_LDX + "MUL16R+1", 3, false );
 	      strcpy($$.name, "_XA" );
-	      
-	      //addCompilerMessage( "Math operation not implemented yet. [XA arith UintIMM]", 3 );
 	    }		
 	}
       else if( op == string("/" ) )
 	{
 	  addComment( "XA / UintIMM" );
-	  addCompilerMessage( "Math operation not implemented yet. [XA arith UintIMM]", 3 );
+	  addCompilerMessage( "Math operation not implemented yet. [XA / UintIMM]", 3 );
 
 	}
       else
@@ -10350,11 +10330,11 @@ arithmetic expression
     }
   else if( isXA($1.name) && isWordIMM($4.name) )
     {
-      addComment( "XA arith WordIMM" );
+      addDebugComment( "XA arith WordIMM" );
       if( op == string("-") )
 	{
+	  addComment( "XA - WordIMM --> XA" );
 	  int tmp_v = atoi(stripFirst($4.name).c_str());
-	  //addAsm( str_SEC );
 	  addAsm( str_SBC + "#$" + toHex(get_word_L(tmp_v)), 2, false  );
 	  addAsm( str_TAY );
 	  addAsm( str_TXA );
@@ -10366,9 +10346,8 @@ arithmetic expression
 	}
       else if( op == string("+") )
 	{
+	  addComment( "XA + WordIMM --> XA" );
 	  int tmp_v = atoi(stripFirst($4.name).c_str());
-	  //cerr << tmp_v << endl;
-	  //addAsm( str_CLC );
 	  addAsm( str_ADC + "#$" + toHex(get_word_L(tmp_v)), 2, false  );
 	  addAsm( str_TAY );
 	  addAsm( str_TXA );
@@ -10431,11 +10410,13 @@ arithmetic expression
 
 	      addAsm( str_LDX + "#$" + toHex(log2(tmp_v)), 2, false );
 
-	      addComment( "top-of-loop                vv ***-**-**** vv" );
+	      //addComment( "top-of-loop                vv ***-**-**** vv" );
+	      addAsm( "!:", 0, true );
 	      addAsm( str_ASL + "$02", 2, false );
 	      addAsm( str_ROL + "$03", 2, false );
-	      addAsm( str_DEX );	      
-	      addAsm( str_BYTE + "$D0, $F9" + commentmarker + "BNE ^^ top-of-loop ^^", 2, false );
+	      addAsm( str_DEX );
+	      addAsm( str_BNE + "!-", 2, false );
+	      //addAsm( str_BYTE + "$D0, $F9" + commentmarker + "BNE ^^ top-of-loop ^^", 2, false );
 
 	      addAsm( str_LDY + "$02", 2, false );
 	      addAsm( str_LDX + "$03", 2, false );
@@ -10444,9 +10425,7 @@ arithmetic expression
 	      addAsm( str_PLA );
 	      addAsm( str_STA + "$02", 2, false );
 	      addAsm( str_TYA );
-		      
 	      strcpy($$.name, "_XA");
-   
 	      break;
 	    case 32:
 	      addAsm( str_ASL );
@@ -12864,9 +12843,13 @@ arithmetic expression
     {
       strcpy($$.name, "_FAC" );
     }
-	
+  // END OF MATH
 };
 | '{' expression '}'
+{
+  strcpy( $$.name, $2.name );
+};
+| '(' expression ')'
 {
   strcpy( $$.name, $2.name );
 };
