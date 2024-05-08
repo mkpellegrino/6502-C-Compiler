@@ -8198,7 +8198,7 @@ statement: datatype ID init
       int c_addr = getAddressOf($9.name);
       
       // X Low - because this is Multicolour - the X coordinate fits into 1 byte
-      addAsm( str_LDA + "$" + toHex(x_addr), 3, false );
+      addAsm( str_LDA + getNameOf(x_addr), 3, false );
       addAsm( str_STA + "$FA", 2, false );
       
       // X High
@@ -8206,13 +8206,13 @@ statement: datatype ID init
       //addAsm( str_STA + "$FB", 2, false );
 
       // Y
-      addAsm( str_LDA + "$" + toHex(y_addr), 3, false );
+      addAsm( str_LDA + getNameOf(y_addr), 3, false );
       addAsm( str_STA + "$FC", 2, false );
       //addAsm( str_JSR + "MCPLOT", 3, false );
 
 
       // colour
-      addAsm( str_LDA + "$" + toHex(c_addr), 3, false );
+      addAsm( str_LDA + getNameOf(c_addr), 3, false );
       addAsm( str_STA + "$FD", 2, false );
 
       addAsm( str_JSR + "MCPLOT", 3, false );
@@ -8226,7 +8226,7 @@ statement: datatype ID init
       int c_addr = getAddressOf($9.name);
       
       // X Low - because this is Multicolour - the X coordinate fites into 1 byte
-      addAsm( str_LDA + "$" + toHex(x_addr), 3, false );
+      addAsm( str_LDA + getNameOf(x_addr), 3, false );
       addAsm( str_STA + "$FA", 2, false );
       
       // X High
@@ -8234,11 +8234,9 @@ statement: datatype ID init
       //addAsm( str_STA + "$FB", 2, false );
 
       // Y
-      addAsm( str_LDA + "$" + toHex(y_addr), 3, false );
+      addAsm( str_LDA + getNameOf(y_addr), 3, false );
       addAsm( str_STA + "$FC", 2, false );
       //addAsm( str_JSR + "MCPLOT", 3, false );
-
-
 
       int c = atoi(stripFirst($9.name).c_str());
       addAsm( str_LDA + "#$" + toHex(c), 2, false );
@@ -8272,16 +8270,16 @@ statement: datatype ID init
       int c_addr = getAddressOf($9.name);
 
       // X Low - because this is Multicolour - the X coordinate fits into 1 byte
-      addAsm( str_LDA + "$" + toHex(x_addr), 3, false );
+      addAsm( str_LDA + getNameOf(x_addr), 3, false );
       addAsm( str_STA + "$FA", 2, false );
       
       // Y
-      addAsm( str_LDA + "$" + toHex(y_addr), 3, false );
+      addAsm( str_LDA + getNameOf(y_addr), 3, false );
       addAsm( str_STA + "$FC", 2, false );
       //addAsm( str_JSR + "MCPLOT", 3, false );
 
       // colour
-      addAsm( str_LDA + "$" + toHex(c_addr), 3, false );
+      addAsm( str_LDA + getNameOf(c_addr), 3, false );
       addAsm( str_STA + "$FD", 2, false );
 
       addAsm( str_JSR + "MCPLOT", 3, false );
@@ -8295,11 +8293,11 @@ statement: datatype ID init
       int c_value = atoi(stripFirst($9.name).c_str());
 
       // X Low - because this is Multicolour - the X coordinate fits into 1 byte
-      addAsm( str_LDA + "$" + toHex(x_addr), 3, false );
+      addAsm( str_LDA + getNameOf(x_addr), 3, false );
       addAsm( str_STA + "$FA", 2, false );
       
       // Y
-      addAsm( str_LDA + "$" + toHex(y_addr), 3, false );
+      addAsm( str_LDA + getNameOf(y_addr), 3, false );
       addAsm( str_STA + "$FC", 2, false );
       //addAsm( str_JSR + "MCPLOT", 3, false );
 
@@ -8319,11 +8317,11 @@ statement: datatype ID init
 
       
       // X Low - because this is Multicolour - the X coordinate fits into 1 byte
-      addAsm( str_LDA + "$" + toHex(x_addr), 3, false );
+      addAsm( str_LDA + getNameOf(x_addr), 3, false );
       addAsm( str_STA + "$FA", 2, false );
       
       // Y
-      addAsm( str_LDA + "$" + toHex(y_addr), 3, false );
+      addAsm( str_LDA + getNameOf(y_addr), 3, false );
       addAsm( str_STA + "$FC", 2, false );
 
       // colour
@@ -8375,7 +8373,7 @@ statement: datatype ID init
       int c = atoi(stripFirst($9.name).c_str());
 
       // X Low - because this is Multicolour - the X coordinate fites into 1 byte
-      addAsm( str_LDA + "$" + toHex(x_addr), 3, false );
+      addAsm( str_LDA + getNameOf(x_addr), 3, false );
       addAsm( str_STA + "$FA", 2, false );
 
       addAsm( str_LDA + "#$" + toHex(y), 2, false );
@@ -8383,9 +8381,7 @@ statement: datatype ID init
       addAsm( str_LDA + "#$" + toHex(c), 2, false );
       addAsm( str_STA + "$FD", 2, false );
       addAsm( str_JSR + "MCPLOT", 3, false );
-
     }
-
   else
     {
       addCompilerMessage( "type not implemented yet for plot" );
@@ -8681,12 +8677,12 @@ statement: datatype ID init
       addAsm( str_JSR + "PUSH", 3, false ); // push X from XA onto our stack
 
       addAsm( str_PLA );
-      addAsm( str_ASL+commentmarker+"*2 b/c its a WORD array", 1, false);
+      addAsm( str_ASL + commentmarker + "*2 b/c its a WORD array", 1, false);
       addAsm( str_TAY );
-      addAsm( str_INY+commentmarker+"b/c we will store X first",1,false);
-      addAsm( str_LDA + "$02" );
+      addAsm( str_INY + commentmarker + "b/c we will store X first",1,false);
+      addAsm( str_LDA + "$02", 2, false );
       addAsm( str_PHA ); // push $02 onto processor stack
-      addAsm( str_LDA + "$03" );
+      addAsm( str_LDA + "$03", 2, false );
       addAsm( str_PHA ); // push $03 onto processor stack
 
       addAsm( str_LDA + "#$" +  toHex(get_word_L(tmp_base_address)), 2, false );
@@ -8702,10 +8698,10 @@ statement: datatype ID init
 
       // restore $02 and $03
       addAsm( str_PLA );
-      addAsm( str_STA + "$03" );
+      addAsm( str_STA + "$03", 2, false );
 
       addAsm( str_PLA );
-      addAsm( str_STA + "$02" );
+      addAsm( str_STA + "$02", 2, false );
 
     }
   else
@@ -9480,17 +9476,57 @@ init: '=' expression
   strcpy($$.name, "Slipstream");
 };
 
+// START OF MATH
+
 // 2023 03 21
 // Need XA operation A support
 // if( isXA($1.name) && isA($1.name) )
 expression: expression
 {
   if(isA($1.name))
-    {addComment("OP1 (byte)");addAsm( str_PHA );}
+    {addComment("OP1 (A)");addAsm( str_PHA );}
   else if(isXA($1.name))
-    {addComment("OP1 (word)");addAsm( str_PHA );addAsm( str_TXA );addAsm( str_PHA );}
+    {addComment("OP1 (XA)");addAsm( str_PHA );addAsm( str_TXA );addAsm( str_PHA );}
+  else if(isWordID($1.name))
+    {addComment("OP1 (WordID)");}
+  else if(isWordIMM($1.name))
+    {addComment("OP1 (WordIMM)");}
+  else if(isFloatID($1.name))
+    {addComment("OP1 (FloatID)");}
+  else if(isFloatIMM($1.name))
+    {addComment( "OP1 (FloatIMM)");}
+  else if(isIntID($1.name))
+    {addComment( "OP1 (IntID)");}
+  else if(isIntIMM($1.name))
+    {addComment( "OP1 (IntIMM)");}
+  else if(isUintID($1.name))
+    {addComment( "OP1 (UintID)");}
+  else if(isUintIMM($1.name))
+    {addComment( "OP1 (UintIMM)");}
 }
-arithmetic expression {addComment("OP2");}
+arithmetic expression
+{  
+  if(isA($4.name))
+    {addComment("OP2 (A)");}
+  else if(isXA($4.name))
+    {addComment("OP2 (XA)");}
+  else if(isWordID($4.name))
+    {addComment("OP2 (WordID)");}
+  else if(isWordIMM($4.name))
+    {addComment("OP2 (WordIMM)");}
+  else if(isFloatID($4.name))
+    {addComment("OP2 (FloatID)");}
+  else if(isFloatIMM($4.name))
+    {addComment( "OP2 (FloatIMM)");}
+  else if(isIntID($4.name))
+    {addComment( "OP2 (IntID)");}
+  else if(isIntIMM($4.name))
+    {addComment( "OP2 (IntIMM)");}
+  else if(isUintID($4.name))
+    {addComment( "OP2 (UintID)");}
+  else if(isUintIMM($4.name))
+    {addComment( "OP2 (UintIMM)");}
+}
 {
   
   if( isXA($1.name) && (!isXA($4.name) && !isA($4.name) ) )
@@ -9501,6 +9537,7 @@ arithmetic expression {addComment("OP2");}
       deletePreviousAsm(); // pha
       deletePreviousAsm(); // txa
       deletePreviousAsm(); // pha
+      if( arg_asm_comments ) deletePreviousAsm(); // OP1
       addComment( "Deleted previous 3 instructions" );
     }
 
@@ -9515,16 +9552,37 @@ arithmetic expression {addComment("OP2");}
   addParserComment( "RULE: expression: expression arithmetic expression" );
   
   string op = string($3.name);
-  addComment( string($1.name) + string( " " ) + op + string( " " ) + string($4.name) );
+  string O1;
+  string O2;
+  int addrOP1 = getAddressOf($1.name);
+  int sizeOP1A = 3;
+  int sizeOP1B = 3;
+  if( addrOP1 < 256 ) sizeOP1A = 2;
+  if( addrOP1+1 < 256 ) sizeOP1B = 2;
+  
+  int addrOP2 = getAddressOf($4.name);
+  int sizeOP2A = 3;
+  int sizeOP2B = 3;
+  if( addrOP2 < 256 ) sizeOP2A = 2;
+  if( addrOP2+1 < 256 ) sizeOP2B = 2;
+  
+  if( isUintID($1.name) || isIntID($1.name) || isWordID($1.name) || isFloatID($1.name))
+    {
+      O1 = getNameOf(getAddressOf($1.name));
+    }
+  if( isUintID($4.name) || isIntID($4.name) || isWordID($4.name) || isFloatID($4.name))
+    {
+      O2 = getNameOf(getAddressOf($4.name));
+    }
+  
+  addDebugComment( string($1.name) + string( " " ) + op + string( " " ) + string($4.name) );
   
   // here is where we should check to see if the
   // variable ($$.name) is already in use (in _this_ scope).
   // .. but we don't yet
   int FAC=0;
-  int type1 = getTypeOf($1.name);
-  int type2 = getTypeOf($4.name);
-  addComment( string($1.name) + string(" (") + string(itos(getTypeOf($1.name))) + ") " + op + " "  + $4.name + " (" + itos( getTypeOf($4.name) )  + ")"  );
-
+  //int type1 = getTypeOf($1.name);
+  //int type2 = getTypeOf($4.name);
 
   if( op == string( "-" ))
     {
@@ -9535,28 +9593,24 @@ arithmetic expression {addComment("OP2");}
       addAsm( str_CLC );
     }
 
-
-  
   // WordID op XA
   if( isWordID($1.name) && isXA($4.name) )
     {
       if( op == string("-") )
 	{
 	  addComment( "WordID - XA --> XA" );
-	  int tmp_op1 = getAddressOf( $1.name );
 	  addAsm( str_TAY );
 	  preserve0203();
 	  addAsm( str_STY + "$02", 2, false );
 	  addAsm( str_STX + "$03", 2, false );
-	  addAsm( str_LDA + getNameOf(tmp_op1), 3, false  );
+	  addAsm( str_LDA + O1, sizeOP1A, false  );
 	  addAsm( str_SBC + "$02", 2, false );
 	  addAsm( str_TAY );
-	  addAsm( str_LDA + getNameOf(tmp_op1) + "+1", 3, false  );
+	  addAsm( str_LDA + O1 + "+1", sizeOP1B, false  );
 	  addAsm( str_SBC + "$03", 2, false );
 	  addAsm( str_TAX );
 	  restore0203();
 	  addAsm( str_TYA );
-	  
 	  strcpy($$.name, "_XA" );
 	}
       else if( op == string("+") )
@@ -9564,34 +9618,27 @@ arithmetic expression {addComment("OP2");}
 	  addComment( "WordID + XA --> XA" );
 	  int tmp_op1 = getAddressOf( $1.name );
 	  addAsm( str_TAY );
-
 	  preserve0203();
-
 	  addAsm( str_STY + "$02", 2, false );
 	  addAsm( str_STX + "$03", 2, false );
-	  addAsm( str_LDA + getNameOf(tmp_op1), 3, false  );
+	  addAsm( str_LDA + O1, sizeOP1A, false  );
 	  addAsm( str_ADC + "$02", 2, false );
 	  addAsm( str_TAY );
-
-	  addAsm( str_LDA + getNameOf(tmp_op1) + "+1", 3, false  );
+	  addAsm( str_LDA + O1 + "+1", sizeOP1B, false  );
 	  addAsm( str_ADC + "$03", 2, false );
 	  addAsm( str_TAX );
-
 	  restore0203();
-	  
 	  addAsm( str_TYA );
 	  strcpy($$.name, "_XA" );
 	}
       else if( op == string("*") )
 	{
-	  int tmp_op1 = getAddressOf( $1.name );
 	  mul16_is_needed = true;
 	  addAsm( str_STA + "_MUL16_FD", 3, false);
-	  // minor bug - this used to be STA not STX
 	  addAsm( str_STX + "_MUL16_FE", 3, false);
-	  addAsm( str_LDA + getNameOf(tmp_op1) + "+1", 3, false  );
+	  addAsm( str_LDA + O1 + "+1", sizeOP1B, false  );
 	  addAsm( str_STA + "_MUL16_FC", 3, false);
-	  addAsm( str_LDA + getNameOf(tmp_op1), 3, false  );
+	  addAsm( str_LDA + O1, sizeOP1A, false  );
 	  addAsm( str_STA + "_MUL16_FB", 3, false);
 	  addAsm( str_JSR + "MUL16", 3, false );
 	  addAsm( str_LDA + "MUL16R", 3, false );
@@ -9604,9 +9651,9 @@ arithmetic expression {addComment("OP2");}
 	  div16_is_needed = true;
 	  addAsm( str_STA + "_DIV16_FD", 3, false);
 	  addAsm( str_STX + "_DIV16_FE", 3, false);
-	  addAsm( str_LDA + getNameOf(tmp_op1), 3, false  );
+	  addAsm( str_LDA + O1, sizeOP1A, false  );
 	  addAsm( str_STA + "_DIV16_FB", 3, false );
-	  addAsm( str_LDA + getNameOf(tmp_op1)+"+1", 3, false  );
+	  addAsm( str_LDA + O1 + "+1", sizeOP1B, false  );
 	  addAsm( str_STA + "_DIV16_FC", 3, false );
 	  addAsm( str_JSR + "DIV16", 3, false );
 	  addAsm( str_LDA + "_DIV16_FB", 3, false );
@@ -9618,58 +9665,44 @@ arithmetic expression {addComment("OP2");}
 	  addCompilerMessage( string("WordID ") + op + string(" XA --> XA"), 0 );
 	  addCompilerMessage( "Math operation not implemented... yet.", 3 );
 	}
-	
     }
   else if( isUintID($1.name) && isWordIMM($4.name) )
     {
       // TODO: Not fully implemented yet!
-      int OP1_addr = getAddressOf($1.name);
       int OP2 = atoi(stripFirst($4.name).c_str());
       if( op == string("+") )
 	{
 	  addComment( "UintID + WordIMM" );
-	  addAsm( str_LDA + "#$" + toHex(get_word_L(OP2)), 2, false );
-	  addAsm( str_ADC + getNameOf(OP1_addr), 3, false );
-	  //addAsm( str_ADC + "$" + toHex(OP1_addr), 3, false );
+	  addAsm( str_LDA + O1, sizeOP1A, false );
+	  addAsm( str_ADC + "#$" + toHex(get_word_L(OP2)), 2, false );
 	  addAsm( str_TAY );
 	  addAsm( str_LDA + "#$" + toHex(get_word_H(OP2)), 2, false );
 	  addAsm( str_ADC + "#$00", 2, false );
 	  addAsm( str_TAX );
 	  addAsm( str_TYA );
 	  strcpy($$.name, "_XA" );
-
 	}
       else if( op == string("-") )
 	{
 	  addComment( "UintID - WordIMM" );
 	  addCompilerMessage( "Math Operation not implemented for UintID - WordIMM (yet)", 3 );
-
-	  //strcpy($$.name, "_XA" );
-
 	}
       else if( op == string("*") )
 	{
 	  mul16_is_needed = true;
 	  addComment( "UintID * WordIMM" );
-	  
-	  addAsm( str_LDA + getNameOf(OP1_addr), 3, false );
+	  addAsm( str_LDA + O1, sizeOP1A, false );
 	  addAsm( str_STA + "_MUL16_FD", 3, false);
-
 	  addAsm( str_LDA + "#$00", 2, false );
 	  addAsm( str_STA + "_MUL16_FE", 3, false);
-	  
 	  addAsm( str_LDA + "#$" + toHex(get_word_L(OP2)), 2, false );
 	  addAsm( str_STA + "_MUL16_FB", 3, false);
-	  
 	  addAsm( str_LDA + "#$" + toHex(get_word_H(OP2)), 2, false );
 	  addAsm( str_STA + "_MUL16_FC", 3, false);
-
-	  
 	  addAsm( str_JSR + "MUL16", 3, false );
 	  addAsm( str_LDA + "MUL16R", 3, false );
 	  addAsm( str_LDX + "MUL16R+1", 3, false );	  
 	  strcpy($$.name, "_XA" );
-
 	}
       else if( op == string("/") )
 	{
@@ -9683,7 +9716,7 @@ arithmetic expression {addComment("OP2");}
     }
   else if( isUintID($1.name) && isXA($4.name) )
     {
-      addComment( "UintID arith XA" );
+      addDebugComment( "UintID arith XA" );
       int tmp_addr = getAddressOf($1.name);
       string tmp_name = getNameOf(tmp_addr);
       if( op == string("-") )
@@ -9694,20 +9727,14 @@ arithmetic expression {addComment("OP2");}
 	  addAsm( str_PHA );
 	  addAsm( str_LDA + "$03", 2, false );
 	  addAsm( str_PHA );
-
-	  
 	  addAsm( str_STY + "$02", 2, false );
 	  addAsm( str_STX + "$03", 2, false );
-	  // 2024 04 14 - mkpellegrino
-	  addAsm( str_LDA + tmp_name, 3, false  );
-	  //addAsm( str_LDA + "$" + toHex(tmp_op1) + commentmarker +  tmp_name, 3, false  );
+	  addAsm( str_LDA + O1, sizeOP1A, false  );
 	  addAsm( str_SBC + "$02", 2, false );
 	  addAsm( str_TAY );
 	  addAsm( str_LDA + "#$00", 2, false  );
 	  addAsm( str_SBC + "$03", 2, false );
 	  addAsm( str_TAX );
-
-	  
 	  addAsm( str_PLA );
 	  addAsm( str_STA + "$03", 2, false );
 	  addAsm( str_PLA );
@@ -9717,45 +9744,67 @@ arithmetic expression {addComment("OP2");}
 	}
       else if( op == string("+") )
 	{
-	  int tmp_op1 = getAddressOf( $1.name );
-	  //addAsm( str_CLC );
+
+
+	  addComment( "UIntID + XA --> XA");
+	  // move A out of the way
 	  addAsm( str_TAY );
+	  // save $02
 	  addAsm( str_LDA + "$02", 2, false );
 	  addAsm( str_PHA );
-	  addAsm( str_LDA + "$03", 2, false );
-	  addAsm( str_PHA );
-	  
+	  // put the A (from XA) into ZP
 	  addAsm( str_STY + "$02", 2, false );
-	  addAsm( str_STX + "$03", 2, false );
-
-	  // 2024 04 14 - mkpellegrino
-	  addAsm( str_LDA + tmp_name, 3, false  );
-
+	  // get the value at OP1
+	  addAsm( str_LDA + O1, sizeOP1A, false );
+	  // add it to A that was in XA
 	  addAsm( str_ADC + "$02", 2, false );
+	  // move it to Y
 	  addAsm( str_TAY );
-	  addAsm( str_LDA + "#$00", 2, false  );
-	  //addAsm( str_LDA + "$" + toHex(tmp_op1+1), 3, false  );
-	  addAsm( str_ADC + "$03", 2, false );
+	  // move the X from XA into A
+	  addAsm( str_TXA );
+	  // make sure any carries take place
+	  addAsm( str_ADC + "#$00", 2, false );
+	  // put it back in X
 	  addAsm( str_TAX );
-
-	  
-	  addAsm( str_PLA );
-	  addAsm( str_STA + "$03", 2, false );
+	  // restore $02
 	  addAsm( str_PLA );
 	  addAsm( str_STA + "$02", 2, false );
+	  // put the A that was added to back in A
 	  addAsm( str_TYA );
 	  strcpy($$.name, "_XA" );
+
+	  
+	  /* int tmp_op1 = getAddressOf( $1.name ); */
+	  /* addAsm( str_TAY ); */
+	  /* addAsm( str_LDA + "$02", 2, false ); */
+	  /* addAsm( str_PHA ); */
+	  /* addAsm( str_LDA + "$03", 2, false ); */
+	  /* addAsm( str_PHA ); */
+	  
+	  /* addAsm( str_STY + "$02", 2, false ); */
+	  /* addAsm( str_STX + "$03", 2, false ); */
+	  /* addAsm( str_LDA + O1, sizeOP1A, false  ); */
+	  /* addAsm( str_ADC + "$02", 2, false ); */
+	  /* addAsm( str_TAY ); */
+	  /* addAsm( str_LDA + "#$00", 2, false  ); */
+	  /* addAsm( str_ADC + "$03", 2, false ); */
+	  /* addAsm( str_TAX ); */
+	  
+	  /* addAsm( str_PLA ); */
+	  /* addAsm( str_STA + "$03", 2, false ); */
+	  /* addAsm( str_PLA ); */
+	  /* addAsm( str_STA + "$02", 2, false ); */
+	  /* addAsm( str_TYA ); */
+	  /* strcpy($$.name, "_XA" ); */
 	}
       else if( op == string("*") )
 	{
-	  int tmp_op1 = getAddressOf( $1.name );
-	  mul16_is_needed = true;
-	  
+	  mul16_is_needed = true;	  
 	  addAsm( str_STA + "_MUL16_FD", 3, false);
 	  addAsm( str_STX + "_MUL16_FE", 3, false);
 	  addAsm( str_LDA + "#$00", 2, false  );
 	  addAsm( str_STA + "_MUL16_FC", 3, false);
-	  addAsm( str_LDA + tmp_name, 3, false  );
+	  addAsm( str_LDA + O1, sizeOP1A, false  );
 	  addAsm( str_STA + "_MUL16_FB", 3, false);
 	  addAsm( str_JSR + "MUL16", 3, false );
 	  addAsm( str_LDA + "MUL16R", 3, false );
@@ -9764,15 +9813,12 @@ arithmetic expression {addComment("OP2");}
 	}
       else if( op == string("/") )
 	{
-	  int tmp_op1 = getAddressOf( $1.name );
 	  div16_is_needed = true;
 	  addAsm( str_STA + "_DIV16_FD", 3, false);
 	  addAsm( str_STX + "_DIV16_FE", 3, false);
 	  addAsm( str_LDA + "#$00", 2, false  );
 	  addAsm( str_STA + "_DIV16_FB", 3, false );
-
-	  // 2024 04 14 - mkpellegrino
-	  addAsm( str_LDA + tmp_name, 3, false  );
+	  addAsm( str_LDA + O1, sizeOP1A, false  );
 	  addAsm( str_STA + "_DIV16_FC", 3, false );
 	  addAsm( str_JSR + "DIV16", 3, false );
 	  addAsm( str_LDA + "_DIV16_FB", 3, false );
@@ -9784,7 +9830,6 @@ arithmetic expression {addComment("OP2");}
 	  addCompilerMessage( string("UintID ")  + op + string(" XA"), 0 );
 	  addCompilerMessage( "Math operation not implemented... yet.", 3 );
 	}
-	
     }
   else if( isXA($1.name) && isA($4.name) )
     {
@@ -9797,12 +9842,10 @@ arithmetic expression {addComment("OP2");}
 	  addAsm( str_LDY + "$03", 2, false );
 	  
 	  addAsm( str_STA + "$02", 2, false );
+	  
 	  addAsm( str_PLA );
-
 	  addAsm( str_STA + "$03", 2, false ); // X1
 	  addAsm( str_PLA );
-	  
-	  //addAsm( str_CLC );
 	  addAsm( str_ADC + "$02", 2, false );
 	  addAsm( str_STA + "$02", 2, false );
 	  addAsm( str_LDA + "#$00", 2, false );
@@ -9825,7 +9868,6 @@ arithmetic expression {addComment("OP2");}
 	  addAsm( str_PLA );
 	  addAsm( str_STA + "$03", 2, false ); // X1
 	  addAsm( str_PLA );
-	  //addAsm( str_SEC );
 	  addAsm( str_SBC + "$02", 2, false );
 	  addAsm( str_STA + "$02", 2, false );
 	  addAsm( str_LDA + "#$00", 2, false );
@@ -9842,23 +9884,13 @@ arithmetic expression {addComment("OP2");}
 	{
 	  mul16_is_needed = true;
 	  addComment( "XA * A" );
-	  
 	  addAsm( str_STA + "_MUL16_FD", 3, false);
-	  //addAsm( str_STA + "$FD", 2, false);
-
-	  
 	  addAsm( str_LDA + "#$00", 2, false );
-	  //addAsm( str_STA + "$FE", 2, false);
 	  addAsm( str_STA + "_MUL16_FE", 3, false);
-
 	  addAsm( str_PLA );
-	  //addAsm( str_STA + "$FC", 2, false );
 	  addAsm( str_STA + "_MUL16_FC", 3, false);
-	  
 	  addAsm( str_PLA );
-	  //addAsm( str_STA + "$FB", 2, false );
 	  addAsm( str_STA + "_MUL16_FB", 3, false);
-	  
 	  addAsm( str_JSR + "MUL16", 3, false );
 	  addAsm( str_LDA + "MUL16R", 3, false );
 	  addAsm( str_LDX + "MUL16R+1", 3, false );
@@ -9868,133 +9900,59 @@ arithmetic expression {addComment("OP2");}
 	{
 	  div16_is_needed = true;
 	  addComment( "XA / A" );
-	  
 	  addAsm( str_STA + "_DIV16_FD", 3, false);
 	  addAsm( str_LDA + "#$00", 2, false );
 	  addAsm( str_STA + "_DIV16_FE", 3, false);
-
 	  addAsm( str_PLA );
 	  addAsm( str_STA + "_DIV16_FC", 3, false );
 	  addAsm( str_PLA );
 	  addAsm( str_STA + "_DIV16_FB", 3, false );
-	  
-
 	  addAsm( str_JSR + "DIV16", 3, false );
 	  addAsm( str_LDA + "_DIV16_FB", 3, false );
 	  addAsm( str_LDX + "_DIV16_FC", 3, false );
-
 	  strcpy($$.name, "_XA" );
-	}
-      
-      else
-	{
-	  addCompilerMessage( string("XA ")  + op + string(" A"), 0 );
-
-	  addCompilerMessage( "Math operation not implemented yet.", 3 );
-	}
-
-    }
-  else if( isUintID($1.name) && isXA($4.name) )
-    {
-      if( op == string("+") )
-	{
-	  addComment( "UIntID + XA --> XA");
-	  int addr = getAddressOf( $1.name );
-	  int instr_size = 3;
-	  if( addr < 256 ) instr_size = 2;
-	  addComment( "UintID + XA" );
-	  addAsm( str_ADC + "$" + getNameOf(addr) + commentmarker +  string($1.name), instr_size, false );
-	  //addAsm( str_ADC + "$" + toHex(addr) + commentmarker +  string($1.name), instr_size, false );
-	  addAsm( str_TAY );
-	  addAsm( str_TXA );
-	  addAsm( str_ADC + "#$00", 2, false );
-	  addAsm( str_TAX );
-	  addAsm( str_TYA );
-	  strcpy($$.name, "_XA" );
-	}
-      else if( op == string("-") )
-	{
-	  addComment( "UIntID - XA --> XA");
-	  int addr = getAddressOf( $1.name );
-	  int instr_size = 3;
-	  if( addr < 256 ) instr_size = 2;
-	  addCompilerMessage( "UintID - XA not yet supported", 3 );
 	}
       else
 	{
-	  addCompilerMessage( string("Uint ")  + op + string(" XA"), 0 );
-	  addCompilerMessage( "Math operation not implemented yet.", 3 );
+	  addCompilerMessage( string("XA ") + op + string(" A not supported (yet?)"), 3 );
 	}
-
     }
   else if( isXA($1.name) && isWordID($4.name) )
     {
       if( op == string("-") )
 	{
-	  addComment( "XA - WordID" );
-	  int tmp_base = getAddressOf( $4.name );
-	  //addCompilerMessage( "XA - WordID", 0 );
-	  //addAsm( str_SEC );
-	  addAsm( str_SBC + getNameOf( tmp_base ), 3, false );
+	  addComment( "XA - WordID --> XA" );
+	  addAsm( str_SBC + O2, sizeOP2A, false );
 	  addAsm( str_TAY );
 	  addAsm( str_TXA );
-	  addAsm( str_SBC + getNameOf( tmp_base ) + "+1", 3, false );
+	  addAsm( str_SBC + O2 + "+1", sizeOP2B, false );
 	  addAsm( str_TAX );
 	  addAsm( str_TYA );
 	  strcpy($$.name, "_XA" );
 	}
       else if( op == string("+") )
 	{
-	  addComment( "XA + WordID" );
+	  addComment( "XA + WordID --> XA" );
 	  int tmp_base = getAddressOf( $4.name );
-	  //addCompilerMessage( "XA + WordID", 0 );
-	  //addAsm( str_CLC );
-	  addAsm( str_ADC + getNameOf( tmp_base ), 3, false );
+	  addAsm( str_ADC + O2, sizeOP2A, false );
 	  addAsm( str_TAY );
 	  addAsm( str_TXA );
-	  addAsm( str_ADC + getNameOf( tmp_base ) + "+1", 3, false );
-	  //addAsm( str_ADC + "$" + toHex( tmp_base + 1 ), 3, false );
+	  addAsm( str_ADC + O2 + "+1", sizeOP2B, false );
 	  addAsm( str_TAX );
 	  addAsm( str_TYA );
 	  strcpy($$.name, "_XA" );
 	}
-
       else if( op == string("*") )
 	{
 	  mul16_is_needed = true;
-	  addComment( "XA * WordID" );
+	  addComment( "XA * WordID --> XA" );
 
 	  addAsm( str_STA + "_MUL16_FB", 3, false);
 	  addAsm( str_STX + "_MUL16_FC", 3, false);
-	  
-	  int tmp_base = getAddressOf( $4.name );
-	  int instr_size;
-
-	  if( tmp_base > 255 )
-	    {
-	      instr_size = 3;
-	    }
-	  else
-	    {
-	      instr_size = 2;
-	    }
-	  addAsm( str_LDA + getNameOf( tmp_base ), instr_size, false );
+	  addAsm( str_LDA + O2, sizeOP2A, false );
 	  addAsm( str_STA + "_MUL16_FD", 3, false);
-	  //addAsm( str_STA + "$FD", 2, false);
-	  
-	  if( tmp_base+1 > 255 )
-	    {
-	      instr_size = 3;
-	    }
-	  else
-	    {
-	      instr_size = 2;
-	    }
-	  addAsm( str_LDA + getNameOf( tmp_base ) + "+1", instr_size, false );
-	  //addAsm( str_STA + "$FE", 2, false);
+	  addAsm( str_LDA + O2 + "+1", sizeOP2B, false );
 	  addAsm( str_STA + "_MUL16_FE", 3, false);
-	  
-	  
 	  addAsm( str_JSR + "MUL16", 3, false );
 	  addAsm( str_LDA + "MUL16R", 3, false );
 	  addAsm( str_LDX + "MUL16R+1", 3, false );
@@ -10003,41 +9961,18 @@ arithmetic expression {addComment("OP2");}
       else if( op == string("/") )
 	{
 	  div16_is_needed = true;
-	  addComment( "XA / WordID" );
+	  addComment( "XA / WordID --> XA" );
 	  addAsm( str_TAY );
-	  int tmp_base = getAddressOf( $4.name );
-	  int instr_size;
-
-	  if( tmp_base > 255 )
-	    {
-	      instr_size = 3;
-	    }
-	  else
-	    {
-	      instr_size = 2;
-	    }
-	  addAsm( str_LDA + getNameOf( tmp_base ), instr_size, false );
-	  
+	  addAsm( str_LDA + O2, sizeOP2A, false );
 	  addAsm( str_STA + "$FD", 2, false);
-	  if( tmp_base+1 > 255 )
-	    {
-	      instr_size = 3;
-	    }
-	  else
-	    {
-	      instr_size = 2;
-	    }
-	  addAsm( str_LDA + getNameOf( tmp_base ) + "+1", instr_size, false );
-	  
+	  addAsm( str_LDA + O2 + "+1", sizeOP2B, false );
 	  addAsm( str_STA + "_DIV16_FE", 3, false);
 	  addAsm( str_TYA );
 	  addAsm( str_STX + "_DIV16_FC", 3, false );
 	  addAsm( str_STA + "_DIV16_FB", 3, false );
-
 	  addAsm( str_JSR + "DIV16", 3, false );
 	  addAsm( str_LDA + "_DIV16_FB", 3, false );
 	  addAsm( str_LDX + "_DIV16_FC", 3, false );
-
 	  strcpy($$.name, "_XA" );
 	}
       else
@@ -10050,10 +9985,10 @@ arithmetic expression {addComment("OP2");}
     {
       if( op == string("-") )
 	{
-	  addComment( "XA - UintIMM" );
+	  addComment( "XA - UintIMM --> XA" );
 	  int tmp_v = atoi(stripFirst($4.name).c_str());
 	  //addAsm( str_SEC );
-	  addAsm( str_SBC + "#$" + toHex(tmp_v) + commentmarker + $4.name, 2, false  );
+	  addAsm( str_SBC + "#$" + toHex(tmp_v), 2, false  );
 	  addAsm( str_TAY );
 	  addAsm( str_TXA );
 	  addAsm( str_SBC + "#$00", 2, false );
@@ -10063,11 +9998,9 @@ arithmetic expression {addComment("OP2");}
 	}
       else if( op == string("+") )
 	{
-	  addComment( "XA + UintIMM" );
-
+	  addComment( "XA + UintIMM --> XA" );
 	  int tmp_v = atoi(stripFirst($4.name).c_str());
-	  //addAsm( str_CLC );
-	  addAsm( str_ADC + "#$" + toHex(tmp_v) + commentmarker +  $4.name, 2, false  );
+	  addAsm( str_ADC + "#$" + toHex(tmp_v), 2, false  );
 	  addAsm( str_TAY );
 	  addAsm( str_TXA );
 	  addAsm( str_ADC + "#$00", 2, false );
@@ -10077,8 +10010,7 @@ arithmetic expression {addComment("OP2");}
 	}
       else if( op == string("*" ) )
 	{
-
-	  addComment( "XA * UintIMM" );
+	  addComment( "XA * UintIMM --> XA" );
 	  int tmp_v = atoi(stripFirst($4.name).c_str());
 	  switch(tmp_v)
 	    {
@@ -10104,16 +10036,12 @@ arithmetic expression {addComment("OP2");}
 	      addAsm( str_PHA );
 	      addAsm( str_STY + "$02", 2, false );
 	      addAsm( str_STX + "$03", 2, false );
-
 	      addAsm( str_LDX + "#$" + toHex(log2(tmp_v)), 2, false );
-
-	      // L1
 	      addAsm( "!:", 0, true );
 	      addAsm( str_ASL + "$02", 2, false );
 	      addAsm( str_ROL + "$03", 2, false );
 	      addAsm( str_DEX );
-	      addAsm( str_BNE + "!-", 2, false );
-	      
+	      addAsm( str_BNE + "!-", 2, false );	      
 	      addAsm( str_LDY + "$02", 2, false );
 	      addAsm( str_LDX + "$03", 2, false );
 	      addAsm( str_PLA );
@@ -10121,8 +10049,6 @@ arithmetic expression {addComment("OP2");}
 	      addAsm( str_PLA );
 	      addAsm( str_STA + "$02", 2, false );
 	      addAsm( str_TYA );
-		      
-		      
 	      break;
 	    case 32:
 	      addAsm( str_ASL );
@@ -10162,17 +10088,14 @@ arithmetic expression {addComment("OP2");}
 	      strcpy($$.name, "_XA");
 	      break;
 	    case 5:
-	      addComment( "2023 03 21 - XA * WordIMM (5)" );
-	      // save $02 and $03
+	      addComment( "XA * WordIMM --> XA (5)" );
 	      addAsm( str_TAY );
 	      addAsm( str_LDA + "$02", 2, false );
 	      addAsm( str_PHA );
 	      addAsm( str_LDA + "$03", 2, false );
 	      addAsm( str_PHA );
-	      // store the original number
 	      addAsm( str_STX + "$03", 2, false );
 	      addAsm( str_STY + "$02", 2, false );
-	      // multiply the word by 4
 	      addAsm( str_TYA );
 	      addAsm( str_ASL );
 	      addAsm( str_TAY );
@@ -10185,7 +10108,6 @@ arithmetic expression {addComment("OP2");}
 	      addAsm( str_TXA );
 	      addAsm( str_ROL );
 	      addAsm( str_TAX );
-	      
 	      addAsm( str_TYA );
 	      addAsm( str_CLC );
 	      addAsm( str_ADC + "$02", 2, false );
@@ -10202,28 +10124,20 @@ arithmetic expression {addComment("OP2");}
 	      break;
 
 	    case 3:
-	      addComment( "2023 03 21 - XA * UintIMM (3)" );
-	      // save $02 and $03
+	      addComment( "XA * UintIMM --> XA" );
 	      addAsm( str_TAY );
 	      addAsm( str_LDA + "$02", 2, false );
 	      addAsm( str_PHA );
 	      addAsm( str_LDA + "$03", 2, false );
 	      addAsm( str_PHA );
-
-
-	      // store the original number
 	      addAsm( str_STX + "$03", 2, false );
 	      addAsm( str_STY + "$02", 2, false );
-
-	      // multiply the word by 2
 	      addAsm( str_TYA );
 	      addAsm( str_ASL );
 	      addAsm( str_TAY );
 	      addAsm( str_TXA );
 	      addAsm( str_ROL );
 	      addAsm( str_TAX );
-	      
-
 	      addAsm( str_TYA );
 	      addAsm( str_CLC );
 	      addAsm( str_ADC + "$02", 2, false );
@@ -10231,67 +10145,46 @@ arithmetic expression {addComment("OP2");}
 	      addAsm( str_TXA );
 	      addAsm( str_ADC + "$03", 2, false );
 	      addAsm( str_TAX );
-
 	      addAsm( str_PLA );
 	      addAsm( str_STA + "$03", 2, false );
 	      addAsm( str_PLA );
 	      addAsm( str_STA + "$02", 2, false );
-
-	      
 	      addAsm( str_TYA );
-
 	      strcpy($$.name, "_XA");
-
 	      break;
 	    case 10:
-	      addComment( "2023 03 21 - XA * UintIMM (10)" );
-	      // save $02 and $03
+	      addComment( "XA * UintIMM --> XA" );
 	      addAsm( str_TAY );
 	      addAsm( str_LDA + "$02", 2, false );
 	      addAsm( str_PHA );
 	      addAsm( str_LDA + "$03", 2, false );
 	      addAsm( str_PHA );
-
-
-	      // store the original number
 	      addAsm( str_STX + "$03", 2, false );
 	      addAsm( str_STY + "$02", 2, false );
-
-	      // multiply the word by 2
 	      addAsm( str_TYA );
 	      addAsm( str_ASL );
 	      addAsm( str_TAY );
 	      addAsm( str_TXA );
 	      addAsm( str_ROL );
 	      addAsm( str_TAX );
-	      // multiply the word by 2 (again)
 	      addAsm( str_TYA );
 	      addAsm( str_ASL );
 	      addAsm( str_TAY );
 	      addAsm( str_TXA );
 	      addAsm( str_ROL );
 	      addAsm( str_TAX );
-	      
-
 	      addAsm( str_TYA );
 	      addAsm( str_CLC );
 	      addAsm( str_ADC + "$02", 2, false );
 	      addAsm( str_TAY );
-	      
 	      addAsm( str_TXA );
 	      addAsm( str_ADC + "$03", 2, false );
 	      addAsm( str_TAX );
-
 	      addAsm( str_PLA );
 	      addAsm( str_STA + "$03", 2, false );
 	      addAsm( str_PLA );
 	      addAsm( str_STA + "$02", 2, false );
-
-	      
 	      addAsm( str_TYA );
-
-	      // multiply the result by 2
-	      //addAsm( str_TYA );
 	      addAsm( str_ASL );
 	      addAsm( str_TAY );
 	      addAsm( str_TXA );
@@ -10299,12 +10192,10 @@ arithmetic expression {addComment("OP2");}
 	      addAsm( str_TAX );
 	      addAsm( str_TYA );
 	      strcpy($$.name, "_XA");
-
 	      break;
 	    default:
-	      
 	      mul16_is_needed = true;
-	      addComment( "XA * UintIMM" );
+	      addComment( "XA * UintIMM --> XA" );
 	      addAsm( str_STX + "_MUL16_FC", 3, false);
 	      addAsm( str_STA + "_MUL16_FB", 3, false);
 	      addAsm( str_LDA+"#$" + toHex(tmp_v), 2, false );
@@ -10314,6 +10205,7 @@ arithmetic expression {addComment("OP2");}
 	      addAsm( str_JSR + "MUL16", 3, false );
 	      addAsm( str_LDA + "MUL16R", 3, false );
 	      addAsm( str_LDX + "MUL16R+1", 3, false );
+	      // do we need to call MUL16 here?
 	      strcpy($$.name, "_XA" );
 	    }		
 	}
@@ -10321,7 +10213,6 @@ arithmetic expression {addComment("OP2");}
 	{
 	  addComment( "XA / UintIMM" );
 	  addCompilerMessage( "Math operation not implemented yet. [XA / UintIMM]", 3 );
-
 	}
       else
 	{
@@ -10339,7 +10230,6 @@ arithmetic expression {addComment("OP2");}
 	  addAsm( str_TAY );
 	  addAsm( str_TXA );
 	  addAsm( str_SBC + "#$" + toHex(get_word_H(tmp_v)), 2, false  );
-	  //addAsm( str_SBC + "#$00", 2, false );
 	  addAsm( str_TAX );
 	  addAsm( str_TYA );
 	  strcpy($$.name, "_XA");
@@ -10352,18 +10242,19 @@ arithmetic expression {addComment("OP2");}
 	  addAsm( str_TAY );
 	  addAsm( str_TXA );
 	  addAsm( str_ADC + "#$" + toHex(get_word_H(tmp_v)), 2, false  );
-	  //addAsm( str_SBC + "#$00", 2, false );
 	  addAsm( str_TAX );
 	  addAsm( str_TYA );
 	  strcpy($$.name, "_XA");
 	}
       else if( op == string("*") )
 	{
-	  addComment( "XA * WordIMM" );
+	  addComment( "XA * WordIMM --> XA" );
 	  int tmp_v = atoi(stripFirst($4.name).c_str());
 	  switch(tmp_v)
 	    {
 	    case 0:
+	      addComment( "XA * WordIMM --> XA (0)" );
+
 	      illegal_operations_are_needed = true;
 	      addAsm( str_LDA + "#$00", 2, false );
 	      addAsm( str_TAX );
@@ -10371,6 +10262,8 @@ arithmetic expression {addComment("OP2");}
 	      strcpy($$.name, "_XA");
 	      break;
 	    case 32768:
+	      addComment( "XA * WordIMM --> XA (32768)" );
+
 	      // saves 2 bytes
 	      addAsm( str_CLC );                 // 2 cycles
 	      addAsm( str_ROR );                 // 2 cycles
@@ -10381,6 +10274,8 @@ arithmetic expression {addComment("OP2");}
 	      strcpy($$.name, "_XA");
 	      break;
 	    case 16384:
+	      addComment( "XA * WordIMM --> XA (16384)" );
+
 	      addAsm( str_ASL );                 // 2 cycles
 	    case 8192:
 	      addAsm( str_ASL );                 // 2 cycles
@@ -10399,6 +10294,8 @@ arithmetic expression {addComment("OP2");}
 	      addCompilerMessage( "Multiplying a Word by # >= 256... Losing some fidelity (and you may be eaten by a grue).", 0 );
 	      break;
 	    case 128:
+	      addComment( "XA * WordIMM --> XA (128)" );
+
 	    case 64:
 	      addAsm( str_TAY );
 	      addAsm( str_LDA + "$02", 2, false );
@@ -10407,17 +10304,12 @@ arithmetic expression {addComment("OP2");}
 	      addAsm( str_PHA );
 	      addAsm( str_STY + "$02", 2, false );
 	      addAsm( str_STX + "$03", 2, false );
-
 	      addAsm( str_LDX + "#$" + toHex(log2(tmp_v)), 2, false );
-
-	      //addComment( "top-of-loop                vv ***-**-**** vv" );
 	      addAsm( "!:", 0, true );
 	      addAsm( str_ASL + "$02", 2, false );
 	      addAsm( str_ROL + "$03", 2, false );
 	      addAsm( str_DEX );
 	      addAsm( str_BNE + "!-", 2, false );
-	      //addAsm( str_BYTE + "$D0, $F9" + commentmarker + "BNE ^^ top-of-loop ^^", 2, false );
-
 	      addAsm( str_LDY + "$02", 2, false );
 	      addAsm( str_LDX + "$03", 2, false );
 	      addAsm( str_PLA );
@@ -10428,6 +10320,7 @@ arithmetic expression {addComment("OP2");}
 	      strcpy($$.name, "_XA");
 	      break;
 	    case 32:
+	      addComment( "XA * WordIMM --> XA (32)" );
 	      addAsm( str_ASL );
 	      addAsm( str_TAY );
 	      addAsm( str_TXA );
@@ -10465,17 +10358,14 @@ arithmetic expression {addComment("OP2");}
 	      strcpy($$.name, "_XA");
 	      break;
 	    case 5:
-	      addComment( "2023 03 21 - Multiply XA by WordIMM (5)" );
-	      // save $02 and $03
+	      addComment( "XA * WordIMM --> XA (5)" );
 	      addAsm( str_TAY );
 	      addAsm( str_LDA + "$02", 2, false );
 	      addAsm( str_PHA );
 	      addAsm( str_LDA + "$03", 2, false );
 	      addAsm( str_PHA );
-	      // store the original number
 	      addAsm( str_STX + "$03", 2, false );
 	      addAsm( str_STY + "$02", 2, false );
-	      // multiply the word by 4
 	      addAsm( str_TYA );
 	      addAsm( str_ASL );
 	      addAsm( str_TAY );
@@ -10488,7 +10378,6 @@ arithmetic expression {addComment("OP2");}
 	      addAsm( str_TXA );
 	      addAsm( str_ROL );
 	      addAsm( str_TAX );
-	      
 	      addAsm( str_TYA );
 	      addAsm( str_CLC );
 	      addAsm( str_ADC + "$02", 2, false );
@@ -10503,26 +10392,21 @@ arithmetic expression {addComment("OP2");}
 	      addAsm( str_TYA );
 	      strcpy($$.name, "_XA");
 	      break;
-
 	    case 3:
-	      addComment( "2023 03 21 - Multiply XA bye WordIMM (3)" );
-	      // save $02 and $03
+	      addComment( "XA * WordIMM --> XA (3)" );
 	      addAsm( str_TAY );
 	      addAsm( str_LDA + "$02", 2, false );
 	      addAsm( str_PHA );
 	      addAsm( str_LDA + "$03", 2, false );
 	      addAsm( str_PHA );
-	      // store the original number
 	      addAsm( str_STX + "$03", 2, false );
 	      addAsm( str_STY + "$02", 2, false );
-	      // multiply the word by 2
 	      addAsm( str_TYA );
 	      addAsm( str_ASL );
 	      addAsm( str_TAY );
 	      addAsm( str_TXA );
 	      addAsm( str_ROL );
 	      addAsm( str_TAX );
-	      
 	      addAsm( str_TYA );
 	      addAsm( str_CLC );
 	      addAsm( str_ADC + "$02", 2, false );
@@ -10538,54 +10422,38 @@ arithmetic expression {addComment("OP2");}
 	      strcpy($$.name, "_XA");
 	      break;
 	    case 10:
-	      addComment( "2023 03 21 - Multiply XA bye WordIMM (10)" );
-	      // save $02 and $03
+	      addComment( "XA * WordIMM --> XA (10)" );
 	      addAsm( str_TAY );
 	      addAsm( str_LDA + "$02", 2, false );
 	      addAsm( str_PHA );
 	      addAsm( str_LDA + "$03", 2, false );
 	      addAsm( str_PHA );
-
-
-	      // store the original number
 	      addAsm( str_STX + "$03", 2, false );
 	      addAsm( str_STY + "$02", 2, false );
-
-	      // multiply the word by 2
 	      addAsm( str_TYA );
 	      addAsm( str_ASL );
 	      addAsm( str_TAY );
 	      addAsm( str_TXA );
 	      addAsm( str_ROL );
 	      addAsm( str_TAX );
-	      // multiply the word by 2 (again)
 	      addAsm( str_TYA );
 	      addAsm( str_ASL );
 	      addAsm( str_TAY );
 	      addAsm( str_TXA );
 	      addAsm( str_ROL );
 	      addAsm( str_TAX );
-	      
-
 	      addAsm( str_TYA );
 	      addAsm( str_CLC );
 	      addAsm( str_ADC + "$02", 2, false );
 	      addAsm( str_TAY );
-	      
 	      addAsm( str_TXA );
 	      addAsm( str_ADC + "$03", 2, false );
 	      addAsm( str_TAX );
-
 	      addAsm( str_PLA );
 	      addAsm( str_STA + "$03", 2, false );
 	      addAsm( str_PLA );
 	      addAsm( str_STA + "$02", 2, false );
-
-	      
 	      addAsm( str_TYA );
-
-	      // multiply the result by 2
-	      //addAsm( str_TYA );
 	      addAsm( str_ASL );
 	      addAsm( str_TAY );
 	      addAsm( str_TXA );
@@ -10593,47 +10461,32 @@ arithmetic expression {addComment("OP2");}
 	      addAsm( str_TAX );
 	      addAsm( str_TYA );
 	      strcpy($$.name, "_XA");
-
 	      break;
 	    default:
-
-	      
 	      mul16_is_needed = true;
-	      addComment( "XA * WordIMM" );
-
-
-	      //addAsm( str_STX + "$FC", 2, false );
+	      addComment( "XA * WordIMM --> XA (?)" );
 	      addAsm( str_STX + "_MUL16_FC", 3, false);
-	      
-	      //addAsm( str_STA + "$FB", 2, false );
 	      addAsm( str_STA + "_MUL16_FB", 3, false);
-	      
 	      addAsm( str_LDA + "#$" + toHex(get_word_L(tmp_v)), 2, false );
-	      //addAsm( str_STA + "$FD", 2, false);
 	      addAsm( str_STA + "_MUL16_FD", 3, false);
-
 	      addAsm( str_LDA + "#$" + toHex(get_word_H(tmp_v)), 2, false );
-	      //addAsm( str_STA + "$FE", 2, false);
 	      addAsm( str_STA + "_MUL16_FE", 3, false);
-	      
 	      addAsm( str_JSR + "MUL16", 3, false );
 	      addAsm( str_LDA + "MUL16R", 3, false );
 	      addAsm( str_LDX + "MUL16R+1", 3, false );
 	      strcpy($$.name, "_XA" );
 	    }		
 	}
-			    
       else
 	{
 	  addCompilerMessage( "Math operation not implemented yet. [XA ? WordIMM]", 3 );
 	}
-	
     }
   else if( isXA($1.name) && isXA($4.name) )
     {
       if( op == string("+") )
 	{
-	  addComment( "XA + XA" );
+	  addComment( "XA + XA --> XA" );
 	  addAsm( str_STA + "$FB", 2, false ); // the A in 
 	  addAsm( str_STX + "$FC", 2, false );
 	  addAsm( str_PLA ); // the X in XA
@@ -10645,10 +10498,12 @@ arithmetic expression {addComment("OP2");}
 	  addAsm( str_ADC + "$FC", 2, false );
 	  addAsm( str_TAX );
 	  addAsm( str_TYA );
+	  strcpy($$.name, "_XA" );
+
 	}
       else if( op == string("-") )
 	{
-	  addComment( "XA - XA" );
+	  addComment( "XA - XA --> XA" );
 	  addAsm( str_STA + "$FB", 2, false ); // the A in 
 	  addAsm( str_STX + "$FC", 2, false );
 	  addAsm( str_PLA ); // the X in XA
@@ -10660,25 +10515,18 @@ arithmetic expression {addComment("OP2");}
 	  addAsm( str_SBC + "$FC", 2, false );
 	  addAsm( str_TAX );
 	  addAsm( str_TYA );
+	  strcpy($$.name, "_XA" );
 	}
       else if( op == string("*") )
 	{
 	  mul16_is_needed = true;
-	  addComment( "XA * XA" );
-	  //addAsm( str_STA + "$FD", 2, false);
+	  addComment( "XA * XA --> XA" );
 	  addAsm( str_STA + "_MUL16_FD", 3, false);
-
-	  //addAsm( str_STX + "$FE", 2, false);
 	  addAsm( str_STX + "_MUL16_FE", 3, false);
-	  
 	  addAsm( str_PLA );
-	  //addAsm( str_STA + "$FC", 2, false );
 	  addAsm( str_STA + "_MUL16_FC", 3, false);
-
 	  addAsm( str_PLA );
-	  //addAsm( str_STA + "$FB", 2, false );
 	  addAsm( str_STA + "_MUL16_FB", 3, false);
-	  
 	  addAsm( str_JSR + "MUL16", 3, false );
 	  addAsm( str_LDA + "MUL16R", 3, false );
 	  addAsm( str_LDX + "MUL16R+1", 3, false );
@@ -10687,30 +10535,22 @@ arithmetic expression {addComment("OP2");}
       else if( op == string("/") )
 	{
 	  div16_is_needed = true;
-	  addComment( "XA / XA" );
-	  
+	  addComment( "XA / XA --> XA" );
 	  addAsm( str_STA + "_DIV16_FD", 3, false);
 	  addAsm( str_STX + "_DIV16_FE", 3, false);
-
 	  addAsm( str_PLA );
 	  addAsm( str_STA + "_DIV16_FC", 3, false );
 	  addAsm( str_PLA );
 	  addAsm( str_STA + "_DIV16_FB", 3, false );
-	  
-
 	  addAsm( str_JSR + "DIV16", 3, false );
 	  addAsm( str_LDA + "_DIV16_FB", 3, false );
 	  addAsm( str_LDX + "_DIV16_FC", 3, false );
-
 	  strcpy($$.name, "_XA" );
 	}
-
-
       else
 	{
 	  addCompilerMessage("Math operation not implemented yet. (XA arith XA)", 0);
 	}
-      
     }
   else if( isA($1.name) && isUintIMM($4.name) )
     {
@@ -10719,17 +10559,13 @@ arithmetic expression {addComment("OP2");}
       addAsm( str_PLA );
       if( op == string( "-" ))
 	{
-	  //addAsm( str_SEC );
 	  addAsm( str_SBC + "#$" + toHex(tmp_v), 2, false );
 	  strcpy($$.name, "_A");
-
 	}
       else if( op == string("+") )
 	{
-	  //addAsm( str_CLC );
 	  addAsm( str_ADC + "#$" + toHex(tmp_v), 2, false );
 	  strcpy($$.name, "_A");
-
 	}
       else
 	{
@@ -10738,78 +10574,61 @@ arithmetic expression {addComment("OP2");}
     }
   else if( isA($1.name) && isUintID($4.name) )
     {
-      addComment( "A arithmetic UintID" );
+      addDebugComment( "A arithmetic UintID" );
       addAsm( str_PLA );
       int tmp_addr = getAddressOf($4.name);
       
       string tmp_name = getNameOf(tmp_addr);
-      //addComment( toHex(tmp_addr) + string(": ") + tmp_name );
       // THIS IS BROKEN
       if( op == string("+"))
 	{
-	  //addAsm( str_CLC );
-	  addAsm( str_ADC + $4.name + commentmarker +  tmp_name, 3, false );
+	  addComment( "A + UintID --> A" );
+	  addAsm( str_ADC + O2, sizeOP2A, false );
+	  strcpy($$.name, "_A" );
 	}
       else if( op == string("-"))
 	{
-	  //addAsm( str_SEC );
-	  addAsm( str_SBC + $4.name  + commentmarker +  tmp_name, 3, false );
+	  addComment( "A - UintID --> A" );
+	  addAsm( str_SBC + O2, sizeOP2A, false );
+	  strcpy($$.name, "_A" );
 	}
       else if( op == string("*"))
 	{
-	  addComment( "A * UintID" );
-
+	  addComment( "A * UintID --> A" );
 	  umul_is_needed = true;
-
-	  //addAsm( str_TAX );
-	  // Save $02 and $03
-	  //addAsm( str_LDA + "$02", 2, false );
-	  //addAsm( str_PHA );
-	  //addAsm( str_LDA + "$03", 2, false );
-	  //addAsm( str_PHA );
-
-	  //addAsm( str_TXA );
+	  addAsm( str_LDA + "$02", 2, false );
+	  addAsm( str_PHA );
+	  addAsm( str_LDA + "$03", 2, false );
+	  addAsm( str_PHA );
 	  addAsm( str_STA + "$02", 2, false );
-	  addAsm( str_LDA + $4.name + commentmarker +  tmp_name, 3, false );
+	  addAsm( str_LDA + O2, sizeOP2A, false );
 	  addAsm( str_STA + "$03", 2, false );
 	  addAsm( str_JSR + "UMUL", 3, false );
 	  addAsm( str_LDA + "$03", 2, false );
-	  //addAsm( str_TAX );
-
-	  // Restore $03 and $02
-	  //addAsm( str_PLA );
-	  //addAsm( str_STA + "$03", 2, false );
-	  //addAsm( str_PLA );
-	  //addAsm( str_STA + "$02", 2, false );
-
-	  //addAsm( str_TXA );
+	  addAsm( str_PLA );
+	  addAsm( str_STA + "$03", 2, false );
+	  addAsm( str_PLA );
+	  addAsm( str_STA + "$02", 2, false );
+	  strcpy($$.name, "_A" );
 	}
       else if( op == string("/") )
 	{
-	  //int addr_op1 = hexToDecimal($1.name);
-	  int addr_op2 = hexToDecimal($4.name);
-
-	  addComment( "A / UintID" );
+	  addComment( "A / UintID --> A" );
 	  div16_is_needed = true;
-	  
-	  //addAsm( str_LDA + "$" + toHex(addr_op1), 3, false );
 	  addAsm( str_STA + "_DIV16_FB", 3, false );
 	  addAsm( str_LDA + "#$00", 2, false ); 
 	  addAsm( str_STA + "_DIV16_FC", 3, false );
-	  
-	  addAsm( str_LDA + "$" + toHex(addr_op2) + commentmarker +  tmp_name, 3, false );
+	  addAsm( str_LDA + O2, sizeOP2A, false );
 	  addAsm( str_STA + "_DIV16_FD", 3, false );
 	  addAsm( str_LDA + "#$00", 2, false ); 
 	  addAsm( str_STA + "_DIV16_FE", 3, false );
-
 	  addAsm( str_JSR + "DIV16", 3, false );
 	  addAsm( str_LDA + "_DIV16_FB", 3, false );
 	  addAsm( str_LDX + "_DIV16_FC", 3, false );
+	  strcpy($$.name, "_A" );
 	}
-
-      strcpy($$.name, "_A" );
     }
-
+  // this is backwards I think
   else if( isUintID($4.name) && isA($1.name) )
     {
       addComment( "UintID arithmetic A" );
@@ -10953,7 +10772,7 @@ arithmetic expression {addComment("OP2");}
 	  addComment( "If Y is ZERO at this point, we'll be dividing by 0 (or at least attempting to)" );
 	  addAsm( str_JSR + "$BB0F" + commentmarker + "FDIV", 3, false );
 	}
-      FAC=1;
+      strcpy($$.name, "_FAC" );
     }
   else if( isFloatID($1.name) && isFloatIMM($4.name) )
     {
@@ -10985,7 +10804,7 @@ arithmetic expression {addComment("OP2");}
 	  if( f == 0 ) addCompilerMessage( "error - division by 0", 3 );
 	  addAsm( str_JSR + "$BB0F" + commentmarker + "RAM/FAC", 3, false );
 	}
-      FAC = 1;
+      strcpy($$.name, "_FAC" );
     }
   else if( isFloatIMM($1.name) && isFloatID($4.name))
     {
@@ -11022,7 +10841,7 @@ arithmetic expression {addComment("OP2");}
 	  addComment( "If Y is ZERO at this point, we'll be dividing by 0 (or at least attempting to)" );
 	  addAsm( str_JSR + "$BB0F" + commentmarker + "RAM/FAC", 3, false );
 	}
-      FAC = 1;
+      strcpy($$.name, "_FAC" );
     }
   else if( isFloatIMM($1.name) && isFloatIMM($4.name) )
     {
@@ -11057,7 +10876,7 @@ arithmetic expression {addComment("OP2");}
 	}
       
       inlineFloat( string( "f" ) + to_string(result), 105);
-      FAC = 1;
+      strcpy($$.name, "_FAC" );
     }
   else if( isWordIMM($1.name) && isXA($4.name) )
     {
@@ -11092,36 +10911,22 @@ arithmetic expression {addComment("OP2");}
       if( op == string("+"))
 	{
 	  addComment( "WordID + WordIMM -> XA" );
-
-	  //addAsm( str_CLC );
-
-	  addAsm( str_LDA + OP1, 3, false );
-	  //addAsm( str_LDA + "$" + toHex(addr_op1), 3, false );
+	  addAsm( str_LDA + O1, sizeOP1A, false );
 	  addAsm( str_ADC + "#$" + toHex(get_word_L( OP2 )), 2, false );	  
 	  addAsm( str_TAY );
-
-	  
-	  addAsm( str_LDA + OP1 + "+1", 3, false );
-	  //addAsm( str_LDA + "$" + toHex(addr_op1+1), 3, false );
+	  addAsm( str_LDA + O1 + "+1", sizeOP1B, false );
 	  addAsm( str_ADC + "#$" + toHex(get_word_H( OP2 )), 2, false );
 	  addAsm( str_TAX );
 	  addAsm( str_TYA );
-	  addComment( "----------" );
 	  strcpy($$.name, "_XA" );
-
 	}
       else if( op == string("-"))
 	{
 	  addComment( "WordID - WordIMM -> XA" );
-	  //addAsm( str_SEC );
-	  // 2024 04 14 - mkpellegrino
-	  addAsm( str_LDA + getNameOf(addr_op1), 3, false );
-	  //addAsm( str_LDA + "$" + toHex(addr_op1), 3, false );
+	  addAsm( str_LDA + O1, sizeOP1A, false );
 	  addAsm( str_SBC + "#$" + toHex(get_word_L( OP2 )), 2, false );	  
 	  addAsm( str_TAY );
-	  // 2024 04 14 - mkpellegrino
-	  addAsm( str_LDA + getNameOf(addr_op1)+"+1", 3, false );
-	  //addAsm( str_LDA + "$" + toHex(addr_op1+1), 3, false );
+	  addAsm( str_LDA + O1 + "+1", sizeOP1B, false );
 	  addAsm( str_SBC + "#$" + toHex(get_word_H( OP2 )), 2, false );
 	  addAsm( str_TAX );
 	  addAsm( str_TYA );
@@ -11129,21 +10934,13 @@ arithmetic expression {addComment("OP2");}
 	}
       else if( op == string("/") )
 	{
-	  addAsm( str_SEI );
-	  int addr_op1 = hexToDecimal($1.name);
-	  int op2 = atoi(stripFirst($4.name).c_str());
 	  addComment( "WordID / WordIMM --> XA" );
-	  
+	  addAsm( str_SEI );
+	  int op2 = atoi(stripFirst($4.name).c_str());
 	  div16_is_needed = true;
-
-	  // 2024 04 14 - mkpellegrino
-	  addAsm( str_LDA + getNameOf(addr_op1), 3, false );
-	  //addAsm( str_LDA + "$" + toHex(addr_op1), 3, false );
+	  addAsm( str_LDA + O1, sizeOP1A, false );
 	  addAsm( str_STA + "_DIV16_FB", 3, false );
-
-	  // 2024 04 14 - mkpellegrino
-	  addAsm( str_LDA + getNameOf(addr_op1) + "+1", 3, false );
-	  //addAsm( str_LDA + "$" + toHex(addr_op1+1), 3, false );
+	  addAsm( str_LDA + O1 + "+1", sizeOP1B, false );
 	  addAsm( str_STA + "_DIV16_FC", 3, false );
 	  addAsm( str_LDA + "#$" + toHex(get_word_L(op2)), 2, false  );      
 	  addAsm( str_STA + "_DIV16_FD", 3, false );
@@ -11159,29 +10956,16 @@ arithmetic expression {addComment("OP2");}
 	{
 	  int tmp_op1 = getAddressOf( $1.name );
 	  int op2 = atoi(stripFirst($4.name).c_str());
-	  addComment( "WordID * WordIMM --> XA" );
-
-	  addAsm( str_LDA+"#$" + toHex(get_word_L(op2)), 2, false  );      
-	  //addAsm( str_STA + "$FD", 2, false );
-	  addAsm( str_STA + "_MUL16_FD", 3, false);
-
-	  addAsm( str_LDA+"#$" + toHex(get_word_H(op2)), 2, false  );      
-	  //addAsm( str_STA + "$FE", 2, false );
-	  addAsm( str_STA + "_MUL16_FE", 3, false);
-
 	  mul16_is_needed = true;
-	  //addAsm( str_STA + "$FD", 2, false);
-	  //addAsm( str_STX + "$FE", 2, false);
-
-	  
-	  addAsm( str_LDA + "$" + toHex(tmp_op1+1) + commentmarker +  string($1.name), 3, false  );
-	  //addAsm( str_STA + "$FC", 2, false );
+	  addComment( "WordID * WordIMM --> XA" );
+	  addAsm( str_LDA + "#$" + toHex(get_word_L(op2)), 2, false  );      
+	  addAsm( str_STA + "_MUL16_FD", 3, false);
+	  addAsm( str_LDA + "#$" + toHex(get_word_H(op2)), 2, false  );      
+	  addAsm( str_STA + "_MUL16_FE", 3, false);
+	  addAsm( str_LDA + O1, sizeOP1A, false  );
 	  addAsm( str_STA + "_MUL16_FC", 3, false);
-	  
-	  addAsm( str_LDA + "$" + toHex(tmp_op1), 3, false  );
-	  // addAsm( str_STA + "$FB", 2, false );
+	  addAsm( str_LDA + O1 + "+1", sizeOP1B, false  );
 	  addAsm( str_STA + "_MUL16_FB", 3, false);
-	  
 	  addAsm( str_JSR + "MUL16", 3, false );
 	  addAsm( str_LDA + "MUL16R", 3, false );
 	  addAsm( str_LDX + "MUL16R+1", 3, false );
@@ -11196,129 +10980,98 @@ arithmetic expression {addComment("OP2");}
     {
       addDebugComment( "WordID arithmetic A" );
       
-      int addr_op1 = hexToDecimal($1.name);
+      //int addr_op1 = hexToDecimal($1.name);
       //int addr_op2 = hexToDecimal($4.name);
       if( op == string("+") )
 	{  
-	  addComment( "WordID + A" );      
-	  addAsm( str_ADC + "$" + toHex(addr_op1), 3, false );
+	  addComment( "WordID + A --> XA" );
+	  addAsm( str_ADC + O1, sizeOP1A, false );
+	  //addAsm( str_ADC + "$" + toHex(addr_op1), 3, false );
 	  addAsm( str_TAY );
-	  addAsm( str_LDA+"#$00", 2, false );
-	  addAsm( str_ADC + "$" + toHex(addr_op1+1), 3, false );
+	  addAsm( str_LDA + "#$00", 2, false );
+	  addAsm( str_ADC + O1 + "+1", sizeOP1B, false );
+	  //addAsm( str_ADC + "$" + toHex(addr_op1+1), 3, false );
 	  addAsm( str_TAX );
 	  addAsm( str_TYA );
 	  strcpy($$.name, "_XA" );
-
 	}
       else if( op == string("-") )
 	{  
 	  addComment( "WordID - A" );      
-	  addAsm( str_SBC + "$" + toHex(addr_op1), 3, false );
+	  addAsm( str_SBC + O1, sizeOP1A, false );
+	  //addAsm( str_SBC + "$" + toHex(addr_op1), 3, false );
 	  addAsm( str_TAY );
 	  addAsm( str_LDA+"#$00", 2, false );
-	  addAsm( str_SBC + "$" + toHex(addr_op1+1), 3, false );
+	  addAsm( str_SBC + O1 + "+1", sizeOP1B, false );
+	  //addAsm( str_SBC + "$" + toHex(addr_op1+1), 3, false );
 	  addAsm( str_TAX );
 	  addAsm( str_TYA );
 	  strcpy($$.name, "_XA" );
-
 	}
       else if( op == string("*") )
 	{
 	  int tmp_op1 = getAddressOf( $1.name );
 	  addComment( "WordID * A --> XA" );
-
-	  //addAsm( str_STA + "$FD", 2, false );
 	  addAsm( str_STA + "_MUL16_FD", 3, false);
-
 	  addAsm( str_LDA + "#$00", 2, false  );      
-	  //addAsm( str_STA + "$FE", 2, false );
 	  addAsm( str_STA + "_MUL16_FE", 3, false);
-
 	  mul16_is_needed = true;
-	  
-	  addAsm( str_LDA + "$" + toHex(tmp_op1+1) + commentmarker +  string($1.name), 3, false  );
-	  //addAsm( str_STA + "$FC", 2, false );
+	  addAsm( str_LDA + O1 + "+1", sizeOP1B, false  );
 	  addAsm( str_STA + "_MUL16_FC", 3, false);
-	  
-	  addAsm( str_LDA + "$" + toHex(tmp_op1), 3, false  );
-	  //addAsm( str_STA + "$FB", 2, false );
+	  addAsm( str_LDA + O1, sizeOP1A, false  );
 	  addAsm( str_STA + "_MUL16_FB", 3, false);
-	  
 	  addAsm( str_JSR + "MUL16", 3, false );
 	  addAsm( str_LDA + "MUL16R", 3, false );
 	  addAsm( str_LDX + "MUL16R+1", 3, false );
 	  strcpy($$.name, "_XA" );
-
 	}
       else if( op == string("/") )
 	{
-	  addCompilerMessage( "Math operation is not supported yet.", 3);
-	  // TODO: implement division here!  4/22/23
+	  addCompilerMessage( "WordID/A is not supported yet.", 3);
 	}
       else
 	{
 	  addCompilerMessage( "Math operation is not supported yet.", 3);
 	}
-
     }
   else if( isWordID($1.name) && (isIntID($4.name) || isUintID($4.name)) )
     {
 
       if( op == string("*") )
 	{
-	  int addr_op1 = hexToDecimal($1.name);
-	  int addr_op2 = hexToDecimal($4.name);
-	  
 	  addComment( "WordID * UIntID --> XA" );
 	  mul16_is_needed = true;
-
-	  
-	  addAsm( str_LDA + "$" + toHex(addr_op1), 3, false );
+	  addAsm( str_LDA + O1, sizeOP1A, false );
 	  addAsm( str_STA + "_MUL16_FB", 3, false);
-	  
-	  addAsm( str_LDA + "$" + toHex(addr_op1+1), 3, false );
+	  addAsm( str_LDA + O1 + "+1", sizeOP1B, false );
 	  addAsm( str_STA + "_MUL16_FC", 3, false);
-	  
-	  addAsm( str_LDA + "$" + toHex(addr_op2), 3, false );
+	  addAsm( str_LDA + O2, sizeOP2A, false );
 	  addAsm( str_STA + "_MUL16_FD", 3, false);
-
 	  addAsm( str_LDA + "#$00", 2, false );
 	  addAsm( str_STA + "_MUL16_FE", 3, false);
-
 	  addAsm( str_JSR + "MUL16", 3, false );
 	  addAsm( str_LDA + "MUL16R", 3, false );
 	  addAsm( str_LDX + "MUL16R+1", 3, false );
-	  
 	  strcpy($$.name, "_XA" );
-
 	}
       else if( op == string("/") )
 	{
 	  addComment( "WordID / UIntID --> XA" );
 	  addAsm( str_SEI );
-	  int addr_op1 = hexToDecimal($1.name);
-	  int addr_op2 = hexToDecimal($4.name);
-
 	  div16_is_needed = true;
-
-	  addAsm( str_LDA + getNameOf(hexToDecimal(stripFirst($1.name).c_str())), 3, false );
+	  addAsm( str_LDA + O1, sizeOP1A, false );
 	  addAsm( str_STA + "_DIV16_FB", 3, false );
-	  addAsm( str_LDA + getNameOf(hexToDecimal(stripFirst($1.name).c_str())) + "+1", 3, false );
+	  addAsm( str_LDA + O1 + "+1", sizeOP1B, false );
 	  addAsm( str_STA + "_DIV16_FC", 3, false );
-	  
-	  addAsm( str_LDA+"#$00", 2, false );
+	  addAsm( str_LDA + "#$00", 2, false );
 	  addAsm( str_STA + "_DIV16_FE", 3, false );
-	  
-	  addAsm( str_LDA +  getNameOf(hexToDecimal(stripFirst($4.name).c_str())), 3, false );
+	  addAsm( str_LDA + O2, sizeOP2A, false );
 	  addAsm( str_STA + "_DIV16_FD", 3, false );
-
 	  addAsm( str_JSR + "DIV16", 3, false );
 	  addAsm( str_LDA + "_DIV16_FB", 3, false );
 	  addAsm( str_LDX + "_DIV16_FC", 3, false );
 	  addAsm( str_CLI );
-	  
 	  strcpy($$.name, "_XA" );
-
 	}
       else if( op == string("+") )
 	{
@@ -11380,7 +11133,7 @@ arithmetic expression {addComment("OP2");}
       int IMMvalue = atoi(stripFirst($4.name).c_str());
       if( op == string( "+" ) )
 	{
-	  addComment( "WordID + UIntIMM" );      
+	  addComment( "WordID + UIntIMM --> XA (xxx)" );      
 	  int size_of_instruction = 3;
 	  if( a < 256 ) size_of_instruction = 2;
 	  addAsm( str_LDA + "#$" + toHex(IMMvalue), 2, false );
@@ -11399,10 +11152,12 @@ arithmetic expression {addComment("OP2");}
 	  addAsm( str_ADC + getNameOf(a-1) + "+1", size_of_instruction, false );
 	  addAsm( str_TAX );
 	  addAsm( str_PLA );
+	  strcpy($$.name, "_XA" );
+
 	}
       else if( op == string( "-" ) )
 	{
-	  addComment( "WordID - UIntIMM" );      
+	  addComment( "WordID - UIntIMM -->" );      
 	  int size_of_instruction = 3;
 	  if( a < 256 ) size_of_instruction = 2;
 	  // addAsm( str_SEC );
@@ -11422,38 +11177,28 @@ arithmetic expression {addComment("OP2");}
 	  addAsm( str_SBC + "#$00", 2, false );
 	  addAsm( str_TAX );
 	  addAsm( str_PLA );
+	  strcpy($$.name, "_XA" );
+
 	}
       else if( op == string("*") )
 	{
-	  int addr_op1 = hexToDecimal($1.name);
-	  
-	  addComment( "WordID * UIntIMM" );
+	  addComment( "WordID * UIntIMM --> XA" );
 	  mul16_is_needed = true;
-	  addAsm( str_SEI );
-
-	  // 2024 04 14 - mkpellegrino
-	  addAsm( str_LDA + getNameOf(addr_op1), 3, false );
-	  //addAsm( str_LDA + "$" + toHex(addr_op1), 3, false );
-	  // addAsm( str_STA + "$FB", 2, false );
+	  //addAsm( str_SEI );
+	  addAsm( str_LDA + O1, sizeOP1A, false );
 	  addAsm( str_STA + "_MUL16_FB", 3, false);
-	  
-	  addAsm( str_LDA + getNameOf(addr_op1)+"+1", 3, false );
-	  //addAsm( str_LDA + "$" + toHex(addr_op1+1), 3, false );
-	  //addAsm( str_STA + "$FC", 2, false );
+	  addAsm( str_LDA + O1 +"+1", sizeOP1B, false );
 	  addAsm( str_STA + "_MUL16_FC", 3, false);
-
 	  addAsm( str_LDA + "#$" + toHex(atoi(stripFirst($4.name).c_str())), 2, false );
-	  //addAsm( str_STA + "$FD", 2, false );
 	  addAsm( str_STA + "_MUL16_FD", 3, false);
-
 	  addAsm( str_LDA + "#$00", 2, false );
-	  //addAsm( str_STA + "$FE", 2, false );
 	  addAsm( str_STA + "_MUL16_FE", 3, false);
-	  
 	  addAsm( str_JSR + "MUL16", 3, false );
 	  addAsm( str_LDA + "MUL16R", 3, false );
 	  addAsm( str_LDX + "MUL16R+1", 3, false );
-	  addAsm( str_CLI );
+	  //addAsm( str_CLI );
+	  strcpy($$.name, "_XA" );
+
 	}
       else if( op == string("/") )
 	{
@@ -11479,174 +11224,123 @@ arithmetic expression {addComment("OP2");}
 	  addAsm( str_LDA + "_DIV16_FB", 3, false );
 	  addAsm( str_LDX + "_DIV16_FC", 3, false );
 	  addAsm( str_CLI );
-	  //
+	  strcpy($$.name, "_XA" );
 	}
       else 
 	{
 	  addCompilerMessage( "That specific math operation is not supported yet.", 3);
 	}
-      strcpy($$.name, "_XA" );
     }
   else if( isWordID($1.name) && isWordID($4.name) )
     {
       addDebugComment( "WordID arith WordID" );
-
-      int addr1 = getAddressOf($1.name);
-      int addr2 = getAddressOf($4.name);
-
-      string OP1 = getNameOf(addr1);
-      string OP2 = getNameOf(addr2);
-
       if( op == string( "+" ) )
 	{
-	  addComment( "WordID + WordID" );
-
-	  addAsm( str_LDA + OP1, 3, false );
-	  //addAsm( str_LDA + "$" + toHex(addr1), 3, false );
-
-	  addAsm( str_ADC + OP2, 3, false );
-	  //addAsm( str_ADC + "$" + toHex(addr2), 3, false );
-	  
+	  addComment( "WordID + WordID --> XA" );
+	  addAsm( str_LDA + O1, sizeOP1A, false );
+	  addAsm( str_ADC + O2, sizeOP2A, false );
 	  addAsm( str_TAY );
-
-	  addAsm( str_LDA + OP1 + "+1", 3, false );
-	  //addAsm( str_LDA + "$" + toHex(addr1 + 1), 3, false );
-	  
-	  addAsm( str_ADC + OP2 + "+1", 3, false );
-	  //addAsm( str_ADC + "$" + toHex(addr2 + 1), 3, false );
-	  
+	  addAsm( str_LDA + O1 + "+1", sizeOP1B, false );
+	  addAsm( str_ADC + O2 + "+1", sizeOP2B, false );
 	  addAsm( str_TAX );
 	  addAsm( str_TYA );
+	  strcpy($$.name, "_XA" );
 	}
       else if( op == string( "-" ) )
 	{
-	  addComment( "WordID - WordID" );
-
-	  addAsm( str_LDA + OP1, 3, false );
-	  //addAsm( str_LDA + "$" + toHex(addr1), 3, false );
-
-	  addAsm( str_SBC + OP2, 3, false );
-	  //addAsm( str_SBC + "$" + toHex(addr2), 3, false );
+	  addComment( "WordID - WordID --> XA" );
+	  addAsm( str_LDA + O1, sizeOP1A, false );
+	  addAsm( str_SBC + O2, sizeOP2A, false );
 	  addAsm( str_TAY );
-
-	  addAsm( str_LDA + OP1 + "+1", 3, false );
-	  //addAsm( str_LDA + "$" + toHex(addr1 + 1), 3, false );
-
-	  addAsm( str_SBC + OP2 + "+1", 3, false );
-	  //addAsm( str_SBC + "$" + toHex(addr2 + 1), 3, false );
+	  addAsm( str_LDA + O1 + "+1", sizeOP1B, false );
+	  addAsm( str_SBC + O2 + "+1", sizeOP2B, false );
 	  addAsm( str_TAX );
 	  addAsm( str_TYA );
+	  strcpy($$.name, "_XA" );
 	}
       else if( op == string("*") )
 	{
-	  int addr_op1 = hexToDecimal($1.name);
-	  int addr_op2 = hexToDecimal($4.name);
-	  
-	  addComment( "WordID * WordID" );
+	  addComment( "WordID * WordID --> XA" );
 	  mul16_is_needed = true;
-	  
-	  // 2024 04 15 - mkpellegrino
-	  addAsm( str_LDA + getNameOf(addr_op1), 3, false );
-	  //addAsm( str_LDA + "$" + toHex(addr_op1), 3, false );
-
-
-	  //addAsm( str_STA + "$FB", 2, false );
+	  addAsm( str_LDA + O1, sizeOP1A, false );
 	  addAsm( str_STA + "_MUL16_FB", 3, false);
-
-	  // 2024 04 15 - mkpellegrino
-	  addAsm( str_LDA + getNameOf(addr_op1) + "+1", 3, false );
-	  //addAsm( str_LDA + "$" + toHex(addr_op1+1), 3, false );
-
-	  
-	  //addAsm( str_STA + "$FC", 2, false );
+	  addAsm( str_LDA + O1 + "+1", sizeOP1B, false );
 	  addAsm( str_STA + "_MUL16_FC", 3, false);
-
-
-	  // 2024 04 15 - mkpellegrino
-	  addAsm( str_LDA + getNameOf(addr_op2), 3, false );
-	  //addAsm( str_LDA + "$" + toHex(addr_op2), 3, false );
-
-
-	  //addAsm( str_STA + "$FD", 2, false );
+	  addAsm( str_LDA + O2, sizeOP2A, false );
 	  addAsm( str_STA + "_MUL16_FD", 3, false);
-
-	  // 2024 04 15 - mkpellegrino
-	  addAsm( str_LDA + getNameOf(addr_op2) + "+1", 3, false );
-	  //addAsm( str_LDA + "$" + toHex(addr_op2+1), 3, false );
-
-
-	  //addAsm( str_STA + "$FE", 2, false );
+	  addAsm( str_LDA + O2 + "+1", sizeOP2B, false );
 	  addAsm( str_STA + "_MUL16_FE", 3, false);
- 
 	  addAsm( str_JSR + "MUL16", 3, false );
 	  addAsm( str_LDA + "MUL16R", 3, false );
 	  addAsm( str_LDX + "MUL16R+1", 3, false );
-	  
+	  strcpy($$.name, "_XA" );
 	}
       else if( op == string("/") )
 	{
-	  // TODO - Don't use addresses here
-	  addAsm( str_SEI );
-	  int addr_op1 = hexToDecimal($1.name);
-	  int addr_op2 = hexToDecimal($4.name);
-
-	  addComment( "WordID / WordID" );
+	  addComment( "WordID / WordID --> XA" );
 	  div16_is_needed = true;
 	  
-	  addAsm( str_LDA + "$" + toHex(addr_op1), 3, false );
+	  addAsm( str_LDA + O1, sizeOP1A, false );
 	  addAsm( str_STA + "_DIV16_FB", 3, false );
-	  addAsm( str_LDA + "$" + toHex(addr_op1+1), 3, false );
+	  addAsm( str_LDA + O1 + "+1", sizeOP1B, false );
 	  addAsm( str_STA + "_DIV16_FC", 3, false );
 	  
-	  addAsm( str_LDA + "$" + toHex(addr_op2), 3, false );
+	  addAsm( str_LDA + O2, sizeOP2A, false );
 	  addAsm( str_STA + "_DIV16_FD", 3, false );
-	  addAsm( str_LDA + "$" + toHex(addr_op2+1), 3, false );
+	  addAsm( str_LDA + O2 + "+1", sizeOP2B, false );
 	  addAsm( str_STA + "_DIV16_FE", 3, false );
 
 	  addAsm( str_JSR + "DIV16", 3, false );
 	  addAsm( str_LDA + "_DIV16_FB", 3, false );
 	  addAsm( str_LDX + "_DIV16_FC", 3, false );
-	  addAsm( str_CLI );
-
+	  strcpy($$.name, "_XA" );
 	}
-      strcpy($$.name, "_XA" );
     }
   else if( isUintID( $1.name ) && isUintID( $4.name ) )
     {
-      if( !previousAsm( str_STA + $1.name) )
+      if( !previousAsm( str_STA + O1 ) )
 	{
-	  addAsm( str_LDA + getNameOf(hexToDecimal(stripFirst($1.name))), 3, false); // 
+	  addAsm( str_LDA + O1, sizeOP1A, false);
 	}
       else
 	{
-	  addAsm( commentmarker + string( "commented out for optimization"), 0, false); // 
-	  addAsm( commentmarker + str_LDA + getNameOf(hexToDecimal(stripFirst($1.name))), 0, false); // 
+	  addAsm( commentmarker + string( "commented out for optimization"), 0, false);
+	  addAsm( commentmarker + str_LDA + O1, 0, false);
 	}
+      // ==============================================================================
 
-      
       if( op == string("+"))
 	{
-	  // addAsm( str_CLC );
 	  addComment( "UintID + UintID --> A" );
-
-	  addAsm( str_ADC + $4.name, 3, false );
+	  addAsm( str_ADC + O2, sizeOP2A, false );
+	  strcpy($$.name, "_A" );
 	}
       else if( op == string("-"))
 	{
-	  //addAsm( str_SEC );
 	  addComment( "UintID - UintID --> A" );
-
-	  addAsm( str_SBC + $4.name, 3, false );
+	  addAsm( str_SBC + O2, sizeOP2A, false );
+	  strcpy($$.name, "_A" );
 	}
       else if( op == string("*"))
 	{
 	  addComment( "UintID * UintID --> A" );
 	  umul_is_needed = true;
-	  addAsm( str_STA + "$02", 2, false );
-	  addAsm( str_LDA +  getNameOf(hexToDecimal(stripFirst($4.name))), 3, false );
+	  addAsm( str_TAX );
+	  addAsm( str_LDA + "$02", 2, false );
+	  addAsm( str_PHA );
+	  addAsm( str_LDY + "$03", 2, false );	  
+
+	  addAsm( str_STX + "$02", 2, false );
+	  addAsm( str_LDA + O2, sizeOP2A, false );
 	  addAsm( str_STA + "$03", 2, false );
 	  addAsm( str_JSR + "UMUL", 3, false );
-	  addAsm( str_LDA + "$03", 2, false );
+	  addAsm( str_LDX + "$03", 2, false );
+
+	  addAsm( str_PLA );
+	  addAsm( str_STA + "$02", 2, false );
+	  addAsm( str_STY + "$03", 2, false );
+	  addAsm( str_TXA );
+	  strcpy($$.name, "_A" );
 	}
       else if( op == string("/") )
 	{
@@ -11654,63 +11348,62 @@ arithmetic expression {addComment("OP2");}
 	  int addr_op2 = hexToDecimal($4.name);
 
 	  addComment( "UintID / UintID --> A" );
-	  div16_is_needed = true;
-	  
-	  addAsm( str_LDA + "$" + toHex(addr_op1), 3, false );
+	  div16_is_needed = true;	  
 	  addAsm( str_STA + "_DIV16_FB", 3, false );
 	  addAsm( str_LDA + "#$00", 2, false ); 
 	  addAsm( str_STA + "_DIV16_FC", 3, false );
-	  
-	  addAsm( str_LDA + "$" + toHex(addr_op2), 3, false );
+	  addAsm( str_LDA + O2, sizeOP2A, false );
 	  addAsm( str_STA + "_DIV16_FD", 3, false );
 	  addAsm( str_LDA + "#$00", 2, false ); 
 	  addAsm( str_STA + "_DIV16_FE", 3, false );
-
 	  addAsm( str_JSR + "DIV16", 3, false );
 	  addAsm( str_LDA + "_DIV16_FB", 3, false );
 	  addAsm( str_LDX + "_DIV16_FC", 3, false );
+	  strcpy($$.name, "_A" );
 	}
       else
 	{
 	  addCompilerMessage( "Unknown Math Operation: UintID ? UintID --> A", 3 );
 	}
-      
-      strcpy($$.name, "_A" );
     }
   else if( isUintID($1.name) && isA($4.name) )
     {
       addDebugComment( "UIntID arithmetic A" );
-      int addr_op1 = getAddressOf( $1.name );
+      //int addr_op1 = getAddressOf( $1.name );
 
       if( op == string("+"))
 	{
 	  addComment( "UintID + A --> A" );
-	  addAsm( str_CLC );
-	  addAsm( str_ADC + getNameOf(addr_op1), 3, false );
+	  addAsm( str_ADC + O1, sizeOP1A, false );
 	  strcpy($$.name, "_A" );
 	}
       else if( op == string("-"))
 	{
 	  addComment( "UintID - A --> A" );
-	  addAsm( str_SEC );
-	  addAsm( str_SBC + getNameOf(addr_op1), 3, false );
+	  addAsm( str_SBC + O1, sizeOP1A, false );
 	  strcpy($$.name, "_A" );
 	}
       else if( op == string("*"))
 	{
-	  // 2023 06 19
 	  addComment( "UintID * A --> XA" );
 	  mul16_is_needed = true;
 	  addAsm( str_STA + "_MUL16_FB", 3, false );
+	  addAsm( str_STA + "_MUL16_FB", 3, false );
 	  addAsm( str_LDA + "#$00", 2, false );
 	  addAsm( str_STA + "_MUL16_FC", 3, false );
+	  addAsm( commentmarker + str_LDA + "#$00", 0, false );
 	  addAsm( str_STA + "_MUL16_FE", 3, false );
-
-	  //addAsm( str_LDA + "$" + toHex(addr_op1), 3, false );
-	  addAsm( str_LDA + getNameOf(addr_op1), 3, false );
+	  addAsm( str_LDA + O1, sizeOP1A, false );
 	  addAsm( str_STA + "_MUL16_FD", 3, false );
-	  
+	  addAsm( str_LDA + "$02", 2, false );
+	  addAsm( str_PHA );
+	  addAsm( str_LDA + "$03", 2, false );
+	  addAsm( str_PHA );
 	  addAsm( str_JSR + "MUL16", 3, false );
+	  addAsm( str_PLA );
+	  addAsm( str_STA + "$03", 2, false );
+	  addAsm( str_PLA );
+	  addAsm( str_STA + "$02", 2, false );
 	  addAsm( str_LDA + "MUL16R", 3, false );
 	  addAsm( str_LDX + "MUL16R+1", 3, false );
 	  strcpy($$.name, "_XA" );
@@ -11727,38 +11420,58 @@ arithmetic expression {addComment("OP2");}
       addAsm( str_LDA +  string($1.name), 3, false); // 
       if( op == string("+"))
 	{
-	  //addAsm( str_CLC );
-	  addComment( "UintID + IntIMM" ); 
+	  addComment( "UintID + IntIMM --> A" ); 
 	  int tmp_int = atoi(stripFirst($4.name).c_str());
 	  addAsm( str_ADC + "#$"  + toHex(tmp_int), 2, false );
+	  strcpy($$.name, "_A" );
+
 	}
       else if( op == string("-"))
 	{
-	  //addAsm( str_SEC );
-	  addComment( "UintID - IntIMM" ); 
+	  addComment( "UintID - IntIMM -->" ); 
 
 	  int tmp_int = atoi(stripFirst($4.name).c_str());
 	  addAsm( str_SBC + "#$" + toHex(tmp_int), 2, false );
+	  strcpy($$.name, "_A" );
+
 	}
       else if( op == string("*"))
 	{
-	  addComment( "UintID * IntIMM (may produce an unexpected result)" ); 
-
+	  addDebugComment( "UintID * IntIMM (may produce an unexpected result)" ); 
 	  addCompilerMessage( "UINT * INT may produce unexpected result", 0 );
+	  addComment( "UintID * IntIMM --> A xxx" ); 
+
 	  umul_is_needed = true;
 	  int tmp_int = atoi(stripFirst($1.name).c_str());
-	  addAsm( str_STA + "$02", 2, false );
-	  addAsm( str_LDA+ "#$" + toHex( tmp_int ) , 2, false );
+
+	  // preserve $02/$03
+	  addAsm( str_TAY );
+	  addAsm( str_LDA + "$02", 2, false );
+	  addAsm( str_PHA );
+	  addAsm( str_LDA + "$03", 2, false );
+	  addAsm( str_PHA );
+	  
+	  addAsm( str_STY + "$02", 2, false );
+	  addAsm( str_LDA + "#$" + toHex( get_word_L(tmp_int) ) , 2, false );
 	  addAsm( str_STA + "$03", 2, false );
 	  addAsm( str_JSR + "UMUL", 3, false );
-	  addAsm( str_LDA + "$03", 2, false );
+	  addAsm( str_LDY + "$03", 2, false );
+
+	  addAsm( str_PLA );
+	  addAsm( str_STA + "$03", 2, false );
+	  addAsm( str_PLA );
+	  addAsm( str_STA + "$02", 2, false );
+	  addAsm( str_TYA );	  
+	  strcpy($$.name, "_A" );
 	}
       else if( op == string("/") )
 	{
+	  addDebugComment( "UintID / IntIMM (may produce an unexpected result)" ); 
+	  addCompilerMessage( "UINT / INT may produce unexpected result", 0 );
 	  int addr_op1 = hexToDecimal($1.name);
 	  int op2 = atoi(stripFirst($4.name).c_str());
 
-	  addComment( "UintID / IntIMM" );
+	  addComment( "UintID / IntIMM --> A" );
 	  div16_is_needed = true;
 	  
 	  addAsm( str_LDA + "$" + toHex(addr_op1), 3, false );
@@ -11774,74 +11487,87 @@ arithmetic expression {addComment("OP2");}
 
 	  addAsm( str_JSR + "DIV16", 3, false );
 	  addAsm( str_LDA + "_DIV16_FB", 3, false );
+	  strcpy($$.name, "_A" );
 	}
-
-      strcpy($$.name, "_A" );
     }
   else if( isIntID( $1.name ) && isIntID( $4.name ) )
     {
       addDebugComment( "IntID arith IntID" );
-      addAsm( str_LDA + $1.name, 3, false); // 
+      addAsm( str_LDA + O1, sizeOP1A, false);
       if( op == string("+"))
 	{
-	  addComment( "IntID + IntID" );
-
-	  // addAsm( str_CLC );
-	  addAsm( str_ADC + $4.name, 3, false );
+	  addComment( "IntID + IntID --> A" );
+	  addAsm( str_ADC + O2, sizeOP2A, false );
+	  strcpy($$.name, "_A" );
 	}
       else if( op == string("-"))
 	{
-	  //addAsm( str_SEC );
-	  addComment( "IntID - IntID" );
-
-	  addAsm( str_SBC + $4.name, 3, false );
+	  addComment( "IntID - IntID --> A" );
+	  addAsm( str_SBC + O2, sizeOP2A, false );
+	  strcpy($$.name, "_A" );
 	}
       else if( op == string("*"))
 	{
-	  addComment( "IntID * IntID" );
-
+	  addComment( "IntID * IntID --> A" );
 	  umul_is_needed = true;
-	  addAsm( str_STA + "$02", 2, false );
-	  addAsm( str_LDA + $4.name, 3, false );
+	  addAsm( str_TAY );
+	  addAsm( str_LDA + "$02", 2, false );
+	  addAsm( str_PHA );
+	  addAsm( str_LDA + "$03", 2, false );
+	  addAsm( str_PHA );
+	  addAsm( str_STY + "$02", 2, false );
+	  addAsm( str_LDA + O2, sizeOP2A, false);
 	  addAsm( str_STA + "$03", 2, false );
 	  addAsm( str_JSR + "UMUL", 3, false );
-	  addAsm( str_LDA + "$03", 2, false );
+	  addAsm( str_LDY + "$03", 2, false );
+	  addAsm( str_PLA );
+	  addAsm( str_STA + "$03", 2, false );
+	  addAsm( str_PLA );
+	  addAsm( str_STA + "$02", 2, false );
+	  addAsm( str_TYA );
+	  strcpy($$.name, "_A" );
+	}
+      else if( op == string("/") )
+	{
+	  addCompilerMessage( "IntID / IntID --> A not implemented (yet?)", 3 );
 	}
       else
 	{
-	  
 	  addCompilerMessage( "Unknown math operation for IntID ? IntID", 3 );
 	}
-      strcpy($$.name, "_A" );
     }
   else if( isUintIMM($1.name) && isIntID($4.name) )
     {
-      addDebugComment( "UntIMM arith IntID (type mismatch)" );
-      addAsm( str_LDA +  string($4.name), 3, false); //
+      addDebugComment( "UIntIMM arith IntID (type mismatch)" );
+      addAsm( str_LDA + O2, sizeOP2A, false);
       
       if( op == string("+"))
 	{
-	  //addAsm( str_CLC );
+	  addComment( "UIntIMM + IntID --> A" );
 	  int tmp_int = atoi(stripFirst($1.name).c_str());
 	  if( tmp_int < 0 )
 	    {
 	      tmp_int = twos_complement( tmp_int );
 	    }
-	  addAsm( str_ADC + "#$"  + toHex(tmp_int), 2, false );
+	  addAsm( str_ADC + "#$" + toHex(tmp_int), 2, false );
+	  strcpy($$.name, "_A" );
 	}
       else if( op == string("-"))
 	{
-	  //addAsm( str_SEC );
-
+	  addComment( "UIntIMM - IntID --> A" );
 	  int tmp_int = atoi(stripFirst($1.name).c_str());
 	  if( tmp_int < 0 )
 	    {
 	      tmp_int = twos_complement( tmp_int );
 	    }
 	  addAsm( str_SBC + "#$" +  toHex(tmp_int), 2, false );
+	  strcpy($$.name, "_A" );
 	}
       else if( op == string("*"))
 	{
+	  // TODO: Preserve $02/$03
+	  addCompilerMessage( "UintIMM * IntID may produce unexpected results.", 1 );
+	  addComment( "UIntIMM * IntID --> A" );	  
 	  int tmp_int = atoi(stripFirst($1.name).c_str());
 	  if( tmp_int < 0 )
 	    {
@@ -11853,6 +11579,7 @@ arithmetic expression {addComment("OP2");}
 	  addAsm( str_STA + "$03", 2, false );
 	  addAsm( str_JSR + "UMUL", 3, false );
 	  addAsm( str_LDA + "$03", 2, false );
+	  strcpy($$.name, "_A" );
 	}
       else if( op == string("/"))
 	{
@@ -11863,7 +11590,6 @@ arithmetic expression {addComment("OP2");}
 	  addCompilerMessage( "Unknown math operation for UintIMM ? IntID", 3 );
 
 	}
-      strcpy($$.name, "_A" );
     }
   else if( isIntID($1.name) && isIntIMM($4.name) )     // MEM vs. IMM
     {
@@ -11932,78 +11658,69 @@ arithmetic expression {addComment("OP2");}
 	}
       strcpy($$.name, "_A" );
     }
-  else if( isIntID($1.name) && isUintIMM($4.name) )     // MEM vs. IMM
+  else if( isIntID($1.name) && isUintIMM($4.name) )
     {
-      addComment( "IntID arith IntIMM" );
-      addAsm( str_LDA +  string($1.name), 3, false); // 
+      addDebugComment( "IntID arith IntIMM" );
+      addAsm( str_LDA +  string($1.name), 3, false);
       if( op == string("+"))
 	{
-	  //addAsm( str_CLC );
+	  addComment( "IntID + UintIMM --> A" );
 	  int tmp_int = atoi(stripFirst($4.name).c_str());
 	  addAsm( str_ADC + "#$"  + toHex(tmp_int), 2, false );
+	  strcpy($$.name, "_A" );
+
 	}
       else if( op == string("-"))
 	{
-	  //addAsm( str_SEC );
-
+	  addComment( "IntID / UintIMM --> A" );
 	  int tmp_int = atoi(stripFirst($4.name).c_str());
 	  addAsm( str_SBC + "#$" + toHex(tmp_int), 2, false );
+	  strcpy($$.name, "_A" );
 	}
       else if( op == string("*"))
 	{
-	  addCompilerMessage( "SIGNED integer multiplication (IntID * UintIMM) not yet implemented (try re-ordering)", 3 );
-	  umul_is_needed = true;
-	  int tmp_int = atoi(stripFirst($1.name).c_str());
-	  addAsm( str_STA + "$02", 2, false );
-	  addAsm( str_LDA+"#$" + toHex( tmp_int ) , 2, false );
-	  addAsm( str_STA + "$03", 2, false );
-	  addAsm( str_JSR + "UMUL", 3, false );
-	  addAsm( str_LDA + "$03", 2, false );
+	  addCompilerMessage( "SIGNED integer multiplication (IntID * UintIMM) not (yet?) implemented (try re-ordering)", 3 );
+	  /* umul_is_needed = true; */
+	  /* int tmp_int = atoi(stripFirst($1.name).c_str()); */
+	  /* addAsm( str_STA + "$02", 2, false ); */
+	  /* addAsm( str_LDA+"#$" + toHex( tmp_int ) , 2, false ); */
+	  /* addAsm( str_STA + "$03", 2, false ); */
+	  /* addAsm( str_JSR + "UMUL", 3, false ); */
+	  /* addAsm( str_LDA + "$03", 2, false ); */
+	  /* strcpy($$.name, "_A" ); */
 	}
       else if( op == string("/") )
 	{
-	  int addr_op1 = hexToDecimal($1.name);
 	  int op2 = atoi(stripFirst($4.name).c_str());
-
-	  addComment( "IntID / UintIMM" );
+	  addComment( "IntID / UintIMM --> A" );
 	  div16_is_needed = true;
-	  
-	  addAsm( str_LDA + "$" + toHex(addr_op1), 3, false );
+	  addAsm( str_LDA + O1, sizeOP1A, false );
 	  addAsm( str_STA + "_DIV16_FB", 3, false );
 	  addAsm( str_LDA + "#$00", 2, false ); 
 	  addAsm( str_STA + "_DIV16_FC", 3, false );
-	  
 	  addAsm( str_LDA + "#$" + toHex(op2), 2, false );
 	  addAsm( str_STA + "_DIV16_FD", 3, false );
 	  addAsm( str_LDA + "#$00", 2, false ); 
 	  addAsm( str_STA + "_DIV16_FE", 3, false );
-
 	  addAsm( str_JSR + "DIV16", 3, false );
 	  addAsm( str_LDA + "_DIV16_FB", 3, false );
+	  strcpy($$.name, "_A" );
 	}
       else
 	{
 	  addCompilerMessage( "math operation not yet implemented for IntID ? UintIMM", 3 );
 	}
-
-      strcpy($$.name, "_A" );
     }
 
   else if( isUintID($1.name) && isUintIMM($4.name) )     // UintID vs. UintIMM
     {
-      addComment( "UintID arith UintIMM" );
-      int addr = getAddressOf($1.name);
-      int instr_size = 3;
-      if( addr < 256 ) instr_size = 2;
-
-      string n = getNameOf(addr);
-      /// 2024 04 14 - mkpellegrino
-      
-      //addAsm( str_LDA +  string($1.name), instr_size, false); //
-      addAsm( str_LDA +  n, instr_size, false); //
+      addDebugComment( "UintID arith UintIMM" );
+      addAsm( str_LDA + O1, sizeOP1A, false);
       
       if( op == string("+"))
 	{
+	  addComment( "UintID + UintIMM --> A" );
+
 	  int tmp_int = atoi(stripFirst($4.name).c_str());
 	  if( tmp_int < 0 )
 	    {
@@ -12011,10 +11728,10 @@ arithmetic expression {addComment("OP2");}
 	    }
 	  addAsm( str_ADC + "#$" + toHex(tmp_int), 2, false );
 	  strcpy($$.name, "_A" );
-
 	}
       else if( op == string("-"))
 	{
+	  addComment( "UintID - UintIMM --> A" );
 	  int tmp_int = atoi(stripFirst($4.name).c_str());
 	  if( tmp_int < 0 )
 	    {
@@ -12022,68 +11739,45 @@ arithmetic expression {addComment("OP2");}
 	    }
 	  addAsm( str_SBC + "#$" + toHex(tmp_int), 2, false );
 	  strcpy($$.name, "_A" );
-
 	}
       else if( op == string("*"))
 	{
-	  addComment( "UintID * UintIMM (Using 16 bit operation)" );
-	  //addAsm( str_SEI );
-	  
-
+	  addComment( "UintID * UintIMM (Using 16 bit operation) --> XA" );
 	  int addr_op1 = getAddressOf( $1.name );
 	  mul16_is_needed = true;
-
-	  //addAsm( str_LDA + "$" + toHex(addr_op1), 3, false );
-	  //addAsm( str_STA + "$FB", 2, false );
 	  addAsm( str_STA + "_MUL16_FB", 3, false );
-
 	  addAsm( str_LDA + "#$00", 2, false );
-	  //addAsm( str_STA + "$FC", 2, false );
 	  addAsm( str_STA + "_MUL16_FC", 3, false );
 	  addAsm( str_STA + "_MUL16_FE", 3, false );
-
 	  addAsm( str_LDA + "#$" + toHex(atoi(stripFirst($4.name).c_str())), 2, false );
-	  //addAsm( str_STA + "$FD", 2, false );
 	  addAsm( str_STA + "_MUL16_FD", 3, false );
-
 	  addAsm( str_JSR + "MUL16", 3, false );
 	  addAsm( str_LDA + "MUL16R", 3, false );
 	  addAsm( str_LDX + "MUL16R+1", 3, false );
-
-	  
-	  //addAsm( str_CLI );
 	  strcpy($$.name, "_XA" );
-
 	}
       else if( op == string("/") )
 	{
 	  int addr_op1 = hexToDecimal($1.name);
 	  int op2 = atoi(stripFirst($4.name).c_str());
-
-	  addComment( "UintID / UintIMM" );
+	  addComment( "UintID / UintIMM --> A" );
 	  div16_is_needed = true;
-
-	  //if( addr_op1 < 256 ) instr_size = 2;
-	  addAsm( str_LDA + "$" + toHex(addr_op1), instr_size, false );
+	  addAsm( str_LDA + O1, sizeOP1A, false );
 	  addAsm( str_STA + "_DIV16_FB", 3, false );
 	  addAsm( str_LDA + "#$00", 2, false ); 
 	  addAsm( str_STA + "_DIV16_FC", 3, false );
-	  
 	  addAsm( str_LDA + "#$" + toHex(op2), 2, false );
 	  addAsm( str_STA + "_DIV16_FD", 3, false );
 	  addAsm( str_LDA + "#$00", 2, false ); 
 	  addAsm( str_STA + "_DIV16_FE", 3, false );
-
 	  addAsm( str_JSR + "DIV16", 3, false );
 	  addAsm( str_LDA + "_DIV16_FB", 3, false );
 	  strcpy($$.name, "_A" );
 	}
       else
 	{
-
 	  addCompilerMessage( "math operation not yet implemented for UintID ? UintIMM", 3 );
 	}
-
     }
   else if( isUintIMM($1.name) && isUintID($4.name) )     // MEM vs. IMM
     {
@@ -12091,24 +11785,23 @@ arithmetic expression {addComment("OP2");}
       addAsm( str_LDA +  $4.name, 3, false); // 
       if( op == string("+"))
 	{
-	  //20230402 addAsm( str_CLC );
 	  int tmp_int = atoi(stripFirst($1.name).c_str());
 	  if( tmp_int < 0 )
 	    {
 	      tmp_int = twos_complement( tmp_int );
 	    }
 	  addAsm( str_ADC + "#$"  + toHex(tmp_int), 2, false );
+	  strcpy($$.name, "_A" );
 	}
       else if( op == string("-"))
 	{
-	  //20230402 addAsm( str_SEC );
-
 	  int tmp_int = atoi(stripFirst($1.name).c_str());
 	  if( tmp_int < 0 )
 	    {
 	      tmp_int = twos_complement( tmp_int );
 	    }
 	  addAsm( str_SBC + "#$" + toHex(tmp_int), 2, false );
+	  strcpy($$.name, "_A" );
 	}
       else if( op == string("*"))
 	{
@@ -12119,24 +11812,24 @@ arithmetic expression {addComment("OP2");}
 	    {
 	      tmp_int = twos_complement( tmp_int );
 	    }
+
+	  // TODO: preserve $02/$03
 	  addAsm( str_STA + "$02", 2, false );
 	  addAsm( str_LDA+"#$" + toHex( tmp_int ) , 2, false );
 	  addAsm( str_STA + "$03", 2, false );
 	  addAsm( str_JSR + "UMUL", 3, false );
 	  addAsm( str_LDA + "$03", 2, false );
+	  strcpy($$.name, "_A" );
 	}
       else if( op == string("/"))
 	{
 	  addAsm( commentmarker + "SIGNED integer division (UintIMM / UintID) not yet implemented", 3, false );
+	  addCompilerMessage( "SIGNED integer division (UintIMM / UintID) not yet implemented", 3 );
 	}
       else
 	{
-
 	  addCompilerMessage( "math operation not yet implemented for UintIMM ? UintID", 3 );
-
 	}
-
-      strcpy($$.name, "_A" );
     }
   else if( isWordID( $1.name ) && isFloatID( $4.name ) )
     {
@@ -12146,6 +11839,7 @@ arithmetic expression {addComment("OP2");}
       
       if( op == string("*"))
 	{
+	  addComment( "WordID * FLoatID --> XA" );
 	  int inst_size = 3;
 	  if( base_address_op1 < 255 ) inst_size--;
 	  addAsm( string("LDY $") + toHex( ( base_address_op1 )), inst_size, false );
@@ -12157,6 +11851,8 @@ arithmetic expression {addComment("OP2");}
 
 	  addCompilerMessage( "This can be optimized by putting the WORD after the FLOAT", 1);
 	  addAsm( str_JSR + "$BA28; FMULT RAM * FAC", 3, false );
+	  strcpy($$.name, "_FAC" );
+
 	}
       else if( op == string("+"))
 	{
@@ -12167,6 +11863,8 @@ arithmetic expression {addComment("OP2");}
 	  addAsm( str_LDY + "#$" + toHex(get_word_H(base_address_op2)), 2, false );
 	  addCompilerMessage( "This can be optimized by putting the WORD after the FLOAT", 1);
 	  addAsm( str_JSR + "$B867; FADD RAM + FAC", 3, false );
+	  strcpy($$.name, "_FAC" );
+
 	}
       else if( op == string("-"))
 	{
@@ -12186,6 +11884,8 @@ arithmetic expression {addComment("OP2");}
 	  addAsm( str_LDY + "#$00", 2, false );
 
 	  addAsm( string("JSR $B850") + commentmarker + string(" FSUB RAM - FAC"), 3, false );
+	  strcpy($$.name, "_FAC" );
+
 	}
       else if( op == string("/"))
 	{
@@ -12205,12 +11905,13 @@ arithmetic expression {addComment("OP2");}
 	  addAsm( str_LDY + "#$00", 2, false );
 
 	  addAsm( string("JSR $BB0F") + commentmarker + "FDIV RAM/FAC", 3, false );
+	  strcpy($$.name, "_FAC" );
+
 	}
       else
 	{
 	  addCompilerMessage( "math operation not yet implemented for WordID ? FloatID", 3 );
 	}
-      FAC=1;      
     }
   else if( isFloatID( $1.name ) && isWordID( $4.name ) )
     {
@@ -12245,9 +11946,7 @@ arithmetic expression {addComment("OP2");}
 	{
 	  addCompilerMessage( "math operation not yet implemented for FloatID ? WordID", 3 );
 	}
-
-      FAC=1;      
-      
+      strcpy($$.name, "_FAC" );
     }
   else if( isFloatID($1.name) && isFloatID($4.name ) )
     {
@@ -12283,14 +11982,13 @@ arithmetic expression {addComment("OP2");}
 	{
 	  addCompilerMessage( "math operation not yet implemented for FloatID ? FloatID", 3 );
 	}
-
-      FAC=1;
+      strcpy($$.name, "_FAC" );
     }
   /* if they're BOTH Int or Uint IMM's */
   else if( (isIntIMM($1.name) && isIntIMM($4.name)) ||
 	   (isUintIMM($1.name) && isUintIMM($4.name)) )
     {
-      addComment( string( "UIntIMM" ) + op + string( "UIntIMM") );
+      addComment( string( "UIntIMM" ) + op + string( "UIntIMM --> A or XA") );
       
       int tmp_int1 = atoi( stripFirst($1.name).c_str() );
       int tmp_int2 = atoi( stripFirst($4.name).c_str() );
@@ -12396,7 +12094,7 @@ arithmetic expression {addComment("OP2");}
 
       if( result > 255 )
 	{
-	  addAsm( str_LDA+"#$" + toHex(get_word_L(result)) + commentmarker , 2, false );
+	  addAsm( str_LDA + "#$" + toHex(get_word_L(result)) + commentmarker , 2, false );
 	  addAsm( str_LDX + "#$" + toHex(get_word_H(result)) + commentmarker , 2, false );
 	  strcpy($$.name, "_XA" );
 	}
@@ -12407,191 +12105,64 @@ arithmetic expression {addComment("OP2");}
 	}
       
     }
-  else if( isByte($1.name) && isByte($4.name) )
-    {
-      addComment( "ByteIMM arith ByteIMM" );
-      int tmp_int1;
-      int tmp_int2;
-
-      std::stringstream ss;
-      ss << std::hex <<  string($1.name).substr( 2, 2 );
-      ss >> tmp_int1;
-      ss << std::hex <<  string($4.name).substr( 2, 2 );
-      ss >> tmp_int2;
-      
-      /* then this is a compile-time arithetic operation */
-      if( op == "+"  )
-	{
-	  addAsm( str_LDA + "#$" + toHex( tmp_int1 + tmp_int2 ), 2, false ); 
-	  strcpy($$.name, toString( tmp_int1 + tmp_int2 ).c_str() );
-	}
-      else if( op == "-" )
-	{
-	  addAsm( str_LDA + "#$" + toHex( tmp_int1 - tmp_int2 ), 2, false ); 
-	  strcpy($$.name, toString( tmp_int1 - tmp_int2 ).c_str() );
-	}
-      else if( op == "*" )
-	{
-	  addAsm( str_LDA + "#$" + toHex( tmp_int1 * tmp_int2 ), 2, false ); 
-	  strcpy($$.name, toString( tmp_int1 * tmp_int2 ).c_str() );
-	}
-      else if( op == "/" )
-	{
-	  addAsm( str_LDA + "#$" + toHex( tmp_int1 / tmp_int2 ), 2, false ); 
-	  strcpy($$.name, toString( tmp_int1 / tmp_int2 ).c_str() );
-	}
-      else
-	{
-	  addParserComment( string( "I am unable to recognize [") + op + string("]" ));
-	  strcpy($$.name, string("unknown").c_str() );
-	}
-    }
-  else if( isByte($1.name) && isUintID($4.name))
-    {
-      addComment( "ByteIMM arith UintID (Byte" );
-     
-      int tmp_int1;
-      
-      std::stringstream ss;
-      ss << std::hex <<  string($1.name).substr( 2, 2 );
-      ss >> tmp_int1;
-
-      int tmp_size = 2;
-      tmp_size = 3;
-      addAsm( str_LDA + string($4.name), tmp_size, false);
-      
-      if( op == "+" )
-	{
-	  //addAsm( str_CLC );
-	  addAsm( str_ADC + $1.name,2, false);
-	}
-      else if ( op == "-" )
-	{
-	  //addAsm( str_SEC );
-	  addAsm( str_SBC + string($1.name),2, false);
-	}
-      else
-	{
-	  addCompilerMessage( "Byte ?? Uint", 0 );
-	  addCompilerMessage( "Math operation not implemented yet.", 3 );
-
-	}
-      addAsm( string("STA ") + string($4.name), 3, false );
-      strcpy($$.name, "_A" );
-    }
   else if( isUintID($1.name) && isIntID($4.name) )
     {
       addCompilerMessage( "UINTID arith INTID NOT FULLY IMPLEMENTED!!!", 0 );
-      addComment( "UintID arith IntID NOT FULLY IMPLEMENTED" );
-      int instr_size1;
-      int instr_size2;
+      addDebugComment( "UintID arith IntID NOT FULLY IMPLEMENTED" );
 
-      if( getAddressOf( $1.name ) > 255 )
-	{
-	  instr_size1 = 3;
-	}
-      else
-	{
-	  instr_size1 = 2;
-	}
-
-      if( getAddressOf( $4.name ) > 255 )
-	{
-	  instr_size2 = 3;
-	}
-      else
-	{
-	  instr_size2 = 2;
-	}
-      
-      addAsm( str_LDA + string($1.name), instr_size1, false );
+      addAsm( str_LDA + O1, sizeOP1A, false );
       if( op == string("+") )
 	{
-	  //addAsm( str_CLC );
-	  addAsm( str_ADC + $4.name, instr_size2, false);
+	  addComment( "UintID + IntID --> A" );
+	  addAsm( str_ADC + O2, sizeOP2A, false);
 	  strcpy($$.name, "_A" );
-
 	}
       else if ( op == string("-") )
 	{
-	  //addAsm( str_SEC );
-	  addAsm( str_SBC + string($4.name), instr_size2, false);
+	  addComment( "UintID - IntID --> A" );
+	  addAsm( str_SBC + O2, sizeOP2A, false);
 	  strcpy($$.name, "_A" );
-
 	}
       else if ( op == string("/") )
 	{
-	  int addr_op1 = hexToDecimal($1.name);
-	  int addr_op2 = hexToDecimal($4.name);
-
 	  addComment( "UintID / IntID --> XA" );
 	  div16_is_needed = true;
-	  
-	  addAsm( str_LDA + "$" + toHex(addr_op1), 3, false );
+	  addAsm( str_LDA + O1, sizeOP1A, false );
 	  addAsm( str_STA + "_DIV16_FB", 3, false );
 	  addAsm( str_LDA + "#$00", 2, false ); 
 	  addAsm( str_STA + "_DIV16_FC", 3, false );
-	  
-	  addAsm( str_LDA + "$" + toHex(addr_op2), 3, false );
+	  addAsm( str_LDA + O2, sizeOP2A, false );
 	  addAsm( str_STA + "_DIV16_FD", 3, false );
 	  addAsm( str_LDA + "#$00", 2, false ); 
 	  addAsm( str_STA + "_DIV16_FE", 3, false );
-
 	  addAsm( str_JSR + "DIV16", 3, false );
 	  addAsm( str_LDA + "_DIV16_FB", 3, false );
 	  addAsm( str_LDX + "_DIV16_FC", 3, false );
 	  strcpy($$.name, "_XA" );
-      
-	}
+      	}
       else if ( op == string("*") )
 	{
-	  int addr_op1 = getAddressOf( $1.name );
-	  int addr_op2 = getAddressOf( $4.name );
-
 	  // TODO: Fix This or Take out the UintID * IntID functionality.
 	  // it's not clear what the result should be.  XA or just A
 	  addDebugComment( "THIS ISN'T WORKING CORRECTLY!" );
 	  addComment( "UintID * IntID --> XA" );
 	  mul16_is_needed = true;
-	  addAsm( str_LDA + "$" + toHex( addr_op1 ), 3, false );
-	  //addAsm( str_STA + "$FB", 2, false );
+	  addAsm( str_LDA + O1, sizeOP1A, false );
 	  addAsm( str_STA + "_MUL16_FB", 3, false);
-	  
-	  //addAsm( str_LDA + "$" + toHex( addr_op1+1 ), 3, false );
 	  addAsm( str_LDA + "#$00", 2, false );
-	  //addAsm( str_STA + "$FC", 2, false );
 	  addAsm( str_STA + "_MUL16_FC", 3, false);
-	  
-	  //addAsm( str_STA + "$FE", 2, false );
 	  addAsm( str_STA + "_MUL16_FE", 3, false);
-	  
-	  addAsm( str_LDA + "$" + toHex( addr_op2 ), 3, false );
+	  addAsm( str_LDA + O2, sizeOP2A, false );
 
 	  // TODO: FIX THIS!  Make it so that if the resulting number is
 	  // negative, then make the result negative
 	  // make it positive
 	  addAsm( str_AND + "#$7F", 2, false );
-
 	  addAsm( str_STA + "_MUL16_FD", 3, false);
-	  //addAsm( str_STA + "$FD", 2, false );
-
-	  //addAsm( str_LDA + "$" + toHex( addr_op2+1 ), 3, false );
-	  //addAsm( str_STA + "$FE", 2, false );
-
 	  addAsm( str_JSR + "MUL16", 3, false );
 	  addAsm( str_LDA + "MUL16R", 3, false );
 	  addAsm( str_LDX + "MUL16R+1", 3, false );
 	  strcpy($$.name, "_XA" );
-
-	  
-	  /* addComment( "UintID * IntID --> A" ); */
-	  /* umul_is_needed = true; */
-	  /* addAsm( str_STA + "$02", 2, false ); */
-	  /* addAsm( str_LDA + string($4.name), 3, false ); */
-	  /* addAsm( str_STA + "$03", 2, false ); */
-	  /* addAsm( str_JSR + "UMUL", 3, false ); */
-	  /* addAsm( str_LDA + "$03", 2, false ); */
-	  /* strcpy($$.name, "_A" ); */
 	}
       
       else
@@ -12602,242 +12173,8 @@ arithmetic expression {addComment("OP2");}
     }
   else
     {
-      string tmpstr = string( $1.name ) + string( $3.name ) + string( $4.name );
-      addCompilerMessage( tmpstr, 0 );
+      addCompilerMessage( O1 + op + O2, 0 );
       addCompilerMessage( "Unknown Math Operation (for the indicated types)", 3 );
-      addComment( "?   arith   ? : 7505" );
-      if( getTypeOf($1.name) == 8 && getTypeOf($4.name) == 8 )
-	{
-	  addComment( "both Identifiers point to floats" );
-	}
-      else if( op == "+" )
-	{
-	  // 2023 08 08 - TODO: Remove this because I have no Idea what I was trying to do here.
-	  if( isByte($1.name) && isAddress($4.name))
-	    {
-	      addAsm( str_LDA + $4.name, 3, false );
-	      //addAsm( str_CLC );
-	      addAsm( str_ADC + $1.name ,2, false);
-	      if( scope_stack.top() == string("FOR") )
-		{
-		  addAsm( str_STA + string($4.name), 3, false );
-		}
-
-	      strcpy($$.name, string(string("_A") + string($4.name)).c_str() );
-	    }
-	  else if( isIntID($1.name) && isIntID($4.name) )
-	    {
-	      addAsm( str_LDA + string($1.name), 3, false );
-	      addAsm( str_ADC + $4.name , 3, false );
-	      strcpy($$.name, "_A" );
-	    }
-	  else if( isUintID($1.name) && isIntID($4.name) )
-	    {
-	      addAsm( str_LDA + string($1.name), 3, false );
-	      addAsm( str_ADC + $4.name, 3, false );
-	      strcpy($$.name, "_A" );
-	    }
-	  else if( isIntID($1.name) && isUintID($4.name) )
-	    {
-	      addAsm( str_LDA + string($1.name), 3, false );
-	      addAsm( str_ADC + $4.name, 3, false );
-	      strcpy($$.name, "_A" );
-	    }
-	  else if( isUintIMM($1.name) && isUintID($4.name) )
-	    {
-	      int OP1 = atoi( stripFirst($1.name).c_str() );
-	      addAsm( str_LDA + "#$" + toHex(OP1), 2, false );
-	      addAsm( str_ADC + $4.name, 3, false );
-	      strcpy($$.name, "_A" );
-	    }
-	  else if( isUintIMM($1.name) && isIntID($4.name) )
-	    {
-	      int OP1 = atoi( stripFirst($1.name).c_str() );
-	      addAsm( str_LDA + "#$" + toHex(OP1), 2, false );
-	      addAsm( str_ADC + $4.name, 3, false );
-	      strcpy($$.name, "_A" );
-	    }
-	  else if( isIntIMM($1.name) && isIntIMM($4.name) )
-	    {
-	      int OP1 = atoi( stripFirst($1.name).c_str() );
-	      int OP2 = atoi( stripFirst($4.name).c_str() );
-	      int result = OP1 + OP2;
-	      if( (result>127) || (result<-127) )
-		{
-		  addCompilerMessage("type overflow: int must be between -127 and 127", 2 );
-		}
-	      if( result<0 )
-		{
-		  result = twos_complement(result);
-		}
-	      
-	      addAsm( str_LDA + "#$" + toHex(result) );
-	      strcpy($$.name, "_A" );
-	    }
-	  else if( isUintIMM($1.name) && isUintIMM($4.name) )
-	    {
-	      int OP1 = atoi( stripFirst($1.name).c_str() );
-	      int OP2 = atoi( stripFirst($4.name).c_str() );
-	      int result = OP1 + OP2;
-	      if( result>255 || result<0)
-		{
-		  addCompilerMessage("type overflow: uint must be between 0 and 255", 2 );
-		}
-	      addAsm( str_LDA + "#$" + toHex(result), 2, false);
-	      strcpy($$.name, "_A" );
-	    }
-	  else if( isUintIMM($1.name) && isIntIMM($4.name) )
-	    {
-	      int OP1 = atoi( stripFirst($1.name).c_str() );
-	      int OP2 = atoi( stripFirst($4.name).c_str() );
-	      int result = OP1 + OP2;
-	      
-	      if( result < 0 ) result=twos_complement(result);
-	      
-	      addAsm( str_LDA + "#$" + toHex(result) );
-	      strcpy($$.name, "_A" );
-	    }
-	  else if( isIntIMM($1.name) && isAddress($4.name))
-	    {
-	      addAsm( str_LDA + string($4.name), 3, false );
-	      //addAsm( str_CLC );
-	      addAsm( str_ADC + "#$" + toHex(atoi($1.name)),2, false);
-	      if( scope_stack.top() == string("FOR") )
-		{
-		  addAsm( str_STA + string($4.name), 3, false );
-		}
-	      // 2023 08 08 - TODO: Remove this because I haveno Idea what I was trying to do here.
-	      strcpy($$.name, string(string("A") + string($4.name)).c_str() );
-	    }
-	  else if(  isAddress($1.name) && isByte($4.name))
-	    {
-	      addAsm( str_LDA + string($1.name), 3, false );
-	      //addAsm( str_CLC );
-	      addAsm( str_ADC + $4.name ,2, false);
-	      if( scope_stack.top() == string("FOR") )
-		{
-		  addAsm( str_STA + string($1.name), 3, false );
-		}
-	      
-	      strcpy($$.name, "_A" );
-	    }
-	  else if(isAddress($1.name) && isIntIMM($4.name))
-	    {
-	      addAsm( str_LDA + string($1.name), 3, false );
-	      //addAsm( str_CLC );
-	      addAsm( str_ADC + "#$" + toHex(atoi($4.name)),2, false);
-	      if( scope_stack.top() == string("FOR") )
-		{
-		  addAsm( str_STA + string($1.name), 3, false );
-		}
-
-	      strcpy($$.name, "_A" );
-	    }
-	  else if(isIntID($1.name) && isIntIMM($4.name))
-	    {
-	      addAsm( str_LDA + string($1.name), 3, false );
-	      //addAsm( str_CLC );
-	      addAsm( str_ADC + "#$" + toHex(atoi(stripFirst($4.name).c_str())),2, false);
-	      strcpy($$.name, "_A" );
-	    }
-	  else if(isIntID($1.name) && isUintIMM($4.name))
-	    {
-	      addAsm( str_LDA + string($1.name), 3, false );
-	      //addAsm( str_CLC );
-	      addAsm( str_ADC + "#$" + toHex(atoi(stripFirst($4.name).c_str())),2, false);
-	      strcpy($$.name, "_A" );
-	    }
-	  else if(isUintID($1.name) && isUintIMM($4.name))
-	    {
-	      addAsm( str_LDA + string($1.name), 3, false );
-	      //addAsm( str_CLC );
-	      addAsm( str_ADC + "#$" + toHex(atoi(stripFirst($4.name).c_str())),2, false);
-	      strcpy($$.name, "_A" );
-	    }
-	  else
-	    {
-	      addCompilerMessage( "math error", 3);
-	    }
-	}
-      else if( op == "-" )
-	{
-	  if( isByte($1.name) && isAddress($4.name))
-	    {
-	      addAsm( str_LDA + string($4.name), 3, false );
-	      //addAsm( str_SEC );
-	      addAsm( str_SBC + string($1.name),3, false);
-	      // 2023 08 08 - TODO: Remove this because I haveno Idea what I was trying to do here.
-	      strcpy($$.name, string(string("A") + string($4.name)).c_str() );
-	      if( scope_stack.top() == string("FOR") )
-		{
-		  addAsm( str_STA + string($4.name), 3, false );
-		}
-	    }
-	  else if( isIntIMM($1.name) && isAddress($4.name))
-	    {
-	      addAsm( str_LDA + string($4.name), 3, false );
-	      //addAsm( str_SEC );
-	      addAsm( str_SBC + "#$" + toHex(atoi($1.name)),2, false);
-	      if( scope_stack.top() == string("FOR") )
-		{
-		  addAsm( str_STA + string($4.name), 3, false );
-		}
-	      // 2023 08 08 - TODO: Remove this because I haveno Idea what I was trying to do here.
-	      strcpy($$.name, string(string("A") + string($4.name)).c_str() );
-	    }
-	  else if(  isAddress($1.name) && isByte($4.name))
-	    {
-	      addAsm( str_LDA + string($1.name), 3, false );
-	      //addAsm( str_SEC );
-	      addAsm( str_SBC + string($4.name),2, false);
-	      if( scope_stack.top() == string("FOR") )
-		{
-		  addAsm( str_STA + string($4.name), 3, false );
-		}
-	      strcpy($$.name, "_A" );
-	    }
-	  else if(  isAddress($1.name) && isIntIMM($4.name))
-	    {
-	      addAsm( str_LDA + string($1.name), 3, false );
-	      //addAsm( str_SEC );
-	      addAsm( str_SBC + "#$" + toHex(atoi($4.name)),2, false);
-	      if( scope_stack.top() == string("FOR") )
-		{
-		  addAsm( str_STA + string($1.name), 3, false );
-		}
-	      
-	      strcpy($$.name, "_A" );
-	    }
-	  else if( isAddress($1.name) && isAddress($4.name) )
-	    {
-	      addAsm( str_LDA + string($1.name), 3, false );
-	      //addAsm( str_SEC );
-	      addAsm( str_SBC + string($4.name),3, false);
-	      if( scope_stack.top() == string("FOR") )
-		{
-		  addAsm( str_STA + string($1.name), 3, false );
-		}
-	      strcpy($$.name, "_A" );
-	    }
-	  else if( isAddress($1.name) && isUintIMM($4.name) )
-	    {
-	      addAsm( str_LDA + string($1.name), 3, false );
-	      //addAsm( str_SEC );
-	      addAsm( str_SBC + "#$" + toHex(atoi(stripFirst($4.name).c_str())),2, false);
-	      strcpy($$.name, "_A" );
-	    }
-	  else if( isAddress($1.name) && isIntIMM($4.name) )
-	    {
-	      addAsm( str_LDA + string($1.name), 3, false );
-	      //addAsm( str_SEC );
-	      addAsm( str_SBC + "#$" + toHex(atoi(stripFirst($4.name).c_str())),2, false);
-	      strcpy($$.name, "_A" );
-	    }
-	  else
-	    {
-	      addCompilerMessage( "math error", 3);
-	    }
-	}
     }
   if( FAC == 1 )
     {
@@ -13173,7 +12510,7 @@ arithmetic expression {addComment("OP2");}
       addAsm( str_TAX );
 
       // 2024 04 14 - mkpellegrino
-      addAsm( str_LDA + "$" + getNameOf(addr), 3, false );
+      addAsm( str_LDA + getNameOf(addr), 3, false );
       //addAsm( str_LDA + "$" + toHex( addr ), 3, false );
       
       addAsm( str_STA + getLabel( label_vector[label_major], false), 3, false );
@@ -15853,10 +15190,12 @@ int main(int argc, char *argv[])
       addAsm( str_CLC );
       addAsm( str_ROR );
       // loop here
+      addAsm( "!:", 0, true );
       addAsm( str_ROR );
       addAsm( str_ROR );
       addAsm( str_DEC + "$FE" + commentmarker + "store", 2, false );
-      addAsm( str_BYTE +"$10, $FA", 2, false );  // BPL "loop here"
+      addAsm( str_BPL + "!-", 2, false );
+      //addAsm( str_BYTE +"$10, $FA", 2, false );  // BPL "loop here"
       addAsm( str_STA + "$50" + commentmarker + "mask", 2, false );
       addAsm( str_LDA + "$FA" + commentmarker + "xcoord", 2, false );  // 3 cycles
       //addAsm( str_LDA + "$FA; xcoord", 2, false );
@@ -15968,11 +15307,13 @@ int main(int argc, char *argv[])
       //addAsm( str_LDA + "$FD", 2, false );
       addAsm( str_CLC );
       addAsm( str_ROR );
+      addAsm( "!:", 0, true );
       // loop here
       addAsm( str_ROR );
       addAsm( str_ROR );
       addAsm( str_DEC + "$5C", 2, false );
-      addAsm( str_BYTE + "$10, $FA", 2, false );  // BPL "loop here"
+      addAsm( str_BPL + "!-", 2, false );
+      //addAsm( str_BYTE + "$10, $FA", 2, false );  // BPL "loop here"
 
       addAsm( str_STA + "$50", 2, false );
       addAsm( str_LDA + "$FA", 2, false ); 
@@ -16050,12 +15391,16 @@ int main(int argc, char *argv[])
       addComment( "2023 06 19:" );
       addComment( "This will slow down the MUL16 routine, but" );
       addComment( "it's safer because it doesn't use ZP" );
+      addAsm( "!:", 0, true );
       addAsm( "_MUL16_FB:", 0, true );
       addAsm( str_BYTE + "$00", 1, false );
+      addAsm( "!:", 0, true );
       addAsm( "_MUL16_FC:", 0, true );
       addAsm( str_BYTE + "$00", 1, false);
+      addAsm( "!:", 0, true );
       addAsm( "_MUL16_FD:", 0, true );
       addAsm( str_BYTE + "$00", 1, false);
+      addAsm( "!:", 0, true );
       addAsm( "_MUL16_FE:", 0, true );
       addAsm( str_BYTE + "$00", 1, false);
 
@@ -16073,7 +15418,8 @@ int main(int argc, char *argv[])
       addAsm( str_STA + "MUL16R+3", 3, false );
       
       addAsm( str_LDX + "#$10", 2, false );
-      addAsm( "_MUL16_L1:", 0, true );
+      //addAsm( "_MUL16_L1:", 0, true );
+      addAsm( "!:", 0, true );
       // label 1
 
       //addAsm( str_LSR + "$FE", 2, false );
@@ -16082,7 +15428,8 @@ int main(int argc, char *argv[])
       //addAsm( str_ROR + "$FD", 2, false );
       addAsm( str_ROR + "_MUL16_FD", 3, false );
       
-      addAsm( str_BCC + "_MUL16_L2", 2, false );
+      addAsm( str_BCC + "!+", 2, false );
+      //addAsm( str_BCC + "_MUL16_L2", 2, false );
       //addAsm( str_BYTE + "$90, $0D", 2, false ); // BCC Label 2
 
       addAsm( str_TAY );
@@ -16095,17 +15442,24 @@ int main(int argc, char *argv[])
       addAsm( str_ADC + "MUL16R+2", 3, false );
       addAsm( str_STA + "MUL16R+2", 3, false );
       addAsm( str_TYA );
-      addAsm( str_ADC + "_MUL16_FC", 3, false );
+      
+      //addComment( str_ADC + "_MUL16_FC" );
+      addComment( str_ADC + "!----" );
+      
+      //addAsm( str_BYTE + "#$6D" + "_MUL16_FC", 3, false );
+      //addAsm( str_ADC + "_MUL16_FC", 3, false );
       /////addAsm( str_ADC + "$FC", 2, false );
       // label 2
-      addAsm( "_MUL16_L2:", 0, true );
+      //addAsm( "_MUL16_L2:", 0, true );
+      addAsm( "!:", 0, true );
       addAsm( str_ROR , 1, false );
       addAsm( str_ROR + "MUL16R+2", 3, false );
       addAsm( str_ROR + "MUL16R+1", 3, false );
       addAsm( str_ROR + "MUL16R", 3, false );
       addAsm( str_DEX );
       
-      addAsm( str_BNE + "_MUL16_L1", 2, false );
+      //addAsm( str_BNE + "_MUL16_L1", 2, false );
+      addAsm( str_BNE + "!--", 2, false );
       //addAsm( str_BYTE + "$D0, $E0", 2, false ); // BNE Label 1
       
       addAsm( str_STA + "MUL16R+3", 3, false );
