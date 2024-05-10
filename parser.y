@@ -5045,64 +5045,29 @@ condition: expression relop expression
       int tmp_v = atoi(stripFirst($3.name).c_str());
       int tmp_L = get_word_L(tmp_v);
       int tmp_H = get_word_H(tmp_v);
-
       addAsm( str_TAY );
-      addAsm( str_LDA + "$02", 2, false );
-      addAsm( str_PHA );
-      addAsm( str_LDA + "$03", 2, false );
-      addAsm( str_PHA );
-
-      addAsm( str_LDA+"#$" + toHex( tmp_H ), 2, false );
-      addAsm( str_STA + "$03", 2, false );
-      addAsm( str_LDA+"#$" + toHex( tmp_L ), 2, false );
-      addAsm( str_STA + "$02", 2, false );
-
       addAsm( str_TXA );
-      addAsm( str_CMP + "$03", 2, false );
+      addAsm( str_CMP + "#$" + toHex( tmp_H ), 2, false );      
       addAsm( str_BNE + "!+", 2, false );
-      //addAsm( str_BYTE + "$D0, $03" + commentmarker + "BNE +3", 2, false );
       addAsm( str_TYA );
-      addAsm( str_CMP + "$02", 2, false );
+      addAsm( str_CMP + "#$" + toHex( tmp_L ), 2, false );
       addAsm( "!:", 0, true );
-      
-      addAsm( str_PLA );
-      addAsm( str_STA + "$03", 2, false );
-      addAsm( str_PLA );
-      addAsm( str_STA + "$02", 2, false );
     }
   else if( isXA($1.name) && isUintIMM($3.name))  // mismatch
     {
+      // This should be more like XA relop WordIMM
       addComment( "XA relop UintIMM" );
       int tmp_v = atoi(stripFirst($3.name).c_str());
 
       // save A in Y
       addAsm( str_TAY );
-
-      // save $02/$03
-      addAsm( str_LDA + "$02", 2, false );
-      addAsm( str_PHA );
-      addAsm( str_LDA + "$03", 2, false );
-      addAsm( str_PHA );
-
-      
-      addAsm( str_LDA + "#$" + toHex( tmp_v ), 2, false );
-      addAsm( str_STA + "$02", 2, false );
-      addAsm( str_LDA + "#$00", 2, false );
-      addAsm( str_STA + "$03", 2, false );
-      
       addAsm( str_TXA );
-      addAsm( str_CMP + "$03", 2, false );
+      addAsm( str_CMP + "#$00", 2, false );      
       addAsm( str_BNE + "!+", 2, false );
-      //addAsm( str_BYTE + "$D0, $03" + commentmarker + "BNE +3", 2, false ); // BNE +3
       addAsm( str_TYA );
-      addAsm( str_CMP + "$02", 2, false );
+      addAsm( str_CMP + "#$" + toHex( tmp_v ), 2, false );
       addAsm( "!:", 0, true );
 
-      // restore $02/$03
-      addAsm( str_PLA );
-      addAsm( str_STA + "$03", 2, false );
-      addAsm( str_PLA );
-      addAsm( str_STA + "$02", 2, false );
     }
   else if( isXA($1.name) && isWordID($3.name))  // mismatch
     {
@@ -5110,12 +5075,13 @@ condition: expression relop expression
       int tmp_v = getAddressOf( $3.name );
       addAsm( str_CPX + getNameOf( tmp_v ) + "+1", 3, false );
       addAsm( str_BNE + "!+", 2, false );
-      //addAsm( str_BYTE + "$D0, $03" + commentmarker + "BNE +3", 2, false );
       addAsm( str_CMP + getNameOf( tmp_v ), 3, false );
       addAsm( "!:", 0, true );
     }
   else if( isWordID($1.name) && isXA($3.name))  // mismatch
     {
+
+      // TODO: Make this more efficient (and not use $02/$03)
       addComment( "WordID relop XA" );
       addCompilerMessage("Swapping WordID and XA in comparison would be more effecient", 0);
       int addr = getAddressOf( $1.name );
@@ -5154,7 +5120,6 @@ condition: expression relop expression
       addAsm( str_LDA + "#$00", 2, false );
       addAsm( str_CMP + getNameOf( tmp_v ) + "+1", 3, false );
       addAsm( str_BNE + "!+", 2, false );
-      //addAsm( str_BYTE + "$D0, $04" + commentmarker + "BNE +4", 2, false );
       addAsm( str_TYA );
       addAsm( str_CMP + getNameOf( tmp_v ), 3, false );
       addAsm( "!:", 0, true );
@@ -5305,8 +5270,6 @@ condition: expression relop expression
     {
       addCompilerMessage( "UintIMM relop UintID (type mismatch)", 1 );
       addComment("UintIMM relop UintID");
-      //int tmp_addr = getAddressOf($3.name);
-      //string tmp_name = getNameOf(tmp_addr);
       addAsm( str_LDA + "#$" + toHex( atoi(stripFirst($1.name).c_str() )), 2, false );
       addAsm( str_CMP + getNameOf(getAddressOf($3.name)), 3, false );
     }
@@ -5462,16 +5425,15 @@ condition: expression relop expression
     {
       addComment("WordID relop WordID");
 
-      int OP1L = getAddressOf( $1.name );
-      int OP2L = getAddressOf( $3.name );
+      //int OP1L = getAddressOf( $1.name );
+      //int OP2L = getAddressOf( $3.name );
 
       // compare the Hi bytes first
-      int OP1H = OP1L+1;
-      int OP2H = OP2L+1;
+      //int OP1H = OP1L+1;
+      //int OP2H = OP2L+1;
 
       addAsm(str_LDA + getNameOf(getAddressOf($1.name)) + "+1", 3, false );
       addAsm(str_CMP + getNameOf(getAddressOf($3.name)) + "+1", 3, false );
-      //addAsm(str_BYTE + "$D0, $06" + commentmarker +"BNE +6", 2, false ); // BNE +6
       addAsm( str_BNE + "!+", 2, false );
       addAsm(str_LDA + getNameOf(getAddressOf($1.name)), 3, false );
       addAsm(str_CMP + getNameOf(getAddressOf($3.name)), 3, false );
