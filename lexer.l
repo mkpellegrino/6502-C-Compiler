@@ -9,6 +9,7 @@ digit [0-9]
 frmt  [{\t}|{\n}]
 
 %%
+"xxx"     { strcpy(yylval.nd_obj.name,(yytext)); return tXXX; }
 "fchrin"     { strcpy(yylval.nd_obj.name,(yytext)); return tFCHRIN; }
 "fchrout"     { strcpy(yylval.nd_obj.name,(yytext)); return tFCHROUT; }
 "fclrchn"     { strcpy(yylval.nd_obj.name,(yytext)); return tFCLRCHN; }
@@ -45,7 +46,6 @@ frmt  [{\t}|{\n}]
 "lsr"               { strcpy(yylval.nd_obj.name,(yytext)); return tLSR; }
 "dec"               { strcpy(yylval.nd_obj.name,(yytext)); return tDEC; }
 "inc"               { strcpy(yylval.nd_obj.name,(yytext)); return tINC; }
-"mob"               { strcpy(yylval.nd_obj.name,(yytext)); return tMOB; }
 "plot"              { strcpy(yylval.nd_obj.name,(yytext)); return tPLOT; }
 "getbmp_addr"            { strcpy(yylval.nd_obj.name,(yytext)); return tGETBMP; }
 "getscr_addr"            { strcpy(yylval.nd_obj.name,(yytext)); return tGETSCR; }
@@ -91,12 +91,13 @@ frmt  [{\t}|{\n}]
 "prints"                    { strcpy(yylval.nd_obj.name,(yytext)); return tPRINTS; }
 "scanf"                     { strcpy(yylval.nd_obj.name,(yytext)); return SCANFF; }
 "int"                       { strcpy(yylval.nd_obj.name,(yytext)); return INT; }
+"mob"               { strcpy(yylval.nd_obj.name,(yytext)); return tMOB; }
 "float"                     { strcpy(yylval.nd_obj.name,(yytext)); return FLOAT; }
-"double"                    { strcpy(yylval.nd_obj.name,(yytext)); return tDOUBLE; }
+   /* "double"                    { strcpy(yylval.nd_obj.name,(yytext)); return tDOUBLE; } */
 "word"                    { strcpy(yylval.nd_obj.name,(yytext)); return tWORD; }
-"byte"                    { strcpy(yylval.nd_obj.name,(yytext)); return tBYTE; }
+   /* "byte"                    { strcpy(yylval.nd_obj.name,(yytext)); return tBYTE; } */
 "uint"                    { strcpy(yylval.nd_obj.name,(yytext)); return tUINT; }
-"char"                      { strcpy(yylval.nd_obj.name,(yytext)); return CHAR; }
+   /* "char"                      { strcpy(yylval.nd_obj.name,(yytext)); return CHAR; } */
 "void"                      { strcpy(yylval.nd_obj.name,(yytext)); return VOID; }
 "return"                    { strcpy(yylval.nd_obj.name,(yytext)); return RETURN; }
 "for"	                    { strcpy(yylval.nd_obj.name,(yytext)); return FOR; }
