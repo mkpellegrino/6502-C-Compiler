@@ -73,6 +73,7 @@
   string str_TXA;
   string str_TXS;
   string str_TYA;
+  string str_XAA;
   string str_BYTE;
   string commentmarker;
 		   
@@ -138,6 +139,7 @@
     str_TXA = string( "txa " );
     str_TXS = string( "txs " );
     str_TYA = string( "tya " );
+    str_XAA = string( "xaa " );
     str_BYTE = string( ".byte " );
     commentmarker = " // ";
 
@@ -207,6 +209,7 @@
     str_TXA = string( "TXA" );
     str_TXS = string( "TXS" );
     str_TYA = string( "TYA " );
+    str_XAA = string( "XAA " ); // OPDCODE: $8B IMM :  2 cycles
     str_BYTE = string( ".BYTE " );
     commentmarker = " ; ";
 
@@ -1668,7 +1671,20 @@
     string tay = string("tay");
     string tya = string("tya");
     string lbl = string("LBL");
+    string txa = string("txa");
+    string sand = string("and");
+    
     string cmt = string("// ");
+
+
+    for( int i=0; i<asm_instr.size()-1; i++ )
+      {
+	if( cmpstr( asm_instr[i]->getString(), txa ) &&
+	    cmpstr( asm_instr[i+1]->getString(), sand ) )
+	  {
+	    addCompilerMessage( "found txa, and.  replace txa, and IMM with xaa IMM for more efficiency.", i);
+	  }
+      }
 
     
     for( int i=0; i<asm_instr.size(); i++ )
@@ -9296,8 +9312,6 @@ arithmetic expression
 	{
 	  addDebugComment( "Self Modifying Code" );
 	  addComment( "WordID - XA --> XA" );
-
-
 	  addAsm( str_STA + "!+", 3, false );
 	  addAsm( str_STX + "!++", 3, false );
 	  addAsm( str_LDA + O1, sizeOP1A, false  );
@@ -9433,10 +9447,10 @@ arithmetic expression
 	  addComment( "IntID + WordIMM --> XA" );
 	  addDebugComment( "Determine if the Int is < 0" );
 	  addAsm( str_LDA + O1, sizeOP1A, false );
-	  addAsm( str_ASL );
-	  addDebugComment( "Carry Flag will be set if the Int is < 0" );
-	  addAsm( str_BCS + "!+", 2, false ); // C is set if < 0
-	  addAsm( str_ROR );
+
+	  addAsm( str_BIT + O1, 3, false );
+	  addAsm( str_LDA + O1, sizeOP1A, false );
+	  addAsm( str_BMI + "!+", 2, false );
 
 	  // POSITIVE
 	  addAsm( str_CLC );
@@ -9450,7 +9464,6 @@ arithmetic expression
 
 	  // NEGATIVE
 	  addAsm( "!:", 0, true );
-	  addAsm( str_ROR );
 	  addAsm( str_CLC );
 
 	  // TWO'S COMP
@@ -9479,19 +9492,15 @@ arithmetic expression
 	  
 	  addComment( "IntID - WordIMM --> XA" );
 	  addDebugComment( "Determine if the Int is < 0" );
+	  addAsm( str_BIT + O1, 3, false );
 	  addAsm( str_LDA + O1, sizeOP1A, false );
-	  addAsm( str_ASL );
-	  addDebugComment( "Carry Flag will be set if the Int is < 0" );
-	  addAsm( str_BCS + "!+", 2, false );
-	  addAsm( str_ROR );
+	  addAsm( str_BMI + "!+", 2, false );
 
 	  // POSITIVE
 	  // A =Low
 	  // X =dc
 	  // Y =dc
 
-
-	  
 	  addAsm( str_SEC );
 	  addAsm( str_SBC + "#$" + IMM2L, 2, false );
 	  addAsm( str_TAY );
@@ -9519,7 +9528,6 @@ arithmetic expression
 	  // then add them.
 	  //  TODO: fixit later
 	  addAsm( "!:", 0, true );
-	  addAsm( str_ROR );
 	  addAsm( str_CLC );
 
 	  // TWO'S COMP
@@ -9556,24 +9564,24 @@ arithmetic expression
 	  mul16_is_needed = true;
 	  addComment( "IntID * WordIMM --> XA" );
 	  addDebugComment( "Determine if the Int is < 0" );
-	  addAsm( str_LDA + O1, sizeOP1A, false );
-	  addAsm( str_ASL );
-	  //addDebugComment( "Carry Flag will be set if the Int is < 0" );
+
+	  // bit getNameOf(getAddressOf($1.name))
+	  // N will be set if the int is negative
+	  
+	  addAsm( str_BIT + O1, 3, false );
 	  addAsm( str_PHP );
+	  addAsm( str_LDA + O1, sizeOP1A, false );
 
 	  // if carry flag is set
 	  // then two's comp A and
 	  // multiply
 	  // otherwise just multiply
 
-	  addAsm( str_BCC + "!+", 2, false );
-	  addAsm( str_ROR );
+	  addAsm( str_BPL + "!+", 2, false );
 	  addAsm( str_CLC );
 	  addAsm( str_EOR + "#$FF", 2, false );
 	  addAsm( str_ADC + "#$01", 2, false );
-	  addAsm( str_ASL );
 	  addAsm( "!:", 0, true );
-	  addAsm( str_ROR );
 	  
 	  addAsm( str_STA + "_MUL16_FD", 3, false);
 	  addAsm( str_LDA + "#$00", 2, false );
@@ -9587,7 +9595,8 @@ arithmetic expression
 	  addAsm( str_LDA + "MUL16R", 3, false );
 	  addAsm( str_LDX + "MUL16R+1", 3, false );
 	  addAsm( str_PLP );
-	  addAsm( str_BCC + "!+", 2, false );
+	  
+	  addAsm( str_BPL + "!+", 2, false );
 	  addAsm( str_CLC );
 	  addAsm( str_EOR + "#$FF", 2, false );
 	  addAsm( str_ADC + "#$01", 2, false );
@@ -9604,7 +9613,6 @@ arithmetic expression
 	{
 	  addComment( "IntID / WordIMM --> XA" );
 	  addCompilerMessage( "Operation not implemented for: IntID arith WordIMM", 3);
-	  
 	  strcpy($$.name, "_XA");
 	}
       else
@@ -9618,25 +9626,38 @@ arithmetic expression
       if( op == string("+") )
 	{
 	  addComment( "IntID + XA --> XA" );
-	  addCompilerMessage( "Operation not implemented for: IntID arith XA", 3);
+	  addAsm( str_ADC + O1, sizeOP1A, false );
+	  addAsm( str_TAY );
+	  addAsm( str_TXA );
+	  addAsm( str_BIT + O1, sizeOP1A, false );
+	  addAsm( str_BPL + "!+", 2, false );
+	  // it's negative
+	  addAsm( str_SBC + "#$00", 2, false );
+	  addAsm( str_JMP + "!++", 3, false );
+	  addAsm( "!:", 0, true );
+	  // it's positive
+	  addAsm( str_ADC + "#$00", 2, false );
+	  addAsm( "!:", 0, false );
+	  addAsm( str_TAX );
+	  addAsm( str_TYA );	  
 	  strcpy($$.name, "_XA");
 	}
       else if( op == string("-") )
 	{
 	  addComment( "IntID - XA --> XA" );
-	  addCompilerMessage( "Operation not implemented for: IntID arith XA", 3);
+	  addCompilerMessage( "Operation not implemented for: IntID - XA", 3);
 	  strcpy($$.name, "_XA");
 	}
       else if( op == string("*") )
 	{
 	  addComment( "A * WordID --> XA" );
-	  addCompilerMessage( "Operation not implemented for: IntID arith XA", 3);
+	  addCompilerMessage( "Operation not implemented for: IntID * XA", 3);
 	  strcpy($$.name, "_XA");
 	}
       else if( op == string("/") )
 	{
 	  addComment( "IntID / XA --> XA" );
-	  addCompilerMessage( "Operation not implemented for: IntID arith XA", 3);
+	  addCompilerMessage( "Operation not implemented for: IntID / XA", 3);
 	  strcpy($$.name, "_XA");
 	}
       else
@@ -9650,25 +9671,34 @@ arithmetic expression
       if( op == string("+") )
 	{
 	  addComment( "IntID + A --> A" );
-	  addCompilerMessage( "Operation not implemented for: IntID arith A", 3);
+	  addAsm( str_ADC + O1, 2, false );
 	  strcpy($$.name, "_A");
+	  addCompilerMessage( "Operation not fully tested for: IntID + A", 1);
 	}
       else if( op == string("-") )
 	{
 	  addComment( "IntID - A --> A" );
-	  addCompilerMessage( "Operation not implemented for: IntID arith A", 3);
+	  // I 'could' temporarily sway the 2 values...
+	  addAsm( str_TAY );
+	  addAsm( str_LAX + O1, sizeOP1A, false );
+	  //  addAsm( str_TAY );
+	  addAsm( str_STY + O1, sizeOP1A, false );
+	  addAsm( str_SBC + O1, sizeOP1A, false );
+	  //addAsm( str_TAX );
+	  addAsm( str_STX + O1, sizeOP1A, false );
+	  addCompilerMessage( "Operation not fully tested for: IntID - A", 1);
 	  strcpy($$.name, "_A");
 	}
       else if( op == string("*") )
 	{
 	  addComment( "A * WordIMM --> XA" );
-	  addCompilerMessage( "Operation not implemented for: IntID arith A", 3);
+	  addCompilerMessage( "Operation not implemented for: IntID * A", 3);
 	  strcpy($$.name, "_A");
 	}
       else if( op == string("/") )
 	{
 	  addComment( "IntID / A --> A" );
-	  addCompilerMessage( "Operation not implemented for: IntID arith A", 3);
+	  addCompilerMessage( "Operation not implemented for: IntID / A", 3);
 	  strcpy($$.name, "_A");
 	}
       else
@@ -9676,6 +9706,44 @@ arithmetic expression
 	  addCompilerMessage( "Operation not implemented for: IntID arith A", 3);
 	}
     }
+  else if( isXA($1.name) && isUintID($4.name) )
+    {
+      addDebugComment( "XA arith UintID" );
+      if( op == string("+") )
+	{
+	  // 2024 05 19 - mkpellegrino
+	  addComment( "XA + UintID --> XA" );
+	  addAsm( str_ADC + O2, sizeOP2A, false );
+	  addAsm( str_TAY );
+	  addAsm( str_TXA );
+	  addAsm( str_ADC + "#$00", 2, false );
+	  addAsm( str_TAX );
+	  addAsm( str_TYA );
+	  strcpy($$.name, "_XA");
+	}
+      else if( op == string("-") )
+	{
+	  addCompilerMessage( "Operation (-) not implemented for: XA arith UintID", 3);
+	  addComment( "XA - UintID --> XA" );
+	  strcpy($$.name, "_XA");
+	}
+      else if( op == string("*") )
+	{
+	  addCompilerMessage( "Operation (*) not implemented for: XA arith UintID", 3);
+	  addComment( "XA * UintID --> XA" );
+	  strcpy($$.name, "_XA");
+	}
+      else if( op == string("/") )
+	{
+	  addCompilerMessage( "Operation (/) not implemented for: XA arith UintID", 3);
+	  addComment( "XA / UintID --> XA" );
+	  strcpy($$.name, "_XA");
+	}
+      else
+	{
+	  addCompilerMessage( "Operation not implemented for: XA arith UintID", 3);
+	}
+    }  
   else if( isUintID($1.name) && isWordIMM($4.name) )
     {
       // TODO: Not fully implemented yet!
@@ -9739,24 +9807,30 @@ arithmetic expression
       string tmp_name = getNameOf(tmp_addr);
       if( op == string("-") )
 	{
+	  addCompilerMessage( "UintID - XA --> XA should be written better", 0 );
 	  addComment( "UIntID - XA --> XA (Uses $02/$03)");
-	  
-	  int tmp_op1 = getAddressOf( $1.name );
+
+	  // TODO: This can probably be shortened
+	  // and optimized a bit - 2024 05 17
+	  /* int tmp_op1 = getAddressOf( $1.name ); */
 	  addAsm( str_TAY );
 	  addAsm( str_LDA + "$02", 2, false );
 	  addAsm( str_PHA );
-	  addAsm( str_LDA + "$03", 2, false );
-	  addAsm( str_PHA );
+	  //addAsm( str_LDA + "$03", 2, false );
+	  //addAsm( str_PHA );
+
+	  
 	  addAsm( str_STY + "$02", 2, false );
-	  addAsm( str_STX + "$03", 2, false );
+	  //addAsm( str_STX + "$03", 2, false );
 	  addAsm( str_LDA + O1, sizeOP1A, false  );
 	  addAsm( str_SBC + "$02", 2, false );
 	  addAsm( str_TAY );
+	  addAsm( str_STX + "$02", 2, false );
 	  addAsm( str_LDA + "#$00", 2, false  );
-	  addAsm( str_SBC + "$03", 2, false );
+	  addAsm( str_SBC + "$02", 2, false );
 	  addAsm( str_TAX );
-	  addAsm( str_PLA );
-	  addAsm( str_STA + "$03", 2, false );
+	  //addAsm( str_PLA );
+	  //addAsm( str_STA + "$03", 2, false );
 	  addAsm( str_PLA );
 	  addAsm( str_STA + "$02", 2, false );
 	  addAsm( str_TYA );
@@ -9901,7 +9975,6 @@ arithmetic expression
       else if( op == string("+") )
 	{
 	  addComment( "XA + WordID --> XA" );
-	  int tmp_base = getAddressOf( $4.name );
 	  addAsm( str_ADC + O2, sizeOP2A, false );
 	  addAsm( str_TAY );
 	  addAsm( str_TXA );
@@ -10227,7 +10300,7 @@ arithmetic expression
 	      strcpy($$.name, "_XA");
 	      break;
 	    case 32768:
-	      addComment( "XA * WordIMM --> XA (32768)" );
+	      addComment( "XA * WordIMM (32768) --> XA" );
 
 	      // saves 2 bytes
 	      addAsm( str_CLC );                 // 2 cycles
@@ -10258,8 +10331,7 @@ arithmetic expression
 	      addCompilerMessage( "Multiplying a Word by # >= 256... Losing some fidelity (and you may be eaten by a grue).", 0 );
 	      break;
 	    case 128:
-	      addComment( "XA * WordIMM --> XA (128)" );
-
+	      addComment( "XA * WordIMM (128) --> XA" );
 	    case 64:
 	      addAsm( str_TAY );
 	      addAsm( str_LDA + "$02", 2, false );
@@ -10284,7 +10356,7 @@ arithmetic expression
 	      strcpy($$.name, "_XA");
 	      break;
 	    case 32:
-	      addComment( "XA * WordIMM --> XA (32)" );
+	      addComment( "XA * WordIMM (32) --> XA" );
 	      addAsm( str_ASL );
 	      addAsm( str_TAY );
 	      addAsm( str_TXA );
@@ -10322,7 +10394,7 @@ arithmetic expression
 	      strcpy($$.name, "_XA");
 	      break;
 	    case 5:
-	      addComment( "XA * WordIMM --> XA (5)" );
+	      addComment( "XA * WordIMM (5) --> XA" );
 	      addAsm( str_TAY );
 	      addAsm( str_LDA + "$02", 2, false );
 	      addAsm( str_PHA );
@@ -10357,7 +10429,7 @@ arithmetic expression
 	      strcpy($$.name, "_XA");
 	      break;
 	    case 3:
-	      addComment( "XA * WordIMM --> XA (3)" );
+	      addComment( "XA * WordIMM (3) --> XA" );
 	      addAsm( str_TAY );
 	      addAsm( str_LDA + "$02", 2, false );
 	      addAsm( str_PHA );
@@ -10386,7 +10458,7 @@ arithmetic expression
 	      strcpy($$.name, "_XA");
 	      break;
 	    case 10:
-	      addComment( "XA * WordIMM --> XA (10)" );
+	      addComment( "XA * WordIMM (10) --> XA" );
 	      addAsm( str_TAY );
 	      addAsm( str_LDA + "$02", 2, false );
 	      addAsm( str_PHA );
@@ -11428,6 +11500,8 @@ arithmetic expression
 	}
       else if( op == string("-"))
 	{
+	  // TODO: Test this... I'm not sure it's correct
+	  // it might be backwards (see IntID - A)
 	  addComment( "UintID - A --> A" );
 	  addAsm( str_SBC + O1, sizeOP1A, false );
 	  strcpy($$.name, "_A" );
@@ -11920,15 +11994,13 @@ arithmetic expression
 	  addAsm( str_LDA + O2, sizeOP2A, false);
 	}
     }
-  else if( isIntID($1.name) && isIntIMM($4.name) )     // MEM vs. IMM
+  else if( isIntID($1.name) && isIntIMM($4.name) )
     {
       addComment( "IntID arith IntIMM" );
       addAsm( str_LDA + getNameOf(getAddressOf($1.name)), 3, false); // 
       if( op == string("+"))
 	{
 	  addComment( "IntID + IntIMM" );
-
-	  //addAsm( str_CLC );
 	  int tmp_int = atoi(stripFirst($4.name).c_str());
 	  if( tmp_int < 0 )
 	    {
@@ -11939,9 +12011,6 @@ arithmetic expression
       else if( op == string("-"))
 	{
 	  addComment( "IntID - IntIMM" );
-
-	  //addAsm( str_SEC );
-
 	  int tmp_int = atoi(stripFirst($4.name).c_str());
 	  if( tmp_int < 0 )
 	    {
@@ -12066,7 +12135,6 @@ arithmetic expression
 	  int tmp_int = atoi(stripFirst($4.name).c_str());
 	  addAsm( str_ADC + "#$"  + toHex(tmp_int), 2, false );
 	  strcpy($$.name, "_A" );
-
 	}
       else if( op == string("-"))
 	{
@@ -12109,7 +12177,6 @@ arithmetic expression
 	  addCompilerMessage( "math operation not yet implemented for IntID ? UintIMM", 3 );
 	}
     }
-
   else if( isUintID($1.name) && isUintIMM($4.name) )     // UintID vs. UintIMM
     {
       addDebugComment( "UintID arith UintIMM" );
@@ -12157,41 +12224,6 @@ arithmetic expression
 	      addAsm( str_LDA + O1, sizeOP1A, false);
 	      addAsm( str_LDX + "#$00", 2, false );
 	    }
-	  /* else if( tmp_v == 2 ) */
-	  /*   { */
-	  /*     addAsm( str_LDX + "#$00", 2, false ); */
-	  /*     addAsm( str_LDA + O1, sizeOP1A, false); */
-	  /*     addAsm( str_ASL ); */
-	  /*     addAsm( str_TAY ); */
-	  /*     addAsm( str_TXA ); */
-	  /*     addAsm( str_ROL ); */
-	  /*     addAsm( str_TAX ); */
-	  /*     addAsm( str_TYA ); */
-	  /*   } */
-	  /* else if( tmp_v == 32 ) */
-	  /*   { */
-	  /*     addAsm( str_LDA + O1, sizeOP1A, false); */
-	  /*     addAsm( str_ASL ); */
-	  /*     addAsm( str_TAX ); */
-	  /*     addAsm( str_LDA + "#$00", 2, false ); */
-	  /*   } */
-	  /* else if( tmp_v == 64 ) */
-	  /*   { */
-	  /*     addAsm( str_LDA + O1, sizeOP1A, false); */
-	  /*     addAsm( str_ASL ); */
-	  /*     addAsm( str_ASL ); */
-	  /*     addAsm( str_TAX ); */
-	  /*     addAsm( str_LDA + "#$00", 2, false ); */
-	  /*   } */
-	  /* else if( tmp_v == 128 ) */
-	  /*   { */
-	  /*     addAsm( str_LDA + O1, sizeOP1A, false); */
-	  /*     addAsm( str_ASL ); */
-	  /*     addAsm( str_ASL ); */
-	  /*     addAsm( str_ASL ); */
-	  /*     addAsm( str_TAX ); */
-	  /*     addAsm( str_LDA + "#$00", 2, false ); */
-	  /*   } */
 	  else
 	    {
 	      addAsm( str_LDA + O1, sizeOP1A, false);
@@ -12470,7 +12502,6 @@ arithmetic expression
       /* then this is a compile-time arithetic operation */
       if( op == "+"  )
 	{
-	  //addAsm( str_CLC );
 	  tmp_int3 = tmp_int1 + tmp_int2;
 	  if( tmp_int3 < 0 || tmp_int3 > 127)
 	    {
@@ -12481,7 +12512,6 @@ arithmetic expression
 	}
       else if( op == "-" )
 	{
-	  //addAsm( str_SEC );
 	  tmp_int3 = tmp_int1 - tmp_int2;
 	  if( tmp_int3 < 0 || tmp_int3 > 127)
 	    {
@@ -12535,24 +12565,35 @@ arithmetic expression
     }
   else if( isIntIMM($1.name) && isUintIMM($4.name) )
     {
-      addComment( "IntIMM arith UintIMM" );
+      addDebugComment( "IntIMM arith UintIMM" );
       int OP1 = atoi( stripFirst($1.name).c_str() );
+      if( OP1 > 127 )
+	{
+	  OP1 = -twos_complement( OP1 );	  
+	}
+      addCompilerMessage( string("Int read in as: ") + itos(OP1), 0 );
       int OP2 = atoi( stripFirst($4.name).c_str() );
       int result;
       if( op == string("+") )
 	{
+	  addComment( "IntIMM + UintIMM" );
 	  result = OP1 + OP2;
 	}
       else if( op == string("-") )
 	{
+	  addComment( "IntIMM - UintIMM" );
 	  result = OP1 - OP2;
 	}
       else if( op == string("*") )
 	{
+	  addComment( "IntIMM * UintIMM" );
 	  result = OP1 * OP2;
 	}
       else if( op == string("/") )
 	{
+	  if( OP2 == 0 ) addCompilerMessage( "error - division by zero", 3 );
+	    
+	  addComment( "IntIMM / UintIMM" );
 	  result = OP1 / OP2;
 	}
       else
@@ -14670,8 +14711,20 @@ value: FLOAT_NUM
     }
   else if( current_variable_type == 1 )
     {
-      if( atoi($1.name) > 127 || atoi($1.name) < -128 ) addCompilerMessage( "int out of range (-128 to +127)", 3 );
-      strcpy($$.name, string( string("i") + string($1.name)).c_str());
+      if( atoi($1.name) > 127 || atoi($1.name) < -128 )
+	{
+
+	  addCompilerMessage( "int out of range (-128 to +127) converting to word in 2's comp.", 0 );
+	  int tmp_i = atoi( $1.name );
+	  tmp_i = twos_complement( tmp_i );
+	  current_variable_type = 2;
+	  strcpy($$.name, string( string("w") + itos(tmp_i)).c_str());	  
+	}
+      else
+	{
+	  strcpy($$.name, string( string("i") + string($1.name)).c_str());
+	}
+      
     }
   else if( current_variable_type == 2 )
     {
@@ -16031,25 +16084,32 @@ int main(int argc, char *argv[])
       addComment( string("\t") + str_AND + "#$F0" );
       addComment( string("\t") + str_LSR );
       addAsm( str_ALR + string("#$F0") + commentmarker + "Undocumented Opcode (replaces the two lines above)", 2, false );
-      illegal_operations_are_needed = true;
-      addAsm( str_LSR );
-      addAsm( str_LSR );
-      addAsm( str_LSR );
-
-      addAsm( str_CMP + "#$0A", 2, false);
-      addAsm( str_BYTE + "$90, $03", 2, false);
-      addAsm( str_CLC );
-      addAsm( str_ADC + "#$07", 2, false );
-      addAsm( str_ADC + "#$30", 2, false);
-      addAsm( str_JSR + "$FFD2", 3, false );
-      addAsm( str_TXA );
+      illegal_operations_are_needed = true;// <--+
+      addAsm( str_LSR );//                       |
+      addAsm( str_LSR );//                       |
+      addAsm( str_LSR );//                       |
+      //                                         |
+      addAsm( str_CMP + "#$0A", 2, false);//     |
+      addAsm( str_BCC + "!+", 2, false ); //     |     
+      //addAsm( str_BYTE + "$90, $03", 2, false);|
+      addAsm( str_CLC );//                       |
+      addAsm( str_ADC + "#$07", 2, false );//    |
+      addAsm( "!:", 0, true ); //                |
+      addAsm( str_ADC + "#$30", 2, false);//     |
+      addAsm( str_JSR + "$FFD2", 3, false );//   |
+      //                                         |
+      addComment( "\t" + str_TXA );//            |
+      addComment( "\t" + str_AND + "#$0F" );//   |
+      //                                         |
+      //illegal_operations_are_needed = true; <--+ 
+      addAsm( str_XAA + "#$0F" + commentmarker + "Undocumented Opcode (replaces the two lines above)", 2, false );
       
-      addAsm( str_AND + "#$0F", 2, false);
       addAsm( str_CMP + "#$0A", 2, false);
-
-      addAsm( str_BYTE + "$90, $03", 2, false);
+      addAsm( str_BCC + "!+", 2, false );
+      //addAsm( str_BYTE + "$90, $03", 2, false);
       addAsm( str_CLC );
       addAsm( str_ADC + "#$07", 2, false );
+      addAsm( "!:", 0, true );
       addAsm( str_ADC + "#$30", 2, false);
       addAsm( str_JSR + "$FFD2", 3, false );
 
