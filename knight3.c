@@ -12,6 +12,8 @@ int main()
   uint JSeast=NULL;
   uint JSwest=NULL;
 
+    data mapfn = {'M','A','P','?',',','S',',','R' };
+
   asmcomment( "Bitmap Graphics Definitions" );  
   data sdoor = { 213, 213, 253, 255, 255, 255, 255, 255, 85, 85, 85, 245, 255, 255, 255, 255, 85, 85, 85, 95, 255, 255, 255, 255, 87, 87, 127, 255, 255, 255, 255, 255 };
   data empty2 = { 170, 170, 170, 170, 170, 170, 170, 170 };
@@ -108,10 +110,10 @@ int main()
   data shieldbot = { 112, 112, 112, 76, 76, 67, 64, 85, 32, 32, 32, 32, 168, 3, 204, 117, 48, 48, 48, 192, 192, 64, 64, 85 };
 
   data keyonwall = { 215, 125, 125, 215, 247, 215, 247, 215 };
-  //data keyonwall = { 60, 195, 195, 60, 12, 60, 12, 60 };
 
   asmcomment( "Text Definitions" );
 
+  data levelText = {'L','E','V','E','L',':',0x00 };
   data shopText = {'S', 'H', 'O', 'P', 0x00 };
   data scoreText = {'E', 'X', 'P', ':', 0x20, 0x00 };
   data healthText = {'H', 'E', 'A', 'L', 'T', 'H', ':', 0x20, 0x00 };
@@ -128,6 +130,11 @@ int main()
   
   data pressyText = {'P', 'R', 'E', 'S', 'S', ' ', 'Y', ' ', 'T', 'O', ' ', 'P', 'L', 'A', 'Y', ' ', 'A', 'G', 'A', 'I', 'N' };
   data quitText = {'P', 'R', 'E', 'S', 'S', ' ', 'Q', ' ', 'T', 'O', ' ', 'Q', 'U', 'I', 'T' };
+
+  data levelUpText0 = { 'C', 'O', 'N', 'G', 'R', 'A', 'T', 'U', 'L', 'A', 'T', 'I', 'O', 'N', 'S', 0x00 };
+  //data levelUpText1 = { 'Y', 'O', 'U', ' ', 'H', 'A', 'V', 'E', ' ', 'S', 'A', 'V', 'E', 'D', ' ', 'T', 'H', 'E', ' ', 'P', 'R', 'I', 'N', 'C', 'E', 'S', 'S', 0x00 }; 
+  data levelUpText1 = { 'Y', 'O', 'U', ' ', 'H', 'A', 'V', 'E', ' ', 'C', 'O', 'M', 'P', 'L', 'E', 'T', 'E', 'D', ' ', 'T', 'H', 'E', ' ', 'L', 'E', 'V', 'E', 'L',  0x00 }; 
+  
   asmcomment( "LETTER/DIGIT DEFINITIONS" );
   // digits
   data digits =
@@ -143,8 +150,8 @@ int main()
       255, 87, 247, 247, 247, 223, 223, 223, 
       255, 223, 119, 119, 223, 119, 119, 223, 
       255, 223, 119, 119, 215, 247, 247, 247,
+      // space
       255, 255, 255, 255, 255, 255, 255, 255
-
     };
   // letters
   data letters =
@@ -155,7 +162,7 @@ int main()
       255, 95, 119, 119, 119, 119, 119, 95, 
       255, 87, 127, 127, 95, 127, 127, 87, 
       255, 87, 127, 127, 95, 127, 127, 127, 
-      255, 223, 119, 127, 127, 87, 119, 223, 
+      255, 223, 119, 127, 87, 119, 119, 223, 
       255, 119, 119, 119, 87, 119, 119, 119, 
       255, 87, 223, 223, 223, 223, 223, 87,
       255, 247, 247, 247, 119, 119, 119, 223, 
@@ -174,19 +181,29 @@ int main()
       255, 119, 119, 119, 119, 119, 223, 223,
       
       255, 119, 119, 119, 87, 87, 119, 119, 
-      255, 119, 119, 119, 223, 119, 119, 119, 
+      255, 119, 119, 119, 223, 119, 119, 119,
       255, 119, 119, 119, 223, 223, 223, 223, 
       255, 87, 247, 247, 223, 127, 127, 87,
+      // space
       255, 255, 255, 255, 255, 255, 255, 255, 
-      255, 255, 223, 223, 255, 223, 223, 255
-    };
+      // colon
+      255, 255, 223, 223, 255, 223, 223, 255,
+      // period
+      255, 255, 255, 255, 255, 255, 127, 127, 
+      // (
+      247, 223, 223, 223, 223, 223, 223, 247, 
+      // )
+      223, 247, 247, 247, 247, 247, 247, 223, 
+      // , comma
+      255, 255, 255, 255, 255, 255, 223, 127
+   };
 
   
   word plotDigitAddr = digits;
 
 
   
-  // the background colour should be controlled by a raster int
+  // the background colour could be controlled by a raster int
   // from 0-32 bg should be blue
   // from 33 - 120 bg should be grey
   // from 121 - bottom of floor it should be brown
@@ -196,10 +213,6 @@ int main()
   //irq( ptr(irqfunc1), 0x00, 1 );
 
   saveregs();
-  
-  
-  //irq( ptr(playsid), 0x32, 1 );
-
   
   poke( 0xD020, 0x0B );
   poke( 0xD021, 0x0B );
@@ -232,9 +245,13 @@ int main()
   uint wordSize;
   uint rndinit;
   uint myTextBG;
+  uint readyToLevelUp;
+  uint isCursed;
+  //uint escapeDoorIsInRoom;
   
   uint thing;
   uint thing2;
+  uint whichsprites;
   uint currentRoom;
   uint currentleftframe;
   uint currentrightframe;
@@ -254,6 +271,8 @@ int main()
   uint maxHP;
   uint playerHasKey;
   uint playerAttackFlag;
+  uint doorLocked;
+  uint status;
   // Blue and Red
   uint plotshapeColourValue0110;
   // White
@@ -261,6 +280,8 @@ int main()
 
   uint textColour = 0x01;
   uint homeRoom;
+  // start at this level
+  uint level = 0x01;
   //   0
   // 3   1
   //   2
@@ -318,7 +339,10 @@ int main()
 
   bank( 2 );
   // multicolour bitmap mode
-  poke( 0xD011, 0x38 );
+  uint currentD011 = peek( 0xD011 );
+  poke( 0xD011, currentD011 | 0x30 );
+
+  //poke( 0xD011, 0x38 );
   poke( 0xD016, 0x18 );
   poke( 0xD018, 0x18 );
 
@@ -332,14 +356,10 @@ int main()
   screen(0x00);
   poke( 0xD021, 0x00 );
   asmcomment( "LOAD THE SPLASH SCREEN INTO MEMORY" );
-  //setfilename( "IMAGE,S,R" );
   setfilename( "SPLASH,S,R" );
-  //setfilename( "UNTITLED,S,R" );
-  //setfilename( "MAP,S,R" );
   setlfs( 3, 8, 3 );
   fopen();
   fchkin( 3 );
-
   for( word i = 0xA000; i < 0xBF40; i = i + 0x0001 )
     {
       poke( i, fchrin() );
@@ -355,14 +375,16 @@ int main()
   fclose(3);
   fclrchn();
 
+
+  
   myTextBG = 0x00;
   wordToPrint = pakText;
   wordSize = 25;
   plotDigitX = 8;
   plotDigitY = 24;
-  printWord();
-  
+  printWord();  
   screen(0x01);
+
   
   asmcomment("seed the RNG by repeatedly calling rnd until player presses a key" );
   seed();
@@ -381,9 +403,10 @@ int main()
     }
   mySeed();
 
+ 
   // 2024 04 19 - mkpellegrino
-  asmcomment( "shift the screen back down a pixel" );
-  poke( 0xD011, 0x3B );
+  //asmcomment( "shift the screen back down a pixel" );
+  //poke( 0xD011, 0x3B );
  
   screen(0x00);
 
@@ -432,7 +455,7 @@ int main()
   word sprptr4 = scraddr + 0x03FC;
   word sprptr5 = scraddr + 0x03FD;
   word sprptr6 = scraddr + 0x03FE;
-  //word sprptr7 = scraddr + 0x03FF;
+  word sprptr7 = scraddr + 0x03FF;
 
 
   asmcomment( "WORLD DEFINITION" );
@@ -487,55 +510,39 @@ int main()
       
     };
 
-  initWorld();  
-  
-  asmcomment( "LOAD MOBS INTO MEMORY" );
-  setfilename( "SPRITES1,S,R" );
-  setlfs( 3, 8, 3 );
-  fopen();
-  fchkin( 3 );
-
-  for( word saddr = 0x8800; saddr < 0x9000; saddr = saddr + 0x0001 )
-    {
-      poke( saddr, fchrin() );
-    }
-  // read the "KEY" sprite in for sprite pointer value of 1
-  for( saddr = 0x8000; saddr < 0x8040; saddr = saddr + 0x0001 )
-    {
-      poke( saddr, fchrin() );
-    }
-  fclose(3);
-  fclrchn();
+  loadWorld();
+  initGame();  
+  loadSprites();
 
   // Sprite Memory starts at 0x8040
  
   // multicolour for sprites 00110111
-  poke( 0xD01C, 0x37 );
+  //poke( 0xD01C, 0x37 );
  
   // colours for all sprites (Light grey)
-  poke( 0xD025, 0x0F );
+  // poke( 0xD025, 0x0F );
 
   // Black for all sprites
-  poke( 0xD026, 0x00 );
+  //poke( 0xD026, 0x00 );
 
   // Brown for sprite 1
-  spritecolour( 0x01, 0x09 );
+  //spritecolour( 0x01, 0x09 );
 
   // Brown for sprite 0 and 2 (the monster)
-  spritecolour( 0x00, 0x09 );
-  spritecolour( 0x02, 0x09 );
+  //spritecolour( 0x00, 0x09 );
+  //spritecolour( 0x02, 0x09 );
 
   // Yellow for sprite 3 (the coins)
-  spritecolour( 0x03, 0x07 );
+  //spritecolour( 0x03, 0x07 );
 
   // Red for sprite 4 (the healthpack)
-  spritecolour( 0x04, 0x02 );
+  //spritecolour( 0x04, 0x02 );
 
   // Pink for sprite 5 (the princess)
-  spritecolour( 0x05, 0x0A );
+  //spritecolour( 0x05, 0x0A );
 
   // Grey for sprite 6 (the key)
-  spritecolour( 0x06, 0x0C );
+  //spritecolour( 0x06, 0x0C );
 
 
   // turn on sprites   (b11111111 = 0xFF = all)
@@ -601,6 +608,7 @@ int main()
   // princess
   poke( sprptr5, 63 );
   // key
+  //poke( sprptr6, 64 );
   poke( sprptr6, 0 );
   
   putStuffOnTheScreen();
@@ -646,6 +654,14 @@ int main()
 	      JSeast = 0x00;
 	    }
 
+	  if( c == 12 )
+	    {
+	      // LEVEL UP
+	      levelUp();
+	      loadSprites();
+	      putStuffOnTheScreen();
+	    }
+
 	  direction = 0x05;
 
 	  if( JSbtnPressA == 0x00 )
@@ -666,6 +682,18 @@ int main()
 	      JSeast = 0x01;
 	      JSwest = 0x01;
 	    }
+
+	  if( isCursed == 0x01 )
+	    {
+	      uint tmpCurse = JSwest;
+	      JSwest = JSeast;
+	      JSeast = tmpCurse;
+	      tmpCurse = JSnorth;
+	      JSnorth = JSsouth;
+	      JSsouth = tmpCurse;
+	      inc( 0xD020 );
+	    }
+	      
 
 	  if( JSwest == 0x00 )
 	    {
@@ -730,10 +758,26 @@ int main()
 			  //if( playerx < nDoor + 0x0040 ) swapped for efficiency
 			  if( nDoor + 0x0040 >= playerx )
 			    {
-			      // MOVE TO NEXT ROOM
-			      currentRoom = goN;
-			      playery = 202;
-			      putStuffOnTheScreen();
+			      if( doorLocked == 0x01 )
+				{
+				  if( playerHasKey != 0x00 )
+				    {
+				      dec( playerHasKey );
+				      unlockDoor();
+				      currentRoom = goN;
+				      playery = 202;
+				      doorLocked = 0x00;
+				      putStuffOnTheScreen();
+				    }
+				}
+			      else
+				{
+				  
+				  // MOVE TO NEXT ROOM
+				  currentRoom = goN;
+				  playery = 202;
+				  putStuffOnTheScreen();
+				}
 			    }
 			}
 		    }
@@ -753,8 +797,8 @@ int main()
 			      //plotNum = mapx;
 			      //plotNumber();
 			      // this is where we can display the map
-			      displayMap();
-			      noMonsters();
+			      loadMap();
+			      //noMonsters();
 			      putStuffOnTheScreen();
 			    }
 			  
@@ -796,14 +840,14 @@ int main()
 	    }
 	  if( princessisinroom != 0x00 )
 	    {
-	      if( playerHasKey == 0x01 )
+	      if( playerHasKey != 0x00 )
 		{
 		  uint tmpProx1 = proximity( princessx, princessy, 0x000A );
 		  if( tmpProx1 != 0x00 )
 		    {
 
 		      // This should make the player go to the next level
-		      //  in the next level the healthpack should increase
+		      // in the next level the healthpack should increase
 		      // hit points by more than the previous level.
 		      // monsters should have more hitpoints (and should be faster)
 		      // there should be something like spells or shields or some new item
@@ -820,12 +864,12 @@ int main()
 		      spriteoff( 0x20 );
 		      expPts = expPts + 0x0100;
 		      updateScore();
-		      playerHasKey = 0x00;
+		      dec( playerHasKey );
+		      //playerHasKey = 0x00;
 		      putThing( 0xA0, 0x00 );
 
 		      // NOW ESCAPE!
 		      escapePhase();
-		      homeRoom = currentRoom;
 		    }
 		}
 	    }
@@ -856,6 +900,7 @@ int main()
 	  // there could also be a "currently-in-a-fight" flag
 	  // so if the player has started attacking, then
 	  // the monster goes on the offensive
+	 
 	}
       poke( 0xD01E, 0 );
       poke( 0xD019, 0 );
@@ -892,6 +937,9 @@ int main()
   restoreregs();
   shortcls();
   printf( "GAME OVER\n\nSTATS:\n" );
+  prints( levelText );
+  printf( level );
+  cr();
   prints( scoreText  );
   printf( expPts );
   cr();
@@ -1076,6 +1124,11 @@ void clearhires()
 
 void putStuffOnTheScreen()
 {
+  if( currentRoom == 0xFF )
+    {
+      levelUp();
+    }
+  
   screen(0x00);
 
   clearhires();
@@ -1115,7 +1168,7 @@ void putStuffOnTheScreen()
 
   mapx = 0x0000;
   mapinroom = 0x00;
-  
+  doorLocked = 0x00;
     
   // Top Wall
   // Drk Grey and Grey
@@ -1154,6 +1207,10 @@ void putStuffOnTheScreen()
   // 0x0D = Shield
   // 0x0E = Handcuffs
   // 0x0F = Closed Door
+  // 0x11 = Shop
+  // 0x12 = Objective
+  // 0x13 = Curse On
+  // 0x14 = Curse Off
   
   // find room definition
   dec( currentRoom );
@@ -1179,15 +1236,30 @@ void putStuffOnTheScreen()
       putThing( 0x09, 0x00 );
     }
   
-  inc( roomIndex );  
+  inc( roomIndex );
+  doorLocked = 0x00;
   for( uint jj = 0x00; jj<0x05; inc( jj ) )
     {
       thing = (world)[roomIndex];
       putThing( thing, jj );
       if( thing == 0x01 )
 	{
+	  doorLocked = 0x00;
 	  nDoor = jj * 64;
-	  //nDoor = asl(asl(asl(asl(asl(asl(jj))))));
+	}
+      if( thing == 0x0F )
+	{
+	  doorLocked = 0x01;
+	  nDoor = jj * 64;
+	}
+      if( thing == 0x13 )
+	{
+	  isCursed = 0x01;
+	}
+      if( thing == 0x14 )
+	{
+	  poke( 0xD020, 0x0C );
+	  isCursed = 0x00;
 	}
       if( thing == 0x03 )
 	{
@@ -1363,12 +1435,9 @@ void putStuffOnTheScreen()
   if( thing2 != 0 )
     {
       princessisinroom = 0x01;
-      
       // the x should be the same as the CUFFS
       princessy = 0x70;
       spritexy( 0x05, princessx, princessy );
-      //spritex( 0x05, princessx );
-      //spritey( 0x05, princessy );
       spriteon( 0x20 );
     }
   else
@@ -1381,6 +1450,7 @@ void putStuffOnTheScreen()
   general16bit = world + roomIndex;
 
   myTextBG = 0x00;
+  textColour = 0x01;
   wordToPrint = scoreText;
   wordSize = 4;
   plotDigitX = 1;
@@ -1424,7 +1494,7 @@ void putStuffOnTheScreen()
 
   updateLives();
 
-  if( playerHasKey == 0x01 )
+  if( playerHasKey != 0x00 )
     {
       putThing( 0x0A, 0x00 );
     }
@@ -1627,12 +1697,22 @@ void putThing( uint whatThing, uint whereThing )
     }
 
 
+  // Objective
+  if( whatThing == 0x12 )
+    {
+      princessx = ptStartX + 0x0005;
+      princessx = asl(asl(asl(princessx)));
+      princessx = princessx + 0x0001;
+    }
+
+
     if( whatThing == 0x0F )
     {
       plotshapeColourValue0110 = 0xB2; 
       plotshapeColourValue11 = 0x00;
       plotshape(shieldtop, ptStartX+2, 6, 3 );
       plotshape(shieldbot, ptStartX+2, 7, 3 );
+      //escapeDoorIsInRoom = 0x01;
     }
 
   // Closed Door
@@ -1686,7 +1766,10 @@ void putThing( uint whatThing, uint whereThing )
       mapinroom=1;
       // TO DO: The value of mapx needs to be more accurate as
       // to where on the wall the map is hung
-      mapx=ptStartX * 8;
+      mapx=ptStartX * 9;
+      //mapx=ptStartX * 8;
+      
+
     }
   
   return;
@@ -1776,16 +1859,6 @@ void positionMOBS()
 
   spritexy( 0x01, playerx, playery );
 
-  //debug( 0x000A, 1, playerx, 8 );
-  // plotDigitX = 10;
-  // plotDigitY = 2;
-  // plotNum = playerx;
-  // textColour = 0x08;
-  // plotNumber();
-  // //white
-  // textColour = 0x01;
-
-  
   if( treasureinroom == 0x01 )
     {
       // treasure
@@ -1853,7 +1926,7 @@ void positionMOBS()
 	  clearSpecialBit( 3 );
 	  updateScore();
 	  keyinroom = 0x00;
-	  playerHasKey = 0x01;
+	  inc(playerHasKey);
 	  putThing( 0x0A, 0x00 );
 	}
     }
@@ -1863,36 +1936,25 @@ void positionMOBS()
 
 void irqfunc1()
 {
-  //asmcomment( "call the SID player routine" );
+  asmcomment( "the sid routine" );
   jsr( 0xC006 );
+  asmcomment("player attack sound effect");
   if( playerAttackFlag > 0x00 )
     {
-      asmcomment("player attack sound effect");
-
       // SOUND EFFECT
       // voice 2
       poke( 0xD40B, 0x81 );
-      //poke( 0xD412, 0x81 );
       // AD
       poke( 0xD40C, 0x11 );
-      //poke( 0xD413, 0x00 );
       // SR
       poke( 0xD40D, 0xF1 );
-      //poke( 0xD414, 0xF0 );
       // Frequency
       // Voice 2
       poke( 0xD408, 0x0F );
       poke( 0xD407, 0x43 );
-
-      // Voice 3
-      //poke( 0xD40F, 0x22 );
-      //poke( 0xD40E, 0x4B );
-
       dec( playerAttackFlag );
-      //      inc( 0xD020 );
-
     }
-
+  asmcomment( "acknowledge interrupt" );
   asl( 0xD019 );
   jmp( 0xEA31 );
   return;
@@ -1936,22 +1998,54 @@ void printWord()
   plotDigitAddr= letters;
   for( uint printWordI = 0x00; printWordI < wordSize; inc(printWordI) )
     {
+      
       uint currentChar = (wordToPrint)[printWordI];
-      if( currentChar == 58 )
+
+      if( currentChar == ',' )
 	{
-	  currentChar = 27;
+	  currentChar = 31;
 	}
       else
 	{
-	  if( currentChar == 32 )
+	  if( currentChar == ')' )
 	    {
-	      currentChar = 26;
+	      currentChar = 30;
 	    }
 	  else
 	    {
-	      currentChar = currentChar - 65;
+	      if( currentChar == '(' )
+		{
+		  currentChar = 29;
+		}
+	      else
+		{
+		  if( currentChar == '.' )
+		    {
+		      currentChar = 28;
+		    }
+		  else
+		    {
+		      if( currentChar == 58 )
+			{
+			  currentChar = 27;
+			}
+		      else
+			{
+			  if( currentChar == 32 )
+			    {
+			      currentChar = 26;
+			    }
+			  else
+			    {
+			      currentChar = currentChar - 65;
+			    }
+			}
+		    }
+		}
 	    }
 	}
+
+      
       plotDigitBindex = asl(asl(asl(currentChar)));
       plotDigit();
       
@@ -1986,20 +2080,10 @@ void plotNumber()
   return;
 }
 
-// a debug function to show the player's Y on the screen
-//void updateY()
-//{
-//  plotDigitX = 2;
-//  plotDigitY = 10;
-//  plotNum = playery;
-//  plotNumber();
-//  return;
-//}
-
-
 void updateScore()
 {
   myTextBG = 0x00;
+  textColour = 0x01;
   plotDigitX = 9;
   plotDigitY = 1;
   plotNum = expPts;
@@ -2023,6 +2107,8 @@ void updateScore()
 void updateLives()
 {
   myTextBG = 0x00;
+  textColour = 0x01;
+
   plotDigitX = 38;
   plotDigitY = 23;
   plotNum = lives;
@@ -2112,7 +2198,6 @@ void setSpecialBit( uint specialBit )
     {
       asl( specialBitFlag );
     }
-  
   dec( currentRoom );
   roomIndex = currentRoom * 11;
   inc( currentRoom );
@@ -2218,7 +2303,6 @@ void monsterAttack()
   return;
 }
 
-
 void playerAttack()
 {
   // do the whole battle/attack thing here
@@ -2310,9 +2394,11 @@ void deathSequence()
   return;
 }
 
-
 void pauseGameSequence()
 {
+  whichsprites = peek( 0xD015 );
+  poke( 0xD015, 0x00 );
+
   myTextBG = 0xBB;
   wordToPrint = quitText;
   wordSize = 15;
@@ -2347,12 +2433,16 @@ void pauseGameSequence()
       plotDigitY = 13;
       myTextBG = 0xBB;
       printWord();
+      poke( 0xD015, whichsprites );
     }
+  
   return;
 }
 
 void gameOverSequence()
 {
+  //whichsprites = peek( 0xD015 );
+  poke( 0xD015, 0x00 );
   updateLives();
   updateHealth();
 
@@ -2372,7 +2462,6 @@ void gameOverSequence()
 
   delay();
   
-  
   wordToPrint = pressyText;
   wordSize = 21;
   plotDigitX = 10;
@@ -2381,7 +2470,7 @@ void gameOverSequence()
 
   printWord();
   
-  spriteoff( 0x02 );
+  //spriteoff( 0x02 );
 
   clearkb();
   qsq = getchar();
@@ -2414,10 +2503,11 @@ void gameOverSequence()
       plotDigitY = 13;
       printWord();
       
-      initWorld();
+      initGame();
       
       spriteon( 0x02 );
-      putStuffOnTheScreen();   
+      putStuffOnTheScreen();
+      
     }
   else 
     {
@@ -2427,26 +2517,27 @@ void gameOverSequence()
 }
 
 void initWorld()
-{ 
-  setfilename( "WORLD1,S,R" );
-  setlfs( 3, 8, 3 );
-  fopen();
-  fchkin( 3 );
-
-  word addr = world;
-  for(  uint initWorldi = 0; initWorldi < 253; inc( initWorldi ) )
-    {
-      poke( addr, fchrin() );
-      addr = addr + 1;
-    }
-  
-  fclose(3);
-  fclrchn();
-
+{
+  isCursed = 0x00;
   currentRoom = homeRoom;
-  playerHP = myRand();
-  playerHP = playerHP & 0x03;
+  playerHP = playerHP + level * 0x02;    
+  playerx = 0x0020;
+  playery = 0x80;
+  return;
+}
 
+void initGame()
+{
+  homeRoom = 0x01;
+  //loadWorld();
+  currentRoom = homeRoom;
+  playerHP = playerHP + myRand();
+  playerHP = playerHP + level * 0x02;
+  //playerHP = playerHP + level;
+  playerHP = playerHP & 0x03;
+  
+  level = 0x01;
+  
   //playerHP = playerHP & 0x03;
   playerHP = playerHP + 13;
     
@@ -2459,6 +2550,7 @@ void initWorld()
   maxHP = 0x14;
 
   return;
+  
 }
 
 void mySeed()
@@ -2485,6 +2577,7 @@ void mySeed()
       for( uint mySeedi = 0x00; mySeedi < 0x40; inc( mySeedi ) )
 	{
 	  poke( mySeedAddr, rnd() );
+	  shortDelay();
 	  mySeedAddr = mySeedAddr + 0x0001;
 	}
       rndinit = 0x01;
@@ -2496,9 +2589,9 @@ void mySeed()
 // the start of the program.
 uint myRand()
 {
-  uint myRandReturnValue = randomValues[rvIndex];
+  uint myRandReturnValue = (randomValues)[rvIndex];
   inc(rvIndex);
-  if( rvIndex == 0x80 )
+  if( rvIndex == 0x40 )
     {
       rvIndex = 0x00;
     }
@@ -2531,22 +2624,39 @@ void delay()
   return;
 }
 
-void displayMap()
+void shortDelay()
+{
+  for( delayW = 0; delayW < 0x01FF; delayW = delayW + 0x0001 )
+    {
+      nop();
+    }
+  return;
+}
+
+void loadMap()
 {
   asmcomment( "blank the screen" );
   screen(0x00);
 
   asmcomment( "preserve which sprites were on before we displayed the map" );
-  uint whichsprites = peek( 0xD015 );
+  whichsprites = peek( 0xD015 );
   asmcomment( "turn all sprites off" );
   poke( 0xD015, 0x00 );
 
-  asmcomment( "LOAD THE MAP SCREEN INTO MEMORY" );
-  setfilename( "MAP1,S,R" );
+  asmcomment( "LOAD THE MAP SCREEN INTO MEMORY FOR THE CURRENT LEVEL" );
+  //data mapfn = {'M','A','P','?',',','S',',','R' };
+  poke( mapfn + 0x0003, level + 0x30);
+  
+  setfilename( mapfn );
+  //setfilename( "MAP1,S,R" );
   setlfs( 3, 8, 3 );
+
+
   fopen();
   fchkin( 3 );
 
+  
+  
   for( i = 0xA000; i < 0xBF40; i = i + 0x0001 )
     {
       poke( i, fchrin() );
@@ -2561,7 +2671,8 @@ void displayMap()
     }
   fclose(3);
   fclrchn();
-  
+
+ 
   myTextBG = 0xCC;
   textColour = 0x0B;
   wordToPrint = pakText;
@@ -2597,8 +2708,14 @@ void displayMap()
 
 void escapePhase()
 {
+  // set the North Door in Room 1 to be an Level Upper
+  poke( world, 0xFF );
+  poke( world + 0x0006, 0x01 );
+  
+  homeRoom = currentRoom;
   for( general8bit = 0x00; general8bit < 0x14; general8bit++ )
-    {      
+    {
+      
       general16bit = general8bit*11;
       general16bit = general16bit + 10;
       // add monsters to every room
@@ -2608,17 +2725,278 @@ void escapePhase()
       
       poke( world + general16bit, b );
     }
+  
+  //readyToLevelUp = 0x01;
+  //noMonsters();
+  
   return;
 }
 
-void noMonsters()
+void levelUp()
 {
-  for( general8bit = 0x00; general8bit < 0x14; general8bit++ )
-    {      
-      general16bit = general8bit*11;
-      general16bit = general16bit + 10;
-      uint a = peek( world + general16bit ) & 0xBF;      
-      poke( world + general16bit, a );
+  whichsprites = peek( 0xD015 );
+  poke( 0xD015, 0x00 );
+  homeRoom = 0x01;
+  currentRoom = 0x01;
+  inc( level );
+  // add HP
+  // SHOW LEVEL UP SCREEN!
+  levelUpScreen();
+  // load new graphics from disk
+  loadWorld();
+  initWorld();
+  lives = lives + 0x01;
+  poke( 0xD015, whichsprites );
+  // make monsters stronger
+  return;
+}
+
+void levelUpScreen()
+{
+  screen(0x00);
+  clearhires();
+
+  textColour = 0x01;
+  
+  myTextBG = 0xCC;
+  wordToPrint = levelUpText0;
+  wordSize = 15;
+  plotDigitX = 12;
+  plotDigitY = 2;
+  printWord();
+
+  textColour = 0x01;
+
+  myTextBG = 0xCC;
+  wordToPrint = levelUpText1;
+  wordSize = 28;
+  plotDigitX = 6;
+  plotDigitY = 4;
+  printWord();
+
+  textColour = 0x0B;
+
+  myTextBG = 0xCC;
+  wordToPrint = pakText;
+  wordSize = 25;
+  plotDigitX = 8;
+  plotDigitY = 24;
+  printWord();
+  
+  screen( 0x01 );
+  
+  poke( 0x00C6, 0x00 );
+  jsr( 0xFFE4 );
+  
+  general8bit = 0;
+  while( general8bit == 0 )
+    {
+      general8bit = getchar();
+      buttonpress =  peek(0xDC00) & 0x10;
+      if( buttonpress == 0x00 )
+	{
+	  inc( general8bit );
+	}
+    }
+  return;
+}
+
+//void noMonsters()
+//{
+//  asmcomment( "vvv----- Take this out after testing and debugging ----vvv" );
+//  for( general8bit = 0x00; general8bit < 0x14; general8bit++ )
+//    {      
+//      general16bit = general8bit*11;
+//      general16bit = general16bit + 10;
+//      uint a = peek( world + general16bit ) & 0xBF;      
+//      poke( world + general16bit, a );
+//    }
+//  return;
+//  asmcomment( "^^^----- ---- ----- ----- ---- ---- ---- ---- ---- ----^^^" );
+//}
+
+
+void loadSprites()
+{
+  asmcomment( "LOAD MOBS INTO MEMORY FOR THE CURRENT LEVEL" );
+  data spritesfn = {'S','P','R','I','T','E','S','?',',','S',',','R' };
+  poke( spritesfn + 0x0007, level + 0x30 );
+  setfilename( spritesfn );
+  setlfs( 3, 8, 3 );
+  fopen();
+  fchkin( 3 );
+
+  // which sprites are MC
+  poke( 0xD01C, fchrin() );
+  // Universal Sprite Colours
+  poke( 0xD025, fchrin() );
+  poke( 0xD026, fchrin() );
+  // the first 8 bytes of SPRITE FILE are the colours for Sprites 0-7
+  for( general8bit = 0x00; general8bit < 0x08; inc( general8bit ))
+    {
+      spritecolour(general8bit, fchrin() );
+    }
+
+  status = 0x00;
+  word saddr = 0x8800;
+  while( status == 0x00 )
+    {
+      poke( saddr, fchrin() );
+      saddr = saddr + 0x0001;
+      status = peek( 0x0090 );
+    }
+  //for( word saddr = 0x8800; saddr < 0x9000; saddr = saddr + 0x0001 )
+  //  {
+  //    poke( saddr, fchrin() );
+  //  }
+  // read the "KEY" sprite in for sprite pointer value of 1
+  //for( saddr = 0x8000; saddr < 0x8040; saddr = saddr + 0x0001 )
+  //  {
+  //    poke( saddr, fchrin() );
+  //  }
+  // copy the key to location 0?
+  memcpy( 0x9000, 0x8000, 64 );
+      
+  fclose(3);
+  fclrchn();
+  return;
+}
+
+void loadWorld()
+{
+  asmcomment( "LOAD AND DISPLAY THE SYNOPSIS" );
+
+  screen(0x00);
+  // clearhires();
+  myTextBG = 0x0C;
+  poke( 0xD020, 0x0C );
+  poke( 0xD021, 0x0C );
+  //poke( 0xD022, 0x0C );
+  //poke( 0xD023, 0x0B );
+  data synopsisfn = {'S','Y','N','O','P','S','I','S','?',',','S',',','R' };
+  poke( synopsisfn + 0x0008, level + 0x30 );
+  setfilename( synopsisfn );
+  setlfs( 3, 8, 3 );
+  fopen();
+  fchkin( 3 );
+  textScreen();
+  fclose(3);
+  fclrchn();
+  screen(0x01);
+  myPause();
+  
+  asmcomment( "LOAD THE WORLD INTO MEMORY FOR THE CURRENT LEVEL" );
+  data worldfn = {'W','O','R','L','D','?',',','S',',','R' };
+  poke( worldfn + 0x0005, level + 0x30 );
+  setfilename( worldfn );
+  setlfs( 3, 8, 3 );
+  fopen();
+  fchkin( 3 );
+
+  general16bit = world;
+  for( general8bit = 0; general8bit < 253; inc( general8bit ) )
+    {
+      poke( general16bit, fchrin() );
+      general16bit = general16bit + 0x01;
+    }
+  
+  fclose(3);
+  fclrchn();
+  return;
+}
+
+void unlockDoor()
+{
+  dec( currentRoom );
+  word unlockDooraddr = world + currentRoom * 11;
+  inc( currentRoom );
+  unlockDooraddr = unlockDooraddr + 0x0004;
+  
+  for( general8bit = 0x00; general8bit < 0x05; inc( general8bit ) )
+    {
+      uint aaa = peek( unlockDooraddr );
+      if( aaa == 0x0F )
+	{
+	  poke( unlockDooraddr, 0x01 );
+	}
+      unlockDooraddr = unlockDooraddr + 0x0001;
+    }
+  inc(expPts);
+  inc(expPts);
+  return;
+}
+
+void textScreen()
+{
+  uint YY = 0x00;
+  uint XX = 0x00;
+  status = 0x00;
+  textColour = 1;
+
+  data buffer = { 0x00 };
+  while( status == 0x00 )
+    {
+      uint in = fchrin();
+      poke( buffer, in );
+
+      if( in < 16 )
+	{
+	  textColour = in;
+	}
+      else
+	{
+	  if( in < 0x3A )
+	    {
+	      if( in > 0x2F )
+		{
+		  // then its a digit
+		  plotNum = in - 0x30;
+		  plotDigitX = XX;
+		  plotDigitY = YY;
+		  plotNumber();
+		}
+	      else
+		{
+		  wordToPrint = buffer;
+		  wordSize = 1;
+		  plotDigitX = XX;
+		  plotDigitY = YY;
+		  printWord();
+		}
+	    }
+	  else
+	    {
+	      wordToPrint = buffer;
+	      wordSize = 1;
+	      plotDigitX = XX;
+	      plotDigitY = YY;
+	      printWord();
+	    }
+
+	  if( XX == 0x28 )
+	    {
+	      XX = 0x00;
+	      inc( YY );
+	    }
+	  inc( XX );
+	}
+      status = peek( 0x0090 );
+    }
+
+  return;
+}
+
+void myPause()
+{
+  general8bit = 0x00;
+  while( general8bit == 0 )
+    {
+      general8bit = getchar();
+      buttonpress =  peek(0xDC00) & 0x10;
+      if( buttonpress == 0x00 )
+	{
+	  inc( general8bit );
+	}
     }
   return;
 }
