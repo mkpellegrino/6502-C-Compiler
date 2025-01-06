@@ -12,7 +12,7 @@ int main()
   uint JSeast=NULL;
   uint JSwest=NULL;
 
-    data mapfn = {'M','A','P','?',',','S',',','R' };
+  data mapfn = {'M','A','P','?',',','S',',','R' };
 
   asmcomment( "Bitmap Graphics Definitions" );  
   data sdoor = { 213, 213, 253, 255, 255, 255, 255, 255, 85, 85, 85, 245, 255, 255, 255, 255, 85, 85, 85, 95, 255, 255, 255, 255, 87, 87, 127, 255, 255, 255, 255, 255 };
@@ -22,9 +22,10 @@ int main()
   data steal5 = {95, 87, 87, 87, 87, 87, 23, 23, 175, 175, 173, 253, 213, 245, 255, 235, 85, 85, 85, 87, 87, 95, 255, 235, 250, 234, 234, 234, 234, 234, 232, 232 };
   data steal7 = {21, 5, 5, 1, 1, 0, 0, 0, 255, 255, 127, 95, 95, 95, 23, 0, 255, 255, 254, 250, 250, 250, 232, 0, 168, 160, 160, 128, 128, 0, 0, 0 };
   data wall2 = { 106, 106, 106, 106, 106, 106, 106, 85, 170, 170, 170, 170, 170, 170, 170, 85 };
-  data door1to4 = { 255, 255, 255, 255, 255, 255, 255, 255 };
-  data door0topL = { 3, 3, 15, 15, 63, 63, 255, 255 };
-  data door0topR = { 192, 192, 240, 240, 252, 252, 255, 255 };
+  // uses window definition (just slightly altered in length)
+  //data door1to4 = { 255, 255, 255, 255, 255, 255, 255, 255 };
+  //data door0topL = { 3, 3, 15, 15, 63, 63, 255, 255 };
+  //data door0topR = { 192, 192, 240, 240, 252, 252, 255, 255 };
   data armour0 = { 0, 0, 0, 0, 3, 3, 3, 3, 63, 255, 255, 255, 255, 255, 255, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
   data armour1 = { 3, 3, 3, 3, 3, 3, 3, 3, 255, 255, 255, 255, 255, 255, 255, 255, 192, 0, 0, 0, 0, 0, 0, 255, 3, 3, 3, 3, 3, 3, 3, 255 };
   data armour2 = { 63, 255, 195, 195, 195, 195, 195, 255, 255, 255, 255, 255, 255, 255, 255, 255, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 3, 3, 3, 3, 3, 3 };
@@ -62,11 +63,11 @@ int main()
   data painting2bot = { 128, 128, 128, 130, 130, 130, 138, 170, 245, 253, 250, 250, 186, 186, 250, 170, 80, 64, 168, 106, 170, 110, 174, 170, 2, 2, 2, 2, 130, 130, 130, 170 };
 
   data closedDoor00 = {
-      64, 64, 64, 67, 78, 122, 122, 122,
-      0, 0, 63, 234, 170, 170, 255, 204,
-      64, 64, 255, 170, 170, 170, 255, 204,
-      0, 0, 0, 240, 172, 171, 235, 235
-    };
+    64, 64, 64, 67, 78, 122, 122, 122,
+    0, 0, 63, 234, 170, 170, 255, 204,
+    64, 64, 255, 170, 170, 170, 255, 204,
+    0, 0, 0, 240, 172, 171, 235, 235
+  };
   
   data closedDoor01 = {
     122, 122, 122, 122, 122, 122, 122, 122,
@@ -87,8 +88,8 @@ int main()
   };
 
   data shop01 = { 67, 76, 112, 192, 192, 192, 192, 192 };
-  data shop02 = { 255, 0, 15, 63, 61, 55, 53, 2, 255, 0, 192, 240, 240, 112, 112, 0, 192, 48, 12, 3, 3, 3, 3, 3 };
-  data shop03 = { 192, 192, 255, 79, 79, 79, 64, 85, 42, 170, 191, 191, 239, 250, 0, 85, 160, 168, 251, 251, 175, 255, 64, 85, 3, 3, 255, 240, 240, 240, 0, 85 };
+  data shop02 = { 255, 0, 15, 63, 61, 55, 53, 2,   255, 0, 192, 240, 240, 112, 112, 0,   192, 48, 12, 3, 3, 3, 3, 3 };
+  data shop03 = { 192, 192, 255, 79, 79, 79, 64, 85,   42, 170, 191, 191, 239, 250, 0, 85,   160, 168, 251, 251, 175, 255, 64, 85,   3, 3, 255, 240, 240, 240, 0, 85 };
 
   
   //data leftWallTop = { 252, 240, 192, 192, 192, 192, 192, 192 };
@@ -110,6 +111,22 @@ int main()
   data shieldbot = { 112, 112, 112, 76, 76, 67, 64, 85, 32, 32, 32, 32, 168, 3, 204, 117, 48, 48, 48, 192, 192, 64, 64, 85 };
 
   data keyonwall = { 215, 125, 125, 215, 247, 215, 247, 215 };
+
+  data treeA0 = {
+    0, 0, 0, 0, 3, 51, 221, 213,
+    0, 0, 15, 245, 85, 85, 85, 85,
+    3, 13, 53, 213, 85, 85, 85, 85,
+    192, 112, 92, 92, 87, 87, 87, 92
+  };
+  data treeA1 = { 213, 213, 213, 213, 53, 53, 53, 13, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 92, 87, 92, 87, 87, 87, 92, 92 };
+  data treeA2 = { 13, 13, 3, 3, 13, 13, 13, 3, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 93, 123, 92, 112, 112, 92, 92, 92, 92, 92 };
+  data treeA3 = { 0,0,0,0,0,0,0,0,255, 32, 10, 0, 2, 2, 10, 10, 232, 168, 186, 168, 160, 160, 160, 168, 240, 128, 0, 0, 0, 0, 0, 0 };
+
+
+  //data shortPine0 = { 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 3, 3, 13, 13, 13, 53, 0, 0, 192, 112, 112, 112, 92, 92, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+  //data shortPine1 = { 0, 0, 0, 0, 3, 0, 0, 3, 61, 13, 53, 213, 253, 53, 213, 85, 95, 92, 87, 85, 87, 85, 85, 85, 0, 0, 0, 192, 240, 192, 112, 92, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+  //data shortPine2 = { 13, 15, 3, 13, 53, 255, 0, 0, 85, 245, 85, 85, 125, 195, 2, 2, 85, 85, 85, 85, 85, 255, 160, 160, 92, 240, 192, 112, 92, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
 
   asmcomment( "Text Definitions" );
 
@@ -196,7 +213,7 @@ int main()
       223, 247, 247, 247, 247, 247, 247, 223, 
       // , comma
       255, 255, 255, 255, 255, 255, 223, 127
-   };
+    };
 
   
   word plotDigitAddr = digits;
@@ -304,6 +321,7 @@ int main()
   word hpTimer;
   word wordToPrint;
   word mapx;
+  word uncursetimer;
   
   // start in room #1
   //inc( currentRoom );
@@ -384,7 +402,7 @@ int main()
   plotDigitY = 24;
   printWord();  
   screen(0x01);
-
+  uint override = 0x01;
   
   asmcomment("seed the RNG by repeatedly calling rnd until player presses a key" );
   seed();
@@ -395,6 +413,14 @@ int main()
       // memory location to put the new random value
       sDoor=rnd(1);
       general8bit = getchar();
+      
+      if( general8bit > 0x30 )
+	{
+	  if( general8bit <= 0x34 )
+	    {
+	      override  = general8bit - 0x30;
+	    }
+	}
       buttonpress =  peek(0xDC00) & 0x10;
       if( buttonpress == 0x00 )
 	{
@@ -510,8 +536,10 @@ int main()
       
     };
 
+  //level = override;
+  initGame();
   loadWorld();
-  initGame();  
+  //  initGame();
   loadSprites();
 
   // Sprite Memory starts at 0x8040
@@ -550,7 +578,7 @@ int main()
 
   positionMOBS();
 
-    uint walkupframe[6];
+  uint walkupframe[6];
   walkupframe[0] = 33;
   walkupframe[1] = 34;
   walkupframe[2] = 35;
@@ -683,17 +711,36 @@ int main()
 	      JSwest = 0x01;
 	    }
 
+	  // if the player is cursed then
+	  //    if they have NOT eaten ORASTY root
+	  //       make the moves backward and buzz the border (and reset bkgnd)
+	  //    else
+	  //       decrease the timer for the ORASTY root and buzz the bkgnd
+	  //       and reset the border colour
 	  if( isCursed == 0x01 )
 	    {
-	      uint tmpCurse = JSwest;
-	      JSwest = JSeast;
-	      JSeast = tmpCurse;
-	      tmpCurse = JSnorth;
-	      JSnorth = JSsouth;
-	      JSsouth = tmpCurse;
-	      inc( 0xD020 );
+	      if( uncursetimer == 0x0000 )
+		{
+		  uint tmpCurse = JSwest;
+		  JSwest = JSeast;
+		  JSeast = tmpCurse;
+		  tmpCurse = JSnorth;
+		  JSnorth = JSsouth;
+		  JSsouth = tmpCurse;
+		  inc( 0xD020 );
+		  poke( 0xD021, 0x0C );
+		}
+	      else
+		{
+		  uncursetimer = uncursetimer - 0x0001;
+		  uint uncursetimerB = uncursetimer & 0x000F;
+		  if( uncursetimerB == 0x00 )
+		    {
+		      inc( 0xD021 );
+		      poke( 0xD020, 0x0C );
+		    }
+		}
 	    }
-	      
 
 	  if( JSwest == 0x00 )
 	    {
@@ -961,138 +1008,138 @@ void animate()
   //if( clock == 0x0000 )
   //  {
 
-      if( monsterisinroom != 0 )
+  if( monsterisinroom != 0 )
+    {
+      calcMonster0Position();
+      if( Adirection == 0)
 	{
-	  calcMonster0Position();
-	  if( Adirection == 0)
-	    {
-	      poke( sprptr0, Awalkupframe[Acurrentupframe] );
-	      poke( sprptr2, Awalkupframe[Acurrentupframe] );
-	      inc(Acurrentupframe);
-	      Acurrentupframe = Acurrentupframe & 0x01;
-	    }
-	  if( Adirection == 2 )
-	    {
-	      poke( sprptr0, Awalkdownframe[Acurrentdownframe] );
-	      poke( sprptr2, Awalkdownframe[Acurrentdownframe] );
-	      inc(Acurrentdownframe);
-	      Acurrentdownframe = Acurrentdownframe & 0x01;
-	    }
-
-	  if( Adirection == 1 )
-	    {
-	      poke( sprptr0, Awalkingrightframe[Acurrentrightframe] );
-	      poke( sprptr2, Awalkingrightframe[Acurrentrightframe] );
-	      inc(Acurrentrightframe);
-	      Acurrentrightframe = Acurrentrightframe & 0x03;
-	    }
-
-	  if( Adirection == 3 )
-	    {
-	      poke( sprptr0, Awalkingleftframe[Acurrentleftframe] );
-	      poke( sprptr2, Awalkingleftframe[Acurrentleftframe] );
-	      inc(Acurrentleftframe);
-	      Acurrentleftframe = Acurrentleftframe & 0x03;
-	    }
+	  poke( sprptr0, Awalkupframe[Acurrentupframe] );
+	  poke( sprptr2, Awalkupframe[Acurrentupframe] );
+	  inc(Acurrentupframe);
+	  Acurrentupframe = Acurrentupframe & 0x01;
 	}
-      
-      if( direction == 0 )
+      if( Adirection == 2 )
 	{
-	  // NORTH
-	  poke( sprptr1, walkupframe[currentupframe] );
-	  inc(currentupframe);
-	  if( currentupframe == 6 )
-	    {
-	      currentupframe = 0;
-	    }
+	  poke( sprptr0, Awalkdownframe[Acurrentdownframe] );
+	  poke( sprptr2, Awalkdownframe[Acurrentdownframe] );
+	  inc(Acurrentdownframe);
+	  Acurrentdownframe = Acurrentdownframe & 0x01;
+	}
+
+      if( Adirection == 1 )
+	{
+	  poke( sprptr0, Awalkingrightframe[Acurrentrightframe] );
+	  poke( sprptr2, Awalkingrightframe[Acurrentrightframe] );
+	  inc(Acurrentrightframe);
+	  Acurrentrightframe = Acurrentrightframe & 0x03;
+	}
+
+      if( Adirection == 3 )
+	{
+	  poke( sprptr0, Awalkingleftframe[Acurrentleftframe] );
+	  poke( sprptr2, Awalkingleftframe[Acurrentleftframe] );
+	  inc(Acurrentleftframe);
+	  Acurrentleftframe = Acurrentleftframe & 0x03;
+	}
+    }
+      
+  if( direction == 0 )
+    {
+      // NORTH
+      poke( sprptr1, walkupframe[currentupframe] );
+      inc(currentupframe);
+      if( currentupframe == 6 )
+	{
+	  currentupframe = 0;
+	}
+    }
+  else
+    {
+      // EAST
+      if( direction == 1 )
+	{
+	  poke( sprptr1, walkrframe[currentrightframe] );
+	  inc(currentrightframe);
+	  currentrightframe = currentrightframe & 0x03;
 	}
       else
 	{
-	  // EAST
-	  if( direction == 1 )
+	  // SOUTH
+	  if( direction == 2 )
 	    {
-	      poke( sprptr1, walkrframe[currentrightframe] );
-	      inc(currentrightframe);
-	      currentrightframe = currentrightframe & 0x03;
+	      poke( sprptr1, walkdownframe[currentdownframe] );
+	      inc(currentdownframe);
+	      if( currentdownframe ==  6)
+		{
+		  currentdownframe = 0;
+		}
 	    }
 	  else
 	    {
-	      // SOUTH
-	      if( direction == 2 )
+	      // WEST
+	      if( direction == 3 )
 		{
-		  poke( sprptr1, walkdownframe[currentdownframe] );
-		  inc(currentdownframe);
-		  if( currentdownframe ==  6)
-		    {
-		      currentdownframe = 0;
-		    }
+		  poke( sprptr1, walklframe[currentleftframe] );
+		  inc(currentleftframe);
+		  currentleftframe = currentleftframe & 0x03;
 		}
 	      else
 		{
-		  // WEST
-		  if( direction == 3 )
+		  if( direction == 5 )
 		    {
-		      poke( sprptr1, walklframe[currentleftframe] );
-		      inc(currentleftframe);
-		      currentleftframe = currentleftframe & 0x03;
+		      // standing
+		      poke( sprptr1, 32 );
 		    }
 		  else
 		    {
-		      if( direction == 5 )
+		      if( direction == 6 )
 			{
-			  // standing
-			  poke( sprptr1, 32 );
+			  // lunge left
+			  poke( sprptr1, 48 );
 			}
 		      else
 			{
-			  if( direction == 6 )
+			  if( direction == 7 )
 			    {
-			      // lunge left
-			      poke( sprptr1, 48 );
-			    }
-			  else
-			    {
-			      if( direction == 7 )
-				{
-				  // lunge right
-				  poke( sprptr1, 47 );
-				}
+			      // lunge right
+			      poke( sprptr1, 47 );
 			    }
 			}
 		    }
 		}
 	    }
 	}
+    }
       
       
-      positionMOBS();
+  positionMOBS();
 
-      asmcomment( "animate the torches by changing their colours" );		 
-      for( general8bit = 0x00; general8bit < 5; inc(general8bit) )
-	{	  
-	  if( torchlocation[general8bit] == 0x01 )
+  asmcomment( "animate the torches by changing their colours" );		 
+  for( general8bit = 0x00; general8bit < 5; inc(general8bit) )
+    {	  
+      if( torchlocation[general8bit] == 0x01 )
+	{
+	  word ad = scraddr + 0x00F1 + general8bit * 8;
+	  uint ad1 = peek( ad );
+	  if( ad1 == 0x72 )
 	    {
-	      word ad = scraddr + 0x00F1 + general8bit * 8;
-	      uint ad1 = peek( ad );
-	      if( ad1 == 0x72 )
-	      {
 	      ad1 = 0x27;
-		}
-	      else
-		{
-	       ad1 = 0x72;
-	      }
-	      poke( ad, ad1 );
-	      inc( ad );
-	      poke( ad, ad1 );
-	      inc( ad );
-	      inc( ad );
-	      poke( ad, ad1 );
-	      inc( ad );
-	      poke( ad, ad1 );
 	    }
+	  else
+	    {
+	      ad1 = 0x72;
+	    }
+	  poke( ad, ad1 );
+	  inc( ad );
+	  poke( ad, ad1 );
+	  inc( ad );
+	  inc( ad );
+	  poke( ad, ad1 );
+	  inc( ad );
+	  poke( ad, ad1 );
 	}
-      //}
+    }
+  //}
   return;
 }
 
@@ -1364,7 +1411,7 @@ void putStuffOnTheScreen()
       spriteoff( 0x08 );
     }
 
-  // HEALTH PACK
+  // PLACE HEALTH PACK IN ROOM
   thing2 = thing & 0x10;
   if( thing2 != 0 )
     {
@@ -1551,7 +1598,7 @@ void putThing( uint whatThing, uint whereThing )
     }
 
   // PAINTING2
-  if( whatThing == 11 )
+  if( whatThing == 0x0B )
     {
       // Brown & Yellow
       plotshapeColourValue0110 = 0x79;
@@ -1706,14 +1753,14 @@ void putThing( uint whatThing, uint whereThing )
     }
 
 
-    if( whatThing == 0x0F )
-    {
-      plotshapeColourValue0110 = 0xB2; 
-      plotshapeColourValue11 = 0x00;
-      plotshape(shieldtop, ptStartX+2, 6, 3 );
-      plotshape(shieldbot, ptStartX+2, 7, 3 );
+  //  if( whatThing == 0x0F )
+  //  {
+  //    plotshapeColourValue0110 = 0xB2; 
+  //    plotshapeColourValue11 = 0x00;
+  //    plotshape(shieldtop, ptStartX+2, 6, 3 );
+  //    plotshape(shieldbot, ptStartX+2, 7, 3 );
       //escapeDoorIsInRoom = 0x01;
-    }
+  //  }
 
   // Closed Door
   if( whatThing == 0x0F )
@@ -1754,6 +1801,8 @@ void putThing( uint whatThing, uint whereThing )
       printWord();
     }
 
+
+  
   // Map On Wall
   if( whatThing == 0x10 )
     {
@@ -1761,16 +1810,36 @@ void putThing( uint whatThing, uint whereThing )
       plotshapeColourValue11 = 0x00;
       // yellow and brown
       plotshapeColourValue0110 = 0xFB;
+
       plotshape(maponWallTop, ptStartX+2, 7, 4);
       plotshape(maponWallBot, ptStartX+2, 8, 4);
+      mapinroom=1;
+
+      // TO DO: The value of mapx needs to be more accurate as
+      // to where on the wall the map is hung
+      mapx=ptStartX * 9;
+      //mapx=ptStartX * 8;
+    }
+
+  // Tree
+  if( whatThing == 0x15 )
+    {
+      // black
+      plotshapeColourValue11 = 0x00;
+      // yellow and brown
+      plotshapeColourValue0110 = 0x59;
+      plotshape(treeA0, ptStartX+2, 6, 4);
+      plotshape(treeA1, ptStartX+2, 7, 4);
+      plotshape(treeA2, ptStartX+2, 8, 4);
+      //plotshape(treeA3, ptStartX+2, 8, 4);
+      plotshape(treeA3, ptStartX+2, 9, 4);
       mapinroom=1;
       // TO DO: The value of mapx needs to be more accurate as
       // to where on the wall the map is hung
       mapx=ptStartX * 9;
       //mapx=ptStartX * 8;
-      
-
     }
+
   
   return;
 }
@@ -1839,14 +1908,14 @@ void calcMonster0Position()
 
 void debug( word debugX, uint debugY, word debugN, uint debugTC )
 {
-   plotDigitX = debugX;
-   plotDigitY = debugY;
-   plotNum = debugN;
-   textColour = debugTC;
-   plotNumber();
-   //white
-   textColour = 0x01;
-   return;
+  plotDigitX = debugX;
+  plotDigitY = debugY;
+  plotNum = debugN;
+  textColour = debugTC;
+  plotNumber();
+  //white
+  textColour = 0x01;
+  return;
 }
 
 void positionMOBS()
@@ -1902,6 +1971,11 @@ void positionMOBS()
 	  clearSpecialBit( 4 );
 	  updateHealth();
 	  healthpackinroom = 0x00;
+
+
+	  // 2025 01 05 - If a healthpack is picked up AND this is a cursed level...
+	  // set an "uncurse" timer.  When the timer runs out - the curse is back on.
+	  uncursetimer = 0x00FF;
 	}
     }
 
@@ -2535,8 +2609,9 @@ void initGame()
   playerHP = playerHP + level * 0x02;
   //playerHP = playerHP + level;
   playerHP = playerHP & 0x03;
-  
+
   level = 0x01;
+  level = override;
   
   //playerHP = playerHP & 0x03;
   playerHP = playerHP + 13;
@@ -2745,6 +2820,10 @@ void levelUp()
   // load new graphics from disk
   loadWorld();
   initWorld();
+
+  // 2025 01 05 - mkpellegrino
+  loadSprites();
+  
   lives = lives + 0x01;
   poke( 0xD015, whichsprites );
   // make monsters stronger
