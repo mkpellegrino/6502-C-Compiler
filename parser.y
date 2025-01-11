@@ -2585,6 +2585,7 @@ parameterlist: /* empty */
 | expression
 {
   addDebugComment(string("Parameter: ") + $1.name);
+  addComment( string( "Param: " ) + $1.name );
   if( isUintID($1.name) || isIntID($1.name))
     {
       // 2024 04 14 - mkpellegrino
@@ -2635,22 +2636,28 @@ parameterlist: /* empty */
     }
   else if( isFloatID($1.name) )
     {
-      int addr = atoi(stripFirst($1.name).c_str());
-      string OP1 = getNameOf(addr);
+      // 2024 06 19 - mkpellegrino - Forced var name instead of address
+      // or (even worse) nothing!
+      string OP = getNameOf(getAddressOf($1.name));
+      if( OP == "" )
+	{
+	  OP = string("$") + toHex(getAddressOf($1.name));
+	}
+
       // 2024 04 15 - mkpellegrino      
-      addAsm( str_LDA + OP1, 3, false );
+      addAsm( str_LDA + OP, 3, false );
 
       addAsm( str_PHA );
-      addAsm( str_LDA + OP1 + "+1", 3, false );
+      addAsm( str_LDA + OP + "+1", 3, false );
 
       addAsm( str_PHA );
-      addAsm( str_LDA + OP1 + "+2", 3, false );
+      addAsm( str_LDA + OP + "+2", 3, false );
       
       addAsm( str_PHA );
-      addAsm( str_LDA + OP1 + "+3", 3, false );
+      addAsm( str_LDA + OP + "+3", 3, false );
       
       addAsm( str_PHA );
-      addAsm( str_LDA + OP1 + "+4", 3, false );
+      addAsm( str_LDA + OP + "+4", 3, false );
       
       addAsm( str_PHA );
     }
@@ -2719,21 +2726,25 @@ parameterlist: /* empty */
     }
   else if( isFloatID($3.name) )
     {
-
+      string OP = getNameOf(getAddressOf($3.name));
+      if( OP == "" )
+	{
+	  OP = string("$") + toHex(getAddressOf($3.name));
+	}
       //addAsm( str_LDA + "$" + toHex( getAddressOf($3.name) ), 3, false );
-      addAsm( str_LDA + $3.name, 3, false );
+      addAsm( str_LDA + OP, 3, false );
       addAsm( str_PHA );
       //addAsm( str_LDA + "$" + toHex( getAddressOf($3.name)+1 ), 3, false );
-      addAsm( str_LDA + $3.name + "+1", 3, false );
+      addAsm( str_LDA + OP + "+1", 3, false );
       addAsm( str_PHA );
       //addAsm( str_LDA + "$" + toHex( getAddressOf($3.name)+2 ), 3, false );
-      addAsm( str_LDA + $3.name + "+2", 3, false );
+      addAsm( str_LDA + OP + "+2", 3, false );
       addAsm( str_PHA );
       //addAsm( str_LDA + "$" + toHex( getAddressOf($3.name)+3 ), 3, false );
-      addAsm( str_LDA + $3.name + "+3", 3, false );
+      addAsm( str_LDA + OP+ "+3", 3, false );
       addAsm( str_PHA );
       //addAsm( str_LDA + "$" + toHex( getAddressOf($3.name)+4 ), 3, false );
-      addAsm( str_LDA + $3.name + "+4", 3, false );
+      addAsm( str_LDA + OP + "+4", 3, false );
       addAsm( str_PHA );
     }
   else if( isFloatIMM($3.name) )
@@ -5566,6 +5577,8 @@ condition: expression relop expression
 	    {
 	      addAsm( str_BYTE + "$B0, $03" + commentmarker + "BCS +3", 2, false ); 
 	      addAsm(str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if c==0 jump to BODY", 3, false );
+	      //addAsm( str_BNE + "*+3", 2, false ); // BNE +3
+	      //addAsm( str_BNE + "+3", 2, false ); // BNE +3
 	      addAsm( str_BYTE + "$D0, $03" + commentmarker + "BNE +3", 2, false ); // BNE +3
 	      addAsm(str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==1 jump to BODY", 3, false );
 	      addAsm(str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR", 3, false );
@@ -5580,6 +5593,7 @@ condition: expression relop expression
 	    }
 	  else
 	    {
+	      //addAsm( str_BNE + "*+3", 2, false ); // BNE +3
 	      addAsm( str_BYTE + string("$D0, $03") + commentmarker +"BNE +3", 2, false ); // BNE +3
 	     
 	      addAsm(str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==1 jump to BODY", 3, false );
@@ -5596,6 +5610,7 @@ condition: expression relop expression
 	    }
 	  else
 	    {
+	      //addAsm( str_BNE + "+3", 2, false ); // BNE +3
 	      addAsm( str_BYTE + "$D0, $03" + commentmarker +"BNE +3", 2, false ); // BNE +3
 	      addAsm(str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "if z==1 jump out of FOR", 3, false );
 	      addAsm( str_BYTE + "$B0, $03" + commentmarker + "BCS +3", 2, false ); 
@@ -5659,25 +5674,34 @@ condition: expression relop expression
 	    }
 	  else
 	    {
-	      addAsm( str_BYTE + "$B0, $03" + commentmarker + "BCS +3", 2, false ); 
+	      //addAsm( str_BYTE + "$B0, $03" + commentmarker + "BCS +3", 2, false ); 
+	      addAsm( str_BCS + "!_skip+", 2, false ); // BCS +3
 	      addAsm(str_JMP + getLabel( label_vector[label_major], false) + commentmarker + "if c==0 jump to THEN", 3, false );
-	      addAsm( str_BYTE + "$D0, $03" + commentmarker + "BNE +3", 2, false ); // BNE +3
+	      addAsm( "!_skip:", 0, true );
 
-	      addAsm(str_JMP + getLabel( label_vector[label_major], false) + commentmarker + "if z==1 jump to THEN", 3, false );
-	      addAsm(str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE", 3, false );
+	      addAsm( str_BNE + "!_skip+", 2, false ); // BNE +3
+	      //addAsm( str_BYTE + "$D0, $03" + commentmarker + "BNE +3", 2, false ); // BNE +3
+	      addAsm( str_JMP + getLabel( label_vector[label_major], false) + commentmarker + "if z==1 jump to THEN", 3, false );
+	      addAsm( "!_skip:", 0, true );
+	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE", 3, false );
 	    }
 	}   
       else if( string($2.name) == string( "==" ) )
 	{
 	  if( long_branches == false )
 	    {
-	      addAsm( str_BYTE + "$F0, $03" + commentmarker + "BEQ +3", 2, false ); 
+	      //addAsm( str_BYTE + "$F0, $03" + commentmarker + "BEQ +3", 2, false );
+	      addAsm( str_BEQ + "!_skip+", 2, false );
 	      addAsm(str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE", 3, false );
+	      addAsm( "!_skip:", 0, true );
+
 	    }
 	  else
 	    {
-	      addAsm( str_BYTE + "$F0, $03" + commentmarker + "BEQ +3", 2, false ); 
+	      //addAsm( str_BYTE + "$F0, $03" + commentmarker + "BEQ +3", 2, false ); 
+	      addAsm( str_BEQ + "!_skip+", 2, false );
 	      addAsm(str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE", 3, false );
+	      addAsm( "!_skip:", 0, true );
 	    }
 	}
       else if( string($2.name) == string( ">" ) )
@@ -5689,12 +5713,15 @@ condition: expression relop expression
 	    }
 	  else
 	    {
-	      addAsm( str_BYTE + "$B0, $03" + commentmarker + "BCS +3", 2, false ); 
-
+	      //addAsm( str_BYTE + "$B0, $03" + commentmarker + "BCS +3", 2, false ); 
+	      addAsm( str_BCS + "!_skip+", 2, false );
 	      addAsm(str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if c==0 jump to ELSE" , 3, false );
-	      addAsm( str_BYTE + "$D0, $03" + commentmarker + "BNE +3", 2, false ); // BNE +3
-
+	      addAsm( "!_skip:", 0, true );
+	      
+	      //addAsm( str_BYTE + "$D0, $03" + commentmarker + "BNE +3", 2, false ); // BNE +3
+	      addAsm( str_BNE + "!_skip+", 2, false );
 	      addAsm(str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==1 jump to ELSE" , 3, false );
+	      addAsm( "!_skip:", 0, true );
 	    }
 	}
       else if( string($2.name) == string( "<" ) )
@@ -5703,14 +5730,18 @@ condition: expression relop expression
 	    {
 	      addAsm( str_BCC + getLabel( label_vector[label_major], false) + commentmarker + "if c==0 jump to THEN", 2, false );
 	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + " jump to ELSE", 3, false );
+
 	    }
 	  else
 	    {
 	      // 2022 10 28 - mkpellegrino - changed from #$90 to #$B0
-	      addAsm( str_BYTE + "$90, $03" + commentmarker + "BCC +3", 2, false ); 
-
+	      // 2024 06 19 - mkpellegrino - changed from Machine code to assembler with the "!_skip+"
+	      // addAsm( str_BYTE + "$90, $03" + commentmarker + "BCC +3", 2, false ); 
+	      addAsm( str_BCC + "!_skip+", 2, false );
 	      //addAsm(str_JMP + getLabel( label_vector[label_major], false) + commentmarker + string( " if c==0 jump to THEN" ), 3, false );
 	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE", 3, false );
+	      addAsm( "!_skip:", 0, true );
+
 	    }
 	}
       else if( string($2.name) == string( ">=" ) )
@@ -5721,8 +5752,11 @@ condition: expression relop expression
 	    }
 	  else
 	    {
-	      addAsm( str_BYTE + "$B0, $03" + commentmarker + "BCS +3", 2, false ); 
+	      addAsm( str_BCS + "!_skip+", 2, false );
+	      //addAsm( str_BYTE + "$B0, $03" + commentmarker + "BCS +3", 2, false ); 
 	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if c==1 jump to ELSE", 3, false );
+	      // 2025 01 11 - changed to align with left hand column
+	      addAsm( "!_skip:", 0, true );
 	    }
 	}
       else /* != ... NOT EQUAL TO */
@@ -5733,9 +5767,10 @@ condition: expression relop expression
 	    }
 	  else
 	    {
-	      addAsm( str_BYTE + "$D0, $03" + commentmarker + "BNE +3", 2, false ); // BNE +3
-
+	      // addAsm( str_BYTE + "$D0, $03" + commentmarker + "BNE +3", 2, false ); // BNE +3
+	      addAsm( str_BNE + "!_skip+", 2, false ); // BNE +3
 	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==1 jump to ELSE", 3, false );
+	      addAsm( "!_skip:", 0, true );
 	    }
 	}
     }
@@ -16711,6 +16746,8 @@ int main(int argc, char *argv[])
       addAsm(str_RTS );	
       addAsm("DELETE:", 0, true );
       addAsm("lda INPUTY", 3, false );
+      //addAsm( str_BNE + "+3", 2, false ); // BNE +3
+
       addAsm( str_BYTE + "$D0, $03", 2, false );
       //addAsm("bne DELETEOK", 2, false );
       addAsm("jmp INPUTGET", 3, false );
