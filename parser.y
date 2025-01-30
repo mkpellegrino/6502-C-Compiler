@@ -6297,7 +6297,7 @@ statement: datatype ID init
   else if( isWordIMM($3.name) )
     {
       addComment( "dec(WordIMM)");
-      addCompilerMessage( "dec(" + toHex(atoi(stripFirst($3.name).c_str())) + ") decrements the byte at specified memory address", 2 );
+      addCompilerMessage( "dec(" + toHex(atoi(stripFirst($3.name).c_str())) + ") decrements the byte at specified memory address", 1 );
       addAsm( str_DEC + "$" + toHex(atoi(stripFirst($3.name).c_str())), 3, false );
     }
   else
@@ -7238,10 +7238,10 @@ statement: datatype ID init
     {
       string s = string( "spritex error - invalid type - " ) + $3.name + ":" + $5.name;
       addCompilerMessage( s, 1 );
-      //addCompilerMessage( "spritex error - invalid type", 1 );
     }
 };
 
+// TODO: add spritexy( imm, XA, XA );
 | tSPRITEXY '(' expression ',' expression ',' expression ')'
 {
   addComment( string( "spritexy( ") + $3.name + ", " + $5.name + ", " + $7.name +  " );"  );
