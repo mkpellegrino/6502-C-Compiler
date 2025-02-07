@@ -9,6 +9,7 @@ digit [0-9]
 frmt  [{\t}|{\n}]
 
 %%
+"inline"     { strcpy(yylval.nd_obj.name,(yytext)); return tINLINE; }
 "xxx"     { strcpy(yylval.nd_obj.name,(yytext)); return tXXX; }
 "fchrin"     { strcpy(yylval.nd_obj.name,(yytext)); return tFCHRIN; }
 "fchrout"     { strcpy(yylval.nd_obj.name,(yytext)); return tFCHROUT; }
@@ -70,6 +71,7 @@ frmt  [{\t}|{\n}]
 "strtofloat" { strcpy(yylval.nd_obj.name,(yytext)); return tSTRTOFLOAT; }
 "tofloat"   { strcpy(yylval.nd_obj.name,(yytext)); return tTOFLOAT; }
 "touint"   { strcpy(yylval.nd_obj.name,(yytext)); return tTOUINT; }
+"toword"   { strcpy(yylval.nd_obj.name,(yytext)); return tTOWORD; }
 "cls"           { strcpy(yylval.nd_obj.name,(yytext)); return tCLS; }
 "getin"           { strcpy(yylval.nd_obj.name,(yytext)); return tGETIN; }
 "getchar"           { strcpy(yylval.nd_obj.name,(yytext)); return tGETCHAR; }

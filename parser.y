@@ -2419,7 +2419,7 @@
 
 //%parse-param { FILE* fp }
 %token VOID 
-%token <nd_obj> CHAR tFCLOSE tFOPEN tFCLRCHN tFCHROUT tFCHRIN tFREADST tFCHKOUT tFCHKIN tSETLFS tSETNAM tSAVE tLOAD tIMPORT tSPRPTR tPUSH tPOP tCOMMENT tDATA tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tSIDIRQ tSIDOFF tSTRTOFLOAT tSTRTOWORD tTOFLOAT tTOUINT tTOBIT tDEC tINC tROL tROR tLSR tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJUMP tSETSCR tJSR tIRQ tROMOUT tROMIN tLDA tASL tSPRITESET  tSPRITEOFF tSPRITETOGGLE tRND tXXX tINLINE tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER tPRINTS PRINTFF SCANFF INT FLOAT WHILE FOR IF ELSE TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE tSQRT UNARY INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL tSCREEN tNULL tMEMCPY tSEED
+%token <nd_obj> CHAR tFCLOSE tFOPEN tFCLRCHN tFCHROUT tFCHRIN tFREADST tFCHKOUT tFCHKIN tSETLFS tSETNAM tSAVE tLOAD tIMPORT tSPRPTR tPUSH tPOP tCOMMENT tDATA tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tSIDIRQ tSIDOFF tSTRTOFLOAT tSTRTOWORD tTOFLOAT tTOUINT tTOWORD tTOBIT tDEC tINC tROL tROR tLSR tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJUMP tSETSCR tJSR tIRQ tROMOUT tROMIN tLDA tASL tSPRITESET  tSPRITEOFF tSPRITETOGGLE tRND tXXX tINLINE tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER tPRINTS PRINTFF SCANFF INT FLOAT WHILE FOR IF ELSE TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE tSQRT UNARY INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL tSCREEN tNULL tMEMCPY tSEED
 %type <nd_obj> headers main body return function datatype statement arithmetic relop program else 
    %type <nd_obj2> init value expression charlist numberlist parameterlist argumentlist
       %type <nd_obj3> condition
@@ -13917,19 +13917,72 @@ arithmetic expression
     }
   strcpy( $$.name, "_A" );   
 };
+| tTOWORD '(' expression ')'
+{
+  // TODO: Convert EXPRESSION to a Word
+  int t = getTypeOf($3.name);
+  if( isFloatID($3.name))
+    {
+      addComment( "toword(FloatID) --> A");
+      int base_address = hexToDecimal( string($3.name) );      
+      addAsm( str_LDA + "#<" + getNameOf(getAddressOf($3.name)), 2, false  );
+      addAsm( str_LDY + "#>" + getNameOf(getAddressOf($3.name)), 2, false  );
+      addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false ); // MEM ->FAC
+      addAsm( str_JSR + "$B1AA" + commentmarker + "FAC -> AY (word)", 3, false ); // FAC -> WORD
+      addAsm( str_TAX );
+      addAsm( str_TYA );      
+      strcpy($$.name, "_XA" );
+    }
+  else if( isFAC($3.name) )
+    {
+      addComment( "toword(FAC) --> A (QINT Function)" );
+      addAsm( str_JSR + "$BC9B" + commentmarker + "FAC -> ZP $62,$63,$64,$65", 3, false);
+      addAsm( str_LDA + "$65", 2, false );
+      addAsm( str_LDX + "$64", 2, false );
+      strcpy($$.name, "_XA" );
+    }
+  else if( isWordID($3.name) )
+    {
+      addAsm( str_LDA + "#<" + getNameOf(getAddressOf($3.name)), 3, false );
+      addAsm( str_LDX + "#>" + getNameOf(getAddressOf($3.name)), 3, false );
+      strcpy($$.name, "_XA" );      
+    }
+  else if( isUintID($3.name) || isIntID($3.name) )
+    {
+      addComment( "touint(WordID|UIntID|IntID) --> A");
+
+      int base_address =  getAddressOf($3.name);
+      int inst_size = 3;
+      if( base_address < 256 ) inst_size = 2;
+      addAsm( str_LDA + getNameOf(base_address), inst_size, false  );
+      addAsm( str_LDX + "#$00", 2, false );
+      strcpy($$.name, "_XA" );
+    }
+  else if( isA($3.name ) )
+    {
+      addComment("toword(A) --> XA" );
+      addAsm( str_LDX + "#$00", 2, false );
+      strcpy($$.name, "_XA" );
+    }
+  else if( isXA($3.name) )
+    {
+      // do nothing - low byte is in A already
+      addComment( "toword(XA) --> XA... nothing to do");
+      strcpy($$.name, "_XA" );    }
+  else
+    {
+      addCompilerMessage( "type Not Yet Implemented for touint(exp)", 3);
+    }
+  strcpy($$.name, "_A" );
+};
+
 | tTOUINT '(' expression ')'
 {
   int t = getTypeOf($3.name);
   if( isFloatID($3.name))
     {
       addComment( "touint(FloatID) --> A");
-      // move it from memory to FAC
-      // then call the function
-      // result in A and Y
-      int base_address = hexToDecimal( string($3.name) );
-      
-      //addAsm( str_LDA + "#$" + toHex(get_word_L(base_address)), 2, false  );
-      //addAsm( str_LDY + "#$" + toHex(get_word_H(base_address)), 2, false  );
+      int base_address = hexToDecimal( string($3.name) );      
       addAsm( str_LDA + "#<" + getNameOf(getAddressOf($3.name)), 2, false  );
       addAsm( str_LDY + "#>" + getNameOf(getAddressOf($3.name)), 2, false  );
       addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false ); // MEM ->FAC
@@ -13938,8 +13991,9 @@ arithmetic expression
     }
   else if( isFAC($3.name) )
     {
-      addComment( "touint(FAC) --> A" );
-      addComment( "TODO:... this" );
+      addComment( "touint(FAC) --> A (QINT Function)" );
+      addAsm( str_JSR + "$BC9B" + commentmarker + "FAC -> ZP $62,$63,$64,$65", 3, false);
+      addAsm( str_LDA + "$65", 2, false );
     }
   else if( isWordID($3.name) || isUintID($3.name) || isIntID($3.name) )
     {
@@ -14066,14 +14120,19 @@ arithmetic expression
 {
   if( isUintID($3.name) || isIntID($3.name) )
     {
-      addAsm( str_LDY + string($3.name), 3, false ); 
+      addAsm( str_LDY + getNameOf(getAddressOf($3.name)), 3, false ); 
       addAsm( str_LDA + "#$00", 2, false );
       addAsm( str_JSR + "$B391", 3, false );
     }
   else if(isWordID($3.name) )
     {
-      addAsm( str_LDY + string($3.name), 3, false ); 
-      addAsm( str_LDA + string($3.name) + "+1", 3, false ); 
+      //addAsm( str_LDY + string($3.name), 3, false ); 
+      //addAsm( str_LDA + string($3.name) + "+1", 3, false ); 
+      
+      addAsm( str_LDY + getNameOf(getAddressOf($3.name)), 3, false ); 
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)) + "+1", 3, false ); 
+
+      //addAsm( str_LDA + string($3.name) + "+1", 3, false ); 
       addAsm( str_JSR + "$B391", 3, false );
     }
   else if( isXA($3.name) )
@@ -14218,7 +14277,7 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
 {
   //twos_complement_is_needed = true;
   addComment( "=========================================================");  
-  addComment( string("                 twos(") + string($3.name) + string(")"));
+  addComment( string("                 twos(expression)"));
   addComment( "=========================================================");
 
   if( isUintID( $3.name ) || isIntID( $3.name ))
@@ -14631,8 +14690,28 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
   else if( isWordIMM( $3.name ) )
     {
       int v = atoi(stripFirst($3.name).c_str()) & 0xFF;
-      addAsm( str_LDA+"#$" + toHex(v), 2, false );
-    }  
+      addAsm( str_LDA + "#$" + toHex(v), 2, false );
+    }
+  else if( isUintIMM( $3.name ) )
+    {
+      int v = atoi(stripFirst($3.name).c_str());
+      addAsm( str_LDA + "#$" + toHex(v), 2, false );
+    }
+  else if( isIntIMM( $3.name ) )
+    {
+      int v = atoi(stripFirst($3.name).c_str());
+      addAsm( str_LDA + "#$" + toHex(v), 2, false );
+    }
+  else if( isUintID( $3.name ) )
+    {
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 2, false );      
+      addCompilerMessage("getting lo-byte of UINT not necessary", 0 );      
+    }
+  else if( isIntID( $3.name ) )
+    {
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 2, false );      
+      addCompilerMessage("getting lo-byte of INT not necessary", 0 );      
+    }
   else
     {
       addCompilerMessage( "Cannot return 'lo-byte' of specified type", 3 );
@@ -14644,8 +14723,9 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
   int addr = getAddressOf( $3.name );
   if( isFloatID( $3.name ) )
     {
-      addAsm( str_LDA+"#$"+toHex(get_word_L(addr)), 2, false  );
-      addAsm( str_LDY+"#$"+toHex(get_word_H(addr)), 2, false  );
+      addAsm( str_LDA+"#<"+getNameOf(addr), 2, false  );
+      addAsm( str_LDY+"#>"+getNameOf(addr), 2, false  );
+      
       addAsm( str_JSR+"$BBA2" + commentmarker + "MEM -> FAC", 3, false ); // FP ->FAC
       addAsm( str_JSR+"$BF71" + commentmarker + "SQRT(FAC) -> FAC", 3, false ); // sqrt
     }
