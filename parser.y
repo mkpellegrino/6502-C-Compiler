@@ -2584,7 +2584,7 @@ parameterlist: /* empty */
 |
 | expression
 {
-  addDebugComment(string("Parameter: ") + $1.name);
+  //addDebugComment(string("Parameter: ") + $1.name);
   addComment( string( "Param: " ) + $1.name );
   if( isUintID($1.name) || isIntID($1.name))
     {
@@ -2669,7 +2669,7 @@ parameterlist: /* empty */
     }
   else
     {
-      addCompilerMessage( "Unhandled Parameter Type for function call" );
+      addCompilerMessage( "Unhandled Parameter Type for function call", 3);
     }
 }
 | parameterlist ',' expression
@@ -5199,7 +5199,7 @@ condition: expression relop expression
   else if( isWordID($1.name) && isXA($3.name))  // mismatch
     {
       addComment( "WordID relop XA" );
-      addCompilerMessage("Swapping WordID and XA in comparison would be more effecient", 0);
+      addCompilerMessage("Swapping WordID and XA in comparison would be more efficient", 0);
       addDebugComment("vvv --- this uses self-modifying code --- vvv");
       int tmp_v = getAddressOf( $1.name );
       addAsm( str_STA + "!++", 3, false );
@@ -5913,7 +5913,7 @@ statement: datatype ID init
     }
   else if(isFloatDT(_dt) && isFloatID(_id) && isFAC(_init))
     {
-      addComment( "FLOAT FloatID FAC" );
+      addComment( "FLOAT FloatID = FAC" );
       addAsm( str_LDX + "#<" + getNameOf(getAddressOf(_id)), 2, false );
       addAsm( str_LDY + "#>" + getNameOf(getAddressOf(_id)), 2, false );
       addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> RAM", 3, false );
@@ -5925,21 +5925,21 @@ statement: datatype ID init
     }
   else if(isUintDT(_dt) && isUintID(_id) && isA(_init))
     {
-      addComment( "UINT UintID A" );
+      addComment( "UINT UintID = A" );
       int instr_size = 3;
       if( current_variable_base_address < 256 ) instr_size = 2;
       addAsm(str_STA + _id, instr_size, false );
    }
   else if(isIntDT(_dt) && isIntID(_id) && isA(_init))
     {
-      addComment( "INT IntID A" );
+      addComment( "INT IntID = A" );
       int instr_size = 3;
       if( current_variable_base_address < 256 ) instr_size = 2;
       addAsm(str_STA + _id, instr_size, false );
     }
   else if((isUintDT(_dt)||isIntDT(_dt)) && (isUintID(_id)||isIntID(_id)) && isXA(_init))
     {
-      addComment( "uint UintID XA    or    int IntID XA" );
+      addComment( "uint UintID = XA    or    int IntID = XA" );
       addCompilerMessage("Initialising a 1 byte memory location with a 2 byte value; losing High Byte",0);
       int instr_size = 3;
       if( current_variable_base_address < 256 ) instr_size = 2;
@@ -6135,6 +6135,11 @@ statement: datatype ID init
       addComment( "UIntID--  or  IntID--" );
       addAsm( str_DEC + getNameOf( a ), size_of_instruction, false );
     }
+  else
+    {
+      addCompilerMessage( "invalid decrement", 3 );
+    }
+
 };
 // STATEMENT
 | ID tPLUSPLUS
@@ -6168,6 +6173,11 @@ statement: datatype ID init
       addAsm( str_ADC + getNameOf( a ) + "+1", size_of_instruction, false );
       addAsm( str_STA + getNameOf( a ) + "+1", size_of_instruction, false );
     }
+  else
+    {
+      addCompilerMessage( "invalid increment", 3 );
+    }
+
 };
 | tDEC '(' ID ',' NUMBER ')'
 {
@@ -6755,7 +6765,7 @@ statement: datatype ID init
       addComment( "spritex( XA/A, WordID );" );
       if( isXA($3.name) )
 	{
-	  addCompilerMessage( "spritex cannot take XA as first parameter... loding High Byte", 0 );
+	  addCompilerMessage( "spritex cannot take XA as first parameter... losing High Byte", 0 );
 	}
       int value_addr = getAddressOf( $5.name );
       
@@ -14378,17 +14388,23 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
     }
   else if( isWordID($3.name) )
     {
-      addAsm( str_LDA + "#<" + getNameOf(getAddressOf($3.name)), 2, false  );
-      addAsm( str_LDY + "#>" + getNameOf(getAddressOf($3.name)), 2, false  );
-      addAsm( str_JSR + "$B391" + commentmarker + "Word -> FAC", 3, false );
+      addComment( "https://www.c64-wiki.com/wiki/GIVAYF" );
+      //addAsm( str_LDY + "#<" + getNameOf(getAddressOf($3.name)), 2, false  );
+      //addAsm( str_LDA + "#>" + getNameOf(getAddressOf($3.name)), 2, false  );
+      addAsm( str_LDY + getNameOf(getAddressOf($3.name)), 3, false  );
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)) + "+1", 3, false  );
+      //addAsm( str_JSR + "$B391" + commentmarker + "Word -> FAC", 3, false );
+      addAsm( str_JSR + "$B395" + commentmarker + "Word -> FAC", 3, false );
       addAsm( str_JSR + "$E26B" + commentmarker + "SIN(FAC) -> FAC", 3, false ); // sine
       strcpy($$.name, "_FAC");
     }
   else if( isUintID($3.name) || isIntID($3.name) )
     {
+      addComment( "https://www.c64-wiki.com/wiki/GIVAYF" );
       addAsm( str_LDY + getNameOf(getAddressOf($3.name)), 3, false ); 
       addAsm( str_LDA + "#$00", 2, false );
-      addAsm( str_JSR + "$B391" + commentmarker + "Word -> FAC", 3, false );
+      //addAsm( str_JSR + "$B391" + commentmarker + "Word -> FAC", 3, false );
+      addAsm( str_JSR + "$B395" + commentmarker + "Word -> FAC", 3, false );
       addAsm( str_JSR + "$E26B" + commentmarker + "SIN(FAC) -> FAC", 3, false ); // sine
       strcpy($$.name, "_FAC");
     }
@@ -14400,7 +14416,9 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
       addAsm( str_PLA );
       addAsm( str_TAX );
       addAsm( str_TYA );
-      addAsm( str_JSR + "$B391" + commentmarker + "Word -> FAC", 3, false );
+      //addAsm( str_JSR + "$B391" + commentmarker + "Word -> FAC", 3, false );
+      addAsm( str_JSR + "$B395" + commentmarker + "Word -> FAC", 3, false );
+
       addAsm( str_JSR + "$E26B" + commentmarker + "SIN(FAC) -> FAC", 3, false ); // sine
       strcpy($$.name, "_FAC");
     }
@@ -14432,25 +14450,33 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
   else if( isFloatID($3.name) )
     {
       int base_address = getAddressOf($3.name);
-      addAsm( str_LDA+"#$" + toHex(get_word_L(base_address)), 2, false  );
-      addAsm( str_LDY + "#$" + toHex(get_word_H(base_address)), 2, false  );
+      addAsm( str_LDA + "#<" + getNameOf(getAddressOf($3.name)), 2, false  );
+      addAsm( str_LDY + "#>" + getNameOf(getAddressOf($3.name)), 2, false  );
+
+      //addAsm( str_LDA + "#$" + toHex(get_word_L(base_address)), 2, false  );
+      //addAsm( str_LDY + "#$" + toHex(get_word_H(base_address)), 2, false  );
       addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false ); // FP ->FAC
       addAsm( str_JSR + "$E264" + commentmarker + "COS(FAC) -> FAC", 3, false ); // cos
       strcpy($$.name, "_FAC");
     }
   else if( isWordID($3.name) )
     {
-      addAsm( str_LDY + $3.name, 3, false ); 
-      addAsm( str_LDA + $3.name + "+1", 3, false ); 
+      addAsm( str_LDA + "#<" + getNameOf(getAddressOf($3.name)), 2, false  );
+      addAsm( str_LDY + "#>" + getNameOf(getAddressOf($3.name)), 2, false  );
+
+      
+      //addAsm( str_LDY + $3.name, 3, false ); 
+      //addAsm( str_LDA + $3.name + "+1", 3, false ); 
       addAsm( str_JSR + "$B391" + commentmarker + "Word -> FAC", 3, false );
       addAsm( str_JSR + "$E264" + commentmarker + "COS(FAC) -> FAC", 3, false ); // cos
       strcpy($$.name, "_FAC");
     }
   else if( isUintID($3.name) || isIntID($3.name) )
     {
-      addAsm( str_LDY + $3.name, 3, false ); 
-      addAsm( str_LDA+"#$00", 2, false );
-      addAsm( str_JSR + "$B391" + commentmarker + "Word -> FAC", 3, false );
+      //addAsm( str_LDY + $3.name, 3, false );
+      addAsm( str_LDY + getNameOf(getAddressOf($3.name)), 3, false ); 
+      addAsm( str_LDA + "#$00", 2, false );
+      addAsm( str_JSR + "$B391" + commentmarker + "Word -> FAC (int->FAC)", 3, false );
       addAsm( str_JSR + "$E264" + commentmarker + "COS(FAC) -> FAC", 3, false ); // cos
       strcpy($$.name, "_FAC");
     }
@@ -17030,11 +17056,12 @@ char *get_type(char *var){
 void add(char c) {
   if(c == 'V'){
     for(int i=0; i<10; i++){
-      if(!strcmp(reserved[i], strdup(yytext))){
-	sprintf(errors[sem_errors], "Line %d: Variable name \"%s\" is a reserved keyword!\n", countn+1, yytext);
-	sem_errors++;
-	return;
-      }
+      if(!strcmp(reserved[i], strdup(yytext)))
+	{
+	  sprintf(errors[sem_errors], "Line %d: Variable name \"%s\" is a reserved keyword!\n", countn+1, yytext);
+	  sem_errors++;
+	  return;
+	}
     }
   }
   q=search(yytext);
