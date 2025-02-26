@@ -1,16 +1,16 @@
 %{
-#include<stdio.h>
+#include <stdio.h>
 #include <iostream>
 
-#include<string>
-#include<stdlib.h>
-#include<ctype.h>
-#include<cctype>
-#include<vector>
+#include <string>
+#include <stdlib.h>
+#include <ctype.h>
+#include <cctype>
+#include <vector>
 #include <stack>
 #include <sstream>
 #include <cmath>
-#include"lex.yy.c"
+#include "lex.yy.c"
 
 
   using namespace std;
@@ -5692,16 +5692,17 @@ condition: expression relop expression
 	    {
 	      //addAsm( str_BYTE + "$F0, $03" + commentmarker + "BEQ +3", 2, false );
 	      addAsm( str_BEQ + "!_skip+", 2, false );
-	      addAsm(str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE", 3, false );
+	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE", 3, false );
 	      addAsm( "!_skip:", 0, true );
-
+	      strcpy($$.name, "beqskip-jmpelse-body" );
 	    }
 	  else
 	    {
 	      //addAsm( str_BYTE + "$F0, $03" + commentmarker + "BEQ +3", 2, false ); 
 	      addAsm( str_BEQ + "!_skip+", 2, false );
-	      addAsm(str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE", 3, false );
+	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE", 3, false );
 	      addAsm( "!_skip:", 0, true );
+	      strcpy($$.name, "beqskip-jmpelse-body" );
 	    }
 	}
       else if( string($2.name) == string( ">" ) )
@@ -5710,6 +5711,8 @@ condition: expression relop expression
 	    {
 	      addAsm( str_BCC + getLabel( label_vector[label_major]+1, false) + commentmarker + "if c==0 jump to ELSE", 2, false );
 	      addAsm( str_BEQ + getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==1 jump to ELSE", 2, false );
+	      strcpy($$.name, "bccelse-beqelse-body" );
+
 	    }
 	  else
 	    {
@@ -5781,7 +5784,32 @@ condition: expression relop expression
 
   addComment( "=========================================================");  
       
+}
+| condition {deletePreviousAsm();deletePreviousAsm();deletePreviousAsm();deletePreviousAsm();
+  addAsm( str_BEQ + getLabel( label_vector[label_major]+1, false), 3, false);} tOR {} condition {}
+{
+  addComment( "condition tOR condition" );
+
+  string _first = string($1.name);
+  string _op = string($3.name);
+  string _second = string($5.name);  
+  addComment( _first + " " + _op + " " + _second );
+
+  
+  addCompilerMessage( "Logical oring of 2 conditions is very poorly implemented. (if A || B)", 1 );
+  //addAsm( str_NOP, 1, false );
+}
+| condition {deletePreviousAsm();deletePreviousAsm();deletePreviousAsm();
+  addAsm( str_JMP + getLabel( label_vector[label_major]+2, false), 3, false);addAsm( "!_skip:", 0, true );} tAND {} condition {}
+{
+  addComment( "condition tAND condition" );
+  string _first = string($1.name);
+  string _op = string($3.name);
+  string _second = string($5.name);  
+  addComment( _first + " " + _op + " " + _second );
+  addCompilerMessage( "Logical anding of 2 conditions is very poorly implemented. (if A && B)", 1 );
 };
+
 | TRUE { add('K'); $$.nd = NULL; }
 | FALSE { add('K'); $$.nd = NULL; }
 | { $$.nd = NULL; }
