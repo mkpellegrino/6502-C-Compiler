@@ -5773,7 +5773,6 @@ condition: expression relop expression
 	    }
 	  else
 	    {
-	      // addAsm( str_BYTE + "$D0, $03" + commentmarker + "BNE +3", 2, false ); // BNE +3
 	      addAsm( str_BNE + "!_skip+", 2, false ); // BNE +3
 	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==1 jump to ELSE", 3, false );
 	      addAsm( "!_skip:", 0, true );
@@ -5791,22 +5790,97 @@ condition: expression relop expression
 }
 | condition
 {
-  deletePreviousAsm();
-  deletePreviousAsm();
-  deletePreviousAsm();
-  deletePreviousAsm();
-  addAsm( str_BEQ + getLabel( label_vector[label_major]+1, false), 3, false);
+  string _tmpCond = $1.name;
+  if( _tmpCond == "exp == exp" )
+    {
+      if( arg_asm_comments )
+	{
+	  deletePreviousAsm();
+	}
+      deletePreviousAsm();
+      deletePreviousAsm();
+      deletePreviousAsm();
+      addAsm( str_BEQ + getLabel( label_vector[label_major]+1, false), 3, false);    
+    }
+  else if( _tmpCond == "exp > exp lb" )
+    {
+      if( arg_asm_comments )
+	{
+	  deletePreviousAsm();
+	}
+      deletePreviousAsm();
+      deletePreviousAsm();
+      deletePreviousAsm();
+      deletePreviousAsm();
+      deletePreviousAsm();
+      addAsm( str_JMP + getLabel( label_vector[label_major], false) + commentmarker + "if z==1 jump to 2nd condition", 3, false );
+      addAsm( "!_skip:", 0, true );
+      addAsm( str_BNE + getLabel( label_vector[label_major]+1, false) + commentmarker + "branch to body of IF", 2, false );
+      addAsm( str_JMP + getLabel( label_vector[label_major], false) + commentmarker + "if z==1 jump to 2nd condition", 3, false );
+    }
+  else if( _tmpCond == "exp < exp lb" )
+    {
+      if( arg_asm_comments )
+	{
+	  deletePreviousAsm();
+	}
+      deletePreviousAsm();
+      deletePreviousAsm();
+      deletePreviousAsm();
+      addAsm( str_BCC + getLabel( label_vector[label_major]+1, false) + commentmarker + "branch to body of IF", 2, false );
+    }
+  else if( _tmpCond == "exp >= exp lb" )
+    {
+      if( arg_asm_comments )
+	{
+	  deletePreviousAsm();
+	}
+      deletePreviousAsm();
+      deletePreviousAsm();
+      deletePreviousAsm();
+      addAsm( str_BCS + getLabel( label_vector[label_major]+1, false) + commentmarker + "branch to body of IF", 2, false );
+    }
+  else if( _tmpCond == "exp <= exp lb" )
+    {
+      if( arg_asm_comments )
+	{
+	  deletePreviousAsm();
+	}
+      deletePreviousAsm();
+      deletePreviousAsm();
+      deletePreviousAsm();
+      deletePreviousAsm();
+      deletePreviousAsm();
+      deletePreviousAsm();
+      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "Jump to body of IF", 2, false );
+      addAsm( "!_skip:", 0, true );
+      addAsm( str_BNE + "!_skip+", 2, false );
+      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "Jump to body of IF", 2, false );
+      addAsm( "!_skip:", 0, true );
+      
+    }
+  else if( _tmpCond == "exp != exp lb" )
+    {
+      if( arg_asm_comments )
+	{
+	  deletePreviousAsm();
+	}
+      deletePreviousAsm();
+      deletePreviousAsm();
+      deletePreviousAsm();
+
+      addAsm( str_BNE + getLabel( label_vector[label_major]+1, false) + commentmarker + "branch to body of IF", 2, false );
+
+
+    }
+  
+  //addAsm( str_BEQ + getLabel( label_vector[label_major]+1, false), 3, false);
 
 } tOR {} condition {}
 {
   addComment( "condition tOR condition" );
-
-  string _first = string($1.name);
-  string _op = string($3.name);
-  string _second = string($5.name);  
-  addComment( _first + " " + _op + " " + _second );
-  addAsm( "!_body:", 0, true );
-  addCompilerMessage( "Logical oring of 2 conditions is very poorly implemented. (if A || B)", 1 );
+  //addAsm( "!_body:", 0, true );
+  //addCompilerMessage( "Logical oring of 2 conditions is very poorly implemented. (if A || B)", 1 );
   //addAsm( str_NOP, 1, false );
 }
 | condition
@@ -5814,6 +5888,11 @@ condition: expression relop expression
   string _tmpCond = $1.name;
   if( _tmpCond == "exp == exp" )
     {
+      // TODO CHECK THIS ONE (there may be a comment in there that it's deleting w/o checking to see if comments are on
+      if( arg_asm_comments )
+	{
+	  deletePreviousAsm();
+	}
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
@@ -5904,14 +5983,9 @@ condition: expression relop expression
   
 } tAND {} condition {}
 {
-  //addComment( "condition tAND condition" );
+  addComment( "condition tAND condition" );
   addAsm( "!_body:", 0, true );
-
-  string _first = string($1.name);
-  string _op = string($3.name);
-  string _second = string($5.name);  
-  addComment( _first + " " + _op + " " + _second );
-  addCompilerMessage( "Logical anding of 2 conditions is very poorly implemented. (if A && B)", 1 );
+  //addCompilerMessage( "Logical anding of 2 conditions is very poorly implemented. (if A && B)", 1 );
 };
 
 | TRUE { add('K'); $$.nd = NULL; }
