@@ -1,7 +1,6 @@
  //  Variable Labels
 .label scrollindex = $2000
-.label direction = $2001
-.label D016value = $2002
+.label D016value = $2001
 * = $0801
 BasicUpstart($080E)
 * = $080E
@@ -11,13 +10,8 @@ BasicUpstart($080E)
 	lda $D016
 	and #$F7
 	sta D016value
-	lda D016value
+//	lda D016value
 	sta $D016
-	lda #<scrollTopHalfOfScreen
-	ldx #>scrollTopHalfOfScreen
-	pha 
-	txa 
-	pha 
 	sei 
 	lda #$7F
 	sta $DC0D
@@ -29,30 +23,28 @@ BasicUpstart($080E)
 	lda $D011
 	and #$7F
 	sta $D011
-	pla  // High Byte of Address of Routine
+	lda #>scrollTopHalfOfScreen
 	sta $0315
-	pla  // Low Byte of Address of Routine
+	lda #<scrollTopHalfOfScreen
 	sta $0314
 	cli 
 	rts 
 scrollBottomHalfOfScreen:
 	asl $D019
-	lda $0334
-	sta direction
 	lda $D016
 	and #$F8
 	sta D016value
 	clc 
-	lda D016value
+	//lda D016value
 	adc scrollindex
 	sta D016value
-	lda D016value
+	//lda D016value
 	sta $D016
 	php 
 	clc 
 LBL1L0:
 LBL1L1:			 // Top of IF statement
-	lda direction
+	lda $0334
 	cmp #$01
 	beq !_skip+
 	jmp LBL1L3 // jump to ELSE
@@ -62,8 +54,7 @@ LBL1L2:
 	clc 
 LBL2L0:
 LBL2L1:			 // Top of IF statement
-	lda scrollindex
-	cmp #$00
+	ldx scrollindex
 	beq !_skip+
 	jmp LBL2L3 // jump to ELSE
 !_skip:
