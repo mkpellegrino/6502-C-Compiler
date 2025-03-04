@@ -1,17 +1,26 @@
  //  Variable Labels
 .label scrollindex = $2000
 .label D016value = $2001
+.label c = $2002
+.label j = $2004
+.label i = $2006
 * = $0801
 BasicUpstart($080E)
 * = $080E
+
+	// Set Scroll Index to 0
 	lda #$00
 	sta scrollindex
-	
-	lda $D016           // 38 Column Mode
-	and #$F7
-	sta D016value
-	sta $D016
 
+	// 38 Column Mode
+	lda $D016           
+	and #$F7
+	sta $D016
+	sta D016value
+
+	// Set Colour Map
+	jsr setColours
+	
 	// setup the first int routine
 	// at scanline #$82
 	sei 
@@ -39,13 +48,20 @@ scrollTopHalfOfScreen:
 	// Ack
 	asl $D019
 
+	// BG and BDR colours for top
+	lda #$00
+	sta $D021
+	sta $D020
+
 	// Get the XScroll and
 	// add the current index to it
 	lda $D016
-	and #$F8
+	// also 38 col mode
+	and #$F0
 	clc 
 	adc scrollindex
 	sta D016value
+	//ora #$08
 	sta $D016
 
 	
@@ -117,9 +133,16 @@ scrollBottomHalfOfScreen:
 
 	// ack
 	asl $D019
-	
+
+
+	// BG and BDR colours for botttom
+	lda #$06
+	sta $D021
+	lda #$0E
+	sta $D020
+
 	// set X Scroll to 0
-	lda #$00	
+	lda #$08	
 	sta $D016
 
 	// set up next interrupt routine
@@ -290,3 +313,113 @@ moveTopL2R:
 	pla
 	sta $0400
 	rts 
+
+setColours:
+	lda #<COLOURMAP
+	sta c
+	lda #>COLOURMAP
+	sta c+1
+	lda c // c
+	ldx c+1
+	sta j
+	stx j+1
+	lda $02
+	pha 
+	lda $03
+	pha 
+	php 
+	clc 
+LBL1L6:
+	lda #$00
+	ldx #$D8
+	sta i
+	stx i+1
+LBL1L7:			 // Top of FOR Loop
+	lda i+1
+	cmp #$D9
+	bne !+
+	lda i
+	cmp #$90
+!:
+	.byte $B0, $03 // BCS +3
+	jmp LBL1L9 // if c==0 jump to BODY
+	jmp LBL1L10 // jump out of FOR
+LBL1L8:
+	clc 
+	lda #$01
+	adc i
+	sta i
+	lda #$00
+	adc i+1
+	sta i+1
+	jmp LBL1L7 // jump to top of FOR loop
+LBL1L9:
+	ldy #$00
+	lda j
+	ldx j+1
+	sta !+
+	stx !++
+	.byte $AD
+!:
+	.byte $00
+!:
+	.byte $00
+	sta LBL2L10-2
+	lda i
+	sta !+
+	lda i+1
+	sta !++
+	lda #$00
+	.byte $A9, $00
+	.byte $8D // <-- STA absolute
+!:
+LBL2L10:			 // <-- low byte
+	.byte $00
+!:
+LBL2L11:			 // <-- hi byte
+	.byte $00
+	clc 
+	lda #$01
+	adc j
+	sta j
+	lda #$00
+	adc j+1
+	sta j+1
+	jmp LBL1L8 // jump to iterator
+LBL1L10:
+	plp 
+	pla 
+	sta $03
+	pla 
+	sta $02
+	rts 
+COLOURMAP: 
+	.byte $00, $00, $00, $00, $00, $00, $0B, $0B, $0C, $0C, $0C, $0F, $0F, $01, $01, $01, $01, $01, $01, $01
+	.byte $01, $01, $01, $01, $01, $01, $01, $01, $0F, $0F, $0C, $0C, $0C, $0B, $0B, $00, $00, $00, $00, $00
+
+	.byte $00, $00, $00, $00, $00, $00, $0B, $0B, $0C, $0C, $0C, $0F, $0F, $01, $01, $01, $01, $01, $01, $01
+	.byte $01, $01, $01, $01, $01, $01, $01, $01, $0F, $0F, $0C, $0C, $0C, $0B, $0B, $00, $00, $00, $00, $00
+
+	.byte $00, $00, $00, $0B, $0B, $0B, $0B, $0B, $0C, $0C, $0F, $01, $01, $01, $01, $01, $01, $01, $01, $01
+	.byte $01, $01, $01, $01, $01, $01, $01, $01, $01, $0F, $0C, $0C, $0B, $0B, $0B, $0B, $0B, $00, $00, $00
+
+	.byte $00, $00, $0B, $0B, $0B, $0B, $0B, $0C, $0C, $0C, $0F, $01, $01, $01, $01, $01, $01, $01, $01, $01
+	.byte $01, $01, $01, $01, $01, $01, $01, $01, $01, $0F, $0C, $0C, $0C, $0B, $0B, $0B, $0B, $0B, $00, $00
+
+	.byte $00, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0C, $0C, $0F, $01, $01, $01, $01, $01, $01, $01, $01, $01
+	.byte $01, $01, $01, $01, $01, $01, $01, $01, $01, $0F, $0C, $0C, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $00
+
+	.byte $0B, $0B, $0B, $0B, $0C, $0C, $0C, $0C, $0F, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01
+	.byte $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $0F, $0C, $0C, $0C, $0C, $0B, $0B, $0B, $0B
+
+	.byte $0B, $0B, $0B, $0B, $0C, $0C, $0C, $0C, $0F, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01
+	.byte $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $01, $0F, $0C, $0C, $0C, $0C, $0B, $0B, $0B, $0B
+
+	.byte $00, $00, $00, $00, $00, $0B, $0B, $0B, $0C, $0C, $0F, $01, $01, $01, $01, $01, $01, $01, $01, $01
+	.byte $01, $01, $01, $01, $01, $01, $01, $01, $01, $0F, $0C, $0C, $0B, $0B, $0B, $00, $00, $00, $00, $00
+
+	.byte $00, $00, $00, $00, $00, $0B, $0B, $0B, $0C, $0C, $0F, $01, $01, $01, $01, $01, $01, $01, $01, $01
+	.byte $01, $01, $01, $01, $01, $01, $01, $01, $01, $0F, $0C, $0C, $0B, $0B, $0B, $00, $00, $00, $00, $00
+
+	.byte $00, $00, $00, $00, $00, $0B, $0B, $0B, $0C, $0C, $0F, $01, $01, $01, $01, $01, $01, $01, $01, $01
+	.byte $01, $01, $01, $01, $01, $01, $01, $01, $01, $0F, $0C, $0C, $0B, $0B, $0B, $00, $00, $00, $00, $00 
