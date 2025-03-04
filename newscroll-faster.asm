@@ -48,25 +48,23 @@ scrollTopHalfOfScreen:
 	sta D016value
 	sta $D016
 
+	
+
 	// Top of IF statement
 	// if Memory (820 dec) is 1, scroll Right
-	lda $0334
-	cmp #$01
-	beq !_skip+
-	
-	jmp LBL1L3      // jump to ELSE
-!_skip:
+	lda $0334	
+	cmp #$01	
+	bne LBL1L3 //                        (branch to ELSE)
+
 	// Top of IF statement
+	// if xscroll is !=0 branch out of IF
+	ldx scrollindex                    //
+	bne LBL2L3                         //
+	
+	// memcopy                         //
+	jsr moveTopL2R                     //
 
-	// if xscroll is !=0 branch to ELSE
-	ldx scrollindex
-	bne LBL2L3
-
-	// memcopy
-	jsr moveTopL2R
-
-
-	// ELSE increase the scroll index
+	// increase the scroll index   <---//
 LBL2L3:
 	inc scrollindex
 	lda #$07
@@ -74,20 +72,18 @@ LBL2L3:
 	sta scrollindex
 	jmp LBL1L4
 
-	
+	//                                              ELSE
 LBL1L3:
 	// Top of IF statement
-
 	// if xscroll index is 7 perform memcopy	
 	lda scrollindex
 	cmp #$07
-	beq !_skip+
-	jmp LBL2L8      // jump to ELSE
-!_skip:
+	bne LBL2L8   // branch out of IF
+
+	// memcopy
 	jsr moveTopR2L
 
-
-	// ELSE just subtract 1 from the scroll index
+	// Subtract 1 from Scroll Index
 LBL2L8:
 	dec scrollindex
 	lda #$07
