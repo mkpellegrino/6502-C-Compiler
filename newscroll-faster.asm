@@ -6,12 +6,14 @@ BasicUpstart($080E)
 * = $080E
 	lda #$00
 	sta scrollindex
-// 38 column mode
-	lda $D016
+	
+	lda $D016           // 38 Column Mode
 	and #$F7
 	sta D016value
-//	lda D016value
 	sta $D016
+
+	// setup the first int routine
+	// at scanline #$82
 	sei 
 	lda #$7F
 	sta $DC0D
@@ -28,67 +30,73 @@ BasicUpstart($080E)
 	lda #<scrollTopHalfOfScreen
 	sta $0314
 	cli 
-	rts 
-scrollBottomHalfOfScreen:
+	rts
+
+	
+	
+scrollTopHalfOfScreen:
+
+	// Ack
 	asl $D019
+
+	// Get the XScroll and
+	// add the current index to it
 	lda $D016
 	and #$F8
-	sta D016value
 	clc 
-	//lda D016value
 	adc scrollindex
 	sta D016value
-	//lda D016value
 	sta $D016
-	php 
-	clc 
-LBL1L0:
-LBL1L1:			 // Top of IF statement
+
+	// Top of IF statement
+	// if Memory (820 dec) is 1, scroll Right
 	lda $0334
 	cmp #$01
 	beq !_skip+
-	jmp LBL1L3 // jump to ELSE
+	
+	jmp LBL1L3      // jump to ELSE
 !_skip:
-LBL1L2:
-	php 
-	clc 
-LBL2L0:
-LBL2L1:			 // Top of IF statement
+	// Top of IF statement
+
+	// if xscroll is !=0 branch to ELSE
 	ldx scrollindex
-	beq !_skip+
-	jmp LBL2L3 // jump to ELSE
-!_skip:
-LBL2L2:
+	bne LBL2L3
+
+	// memcopy
 	jsr moveTopL2R
+
+
+	// ELSE increase the scroll index
 LBL2L3:
-LBL2L4:
-	plp 
 	inc scrollindex
 	lda #$07
 	and scrollindex
 	sta scrollindex
 	jmp LBL1L4
+
+	
 LBL1L3:
-	php 
-	clc 
-LBL2L5:
-LBL2L6:			 // Top of IF statement
+	// Top of IF statement
+
+	// if xscroll index is 7 perform memcopy	
 	lda scrollindex
 	cmp #$07
 	beq !_skip+
-	jmp LBL2L8 // jump to ELSE
+	jmp LBL2L8      // jump to ELSE
 !_skip:
-LBL2L7:
 	jsr moveTopR2L
+
+
+	// ELSE just subtract 1 from the scroll index
 LBL2L8:
-LBL2L9:
-	plp 
 	dec scrollindex
 	lda #$07
 	and scrollindex
 	sta scrollindex
+
+	// setup next interrupt routine
+	// at scan line: #$82
 LBL1L4:
-	plp 
 	sei 
 	lda #$7F
 	sta $DC0D
@@ -100,16 +108,26 @@ LBL1L4:
 	lda $D011
 	and #$7F
 	sta $D011
-	lda #>scrollTopHalfOfScreen
+	lda #>scrollBottomHalfOfScreen
 	sta $0315
-	lda #<scrollTopHalfOfScreen
+	lda #<scrollBottomHalfOfScreen
 	sta $0314
 	cli 
 	jmp $EA31
-scrollTopHalfOfScreen:
+
+
+	// Doesn't Actually Scroll Bottom Half of Screen
+scrollBottomHalfOfScreen:
+
+	// ack
 	asl $D019
-	lda #$00
+	
+	// set X Scroll to 0
+	lda #$00	
 	sta $D016
+
+	// set up next interrupt routine
+	// @ scanline #$FF
 	sei 
 	lda #$7F
 	sta $DC0D
@@ -121,13 +139,18 @@ scrollTopHalfOfScreen:
 	lda $D011
 	and #$7F
 	sta $D011
-	lda #>scrollBottomHalfOfScreen
+	lda #>scrollTopHalfOfScreen
 	sta $0315
-	lda #<scrollBottomHalfOfScreen
+	lda #<scrollTopHalfOfScreen
 	sta $0314
 	cli 
 	jmp $EA31
+
+
+	// Mem Copy for scrolling Right to Left
 moveTopR2L:
+
+	// Temporarily store the Left column
 	lda $0400
 	pha
 	lda $0428
@@ -171,9 +194,11 @@ moveTopR2L:
 	lda $0569,X
 	sta $0568,X
 	inx
-	txa
-	cmp #$27
+	cpx #$27
 	bne !-
+
+	// put what _used_ to be in the left column in
+	// the right column
 	pla
 	sta $058F
 	pla
@@ -194,8 +219,13 @@ moveTopR2L:
 	sta $044F
 	pla
 	sta $0427
-	rts 
+	rts
+
+
+	// Mem Copy for scrolling Left to Right
 moveTopL2R:
+
+	// temp. store right column
 	lda $0427
 	pha
 	lda $044F
@@ -240,6 +270,9 @@ moveTopL2R:
 	sta $0568,X
 	dex
 	bne !-
+
+	// put what _used_ to be in right column into
+	// left column
 	pla
 	sta $0568
 	pla
