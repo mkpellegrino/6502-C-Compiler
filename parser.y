@@ -3876,7 +3876,6 @@ body: WHILE
     {
       addAsm( str_TAX );
     }
-
   else
     {
       addCompilerMessage( string( "unknown type: ") + string($5.name) , 3 );
@@ -8340,7 +8339,7 @@ statement: datatype ID init
       int y_addr = getAddressOf($6.name);
       int c_addr = getAddressOf($9.name);
       
-      // X Low - because this is Multicolour - the X coordinate fites into 1 byte
+      // X Low - because this is Multicolour - the X coordinate fits into 1 byte
       addAsm( str_LDA + getNameOf(x_addr), 3, false );
       addAsm( str_STA + "$FA", 2, false );
       
@@ -9010,15 +9009,14 @@ statement: datatype ID init
 };
 | tSCREEN '(' expression ')'
 {
-  //pushScope( "SCREEN" );
-  // exp1 shl 4 times
-  // or it with d011
-  // sta d011
-  addComment( "screen(exp); : set bit 4 of $D011 to LSB of expression (as in b00010000)" );
   //addAsm( str_SEI );
-  if( isUintID( $3.name ) || isIntID( $3.name ) )
+  if( isUintID( $3.name ) || isIntID( $3.name ) || isWordID( $3.name ))
     {
-      addComment("screen(UintID|IntID)");
+      addComment("screen(UintID|IntID|WordID): set bit 4 of $D011 to LSB of expression (as in b00010000)");
+      if( isWordID( $3.name ) )
+	{
+	  addCompilerMessage( string("screen(WordID) where ") + getNameOf(getAddressOf($3.name)) + string(" is a word... ignoring High Byte"), 0 );
+	}
       int instr_size = 3;
       int v = getAddressOf( $3.name );
       if( v < 256 ) instr_size = 2;
@@ -9038,10 +9036,15 @@ statement: datatype ID init
       addAsm( str_STA + "$D011", 3, false );
       
     }
-  else if( isUintIMM( $3.name ) )
+  else if( isUintIMM( $3.name ) || isIntIMM( $3.name ) | isWordIMM( $3.name ))
     {
-      addComment("screen(UINTIMM)");
+      addComment("screen(UINTIMM): set bit 4 of $D011 to LSB of expression (as in b00010000)");
 
+      if( isWordIMM( $3.name ))
+	{
+	  addCompilerMessage( "screen(WordIMM)... ignoring High Byte", 0 );
+	}
+	  
       int v = atoi( stripFirst($3.name).c_str());
 
       //addAsm( str_LDA + "#$" + toHex(v), 2, false );
@@ -9060,9 +9063,16 @@ statement: datatype ID init
 	  addAsm( str_STA + "$D011", 3, false );
 	}
     }
-  else if( isA( $3.name ) )
+  else if( isA( $3.name ) || isXA( $3.name ))
     {
-      addComment("screen(A)");
+      addComment("screen(A || XA): set bit 4 of $D011 to LSB of expression (as in b00010000)");
+
+      if( isXA( $3.name ) )
+	{
+	  addCompilerMessage( string("screen(XA)... ignoring X"), 0 );
+	}
+
+      
       addAsm( str_CLC, 1, false );
       addAsm( str_ROR, 1, false );
       addAsm( str_BCS + "!+" + commentmarker + "branch to setbit", 2, false );
@@ -9079,7 +9089,7 @@ statement: datatype ID init
    }
   else
     {
-      addCompilerMessage( "incorrect type for 'screen' must be UintID/IntID/IMM or A", 3 );
+      addCompilerMessage( "incorrect type for 'screen' must be Word, Int, A, or XA", 3 );
     }
   //popScope();
 };
