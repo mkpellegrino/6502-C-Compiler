@@ -301,12 +301,16 @@
   int data_start=828; // 98 2 byte variables
   int code_start=2049;
   int current_code_location=0;
+  int byte_count=0;
   int string_number=0;
   int data_number=0;
   int kbd_bfr_addr = 0xCFE0;
   int current_variable_type=-1;
   int current_variable_base_address=-1;
 
+  int jump_start = 0;
+  int jump_end = 0;
+  
   int nl = 0; // node_level node level
   
   // helper functions
@@ -1445,6 +1449,7 @@
     asm_instruction * my_asm = new asm_instruction( s );
     my_asm->setLabel(l);
     my_asm->setSize(instruction_size);
+    byte_count+= instruction_size;
     my_asm->setAddress( 0 ); 
     asm_instr.push_back( my_asm );
     return;
@@ -1568,6 +1573,7 @@
 	string s = string("deleting " + asm_instr[asm_instr.size()-1]->getString() );
 	addCompilerMessage( s, 0 );
       }
+    byte_count -= asm_instr[asm_instr.size()-1]->getSize();
     asm_instr.erase( asm_instr.end()-1 );
     return;
   }
@@ -2945,19 +2951,20 @@ body: WHILE
 {
   string s = gen_random_str(10);
   //addCommentBreak(2);
-  addDebugComment( string( ">>>>> ") + s );
+  //addDebugComment( string( ">>>>> ") + s );
   rnd_str_vector.push(s);
  
-  addDebugComment( "Preserve $02/$03" );
+  addComment( "Preserve $02/$03" );
   addAsm( str_LDA + "$02", 2, false);
   addAsm( str_PHA );
   addAsm( str_LDA + "$03", 2, false);
   addAsm( str_PHA );
   
-  addDebugComment( "Preserve Status Register" );
+  addComment( "Preserve Status Register" );
   addAsm( str_PHP );
   //addCommentBreak(2);
 
+  
   addAsm( str_CLC );
   
   pushScope("FOR");
@@ -2999,10 +3006,10 @@ body: WHILE
       rnd_str_vector.pop();
 
       // 2023 06 25
-      addDebugComment( "Restore status register" );
+      addComment( "Restore status register" );
       addAsm( str_PLP );
 
-      addDebugComment( "Restore $02/$03" );
+      addComment( "Restore $02/$03" );
       addAsm( str_PLA );
       addAsm( str_STA + "$03", 2, false);
       addAsm( str_PLA );
@@ -3020,7 +3027,7 @@ body: WHILE
 
   if( !arg_unsafe_ifs )
     {
-      addDebugComment( "Preserve $02/$03" );
+      addComment( "Preserve $02/$03" );
       addAsm( str_LDA + "$02", 2, false);
       addAsm( str_PHA );
       addAsm( str_LDA + "$03", 2, false);
@@ -3034,7 +3041,7 @@ body: WHILE
   /* addAsm( str_TYA ); */
   /* addAsm( str_PHA ); */
 
-  addDebugComment( "Preserve Status Register" );
+  addComment( "Preserve Status Register" );
   addAsm( str_PHP );
 
   //addCommentBreak(2);
@@ -3048,9 +3055,9 @@ body: WHILE
 }
 '(' condition ')'
 {
-
+  jump_start = byte_count;
   //addCommentBreak();
-  addDebugComment( "                      THEN:" );
+  addComment( "Body of If" );
   addAsm( generateNewLabel(), 0, true );
 }
 '{' body '}'
@@ -3059,11 +3066,31 @@ body: WHILE
   addAsm( generateNewLabel(), 0, true );
 
   //addCommentBreak();
-  addDebugComment( "                      ELSE:" );
+  //addComment( "Else of If" );
 }
  else
    {
      //addCommentBreak();
+     if( string($11.name) == "" )
+       {
+	 deletePreviousAsm();
+	 deletePreviousAsm();
+	 addComment( "Removed previous JMP instruction" );
+	 addCompilerMessage( "Removed an unneccessary JMP instruction", 0 );
+
+	 if( (byte_count - jump_start) <= 255 )
+	   {
+	     // TODO: Figure out why byte count is 6 off!
+	     addComment( "^^^^ OPTIMIZE ^^^^ with a BRANCH the JMP that is only 0x" + toHex(6+byte_count-jump_start) + " (" + itos(6+byte_count-jump_start) + ") bytes above" );
+	     
+	   }
+	 addAsm( getLabel(label_vector[label_major]-1), 0, true );
+       }
+     else
+       {
+	 addComment( "ELSE" );
+	 //addComment( $11.name );
+       }
      addParserComment( "post-process the ELSE" );
    }
 {
@@ -3085,7 +3112,7 @@ body: WHILE
       // 2023 06 27
       rnd_str_vector.pop();
 
-      addDebugComment( "Restore status register" );
+      addComment( "Restore status register" );
       addAsm( str_PLP );
 
       /* addComment( "Restore AXY" ); */
@@ -3097,7 +3124,7 @@ body: WHILE
 
       if( !arg_unsafe_ifs )
 	{
-	  addDebugComment( "Restore $02/$03" );
+	  addComment( "Restore $02/$03" );
 	  addAsm( str_PLA );
 	  addAsm( str_STA + "$03", 2, false);
 	  addAsm( str_PLA );
@@ -5708,7 +5735,7 @@ condition: expression relop expression
 	  //{
 	      //addAsm( str_BYTE + "$F0, $03" + commentmarker + "BEQ +3", 2, false );
 	      addAsm( str_BEQ + "!_skip+", 2, false );
-	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE", 3, false );
+	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE (OPTIMIZE)", 3, false );
 	      addAsm( "!_skip:", 0, true );
 	      strcpy($$.name, "exp == exp" );
 	      //}
@@ -5794,6 +5821,7 @@ condition: expression relop expression
 	      strcpy($$.name, "exp != exp lb" ); // longbranches
 	    }
 	}
+      //addCompilerMessage( string("Byte Count: ") + toHex(byte_count), 0 ); 
     }
   else
     {
