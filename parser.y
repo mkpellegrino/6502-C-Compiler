@@ -1695,6 +1695,26 @@
 
     for( int i=0; i<asm_instr.size(); i++ )
       {
+	if(
+	   cmpstr( asm_instr[i]->getString(), plp ) &&
+	   cmpstr( asm_instr[i+1]->getString(), php) )
+	  {
+	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+2);
+	    addOptimizationMessage( "removing PLP-PHP IFIF", i);
+
+	  }
+
+	
+	if(
+	   cmpstr( asm_instr[i]->getString(), string("// Restore status register") ) &&
+	   cmpstr( asm_instr[i+1]->getString(), plp ) &&
+	   cmpstr( asm_instr[i+2]->getString(), string("// Preserve Status Register") ) &&
+	   cmpstr( asm_instr[i+3]->getString(), php) )
+	  {
+	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+4);
+	    addOptimizationMessage( "removing PLP-PHP IFIF", i);
+
+	  }
 	// POP-PUSH removal (IFIF)
 	if(
 	   cmpstr( asm_instr[i]->getString(), plp ) &&
@@ -2988,7 +3008,10 @@ body: WHILE
       s = iterator_stack.top()->getString();
       deletePreviousAsm();
     }
-  
+  // Pop off the comment
+  iterator_stack.pop();
+  //deletePreviousAsm();
+
   
 } ')'
 {  addAsm( generateNewLabel(), 0, true ); }
@@ -3004,17 +3027,12 @@ body: WHILE
       s = iterator_stack.top()->getString();
       iterator_stack.pop();
     }
-
-  
-  //addAsm( str_JMP + getLabel( ((int)label_vector[label_major]-2), false ) + commentmarker +  "jump to iterator of loop" , 3, false );
+  // delete the comment
+  deletePreviousAsm();
   addAsm( str_JMP + getLabel( ((int)label_vector[label_major]-3), false ), 3, false );
-
-
-
   
   addAsm( generateNewLabel(), 0, true );
-  //  addAsm( str_PLA );  
-  //addCommentBreak();
+
   if( scope_stack.top() != string("FOR") )
     {
       addCompilerMessage( "Scope out of Sync", 3 );
@@ -3106,14 +3124,14 @@ body: WHILE
 	 if( (byte_count - jump_start) <= 255 )
 	   {
 	     // TODO: Figure out why byte count is 6 off!
-	     addComment( "^^^^ OPTIMIZE ^^^^ with a BRANCH the JMP that is only 0x" + toHex(6+byte_count-jump_start) + " (" + itos(6+byte_count-jump_start) + ") bytes above" );
+	     //addComment( "^^^^ OPTIMIZE ^^^^ with a BRANCH the JMP that is only 0x" + toHex(6+byte_count-jump_start) + " (" + itos(6+byte_count-jump_start) + ") bytes above" );
 	     
 	   }
 	 addAsm( getLabel(label_vector[label_major]-1), 0, true );
        }
      else
        {
-	 addComment( "ELSE" );
+	 //addComment( "ELSE" );
 	 //addComment( $11.name );
        }
      addParserComment( "post-process the ELSE" );
@@ -3132,20 +3150,10 @@ body: WHILE
   else
     {
       popScope();
-      // 2023 06 25
-      //addCommentBreak(2);
-      // 2023 06 27
       rnd_str_vector.pop();
 
       addComment( "Restore status register" );
       addAsm( str_PLP );
-
-      /* addComment( "Restore AXY" ); */
-      /* addAsm( str_PLA ); */
-      /* addAsm( str_TAY ); */
-      /* addAsm( str_PLA ); */
-      /* addAsm( str_TAX ); */
-      /* addAsm( str_PLA ); */
 
       if( !arg_unsafe_ifs )
 	{
@@ -3155,14 +3163,11 @@ body: WHILE
 	  addAsm( str_PLA );
 	  addAsm( str_STA + "$02", 2, false);
 	}
-
-      //addCommentBreak(2);
       
     }
 };
 | statement ';'
 {
-  //addCommentBreak(2);
 };
 | return
   {
@@ -5866,7 +5871,7 @@ condition: expression relop expression
 	{
 	  deletePreviousAsm();
 	}
-      //deletePreviousAsm();
+      deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
       addAsm( str_BEQ + getLabel( label_vector[label_major]+1, false), 3, false);    
@@ -11587,6 +11592,7 @@ arithmetic expression
       
       if( op == string("+"))
 	{
+	  addComment( "(OPTIMIZE)" );
 	  addComment( "WordID + WordIMM -> XA" );
 	  addAsm( str_LDA + O1, sizeOP1A, false );
 	  addAsm( str_ADC + "#$" + toHex(get_word_L( OP2 )), 2, false );	  
@@ -11599,6 +11605,7 @@ arithmetic expression
 	}
       else if( op == string("-"))
 	{
+	  addComment( "(OPTIMIZE)" );
 	  addComment( "WordID - WordIMM -> XA" );
 	  addAsm( str_LDA + O1, sizeOP1A, false );
 	  addAsm( str_SBC + "#$" + toHex(get_word_L( OP2 )), 2, false );	  
