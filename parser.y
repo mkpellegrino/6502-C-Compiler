@@ -326,6 +326,9 @@
   vector <string> include_file_vector;
   stack <string> rnd_str_vector;
 
+  //stack <string> iterator_stack;
+  
+
   vector <string> node_vector;
 
   // taken from: https://stackoverflow.com/questions/440133/how-do-i-create-a-random-alpha-numeric-string-in-c
@@ -1433,7 +1436,8 @@
     }
   
   vector<asm_instruction*> asm_instr;
-
+  stack<asm_instruction*> iterator_stack;
+  
   void addByte( string s, int instruction_size=1, bool l = false)
   {
     //int a = asm_datum[asm_datum.size()-1]->getSize();
@@ -1444,6 +1448,7 @@
     return;
   }
 
+  
   void addAsm( string s, int instruction_size, bool l = false)
   {
     asm_instruction * my_asm = new asm_instruction( s );
@@ -2933,7 +2938,7 @@ body: WHILE
   //addCommentBreak(2);
   // 2023 06 27
   string s = rnd_str_vector.top();
-  addDebugComment( string( "<<<<< ") + s );
+  //  addDebugComment( string( "<<<<< ") + s );
   rnd_str_vector.pop();
 
   addDebugComment( "Restore status register" );
@@ -2950,8 +2955,6 @@ body: WHILE
 | FOR
 {
   string s = gen_random_str(10);
-  //addCommentBreak(2);
-  //addDebugComment( string( ">>>>> ") + s );
   rnd_str_vector.push(s);
  
   addComment( "Preserve $02/$03" );
@@ -2962,13 +2965,9 @@ body: WHILE
   
   addComment( "Preserve Status Register" );
   addAsm( str_PHP );
-  //addCommentBreak(2);
-
   
-  addAsm( str_CLC );
-  
+  addAsm( str_CLC );  
   pushScope("FOR");
-  //addCommentSection( "FOR LOOP" );
   addAsm( generateNewLabel(), 0, true );
 }
 '(' statement { addCommentBreak(); }
@@ -2976,16 +2975,42 @@ body: WHILE
 {
   addAsm( generateNewLabel(), 0, true );
 }
-';' statement
+';' {addComment("[iterator]");} statement
 {
-  addAsm(str_JMP + getLabel( label_vector[label_major]-2, false) + commentmarker + "jump to top of FOR loop", 3, false );
-  //addCommentBreak();
+  // Push that whole statement ^^ onto a stack
+  //addAsm(str_JMP + getLabel( label_vector[label_major]-2, false) + commentmarker + "jump to top of FOR loop", 3, false );
+  addComment( "[jump to top of for]" );
+  string s = "";
+  
+  while( s != "// [iterator]" )
+    {
+      iterator_stack.push( asm_instr[asm_instr.size()-1] );
+      s = iterator_stack.top()->getString();
+      deletePreviousAsm();
+    }
+  
+  
 } ')'
 {  addAsm( generateNewLabel(), 0, true ); }
 '{' body '}'
 {
-  //addCommentBreak();
-  addAsm( str_JMP + getLabel( ((int)label_vector[label_major]-2), false ) + commentmarker +  "jump to iterator" , 3, false );
+
+  // pop that whole statement off of that stack and jump to top of FOR
+
+  string s = "";
+  while( s != "// [jump to top of for]" )
+    {
+      asm_instr.push_back( iterator_stack.top() );
+      s = iterator_stack.top()->getString();
+      iterator_stack.pop();
+    }
+
+  
+  //addAsm( str_JMP + getLabel( ((int)label_vector[label_major]-2), false ) + commentmarker +  "jump to iterator of loop" , 3, false );
+  addAsm( str_JMP + getLabel( ((int)label_vector[label_major]-3), false ), 3, false );
+
+
+
   
   addAsm( generateNewLabel(), 0, true );
   //  addAsm( str_PLA );  
@@ -8639,9 +8664,10 @@ statement: datatype ID init
   if( isUintID( arg0.c_str() ) && (isUintID(arg1.c_str()) || isIntID(arg1.c_str())) && isA(arg2.c_str()) )
     {
       addComment( "UintID_array[(U)IntID] = A" );
-		 
+      
       int addr_of_index = getAddressOf(arg1.c_str());
-      addAsm( str_LDX + arg1.c_str(), 3, false );
+      //addComment( getNameOf( addr_of_index ) );
+      addAsm( str_LDX + getNameOf( addr_of_index ), 3, false );
       addAsm( str_STA + getNameOf( current_variable_base_address ) + ",X", 3, false );
     }
     else if( isIntID(arg0.c_str()) && isUintIMM(arg1.c_str()) && isA( arg2.c_str() ))
@@ -8659,7 +8685,7 @@ statement: datatype ID init
 
       int tmp_i = getAddressOf( arg1.c_str() );
       int tmp_v = getAddressOf( arg0.c_str() );
-
+      addComment( "TODO: Check to see if the next line is an Address or what!" );
       addAsm( str_LDA + "$" + toHex(tmp_i), 3, false ); 
       //addAsm( "ASL" );// 2* because it's a word array... not a byte array
       addAsm( str_TAX );
