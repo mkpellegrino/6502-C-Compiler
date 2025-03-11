@@ -108,20 +108,8 @@ LBL2L1:			 // Top of FOR Loop
 	lda i
 	cmp #$98
 !:
-	//bcs !+
-	//jmp LBL2L3 // if c==0 jump to BODY
-	bcc LBL2L3 // if c==0 jump to BODY
-//!:
+	bcc LBL2L3
 	jmp LBL2L4 // jump out of FOR
-LBL2L2:
-	clc 
-	lda #$01
-	adc i
-	sta i
-	lda #$00
-	adc i+1
-	sta i+1
-	jmp LBL2L1 // jump to top of FOR loop
 LBL2L3:
 	lda #$00
 	sta n
@@ -278,10 +266,7 @@ LBL3L43:
 	php 
 	lda n
 	cmp #$02
-	//bcc !_skip+
-	//jmp LBL4L8 // jump to ELSE
 	bcs LBL4L8
-//!_skip:
 	lda arg1
 	sta LBL5L2
 	lda arg1+1
@@ -296,13 +281,8 @@ LBL4L8:
 	clc
 	lda n
 	cmp #$03
-	//bcs !_skip+
-	//jmp LBL4L13 // if c==0 jump to ELSE
 	bcc LBL4L13
-//!_skip:
-	//bne !_skip+
 	beq LBL4L13 // if z==1 jump to ELSE
-//!_skip:
 	lda arg1
 	sta LBL5L4
 	lda arg1+1
@@ -316,8 +296,18 @@ LBL5L5:			 // <-- hi byte
 LBL4L13:
 	plp 
 LBL3L44:
-	plp 
-	jmp LBL2L2 // jump to iterator
+	plp
+
+	clc 
+	lda #$01
+	adc i
+	sta i
+	lda #$00
+	adc i+1
+	sta i+1
+	
+	
+	jmp LBL2L1 // jump to top of for
 LBL2L4:
 	plp 
 	ldy #$00
@@ -384,7 +374,7 @@ LBL1L11:
 	sta $D021
 	lda oldChar
 	sta $0286
-	clc
+	clc	
 	ldy #$0A
 	ldx #$0A
 	jsr $FFF0
@@ -420,31 +410,17 @@ LBL1L13:			 // Top of FOR Loop
 	lda i
 	cmp #$98
 !:
-	//bcs !+
-	//jmp LBL1L15 // if c==0 jump to BODY
 	bcc LBL1L15
-//!:
 	plp
 	rts
-LBL1L14:
-	clc 
-	lda #$01
-	adc i
-	sta i
-	lda #$00
-	adc i+1
-	sta i+1
-	jmp LBL1L13 // jump to top of FOR loop
+
 LBL1L15:
 	lda $D41B
 	sta a
 	php 
 	lda a
 	cmp #$7F
-	//bcs !_skip+
-	//jmp LBL2L26 // if c==0 jump to ELSE
 	bcc LBL2L26 // if c==0 jump to ELSE
-//!_skip:
 	beq LBL2L26 // if z==1 jump to ELSE
 	lda #$51
 	sta a
@@ -480,26 +456,6 @@ LBL2L27:
 	.byte $00
 !:
 	.byte $00
-	jmp LBL1L14 // jump to iterator
-	plp 
-	rts 
-
-clearShadowAndBoard:
-	lda #$00
-	sta i
-	sta i+1
-LBL1L18:    // Top of FOR Loop
-	cmp #$03
-	bne !+
-	lda i
-	cmp #$E8
-!:
-	//bcs !+
-	//jmp LBL1L20 // if c==0 jump to BODY
-	bcc LBL1L20
-//!:
-	rts
-LBL1L19:
 	clc 
 	lda #$01
 	adc i
@@ -507,7 +463,25 @@ LBL1L19:
 	lda #$00
 	adc i+1
 	sta i+1
-	jmp LBL1L18 // jump to top of FOR loop
+	jmp LBL1L13 // jump to top of FOR loop
+	plp 
+	rts 
+
+clearShadowAndBoard:
+	lda #$00
+	sta i
+	sta i+1
+
+	
+LBL1L18:    // Top of FOR Loop
+	cmp #$03
+	bne !+
+	lda i
+	cmp #$E8
+!:
+	bcc LBL1L20
+	rts
+
 LBL1L20:
 	clc 
 	lda board
@@ -548,7 +522,17 @@ LBL1L20:
 	.byte $00
 !:
 	.byte $00
-	jmp LBL1L19 // jump to iterator
+
+
+	clc 
+	lda #$01
+	adc i
+	sta i
+	lda #$00
+	adc i+1
+	sta i+1
+	jmp LBL1L18 // jump to top of FOR loop
+
 	rts
 PRN:
 	ldy #$00
