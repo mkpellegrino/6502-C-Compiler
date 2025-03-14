@@ -2816,10 +2816,13 @@ numberlist: /* empty */
 |  
 | value
 {
-  //addAsm( generateNewLabel(), 0, true );
-
-  int v = atoi( stripFirst( $1.name ).c_str());
-  addData( generateNewLabel() + " " + str_BYTE + "$" + toHex( v ), 1 );
+  if( string( $1.name )  != "str" )
+    {
+      // the label was already added as a STRLBL
+      // so don't add the string here
+      int v = atoi( stripFirst( $1.name ).c_str());
+      addData( generateNewLabel() + " " + str_BYTE + "$" + toHex( v ), 1 );
+    }
 }
 | numberlist ',' value
 {
@@ -3193,28 +3196,36 @@ body: WHILE
 };
 
 
-| tDATA {pushScope( "DATA" );} ID
+| tDATA {pushScope("DATA");} ID
 {
-  // 2024 04 09
-  addDebugComment( "Data" );
-  addAsmVariable($3.name, 2);
-  int addr = getAddressOf( $3.name );
-  addAsm( str_LDA + "#<" + getLabel( label_vector[label_major],false), 2, false );
-
-  // 2024 04 14 - mkpellegirno
-  addAsm( str_STA + getNameOf( addr ), 3, false );
-  addAsm( str_LDA + "#>"  + getLabel( label_vector[label_major],false), 2, false );
-  addAsm( str_STA + getNameOf( addr ) + "+1", 3, false );
 }
 '=' '{' numberlist '}' ';'
 {
+  if( string( $7.name ) == "str"  )
+    {
+      addDebugComment( "String type added as a word variable" );
+      addAsmVariable($3.name, 2);
+      int addr = getAddressOf( $3.name );
+      addAsm( str_LDA + "#<STRLBL" + itos(string_number), 2, false );
+      addAsm( str_STA + getNameOf( addr ), 3, false );
+      addAsm( str_LDA + "#>STRLBL" + itos(string_number++), 2, false );
+      addAsm( str_STA + getNameOf( addr ) + "+1", 3, false );
+    }
+  else
+    {
+      addAsmVariable($3.name, 2);
+      int addr = getAddressOf( $3.name );
+      addAsm( str_LDA + "#<" + getLabel( label_vector[label_major]-1,false), 2, false );
+      
+      // 2024 04 14 - mkpellegirno
+      addAsm( str_STA + getNameOf( addr ), 3, false );
+      addAsm( str_LDA + "#>"  + getLabel( label_vector[label_major]-1,false), 2, false );
+      addAsm( str_STA + getNameOf( addr ) + "+1", 3, false );
+
+    }
+  
   //addAsm( generateNewLabel(), 0, true );
   popScope();
-
-}
-| tDATA {} ID {} '=' {}  STR  ';'
-{
-  addCompilerMessage( "NYI", 0 );
 };
 
 // STATEMENTS
@@ -3374,29 +3385,20 @@ body: WHILE
   //addCommentSection( string("prints(") + string($3.name) + string( ");") );
   if( isUintID($3.name) )
     {
-      // TODO: TEST THIS!
       addComment( "prints(UintID);");
 
-      // pushScope( "PRINTS" );
       int addr = getAddressOf( $3.name );
       string OP3 = getNameOf(addr);
       
       addAsm( str_LDX + "#$00", 2, false );
       addAsm( "!:", 0, true );
-      // addAsm( generateNewLabel() + commentmarker + string( "\t\t\ttop of prints"), 0, true ); // LABEL BB
-
       addAsm( str_LDA + OP3 + ",X", 3, false );
       addAsm( str_CMP + "#$00", 2, false );
-      //addAsm( str_BEQ + getLabel( label_vector[label_major],false), 2, false );
       addAsm( str_BEQ + "!+", 2, false ); 
       addAsm( str_JSR + "$FFD2", 3, false );
       addAsm( str_INX );
-      //addAsm( str_JMP + getLabel( label_vector[label_major]-1,false), 3, false );
       addAsm( str_JMP + "!-", 3, false ); 
-      //addAsm( generateNewLabel() + commentmarker + string( "\t\t\tbottom of prints"), 0, true ); // LABEL BB
       addAsm( "!:", 0, true );
-
-      // popScope();
     }
   else if( isWordIMM($3.name) )
     {
@@ -3484,7 +3486,7 @@ body: WHILE
       addAsm( generateNewLabel() + "\t\t\t" + commentmarker + "Only One Byte", 0, true ); // LABEL CC
       addAsm( str_TXA );
       addAsm( str_JSR + "$FFD2", 3, false );
-      addAsm( commentmarker + "jump to label below ", 0, true );
+      addComment( "jump to label below" );
       addAsm( str_JMP + getLabel( label_vector[label_major]+1,false), 3, false );
       addAsm( generateNewLabel() + string( "\t\t\t") + commentmarker + "Label CMP2", 0, true ); // LABEL AA
       addAsm( str_TYA );
@@ -3695,14 +3697,11 @@ body: WHILE
       // find the 1st non-30 ('0') byte
       addAsm( str_LDX + "#$00", 2, false );
       addAsm( "!:",0,true );
-      //addAsm( generateNewLabel(), 0, true );
       addAsm( str_LDA + "HTD_STR,X", 3, false );
       addAsm( str_CMP + "#$30", 2, false );
       addAsm( str_BNE + "!+", 2, false );
-      //addAsm( str_BYTE + string("$D0, $04") + commentmarker + string( "BNE SKIP"), 2, false );
       addAsm( str_INX );
       addAsm( str_JMP + "!-", 3, false );
-      //addAsm( str_JMP + getLabel( label_vector[label_major]-1,false), 3, false );
       // ---------------------------------
       // 2022 12 16 - mkpellegrino
       // make sure it prints a 0 if it's 0
@@ -3710,20 +3709,16 @@ body: WHILE
       addAsm( "!:", 0, true );
       addAsm( str_CPX + "#$06", 2, false );
       addAsm( str_BNE + "!+", 2, false );
-      //addAsm( str_BYTE + string("$D0, $01") + commentmarker + string( " BNE SKIP"), 2, false ); // BNE to skip
       addAsm( str_DEX );
       addAsm( "!:", 0, true );
       // ---------------------------------
-      //addAsm( generateNewLabel(), 0, true );
 
       addAsm( str_LDA + "HTD_STR,X", 3, false );
       addAsm( str_CMP + "#$00", 2, false );
       addAsm( str_BEQ + "!+", 2, false );
-      //addAsm( str_BYTE + string("$F0, $07") + commentmarker + string( " BEQ #$07"), 2, false );  // beq to pop scope
       addAsm( str_INX );
       addAsm( str_JSR + "$FFD2", 3, false );
       addAsm( str_JMP + "!-", 3, false );
-      //addAsm( str_JMP + getLabel( label_vector[label_major]-1,false), 3, false );
       addAsm( "!:", 0, true );
       popScope();
     }
@@ -3751,7 +3746,6 @@ body: WHILE
       addAsm( "!:", 0, true );
       
       addAsm( str_CPX + "#$06", 2, false );
-      //addAsm( str_BYTE + "$D0, $01" + commentmarker + "BNE SKIP", 2, false ); // BNE to skip
       addAsm( str_BNE + "!+", 2, false );
 
       addAsm( str_DEX );
@@ -3760,7 +3754,6 @@ body: WHILE
       addAsm( generateNewLabel(), 0, true );
       addAsm( str_LDA +"HTD_STR,X", 3, false );
       addAsm( str_CMP + "#$00", 2, false );
-      //addAsm( str_BYTE + "$F0, $07" + commentmarker + "BEQ #$07", 2, false );  // beq to pop scope
       addAsm( str_BEQ + "!+", 2, false );
       addAsm( str_INX );
       addAsm( str_JSR + "$FFD2", 3, false );
@@ -3785,23 +3778,17 @@ body: WHILE
       addAsm( generateNewLabel(), 0, true );
       addAsm( str_LDA + "HTD_STR,X", 3, false );
       addAsm( str_CMP + "#$30", 2, false );
-
-      //addAsm( str_BYTE + "$D0, $04" + commentmarker + "BNE SKIP", 2, false );
       addAsm( str_BNE + "!+", 2, false );
-      
       addAsm( str_INX );
       addAsm( str_JMP + getLabel( label_vector[label_major]-1,false), 3, false );
       addAsm( "!:", 0, true );
       addAsm( str_CPX + "#$06", 2, false );
-      //addAsm( str_BYTE + "$D0, $01" + commentmarker + "BNE SKIP", 2, false ); // BNE to skip
       addAsm( str_BNE + "!+", 2, false ); 
       addAsm( str_DEX );
       addAsm( "!:", 0, true );
       addAsm( generateNewLabel(), 0, true );
       addAsm( str_LDA + "HTD_STR,X", 3, false );
       addAsm( str_CMP + "#$00", 2, false );
-
-      //addAsm( str_BYTE + "$F0, $07" + commentmarker + "BEQ +7", 2, false );  // beq to pop scope
       addAsm( str_BEQ + "!+", 2, false );
       addAsm( str_INX );
       addAsm( str_JSR + "$FFD2", 3, false );
@@ -4815,7 +4802,6 @@ body: WHILE
 	  addAsm( str_BEQ + getLabel( label_vector[label_major],false), 2, false );
 	  addAsm( str_JMP + getLabel( label_vector[label_major]-1,false), 3, false );
 	  addAsm( generateNewLabel(), 0, true );
-	  //addAsm( str_CLI );
 	}
       else
 	{
@@ -4832,16 +4818,12 @@ body: WHILE
 	  addAsm( str_DEY, 1, false );
 	  addAsm( str_JMP + getLabel( label_vector[label_major]-1,false), 3, false );
 	  addAsm( generateNewLabel(), 0, true );
-	  //addAsm( str_CLI );
-
 	}
       popScope();
     }
   else if( isWordIMM($3.name) && isWordIMM($6.name) && isUintID($9.name) )
     {
       pushScope("memcpy");
-      // 2023 04 25 - mkpellegrino
-      //addAsm( str_SEI );
       int addr_src = atoi(stripFirst($3.name).c_str());
       int addr_dst = atoi(stripFirst($6.name).c_str());
       int memcpy_size_addr = getAddressOf($9.name);
@@ -4850,7 +4832,7 @@ body: WHILE
       int instr_size = 2;
       if( memcpy_size_addr > 255 ) instr_size = 3;
       addAsm( str_LDY + getNameOf(memcpy_size_addr) + commentmarker + getNameOf(memcpy_size_addr), instr_size, false );
-     addAsm( generateNewLabel(), 0, true );
+      addAsm( generateNewLabel(), 0, true );
       addAsm( str_CPY + "#$FF", 2, false );
       addAsm( str_BEQ + getLabel( label_vector[label_major],false), 2, false );
       addAsm( str_LDA + "$" + toHex(addr_src) + ",Y", 3, false );
@@ -4858,8 +4840,6 @@ body: WHILE
       addAsm( str_DEY, 1, false );
       addAsm( str_JMP + getLabel( label_vector[label_major]-1,false), 3, false );
       addAsm( generateNewLabel(), 0, true );
-      // 2023 04 25 - mkpellegrino
-      //addAsm( str_CLI );
       popScope();
 
     }
@@ -15160,35 +15140,13 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
   // get 1 value and put it in X
   addAsm( str_PLA );
   addAsm( str_TAX );
-  addAsm( generateNewLabel(), 0, true );  // if 1                            %%%
+  addAsm( generateNewLabel(), 0, true );
   // get 1 value and put it in A
   addAsm( str_PLA );
-  //addAsm( generateNewLabel(), 0, true );  // if  0                           ***
-
-  //addAsm( str_JMP + getLabel( label_vector[label_major]+1,false), 3, false ); 
-
-
-  addAsm( generateNewLabel(), 0, true );  // if  0                           ***
-  //addAsm( str_TSX );
-
-  //addAsm( str_PLA );
-  //addAsm( str_PLA );
-  //addAsm( str_PLA );
-  //addAsm( str_PLA );
-  //addAsm( str_PLA );
-  
-  //addAsm( str_TXA );
-  //addAsm( str_LDX + "#$01", 2, false ); // where the stack is
-  //addAsm( generateNewLabel(), 0, true );  // if  0                           ***
-
-  popScope();
-
+  addAsm( generateNewLabel(), 0, true );  popScope();
   addCommentBreak(2);
-
   // floats will store the address of the 5 bytes in XA
   strcpy($$.name, "_XA" ); 
-
-
 };
 | tPEEK '(' expression ')'
 {
@@ -15626,10 +15584,9 @@ value: FLOAT_NUM
 }
 | STR
 {
-  addComment( $1.name );
-  addComment( "Not Yet Implemented" );
+  addDebugComment( $1.name );
+  addString( string("STRLBL") + itos(string_number), string($1.name).substr(1,string($1.name).length()-2), 0   );
   strcpy( $$.name, "str" );
-
 }
 ;
 
