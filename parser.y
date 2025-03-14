@@ -380,6 +380,7 @@
     if( s == string("FLOAT")) return 8;
     if( s == string("MOB")) return 16;
     if( s == string("VOID")) return 32;
+    if( s == string("STRING")) return 64;
     return -1;
   }
   string stripFirst( string s )
@@ -489,6 +490,13 @@
   {
     bool return_value = false;
     if(s == string("DOUBLE")) return_value = true;
+    return return_value;
+  }
+
+  bool isStringDT(string s)
+  {
+    bool return_value = false;
+    if(s == string("STRING")) return_value = true;
     return return_value;
   }
 
@@ -1201,6 +1209,8 @@
 	  return string( "float" );
 	case 16:
 	  return string( "mob" );
+	case 32:
+	  return string( "string" );
 	}
 
     };
@@ -1370,6 +1380,12 @@
     return return_value;
   }
 
+  bool isStringID( string s )
+  {
+    bool return_value = false;
+    if( getTypeOf( s ) == 32 ) return_value = true;
+    return return_value;
+  }
     
   // I really should add opcodes to these instructions
   class asm_instruction
@@ -1533,6 +1549,9 @@
       case 16:
 	s = string( "mob" );
 	break;
+      case 32:
+	s = string( "string" );
+	break;
       default:
 	s = string( "unknown_type" );	    
       }	   
@@ -1572,7 +1591,7 @@
   }
 
   void deletePreviousAsm()
-  {
+  {    
     if(debug_flag_is_on)
       {
 	string s = string("deleting " + asm_instr[asm_instr.size()-1]->getString() );
@@ -1700,7 +1719,7 @@
 	   cmpstr( asm_instr[i+1]->getString(), php) )
 	  {
 	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+2);
-	    addOptimizationMessage( "removing PLP-PHP IFIF", i);
+	    addOptimizationMessage( "removing PLP-PHP", i);
 
 	  }
 
@@ -1712,7 +1731,7 @@
 	   cmpstr( asm_instr[i+3]->getString(), php) )
 	  {
 	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+4);
-	    addOptimizationMessage( "removing PLP-PHP IFIF", i);
+	    addOptimizationMessage( "removing PLP-PHP", i);
 
 	  }
 	// POP-PUSH removal (IFIF)
@@ -1742,13 +1761,13 @@
 	    cmpstr( asm_instr[i+1]->getString(), ldxZero ) )
 	  {
 
-	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+1);
+	    //asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+1);
 
-	    asm_instr[i]->setString( "lax #$00" );
+	    //asm_instr[i]->setString( "lax #$00" );
 	    //asm_instr[i+1]->setString( str_TAX );
-	    asm_instr[i]->setSize( 2 );
+	    //asm_instr[i]->setSize( 2 );
 	    
-	    addOptimizationMessage( "replacing LDA #$00, LDX #$00 with LAX #$00", i);
+	    //addOptimizationMessage( "replacing LDA #$00, LDX #$00 with LAX #$00", i);
 	  }
       }
 
@@ -2866,7 +2885,7 @@ function: function function
       deletePreviousAsm(); // pha
       deletePreviousAsm(); // tya
       if( arg_debug_comments ) deletePreviousAsm(); // a comment
-      addDebugComment( "Deleted previous 8 Mnemonics" );
+      addComment( "Deleted previous 8 Mnemonics" );
     }
   else
     {
@@ -2912,20 +2931,15 @@ FLOAT {addParserComment( string("RULE: datatype: ") + $$.name); current_variable
 tMOB {addParserComment( string("RULE: datatype: ") + $$.name); current_variable_type=16;strcpy($$.name, "MOB");}
 |
 VOID {addParserComment( string("RULE: datatype: ") + $$.name); current_variable_type=32;strcpy($$.name, "VOID");}
+|
+VOID {addParserComment( string("RULE: datatype: ") + $$.name); current_variable_type=64;strcpy($$.name, "STRING");}
 ;
 
 body: WHILE
 {
   // 2023 06 27
   string s = gen_random_str(10);
-  //addCommentBreak(2);
   rnd_str_vector.push(s);
-  /* addComment( "Preserve AXY" ); */
-  /* addAsm( str_PHA ); */
-  /* addAsm( str_TXA ); */
-  /* addAsm( str_PHA ); */
-  /* addAsm( str_TYA ); */
-  /* addAsm( str_PHA ); */
   
   addDebugComment( "Preserve $02/$03" );
   addAsm( str_LDA + "$02", 2, false);
@@ -2936,8 +2950,6 @@ body: WHILE
 
   addDebugComment( "Preserve Status Register" );
   addAsm( str_PHP );
-
-  //addCommentBreak(2);
   
   addAsm( str_CLC );
   
@@ -2995,19 +3007,20 @@ body: WHILE
 {
   addAsm( generateNewLabel(), 0, true );
 }
-';' {addComment("[iterator]");} statement
+';' {addAsm("[iterator]",0,true);} statement
 {
   // Push that whole statement ^^ onto a stack
   //addAsm(str_JMP + getLabel( label_vector[label_major]-2, false) + commentmarker + "jump to top of FOR loop", 3, false );
-  addComment( "[jump to top of for]" );
+  addAsm( "[jump to top of for]",0,true);
   string s = "";
   
-  while( s != "// [iterator]" )
+  while( s != "[iterator]" )
     {
       iterator_stack.push( asm_instr[asm_instr.size()-1] );
       s = iterator_stack.top()->getString();
       deletePreviousAsm();
     }
+  addAsm( "// - - - - - - - moved iterator from here to down below", 0, true );
   // Pop off the comment
   iterator_stack.pop();
   //deletePreviousAsm();
@@ -3019,16 +3032,19 @@ body: WHILE
 {
 
   // pop that whole statement off of that stack and jump to top of FOR
-
+  addAsm( "// v v v v v v v moved iterator to here from above", 0, true );
   string s = "";
-  while( s != "// [jump to top of for]" )
+  while( s != "[jump to top of for]" )
     {
       asm_instr.push_back( iterator_stack.top() );
       s = iterator_stack.top()->getString();
+      string s2 = string( "replacing: " ) + s;
+      addCompilerMessage( s2, 0 );
       iterator_stack.pop();
     }
-  // delete the comment
+  // delete the TAG
   deletePreviousAsm();
+  addAsm( "// ^ ^ ^ ^ ^ ^ moved iterator to here from above", 0, true );
   addAsm( str_JMP + getLabel( ((int)label_vector[label_major]-3), false ), 3, false );
   
   addAsm( generateNewLabel(), 0, true );
@@ -3107,19 +3123,17 @@ body: WHILE
 {
   addAsm( str_JMP + getLabel( label_vector[label_major]+1, false), 3, false);
   addAsm( generateNewLabel(), 0, true );
-
-  //addCommentBreak();
-  //addComment( "Else of If" );
 }
  else
    {
-     //addCommentBreak();
      if( string($11.name) == "" )
        {
+	 // delete jump to else
 	 deletePreviousAsm();
+	 // delete label
 	 deletePreviousAsm();
-	 addComment( "Removed previous JMP instruction" );
-	 addCompilerMessage( "Removed an unneccessary JMP instruction", 0 );
+	 addComment( "Removed previous JMP instruction & a label" );
+	 addCompilerMessage( "Removed an unneccessary JMP instruction and Label", 0 );
 
 	 if( (byte_count - jump_start) <= 255 )
 	   {
@@ -3198,6 +3212,11 @@ body: WHILE
   popScope();
 
 }
+| tDATA {} ID {} '=' {}  STR  ';'
+{
+  addCompilerMessage( "NYI", 0 );
+};
+
 // STATEMENTS
 // STATEMENT
 // not sure what;'s going on here 5/5/24 
@@ -3512,11 +3531,11 @@ body: WHILE
     {
       addComment(string("printf(") + getNameOf(getAddressOf($3.name)) + string(");"));
       pushScope( "PRINTF" );
-      addAsm( str_LDA + $3.name, 3, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
       addAsm( str_PHA );
       addAsm( str_CMP + "#$7F", 2, false );
       addAsm( str_BCC + getLabel( label_vector[label_major],false), 2, false ); // BCC Skip
-      addAsm( str_LDA + $3.name, 3, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
       addAsm( str_LDA + "#$2D", 2, false );
       addAsm( str_JSR + "$FFD2", 3, false );
       // put it into two's complement
@@ -3629,16 +3648,21 @@ body: WHILE
       addAsm( str_LDA + "HTD_STR,X", 3, false );
       addAsm( str_CMP + "#$30", 2, false );
 
-      addAsm( str_BYTE + "$D0, $04" + commentmarker + "BNE SKIP", 2, false );
+      //addAsm( str_BYTE + "$D0, $04" + commentmarker + "BNE SKIP", 2, false );
+      addAsm( str_BNE + "!+", 2, false );
       addAsm( str_INX );
       addAsm( str_JMP +  getLabel( label_vector[label_major]-1,false), 3, false );
+      addAsm( "!:", 0, true );
       // ---------------------------------
       // 2022 12 16 - mkpellegrino
       // make sure it prints a 0 if it's 0
       // and not just a blank space!
       addAsm( str_CPX + "#$06", 2, false );
-      addAsm( str_BYTE + string("$D0, $01") + commentmarker + "BNE SKIP", 2, false ); // BNE to skip
+      //addAsm( str_BYTE + string("$D0, $01") + commentmarker + "BNE SKIP", 2, false ); // BNE to skip
+
+      addAsm( str_BNE + "!+", 2, false );
       addAsm( str_DEX );
+      addAsm( "!:", 0, true );
       // ---------------------------------
       addAsm( generateNewLabel(), 0, true );
 
@@ -3706,7 +3730,7 @@ body: WHILE
   else if( isWordIMM($3.name) )
     {
       addComment( "printf(WordIMM);" );
-      addCompilerMessage( "This is very inefficient.  You could just print the value as a string", 2 );
+      addCompilerMessage( "This is VERY inefficient.  You could just print the value as a string", 0 );
       int tmp = atoi( stripFirst($3.name).c_str() );
       pushScope("PRINTF(WORD)");
       word2dec_is_needed = true;
@@ -3720,25 +3744,34 @@ body: WHILE
       addAsm( generateNewLabel(), 0, true );
       addAsm( str_LDA +"HTD_STR,X", 3, false );
       addAsm( str_CMP + "#$30", 2, false );
-      addAsm( str_BYTE + "$D0, $04" + commentmarker + "BNE SKIP", 2, false );
+      //addAsm( str_BYTE + "$D0, $04" + commentmarker + "BNE SKIP", 2, false );
+      addAsm( str_BNE + "!+", 2, false );
       addAsm( str_INX );
       addAsm( str_JMP + getLabel( label_vector[label_major]-1,false), 3, false );
+      addAsm( "!:", 0, true );
+      
       addAsm( str_CPX + "#$06", 2, false );
-      addAsm( str_BYTE + "$D0, $01" + commentmarker + "BNE SKIP", 2, false ); // BNE to skip
+      //addAsm( str_BYTE + "$D0, $01" + commentmarker + "BNE SKIP", 2, false ); // BNE to skip
+      addAsm( str_BNE + "!+", 2, false );
+
       addAsm( str_DEX );
+      addAsm( "!:", 0, true );
+
       addAsm( generateNewLabel(), 0, true );
       addAsm( str_LDA +"HTD_STR,X", 3, false );
       addAsm( str_CMP + "#$00", 2, false );
-      addAsm( str_BYTE + "$F0, $07" + commentmarker + "BEQ #$07", 2, false );  // beq to pop scope
+      //addAsm( str_BYTE + "$F0, $07" + commentmarker + "BEQ #$07", 2, false );  // beq to pop scope
+      addAsm( str_BEQ + "!+", 2, false );
       addAsm( str_INX );
       addAsm( str_JSR + "$FFD2", 3, false );
       addAsm( str_JMP + getLabel( label_vector[label_major]-1,false), 3, false );
+      addAsm( "!:", 0, true );
       popScope();
     }
   else if( isUintIMM($3.name) || isIntIMM($3.name) )
     {
       addComment( "printf(UIntIMM);" );
-      addCompilerMessage( "This is very inefficient.  You could just print the value as a string", 0 );
+      addCompilerMessage( "This is VERY inefficient.  You could just print the value as a string", 0 );
       int tmp = atoi( stripFirst($3.name).c_str() );
       pushScope("PRINTF(A)");
       word2dec_is_needed = true;
@@ -3753,20 +3786,27 @@ body: WHILE
       addAsm( str_LDA + "HTD_STR,X", 3, false );
       addAsm( str_CMP + "#$30", 2, false );
 
-      addAsm( str_BYTE + "$D0, $04" + commentmarker + "BNE SKIP", 2, false );
+      //addAsm( str_BYTE + "$D0, $04" + commentmarker + "BNE SKIP", 2, false );
+      addAsm( str_BNE + "!+", 2, false );
+      
       addAsm( str_INX );
       addAsm( str_JMP + getLabel( label_vector[label_major]-1,false), 3, false );
+      addAsm( "!:", 0, true );
       addAsm( str_CPX + "#$06", 2, false );
-      addAsm( str_BYTE + "$D0, $01" + commentmarker + "BNE SKIP", 2, false ); // BNE to skip
+      //addAsm( str_BYTE + "$D0, $01" + commentmarker + "BNE SKIP", 2, false ); // BNE to skip
+      addAsm( str_BNE + "!+", 2, false ); 
       addAsm( str_DEX );
+      addAsm( "!:", 0, true );
       addAsm( generateNewLabel(), 0, true );
       addAsm( str_LDA + "HTD_STR,X", 3, false );
       addAsm( str_CMP + "#$00", 2, false );
 
-      addAsm( str_BYTE + "$F0, $07" + commentmarker + "BEQ +7", 2, false );  // beq to pop scope
+      //addAsm( str_BYTE + "$F0, $07" + commentmarker + "BEQ +7", 2, false );  // beq to pop scope
+      addAsm( str_BEQ + "!+", 2, false );
       addAsm( str_INX );
       addAsm( str_JSR + "$FFD2", 3, false );
       addAsm( str_JMP + getLabel( label_vector[label_major]-1,false), 3, false );
+      addAsm( "!:", 0, true );
       popScope();
     }
   else
@@ -5322,10 +5362,11 @@ condition: expression relop expression
     {
       addCompilerMessage( "UintID relop IntID (type mismatch)", 1 );
       addComment( "UintID relop IntID (mismatch)" );
+      // if the address of $1 or $3 < 256... change instr size to 2
       unsigned_signed_cmp_is_needed = true;
-      addAsm( str_LDA + $1.name, 3, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($1.name)), 3, false );
       addAsm( str_PHA );
-      addAsm( str_LDA + $3.name, 3, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
       addAsm( str_PHA );
       addAsm( str_JSR + "USCMP", 3, false );
       addAsm( str_PLP );
@@ -5888,6 +5929,7 @@ condition: expression relop expression
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
+
       addAsm( str_JMP + getLabel( label_vector[label_major], false) + commentmarker + "if z==1 jump to 2nd condition", 3, false );
       addAsm( "!_skip:", 0, true );
       addAsm( str_BNE + getLabel( label_vector[label_major]+1, false) + commentmarker + "branch to body of IF", 2, false );
@@ -5903,6 +5945,7 @@ condition: expression relop expression
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
+
       addAsm( str_BCC + getLabel( label_vector[label_major]+1, false) + commentmarker + "branch to body of IF", 2, false );
     }
   else if( _tmpCond == "exp >= exp lb" )
@@ -5915,6 +5958,7 @@ condition: expression relop expression
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
+
       addAsm( str_BCS + getLabel( label_vector[label_major]+1, false) + commentmarker + "branch to body of IF", 2, false );
     }
   else if( _tmpCond == "exp <= exp lb" )
@@ -5931,6 +5975,7 @@ condition: expression relop expression
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
+
       addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "Jump to body of IF", 2, false );
       addAsm( "!_skip:", 0, true );
       addAsm( str_BNE + "!_skip+", 2, false );
@@ -6080,7 +6125,7 @@ statement: datatype ID init
   
   //  ASSIGNMENTS
   addParserComment( "RULE: statement: datatype ID init" );
-  
+  //addCompilerMessage( _init, 0 );
   current_variable_type = getDataTypeValue( _dt );
 
   // this adds the variable to the list of variables
@@ -6361,6 +6406,11 @@ statement: datatype ID init
       addAsm( str_JSR + "MOBCPY", 3, false );
       mobcpy_is_needed = true;
       popScope();
+    }
+  else if( isStringDT(_dt) )
+    {
+      addCompilerMessage( "found a string!", 0 );
+
     }
   else
     {
@@ -9688,14 +9738,19 @@ init: '=' expression
     {
       int tmp_addr = hexToDecimal($2.name); 
       addComment( "initialising UintID" );
-      addAsm( str_LDA + getNameOf(tmp_addr), 3, false );
+      int instr_size = 3;
+      if(tmp_addr < 256) instr_size = 2;
+      addAsm( str_LDA + getNameOf(tmp_addr), instr_size, false );
       strcpy($$.name, "_A" );
     }
   else if( isIntID( $2.name ) )
     {
       int tmp_addr = hexToDecimal($2.name); 
       addComment( "initialising IntID" );
-      addAsm( str_LDA + getNameOf(tmp_addr), 3, false );
+      int instr_size = 3;
+      if(tmp_addr < 256) instr_size = 2;
+
+      addAsm( str_LDA + getNameOf(tmp_addr), instr_size, false );
       strcpy($$.name, "_A" );
     }
   else if( isUintIMM($2.name) )
@@ -10227,10 +10282,13 @@ arithmetic expression
       else if( op == string("-") )
 	{
 	  addComment( "IntID - A --> A" );
-	  // I 'could' temporarily sway the 2 values...
+	  // I 'could' temporarily swap the 2 values...
 	  addAsm( str_TAY );
-	  addAsm( str_LAX + O1, sizeOP1A, false );
-	  //  addAsm( str_TAY );
+	  //addAsm( str_LAX + O1, sizeOP1A, false );
+	  addAsm( str_LDA + O1, sizeOP1A, false );
+	  // mkpellegrino - 20250313
+	  //addAsm( str_TAY );
+	  addAsm( str_TAX );
 	  addAsm( str_STY + O1, sizeOP1A, false );
 	  addAsm( str_SBC + O1, sizeOP1A, false );
 	  //addAsm( str_TAX );
@@ -11806,7 +11864,9 @@ arithmetic expression
       int IMMvalue = atoi(stripFirst($4.name).c_str());
       if( op == string( "+" ) )
 	{
-	  addComment( "WordID + UIntIMM --> XA (xxx)" );      
+
+	  addComment( "(OPTIMIZE)" );
+	  addComment( "WordID + UIntIMM --> XA" );      
 	  int size_of_instruction = 3;
 	  if( a < 256 ) size_of_instruction = 2;
 	  addAsm( str_LDA + "#$" + toHex(IMMvalue), 2, false );
@@ -12768,7 +12828,9 @@ arithmetic expression
 
 	  if( tmp_v == 0 )
 	    {
-	      addAsm( str_LAX + "#$00", 2, false );
+	      addAsm( str_LDA + "#$00", 2, false );
+	      addAsm( str_TAX, 1, false );
+	      
 	    }
 	  else if( tmp_v == 1 )
 	    {
@@ -15566,7 +15628,8 @@ value: FLOAT_NUM
 {
   addComment( $1.name );
   addComment( "Not Yet Implemented" );
-  
+  strcpy( $$.name, "str" );
+
 }
 ;
 
@@ -16143,7 +16206,8 @@ int main(int argc, char *argv[])
       addAsm( str_EOR + "$02", 2, false);
       addAsm( str_ROL ); // C is now set (if warrented)
       //addAsm( str_BYTE + "$B0, $0A" + commentmarker + "BCS SGNCMPSKIP", 2, false );
-      addAsm( "BCS !+", 2, false );
+      //addAsm( "BCS !+", 2, false );
+      addAsm( str_BCS + "!+", 2, false );
       addAsm( str_LDA + "$02", 2, false );
       addAsm( str_PHA );
       addAsm( str_LDA + "$03", 2, false );
@@ -16285,12 +16349,16 @@ int main(int argc, char *argv[])
       addAsm( str_AND + "#$80", 2, false );          // SIGNED INT: F3 -> 80 (it's negative)
       addAsm( str_CMP + "#$80", 2, false );          // IF IT's NEGATIVE
       addAsm( str_PLA ); // get the unsigned byte
-      addAsm( str_BYTE + "$B0, $0A" + commentmarker + "BCS +10", 2, false );  // JumpRel 10 bytes fwd   -> (***)
+      //addAsm( str_BYTE + "$B0, $0A" + commentmarker + "BCS +10", 2, false );  // JumpRel 10 bytes fwd   -> (***)
+      addAsm( str_BCS + "!+", 2 );
       addAsm( str_CMP + "$05", 2, false );           // A = UINT
-      addAsm( str_BYTE + "$B0, $06" + commentmarker + "BCS +6", 2, false );  // JumpRel +6             -> (+++)
-      addAsm( str_BYTE + "$90, $04" + commentmarker + "BCC +4", 2, false );  // JumpRel +4             -> (+++)
+      //addAsm( str_BYTE + "$B0, $06" + commentmarker + "BCS +6", 2, false );  // JumpRel +6             -> (+++)
+      addAsm( str_BCS + "!+", 2 );
+      //addAsm( str_BYTE + "$90, $04" + commentmarker + "BCC +4", 2, false );  // JumpRel +4             -> (+++)
+      addAsm( str_BCC + "!+", 2 );
       addAsm( str_LDA + string("#$01"), 2, false );          // A=1                       (***)
       addAsm( str_CMP + "#$00", 2, false );          // CMP A with 0
+      addAsm( "!:", 0, true );
       addAsm( str_PHP );
 
       addAsm( str_JSR + "POP", 3, false );
@@ -16316,11 +16384,6 @@ int main(int argc, char *argv[])
       addAsm( "DIV16:", 0, true );
       
       addAsm( str_SEI );
-      // Save $02 and $03
-      /* addAsm( str_LDA + "$02", 2, false ); */
-      /* addAsm( str_PHA ); */
-      /* addAsm( str_LDA + "$03", 2, false ); */
-      /* addAsm( str_PHA ); */
       
       addAsm( str_LDA + "#$00", 2, false );
       addAsm( str_STA + "$02", 2, false );
@@ -16349,11 +16412,6 @@ int main(int argc, char *argv[])
       //addAsm( str_BYTE + "$D0, $E3", 2, false ); // BNE Label 1
       addAsm( str_BNE + "_DIV16_L1", 2, false );
 
-      // Restore $03 and $02
-      /* addAsm( str_PLA ); */
-      /* addAsm( str_STA + "$03", 2, false ); */
-      /* addAsm( str_PLA ); */
-      /* addAsm( str_STA + "$02", 2, false ); */
       addAsm( str_CLI );
       
       addAsm( str_RTS );
@@ -16373,11 +16431,6 @@ int main(int argc, char *argv[])
       addAsm( commentmarker + "LOC is at $02(l), $03(h)", 0, true);
       addAsm( "MCPLOT:", 0, true );
 
-      /* // Save $02 and $03 */
-      /* addAsm( str_LDA + "$02", 2, false ); */
-      /* addAsm( str_PHA ); */
-      /* addAsm( str_LDA + "$03", 2, false ); */
-      /* addAsm( str_PHA ); */
 
       addAsm( str_SEI );
 
@@ -16466,12 +16519,6 @@ int main(int argc, char *argv[])
       addAsm( str_CLI );
 
 
-      // Restore $03 and $02
-      /* addAsm( str_PLA ); */
-      /* addAsm( str_STA + "$03", 2, false ); */
-      /* addAsm( str_PLA ); */
-      /* addAsm( str_STA + "$02", 2, false ); */
-
       addAsm( str_RTS );
       addComment( "^^^------------------------------------^^^" );
       addComment( "^^^ from p164 of Advanced Machine Code ^^^" );
@@ -16493,11 +16540,6 @@ int main(int argc, char *argv[])
       addAsm( "GETPLOT:", 0, true );
 
 
-      // Save $02 and $03
-      /* addAsm( str_LDA + "$02", 2, false ); */
-      /* addAsm( str_PHA ); */
-      /* addAsm( str_LDA + "$03", 2, false ); */
-      /* addAsm( str_PHA ); */
 
       addAsm( str_SEI );
       addAsm( str_LDA + string("$FA"), 2, false ); 
@@ -16573,13 +16615,7 @@ int main(int argc, char *argv[])
       addAsm( str_CLI );
       // -----------------------------------
 
-      // Restore $03 and $02
-      /* addAsm( str_PLA ); */
-      /* addAsm( str_STA + "$03", 2, false ); */
-      /* addAsm( str_PLA ); */
-      /* addAsm( str_STA + "$02", 2, false ); */
-
-      
+ 
       addAsm( str_RTS );
       addComment( "^^^------------------------------------^^^" );
       addComment( "^^^ from p164 of Advanced Machine Code ^^^" );
@@ -16618,7 +16654,6 @@ int main(int argc, char *argv[])
       addAsm( "MUL16R:", 0, true );
       addAsm( str_BYTE + "$00, $00, $00, $00", 4, false);
       addAsm( "MUL16:", 0, true );
-      addComment( "zero out the mul16 bytes" );
       addAsm( str_LDA + "#$00", 2, false );
       addAsm( str_STA + "MUL16R", 3, false );
       addAsm( str_STA + "MUL16R+1", 3, false );
@@ -16659,7 +16694,7 @@ int main(int argc, char *argv[])
       addAsm( str_BCC + "_UMULSKIP", 2, false );
       addAsm( str_CLC );
       addAsm( str_ADC + "$02", 2, false );
-      addAsm( "_UMULSKIP:", 0, true );
+      addAsm( "_UMULSKIP", 0, true );
       addAsm( str_ASL + "$02", 2, false );
       addAsm( str_CLC );
       addAsm( str_DEX );
@@ -16807,14 +16842,14 @@ int main(int argc, char *argv[])
       addAsm( str_PLA ); // the value to be put into the string
 
       addAsm( str_LDX + "#$00", 2, false );
-      addAsm( "B2SL1:", 0, true );
+      addAsm( "!:", 0, true );
       
       addAsm( str_SEC );
       addAsm( str_SBC + "#$64", 2, false );
-      addAsm( str_BCC + "B2SL2", 2, false );
+      addAsm( str_BCC + "!+", 2, false );
       addAsm( str_INX );
-      addAsm( str_JMP + "B2SL1", 3, false );
-      addAsm( "B2SL2:", 0, true );
+      addAsm( str_JMP + "!-", 3, false );
+      addAsm( "!:", 0, true );
       addAsm( str_CLC );
       addAsm( str_ADC + "#$64", 2, false );
       addAsm( str_TAY );
@@ -16826,13 +16861,13 @@ int main(int argc, char *argv[])
       addAsm( str_LDX + "#$00", 2, false );
 
 
-      addAsm( "B2SL3:", 0, true );
+      addAsm( "!:", 0, true );
       addAsm( str_SEC );
       addAsm( str_SBC + "#$0A", 2, false );
-      addAsm( str_BCC + "B2SL4", 2, false );
+      addAsm( str_BCC + "!+", 2, false );
       addAsm( str_INX );
-      addAsm( str_JMP + "B2SL3", 3, false );
-      addAsm( "B2SL4:", 0, true );
+      addAsm( str_JMP + "!-", 3, false );
+      addAsm( "!:", 0, true );
       addAsm( str_CLC );
       addAsm( str_ADC + "#$0A", 2, false );
       addAsm( str_TAY );
