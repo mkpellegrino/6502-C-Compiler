@@ -4605,7 +4605,7 @@ body: WHILE
       addAsm( str_STA + "$DD02", 3, false );
       addAsm( str_PLA );
       
-      addAsm(str_EOR + "#$FF", 2, false );
+      addAsm( str_EOR + "#$FF", 2, false );
       addAsm( str_AND + "#$03", 2, false );
       addAsm( str_STA + "$02", 2, false );
 
@@ -4623,7 +4623,7 @@ body: WHILE
 
       int addr = getAddressOf( $3.name );
       addAsm( str_LDA + getNameOf( addr ), 3, false );
-      addAsm(str_EOR + "#$FF", 2, false );
+      addAsm( str_EOR + "#$FF", 2, false );
       addAsm( str_AND + "#$03", 2, false );
       addAsm( str_STA + "$02", 2, false );
       
@@ -4639,10 +4639,15 @@ body: WHILE
       addAsm( str_ORA + "$DD02", 3, false );
       addAsm( str_STA + "$DD02", 3, false );
 
+      // mkpellegrino 2024 03 16
       int v = atoi( stripFirst( $3.name ).c_str());
+      v = v ^ 255; // xor #$FF
+      v = v & 3;   // and #$03
       addAsm( str_LDA + "#$" + toHex( v ), 2, false );      
-      addAsm(str_EOR + "#$FF", 2, false );
-      addAsm( str_AND + "#$03", 2, false );
+      //addAsm(str_EOR + "#$FF", 2, false );
+      //addAsm( str_AND + "#$03", 2, false );
+
+      
       addAsm( str_STA + "$02", 2, false );
 
       addAsm( str_LDA + "#$FC", 2, false );
@@ -5658,16 +5663,12 @@ condition: expression relop expression
 	  else
 	    {
 	      addAsm( str_BCS + "!_skip+", 2,  false );
-	      //addAsm( str_BYTE + "$B0, $03" + commentmarker + "BCS +3", 2, false ); 
 	      addAsm(str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if c==0 jump to BODY", 3, false );
 	      addAsm( "!_skip:", 0, true );
-	      //addAsm( str_BNE + "*+3", 2, false ); // BNE +3
-	      //addAsm( str_BNE + "+3", 2, false ); // BNE +3
-	      //addAsm( str_BYTE + "$D0, $03" + commentmarker + "BNE +3", 2, false ); // BNE +3
 	      addAsm( str_BNE + "!_skip+", 2, false );
 	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==1 jump to BODY", 3, false );
 	      addAsm( "!_skip:", 0, true );
-	      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR", 3, false );
+	      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR (OPTIMIZE)", 3, false );
 	    }
 	}
       else if( string($2.name) == string( "==" ) )
@@ -5679,12 +5680,10 @@ condition: expression relop expression
 	    }
 	  else
 	    {
-	      //addAsm( str_BNE + "*+3", 2, false ); // BNE +3
-	      //addAsm( str_BYTE + string("$D0, $03") + commentmarker +"BNE +3", 2, false ); // BNE +3
 	      addAsm( str_BNE + "!_skip+", 2, false ); // BNE +3
 	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==1 jump to BODY", 3, false );
 	      addAsm( "!_skip:", 0, true );
-	      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR", 3, false );
+	      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR (OPTIMIZE)", 3, false );
 	    }
 	}
       else if( string($2.name) == string( ">" ) )
@@ -5697,11 +5696,14 @@ condition: expression relop expression
 	    }
 	  else
 	    {
-	      //addAsm( str_BNE + "+3", 2, false ); // BNE +3
-	      addAsm( str_BYTE + "$D0, $03" + commentmarker +"BNE +3", 2, false ); // BNE +3
+	      //addAsm( str_BYTE + "$D0, $03" + commentmarker +"BNE +3", 2, false ); // BNE +3
+	      addAsm( str_BNE + "!_skip+", 2, false );
 	      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "if z==1 jump out of FOR", 3, false );
-	      addAsm( str_BYTE + "$B0, $03" + commentmarker + "BCS +3", 2, false ); 
-	      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "if c==0 jump out of FOR", 3, false );
+	      addAsm( "!_skip:", 0, true );
+	      //addAsm( str_BYTE + "$B0, $03" + commentmarker + "BCS +3", 2, false );
+	      addAsm( str_BCS + "!_skip+", 2, false );
+	      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "if c==0 jump out of FOR (OPTIMIZE)", 3, false );
+	      addAsm( "!_skip:", 0, true );
 	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to body of FOR", 3, false );
 	    }
 	}
@@ -5716,11 +5718,10 @@ condition: expression relop expression
 	    {
 	      addAsm( str_BCS + "!_skip+", 2, false );
 
-	      //addAsm( str_BYTE + "$B0, $03" + commentmarker + "BCS +3", 2, false ); 
 
 	      addAsm(str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if c==0 jump to BODY", 3, false );
 	      addAsm( "!_skip:", 0, true );
-	      addAsm(str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR" , 3, false );
+	      addAsm(str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR (OPTIMIZE)" , 3, false );
 	    }
 	}
       else if( string($2.name) == string( ">=" ) )
@@ -5734,9 +5735,8 @@ condition: expression relop expression
 	    {
 	      addAsm( str_BCC + "!_skip+", 2, false );
 	      addAsm( "!_skip:", 0, true );
-	      //addAsm( str_BYTE + "$90, $03" + commentmarker + "BCC +3", 2, false ); 
 	      addAsm( str_JMP  + getLabel( label_vector[label_major]+1, false) + commentmarker + "if c==1 jump to BODY", 3, false );
-	      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR", 3, false );
+	      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR (OPTIMIZE)", 3, false );
 	    }
 	}
       else /* != ... NOT EQUAL TO */
@@ -5750,7 +5750,7 @@ condition: expression relop expression
 	    {
 	      addAsm( str_BYTE + "$F0, $03" + commentmarker + "BEQ +3", 2, false ); 
 	      addAsm( str_JMP +  getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==0 jump to BODY", 3, false );
-	      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR", 3, false );
+	      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR (OPTIMIZE)", 3, false );
 	    }
 	}
     }
@@ -5774,7 +5774,7 @@ condition: expression relop expression
 	      addAsm( str_BNE + "!_skip+", 2, false ); // BNE +3
 	      addAsm( str_JMP + getLabel( label_vector[label_major], false) + commentmarker + "if z==1 jump to BODY", 3, false );
 	      addAsm( "!_skip:", 0, true );
-	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE", 3, false );
+	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE (OPTIMIZE)", 3, false );
 	      strcpy($$.name, "exp <= exp lb" );
 
 	    }
@@ -5782,22 +5782,10 @@ condition: expression relop expression
       else if( string($2.name) == string( "==" ) )
 	{
 	  
-	  //if( long_branches == false )
-	  //{
-	      //addAsm( str_BYTE + "$F0, $03" + commentmarker + "BEQ +3", 2, false );
-	      addAsm( str_BEQ + "!_skip+", 2, false );
-	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE (OPTIMIZE)", 3, false );
-	      addAsm( "!_skip:", 0, true );
-	      strcpy($$.name, "exp == exp" );
-	      //}
-	      //else
-	      //{
-	      //addAsm( str_BYTE + "$F0, $03" + commentmarker + "BEQ +3", 2, false ); 
-	      //addAsm( str_BEQ + "!_skip+", 2, false );
-	      //addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE", 3, false );
-	      //addAsm( "!_skip:", 0, true );
-	      //strcpy($$.name, "beqskip jmpelse-body" );
-	      //}
+	  addAsm( str_BEQ + "!_skip+", 2, false );
+	  addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE (OPTIMIZE)", 3, false );
+	  addAsm( "!_skip:", 0, true );
+	  strcpy($$.name, "exp == exp" );
 	}
       else if( string($2.name) == string( ">" ) )
 	{
@@ -5817,7 +5805,7 @@ condition: expression relop expression
 	      
 	      //addAsm( str_BYTE + "$D0, $03" + commentmarker + "BNE +3", 2, false ); // BNE +3
 	      addAsm( str_BNE + "!_skip+", 2, false );
-	      addAsm(str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==1 jump to ELSE" , 3, false );
+	      addAsm(str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==1 jump to ELSE (OPTIMIZE)" , 3, false );
 	      addAsm( "!_skip:", 0, true );
 	      strcpy($$.name, "exp > exp lb" ); // longbranches
 	    }
@@ -5833,7 +5821,7 @@ condition: expression relop expression
 	  else
 	    {
 	      addAsm( str_BCC + "!_skip+", 2, false );
-	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE", 3, false );
+	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE (OPTIMIZE)", 3, false );
 	      addAsm( "!_skip:", 0, true );
 	      strcpy($$.name, "exp < exp lb" ); // longbranches
 	    }
@@ -5849,9 +5837,7 @@ condition: expression relop expression
 	  else
 	    {
 	      addAsm( str_BCS + "!_skip+", 2, false );
-	      //addAsm( str_BYTE + "$B0, $03" + commentmarker + "BCS +3", 2, false ); 
-	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if c==1 jump to ELSE", 3, false );
-	      // 2025 01 11 - changed to align with left hand column
+	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if c==1 jump to ELSE (OPTIMIZE)", 3, false );
 	      addAsm( "!_skip:", 0, true );
 	      strcpy($$.name, "exp >= exp lb" ); // longbranches
 
@@ -5867,12 +5853,11 @@ condition: expression relop expression
 	  else
 	    {
 	      addAsm( str_BNE + "!_skip+", 2, false ); // BNE +3
-	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==1 jump to ELSE", 3, false );
+	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==1 jump to ELSE (OPTIMIZE)", 3, false );
 	      addAsm( "!_skip:", 0, true );
 	      strcpy($$.name, "exp != exp lb" ); // longbranches
 	    }
 	}
-      //addCompilerMessage( string("Byte Count: ") + toHex(byte_count), 0 ); 
     }
   else
     {
@@ -5913,7 +5898,7 @@ condition: expression relop expression
       addAsm( str_JMP + getLabel( label_vector[label_major], false) + commentmarker + "if z==1 jump to 2nd condition", 3, false );
       addAsm( "!_skip:", 0, true );
       addAsm( str_BNE + getLabel( label_vector[label_major]+1, false) + commentmarker + "branch to body of IF", 2, false );
-      addAsm( str_JMP + getLabel( label_vector[label_major], false) + commentmarker + "if z==1 jump to 2nd condition", 3, false );
+      addAsm( str_JMP + getLabel( label_vector[label_major], false) + commentmarker + "if z==1 jump to 2nd condition (OPTIMIZE)", 3, false );
     }
   else if( _tmpCond == "exp < exp lb" )
     {
@@ -5959,7 +5944,7 @@ condition: expression relop expression
       addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "Jump to body of IF", 2, false );
       addAsm( "!_skip:", 0, true );
       addAsm( str_BNE + "!_skip+", 2, false );
-      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "Jump to body of IF", 2, false );
+      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "Jump to body of IF (OPTIMIZE)", 2, false );
       addAsm( "!_skip:", 0, true );
       
     }
@@ -5982,9 +5967,6 @@ condition: expression relop expression
 } tOR {} condition {}
 {
   addComment( "condition tOR condition" );
-  //addAsm( "!_body:", 0, true );
-  //addCompilerMessage( "Logical oring of 2 conditions is very poorly implemented. (if A || B)", 1 );
-  //addAsm( str_NOP, 1, false );
 }
 | condition
 {
@@ -6052,7 +6034,7 @@ condition: expression relop expression
       deletePreviousAsm();
       deletePreviousAsm();
       
-      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "JMP to else", 3, false);
+      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "JMP to else (OPTIMIZE)", 3, false);
       addAsm( "!_skip:", 0, true );
     }
   else if( _tmpCond == "exp < exp lb" )
@@ -6065,7 +6047,7 @@ condition: expression relop expression
       deletePreviousAsm();
       deletePreviousAsm();
       
-      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "JMP to else", 3, false);
+      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "JMP to else (OPTIMIZE)", 3, false);
       addAsm( "!_skip:", 0, true );
     }
   else if( _tmpCond == "exp != exp lb" )
@@ -6078,7 +6060,7 @@ condition: expression relop expression
       deletePreviousAsm();
       deletePreviousAsm();
       
-      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "JMP to else", 3, false);
+      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "JMP to else (OPTIMIZE)", 3, false);
       addAsm( "!_skip:", 0, true );
     }
 
