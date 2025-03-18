@@ -1875,6 +1875,7 @@
 	    cmpstr( asm_instr[i+1]->getString(), sei ) )
 	  {
 	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+1);
+	    addComment( "(OPTIMIZE)" );
 	    addOptimizationMessage( "clisei (cli removed))", i);
 	  }
       }
@@ -2469,7 +2470,7 @@
 
 //%parse-param { FILE* fp }
 %token VOID 
-%token <nd_obj> CHAR tFCLOSE tFOPEN tFCLRCHN tFCHROUT tFCHRIN tFREADST tFCHKOUT tFCHKIN tSETLFS tSETNAM tSAVE tLOAD tIMPORT tSPRPTR tPUSH tPOP tCOMMENT tDATA tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tSIDIRQ tSIDOFF tSTRTOFLOAT tSTRTOWORD tTOFLOAT tTOUINT tTOWORD tTOBIT tDEC tINC tROL tROR tLSR tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJUMP tSETSCR tJSR tIRQ tROMOUT tROMIN tLDA tASL tSPRITESET  tSPRITEOFF tSPRITETOGGLE tRND tXXX tINLINE tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER tPRINTS PRINTFF SCANFF INT FLOAT WHILE FOR IF ELSE TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE tSQRT UNARY INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL tSCREEN tNULL tMEMCPY tSEED
+%token <nd_obj> CHAR tFCLOSE tFOPEN tFCLRCHN tFCHROUT tFCHRIN tFREADST tFCHKOUT tFCHKIN tSETLFS tSETNAM tSAVE tLOAD tIMPORT tSPRPTR tPUSH tPOP tCOMMENT tDATA tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tSIDIRQ tSIDOFF tSTRTOFLOAT tSTRTOWORD tTOFLOAT tTOUINT tTOWORD tTOBIT tDEC tINC tROL tROR tLSR tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJUMP tSETSCR tJSR tIRQ tROMOUT tROMIN tLDA tASL tSPRITESET  tSPRITEOFF tSPRITETOGGLE tRND tXXX tINLINE tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER tPRINTS PRINTFF SCANFF   INT FLOAT   WHILE FOR IF ELSE   TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE tSQRT UNARY INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL tSCREEN tNULL tMEMCPY tSEED
 %type <nd_obj> headers main body return function datatype statement arithmetic relop program else 
    %type <nd_obj2> init value expression charlist numberlist parameterlist argumentlist
       %type <nd_obj3> condition
@@ -3082,9 +3083,7 @@ body: WHILE
 };
 | IF
 {
-
   string s = gen_random_str(10);
-  //addCommentBreak(2);
   rnd_str_vector.push(s);
 
   if( !arg_unsafe_ifs )
@@ -3095,13 +3094,6 @@ body: WHILE
       addAsm( str_LDA + "$03", 2, false);
       addAsm( str_PHA );
     }
-
-  /* addComment( "Preserve AXY" ); */
-  /* addAsm( str_PHA ); */
-  /* addAsm( str_TXA ); */
-  /* addAsm( str_PHA ); */
-  /* addAsm( str_TYA ); */
-  /* addAsm( str_PHA ); */
 
   addComment( "Preserve Status Register" );
   addAsm( str_PHP );
@@ -3221,7 +3213,6 @@ body: WHILE
       addAsm( str_STA + getNameOf( addr ), 3, false );
       addAsm( str_LDA + "#>"  + getLabel( label_vector[label_major]-1,false), 2, false );
       addAsm( str_STA + getNameOf( addr ) + "+1", 3, false );
-
     }
   
   //addAsm( generateNewLabel(), 0, true );
@@ -4609,8 +4600,10 @@ body: WHILE
       addAsm( str_AND + "#$03", 2, false );
       addAsm( str_STA + "$02", 2, false );
 
-      addAsm( str_LDA + "#$FC", 2, false );
-      addAsm( str_AND + "$DD00", 3, false );
+      addAsm( str_LDA + "$DD00", 3, false );
+      addAsm( str_AND + "#$FC", 2, false );
+      //addAsm( str_LDA + "#$FC", 2, false );
+      //addAsm( str_AND + "$DD00", 3, false );
       addAsm( str_ORA + "$02", 2, false );
       addAsm( str_STA + "$DD00", 3, false );
     }
@@ -4627,8 +4620,8 @@ body: WHILE
       addAsm( str_AND + "#$03", 2, false );
       addAsm( str_STA + "$02", 2, false );
       
-      addAsm( str_LDA + "#$FC", 2, false );
-      addAsm( str_AND + "$DD00", 3, false );
+      addAsm( str_LDA + "$DD00", 3, false );
+      addAsm( str_AND + "#$FC", 2, false );
       addAsm( str_ORA + "$02", 2, false );
       addAsm( str_STA + "$DD00", 3, false );
     }
@@ -4639,6 +4632,10 @@ body: WHILE
       addAsm( str_ORA + "$DD02", 3, false );
       addAsm( str_STA + "$DD02", 3, false );
 
+      addAsm( str_LDA + "$02", 2, false );
+      addAsm( str_PHA, 1, false );
+
+      // POKE 0xDD00,(PEEK(0xDD00)AND 0xFC)OR1
       // mkpellegrino 2024 03 16
       int v = atoi( stripFirst( $3.name ).c_str());
       v = v ^ 255; // xor #$FF
@@ -4647,13 +4644,13 @@ body: WHILE
       //addAsm(str_EOR + "#$FF", 2, false );
       //addAsm( str_AND + "#$03", 2, false );
 
-      
       addAsm( str_STA + "$02", 2, false );
-
-      addAsm( str_LDA + "#$FC", 2, false );
-      addAsm( str_AND + "$DD00", 3, false );
+      addAsm( str_LDA + "$DD00", 3, false );
+      addAsm( str_AND + "#$FC", 2, false );
       addAsm( str_ORA + "$02", 2, false );
       addAsm( str_STA + "$DD00", 3, false );
+      addAsm( str_PLA, 1, false );
+      addAsm( str_STA + "$02", 2, false );
     }
   else  
     {
@@ -5880,7 +5877,7 @@ condition: expression relop expression
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
-      addAsm( str_BEQ + getLabel( label_vector[label_major]+1, false), 3, false);    
+      addAsm( str_BEQ + getLabel( label_vector[label_major]+1, false), 2, false);    
     }
   else if( _tmpCond == "exp > exp lb" )
     {
