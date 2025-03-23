@@ -1797,8 +1797,8 @@
 	    // split the jmp line by spaces
 	    // split the lbl lines by colons
 	    // compare
-	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+1);
-	    addOptimizationMessage( "removing unnecessary JMP (keeping the labels)", i);
+	    //asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+1);
+	    //addOptimizationMessage( "removing unnecessary JMP (keeping the labels)", i);
 	  }
       }
 
@@ -3187,6 +3187,7 @@ body: WHILE
       deletePreviousAsm();
     }
   addAsm( "// - - - - - - - moved iterator from here to down below", 0, true );
+  
   // Pop off the comment
   iterator_stack.pop();
   //deletePreviousAsm();
@@ -3210,8 +3211,11 @@ body: WHILE
     }
   // delete the TAG
   deletePreviousAsm();
-  addAsm( "// ^ ^ ^ ^ ^ ^ moved iterator to here from above", 0, true );
+  
+  addAsm( "// ^ ^ ^ ^ ^ ^ ^ moved iterator to here from above", 0, true );
+  
   addAsm( str_JMP + getLabel( ((int)label_vector[label_major]-3), false ), 3, false );
+  //addAsm( "// huh?", 0, false );
   
   addAsm( generateNewLabel(), 0, true );
 
@@ -3286,6 +3290,7 @@ body: WHILE
      if( string($11.name) == "" )
        {
 	 // delete jump to else
+	 
 	 deletePreviousAsm();
 	 // delete label
 	 deletePreviousAsm();
@@ -6039,6 +6044,7 @@ condition: expression relop expression
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
+      addComment( "deleted previous 3 instructions" );
       addAsm( str_BEQ + getLabel( label_vector[label_major]+1, false), 2, false);    
     }
   else if( _tmpCond == "exp > exp lb" )
@@ -6053,6 +6059,7 @@ condition: expression relop expression
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
+      addComment( "deleted previous 5 instructions" );
 
       addAsm( str_JMP + getLabel( label_vector[label_major], false) + commentmarker + "if z==1 jump to 2nd condition", 3, false );
       addAsm( "!_skip:", 0, true );
@@ -6069,6 +6076,7 @@ condition: expression relop expression
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
+      addComment( "deleted previous 3 instructions" );
 
       addAsm( str_BCC + getLabel( label_vector[label_major]+1, false) + commentmarker + "branch to body of IF", 2, false );
     }
@@ -6082,6 +6090,7 @@ condition: expression relop expression
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
+      addComment( "deleted previous 3 instructions" );
 
       addAsm( str_BCS + getLabel( label_vector[label_major]+1, false) + commentmarker + "branch to body of IF", 2, false );
     }
@@ -6099,6 +6108,7 @@ condition: expression relop expression
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
+      addComment( "deleted previous 5 instructions" );
 
       addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "Jump to body of IF", 2, false );
       addAsm( "!_skip:", 0, true );
@@ -6117,6 +6127,7 @@ condition: expression relop expression
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
+      addComment( "deleted previous 3 instructions" );
 
       addAsm( str_BNE + getLabel( label_vector[label_major]+1, false) + commentmarker + "branch to body of IF", 2, false );
     }
@@ -6139,6 +6150,8 @@ condition: expression relop expression
 	}
       deletePreviousAsm();
       deletePreviousAsm();
+      addComment( "deleted previous 2 instructions" );
+
       //deletePreviousAsm();
       addAsm( str_JMP + getLabel( label_vector[label_major]+2, false), 3, false);
       addAsm( "!_skip:", 0, true );
@@ -6154,7 +6167,8 @@ condition: expression relop expression
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
-      
+      addComment( "deleted previous 5 instructions" );
+ 
       addAsm( str_JMP + getLabel( label_vector[label_major]+2, false), 3, false);
       addAsm( "!_skip:", 0, true );
       addAsm( str_BNE + "!_skip+", 2, false );
@@ -6174,6 +6188,7 @@ condition: expression relop expression
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
+      addComment( "deleted previous 5 instructions" );
 
       addAsm( str_JMP + getLabel( label_vector[label_major], false), 3, false);
       addAsm( "!_skip:", 0, true );
@@ -6192,7 +6207,8 @@ condition: expression relop expression
 	  
       deletePreviousAsm();
       deletePreviousAsm();
-      
+      addComment( "deleted previous 2 instructions" );
+ 
       addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "JMP to else (OPTIMIZE)", 3, false);
       addAsm( "!_skip:", 0, true );
     }
@@ -6205,6 +6221,7 @@ condition: expression relop expression
 	  
       deletePreviousAsm();
       deletePreviousAsm();
+      addComment( "deleted previous 2 instructions" );
       
       addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "JMP to else (OPTIMIZE)", 3, false);
       addAsm( "!_skip:", 0, true );
@@ -6218,7 +6235,8 @@ condition: expression relop expression
 	  
       deletePreviousAsm();
       deletePreviousAsm();
-      
+       addComment( "deleted previous 2 instructions" );
+     
       addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "JMP to else (OPTIMIZE)", 3, false);
       addAsm( "!_skip:", 0, true );
     }
@@ -9980,7 +9998,7 @@ arithmetic expression
       deletePreviousAsm(); // txa
       deletePreviousAsm(); // pha
       if( arg_asm_comments ) deletePreviousAsm(); // OP1
-      addComment( "Deleted previous 3 instructions" );
+      addComment( "deleted previous 3 instructions" );
     }
 
   addParserComment( "RULE: expression: expression arithmetic expression" );
@@ -15752,7 +15770,7 @@ return: RETURN ';'
       deletePreviousAsm(); // jsr PUSH
       deletePreviousAsm(); // txa
       deletePreviousAsm(); // tay
-      addDebugComment( "Deleted previous 5 Mnemonics" );
+      addDebugComment( "deleted previous 5 instructions" );
     }
   addAsm( str_PLA );
   addAsm( str_TAX );
