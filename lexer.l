@@ -9,6 +9,7 @@ digit [0-9]
 frmt  [{\t}|{\n}]
 
 %%
+"needs"     { strcpy(yylval.nd_obj.name,(yytext)); return tNEEDS; }
 "inline"     { strcpy(yylval.nd_obj.name,(yytext)); return tINLINE; }
 "xxx"     { strcpy(yylval.nd_obj.name,(yytext)); return tXXX; }
 "fchrin"     { strcpy(yylval.nd_obj.name,(yytext)); return tFCHRIN; }

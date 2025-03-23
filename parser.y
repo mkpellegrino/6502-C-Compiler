@@ -243,7 +243,9 @@
   bool save_is_needed=false;
   bool sid_was_imported=false;
   bool basic_upstart=false;
+  
   bool function_labels_are_still_needed=true;
+
   bool stack_is_needed=false;
   bool illegal_operations_are_needed=false;
   bool sidirq_is_needed=false;
@@ -2470,7 +2472,7 @@
 
 //%parse-param { FILE* fp }
 %token VOID 
-%token <nd_obj> CHAR tFCLOSE tFOPEN tFCLRCHN tFCHROUT tFCHRIN tFREADST tFCHKOUT tFCHKIN tSETLFS tSETNAM tSAVE tLOAD tIMPORT tSPRPTR tPUSH tPOP tCOMMENT tDATA tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tSIDIRQ tSIDOFF tSTRTOFLOAT tSTRTOWORD tTOFLOAT tTOUINT tTOWORD tTOBIT tDEC tINC tROL tROR tLSR tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJUMP tSETSCR tJSR tIRQ tROMOUT tROMIN tLDA tASL tSPRITESET  tSPRITEOFF tSPRITETOGGLE tRND tXXX tINLINE tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER tPRINTS PRINTFF SCANFF   INT FLOAT   WHILE FOR IF ELSE   TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE tSQRT UNARY INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL tSCREEN tNULL tMEMCPY tSEED
+%token <nd_obj> CHAR tFCLOSE tFOPEN tFCLRCHN tFCHROUT tFCHRIN tFREADST tFCHKOUT tFCHKIN tSETLFS tSETNAM tSAVE tLOAD tIMPORT tSPRPTR tPUSH tPOP tCOMMENT tDATA tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tSIDIRQ tSIDOFF tSTRTOFLOAT tSTRTOWORD tTOFLOAT tTOUINT tTOWORD tTOBIT tDEC tINC tROL tROR tLSR tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJUMP tSETSCR tJSR tIRQ tROMOUT tROMIN tLDA tASL tSPRITESET  tSPRITEOFF tSPRITETOGGLE tRND tXXX tINLINE tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER tPRINTS PRINTFF SCANFF   INT FLOAT   WHILE FOR IF ELSE   TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE tSQRT UNARY INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL tSCREEN tNULL tMEMCPY tSEED tNEEDS
 %type <nd_obj> headers main body return function datatype statement arithmetic relop program else 
    %type <nd_obj2> init value expression charlist numberlist parameterlist argumentlist
       %type <nd_obj3> condition
@@ -2503,7 +2505,169 @@ headers: /* empty */
   //yyin = fopen( tmp_str.c_str(), "rt" );
   //strcpy($$.name, $1.name);
 
-};
+}
+| tNEEDS '('  STR  ')' ';'
+{
+  bool correct_usage = false;
+  string s =  stripQuotes($3.name);
+  if( s == "stack" )
+    {
+      stack_is_needed = true;
+      correct_usage = true;
+    }
+
+  if( s == "bin2bit" )
+    {
+      bin2bit_is_needed = true;
+      correct_usage = true;
+    }
+  if( s == "word2dec" )
+    {
+      word2dec_is_needed = true;
+      correct_usage = true;
+    }
+  if( s == "plot" )
+    {
+      plot_is_needed = true;
+      correct_usage = true;
+    }
+  if( s == "mcplot" )
+    {
+     multicolour_plot_is_needed = true;
+      correct_usage = true;
+    }
+  if( s == "getplot" )
+    {
+      getplot_is_needed = true;
+      correct_usage = true;
+    }
+  if( s == "modulus" )
+    {
+      modulus_is_needed = true;
+      correct_usage = true;
+    }
+  if( s == "getkey" )
+    {
+      getkey_is_needed = true;
+      correct_usage = true;
+    }
+  if( s == "scanf" )
+    {
+      scanf_is_needed = true;
+      correct_usage = true;
+    }
+  if( s == "bmpmem" )
+    {
+      bmpmem_is_needed = true;
+      correct_usage = true;
+    }
+  if( s == "chrmem" )
+    {
+      chrmem_is_needed = true;
+      correct_usage = true;
+    }
+  if( s == "scrmem" )
+    {
+      scrmem_is_needed = true;
+      correct_usage = true;
+    }
+  if( s == "bnkmem" )
+    {
+      bnkmem_is_needed = true;
+      correct_usage = true;
+    }
+  if( s == "sidirq" )
+    {
+     sidirq_is_needed = true;
+      correct_usage = true;
+    }
+  if( s == "undocumented ops" )
+    {
+      illegal_operations_are_needed = true;
+      correct_usage = true;
+    }
+
+  if( s == "printf" )
+    {
+      printf_is_needed = true;
+      correct_usage = true;
+    }
+  if( s == "byte2str" )
+    {
+      byt2str_is_needed = true;
+      correct_usage = true;
+    }
+  if( s == "byte2hex" )
+    {
+      byte2hex_is_needed = true;
+      correct_usage = true;
+    }
+  if( s == "twos" )
+    {
+      twos_complement_is_needed = true;
+      correct_usage = true;
+    }
+  if( s == "memcpy" )
+    {
+      memcpy_is_needed = true;
+      correct_usage = true;
+    }
+  if( s == "cls" )
+    {
+      cls_is_needed = true;
+      correct_usage = true;
+    }
+  if( s == "div16" )
+    {
+      div16_is_needed = true;
+      correct_usage = true;
+    }
+  if( s == "mul16" )
+    {
+      mul16_is_needed = true;
+      correct_usage = true;
+    }
+  if( s == "unsigned mul" )
+    {
+      umul_is_needed = true;
+      correct_usage = true;
+    }
+  if( s == "div10" )
+    {
+      div10_is_needed = true;
+      correct_usage = true;
+    }
+  if( s == "unsigned signed cmp" )
+    {
+      unsigned_signed_cmp_is_needed = true;
+      correct_usage = true;
+    }
+  if( s == "decimal digit" )
+    {
+      decimal_digit_is_needed = true;
+      correct_usage = true;
+    }
+  if( s == "signed cmp" )
+    {
+      signed_comparison_is_needed = true;
+      correct_usage = true;
+    }
+  if( s == "sidrnd" )
+    {
+      sidrnd_is_needed = true;
+      correct_usage = true;
+    }
+  if( !correct_usage )
+    {
+      addCompilerMessage( "needs \"string\" not found", 0 );
+      addCompilerMessage( "valid strings: bin2bit, bmpmem, bnkmem, byte2hex, byte2str, chrmem, cls, deciml digit, div10, getkey, getplot, mcplot, memcpy, modulus, mul16, plot, printf, scanf, scrmem, sidirq, sidrnd, signed cmp, stack, twos, undocumented ops, unsigned mul, unsigned signed cmp, word2dec", 3 );
+    }
+  else
+    {
+      addCompilerMessage( string( "adding built-in fiunctionality: " ) + s, 0 );
+    }
+}
+;
 
 argumentlist: /*empty*/
 |
