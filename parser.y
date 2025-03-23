@@ -2493,13 +2493,11 @@ headers: /* empty */
   //$$.nd = mknode($1.nd, $2.nd, "headers");
   //strcpy($$.name, $1.name);
 }
-| INCLUDE
+| INCLUDE STR
 {
-  addCompilerMessage( $1.name, 0 );
-  string tmp_str = string( $1.name );
-  tmp_str.erase (tmp_str.begin(), tmp_str.begin()+10);
-  tmp_str.erase (tmp_str.end()-1, tmp_str.end());
-  cerr << "included filename: [" << tmp_str  << "]" << endl;
+  addCompilerMessage( string($2.name), 0 );
+  string tmp_str = stripQuotes($2.name);
+  addCompilerMessage( string( "including: " ) + $2.name, 0 );
   addIncludeFile( tmp_str );
   // add the include file to an include-file vector - process them at the end
   //yyin = fopen( tmp_str.c_str(), "rt" );
@@ -3119,7 +3117,7 @@ body: WHILE
   addDebugComment( "Preserve Status Register" );
   addAsm( str_PHP );
   
-  addAsm( str_CLC );
+  //addAsm( str_CLC );
   
   pushScope("WHILE");
   addCommentSection( "WHILE LOOP" );
@@ -3166,7 +3164,7 @@ body: WHILE
   addComment( "Preserve Status Register" );
   addAsm( str_PHP );
   
-  addAsm( str_CLC );  
+  //addAsm( str_CLC );  
   pushScope("FOR");
   addAsm( generateNewLabel(), 0, true );
 }
@@ -3264,7 +3262,7 @@ body: WHILE
 
   //addCommentBreak(2);
 
-  addAsm( str_CLC );
+  //addAsm( str_CLC );
 
   pushScope("IF");
   //addCommentSection("IF STATEMENT" );
@@ -6620,9 +6618,9 @@ statement: datatype ID init
     {
       addCompilerMessage( getNameOf( a ) + "++ just adds 0x0001 to the value", 0 );
       addComment( "WordID++" );
-      addAsm(str_CLC);
       if( a < 256 ) size_of_instruction = 2;
       addAsm( str_LDA + "#$01", 2, false );
+      addAsm(str_CLC);
       addAsm( str_ADC + getNameOf( a ), size_of_instruction, false );
       addAsm( str_STA + getNameOf( a ), size_of_instruction, false );
       if( a < 255 ) size_of_instruction = 2;
@@ -6668,8 +6666,8 @@ statement: datatype ID init
     {
       addDebugComment( "this just adds the 2 UintID's together" );
       addComment( "inc( UintID, UintID )" );
-      addAsm( str_CLC );
       addAsm( str_LDA + getNameOf( getAddressOf($5.name)), 3, false );
+      addAsm( str_CLC );
       addAsm( str_ADC + getNameOf( getAddressOf($3.name)), 3, false );
       addAsm( str_STA + getNameOf( getAddressOf($3.name)), 3, false );
     }
@@ -6690,8 +6688,8 @@ statement: datatype ID init
     {
       addComment( "inc(WordID)" );
       addCompilerMessage( "inc(" + a_name + ") just adds 0x0001 to the value", 0 );
-      addAsm( str_CLC );
       addAsm( str_LDA + "#$01", 2, false );
+      addAsm( str_CLC );
       addAsm( str_ADC + a_name, size_of_instruction, false );
       addAsm( str_STA + a_name, size_of_instruction, false );
       a++;
@@ -7611,7 +7609,7 @@ statement: datatype ID init
       addComment( "spritex( UIntID, UIntID );" );
       // 2024 04 29 - mkpellegrino
       addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
-      addAsm( str_CLC );
+      // addAsm( str_CLC );
       addAsm( str_ASL ); // 2x
       addAsm( str_TAX );
       addAsm( str_LDA + getNameOf(getAddressOf($5.name)), 3, false );
@@ -7622,8 +7620,10 @@ statement: datatype ID init
       addDebugComment( "turn off the 9th bit in $D010" );
       addAsm( str_LDA + "#$01", 2, false );
       addAsm( str_LDX + getNameOf(getAddressOf($3.name)), 3, false );
-      addAsm( str_INX, 1, false );
-      addAsm( str_DEX, 1, false );
+
+      //addAsm( str_INX, 1, false );
+      //addAsm( str_DEX, 1, false );
+
       addAsm( "!:", 0, true );
       addAsm( str_BEQ + "!+", 2, false );
       addAsm( str_ASL, 1, false );
@@ -7645,7 +7645,7 @@ statement: datatype ID init
       addComment( "spritex( UIntID, UIntIMM );" );
    
       addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
-      addAsm( str_CLC );
+      //addAsm( str_CLC );
       addAsm( str_ASL ); // 2x
       addAsm( str_TAX );
       addAsm( str_LDA + "#$" + toHex(atoi(stripFirst(string($5.name)).c_str())), 2, false );
@@ -7656,8 +7656,8 @@ statement: datatype ID init
       addDebugComment( "turn off the 9th bit in $D010" );
       addAsm( str_LDA + "#$01", 2, false );
       addAsm( str_LDX + getNameOf(getAddressOf($3.name)), 3, false );
-      addAsm( str_INX, 1, false );
-      addAsm( str_DEX, 1, false );
+      //addAsm( str_INX, 1, false );
+      //addAsm( str_DEX, 1, false );
       addAsm( "!:", 0, true );
       addAsm( str_BEQ + "!+", 2, false );
       addAsm( str_ASL, 1, false );
@@ -7678,7 +7678,7 @@ statement: datatype ID init
       addComment( "spritex( UintID, WordIMM )");
 
       addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
-      addAsm( str_CLC );
+      //addAsm( str_CLC );
       addAsm( str_ASL ); // 2x
       addAsm( str_TAX );
       addAsm( str_LDA + "#$" + toHex(get_word_L(atoi(stripFirst($5.name).c_str()))), 2, false );
@@ -7689,8 +7689,8 @@ statement: datatype ID init
       addDebugComment( "turn off the 9th bit in $D010" );
       addAsm( str_LDA + "#$" + toHex(get_word_H(atoi(stripFirst($5.name).c_str()))), 2, false );
       addAsm( str_LDX + getNameOf(getAddressOf($3.name)), 3, false );
-      addAsm( str_INX, 1, false );
-      addAsm( str_DEX, 1, false );
+      //addAsm( str_INX, 1, false );
+      //addAsm( str_DEX, 1, false );
       addAsm( "!:", 0, true );
       addAsm( str_BEQ + "!+", 2, false );
       addAsm( str_ASL, 1, false );
@@ -10109,6 +10109,7 @@ arithmetic expression
 	{
 	  addComment( "IntID + UintID --> A" );
 	  addAsm( str_LDA + O1, sizeOP1A, false );
+	  addAsm( str_CLC, 1, false );
 	  addAsm( str_ADC + O2, sizeOP2A, false );
 	  strcpy($$.name, "_A");
 	}
@@ -10116,6 +10117,7 @@ arithmetic expression
 	{
 	  addComment( "IntID - UintID --> A" );
 	  addAsm( str_LDA + O1, sizeOP1A, false );
+	  addAsm( str_SEC, 1, false );
 	  addAsm( str_SBC + O2, sizeOP2A, false );
 	  strcpy($$.name, "_A");
 	}
@@ -10195,8 +10197,8 @@ arithmetic expression
 
 	  // TWO'S COMP
 	  addDebugComment( "take the # out of two's complement" );
-	  addAsm( str_CLC );
 	  addAsm( str_EOR + "#$FF", 2, false );
+	  addAsm( str_CLC );
 	  addAsm( str_ADC + "#$01", 2, false );
 	  addAsm( str_STA + "!+", 3, false );
 	  addAsm( str_SEC );
@@ -10206,6 +10208,8 @@ arithmetic expression
 	  addAsm( str_BYTE + "$00", 1, false );
 	  addAsm( str_TAY );
 	  addAsm( str_LDA + "#$" + IMM2H, 2, false );
+	  addComment( "SEC maybe isn't needed?" );
+	  addAsm( str_SEC );
 	  addAsm( str_SBC + "#$00", 2, false );
 	  addAsm( str_TAX );
 	  addAsm( str_TYA );
@@ -14177,8 +14181,8 @@ arithmetic expression
   scrmem_is_needed=true;
   addAsm( str_JSR + "SCRMEM", 3, false );
   addAsm( str_PLA );
-  addAsm( str_CLC );
   
+  addAsm( str_CLC ); 
   addAsm( str_ADC + "$03", 2, false );
   addAsm( str_STA + "$03", 2, false );
   bnkmem_is_needed=true;
@@ -14195,7 +14199,7 @@ arithmetic expression
   addAsm( str_SEI );
   addAsm( str_LDA + "$D018", 3, false );
   addAsm( str_AND + "#$08", 2, false );
-  addAsm( str_CLC );
+  //addAsm( str_CLC );
   addAsm( str_ASL );
   addAsm( str_ASL );      
   
@@ -14205,7 +14209,7 @@ arithmetic expression
   addAsm( str_LDA + "$DD00", 3, false );
   addAsm(str_EOR + "#$FF", 2, false );
   addAsm( str_AND + "#$03", 2, false );
-  addAsm( str_CLC );
+  //addAsm( str_CLC );
   addAsm( str_ASL );
   addAsm( str_ASL );
   addAsm( str_ASL );
@@ -14240,7 +14244,7 @@ arithmetic expression
     }
   else
     {
-      addAsm( str_LDA+"#$00", 2, false );
+      addAsm( str_LDA + "#$00", 2, false );
     }
   addAsm( str_STA + "$FB", 2, false );
 
@@ -16823,7 +16827,7 @@ int main(int argc, char *argv[])
       // =================================================================================
       addAsm( str_LDA + "$D018", 3, false );
       addAsm( str_AND + "#$08", 2, false );
-      addAsm( str_CLC );
+      //addAsm( str_CLC );
       addAsm( str_ASL );
       addAsm( str_ASL );
       addAsm( str_PHA );
@@ -16839,7 +16843,7 @@ int main(int argc, char *argv[])
       // =================================================================================
       addAsm( str_LDA + "$D018", 3, false );
       addAsm( str_AND + "#$0E", 2, false );
-      addAsm( str_CLC );
+      //addAsm( str_CLC );
       addAsm( str_ASL );
       addAsm( str_ASL );
       addAsm( str_PHA );
@@ -16857,7 +16861,7 @@ int main(int argc, char *argv[])
       // =================================================================================
       addAsm( str_LDA + "$D018", 3, false );
       addAsm( str_AND + "#$F0", 2, false );
-      addAsm( str_CLC );
+      //addAsm( str_CLC );
       addAsm( str_LSR );
       addAsm( str_LSR );
       addAsm( str_PHA );
@@ -16873,7 +16877,7 @@ int main(int argc, char *argv[])
       addAsm( str_LDA + "$DD00", 3, false );
       addAsm( str_EOR + "#$FF", 2, false );
       addAsm( str_AND + "#$03", 2, false );
-      addAsm( str_CLC );
+      //addAsm( str_CLC );
       addAsm( str_ASL );
       addAsm( str_ASL );
       addAsm( str_ASL );
