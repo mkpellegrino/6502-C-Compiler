@@ -281,6 +281,8 @@
   bool sidrnd_is_needed = false;
   bool sidrnd_is_initialised = false;
   bool long_branches = true;
+
+  bool processing_includes = false;
   
   bool arg_debug_comments = false;
   bool debug_flag_is_on = false;
@@ -2070,6 +2072,23 @@
 
     return;
   }
+
+  /* void ProcessIncludes() */
+  /* { */
+  /*   // add all the text from the include file to */
+  /*   // the end of the source code */
+  /*   for( int i = 0; i < include_file_vector.size(); i++ ) */
+  /*     { */
+  /* 	cerr << include_file_vector[i] << endl; */
+
+  /* 	yyin = fopen( include_file_vector[i].c_str(), "r" ); */
+  /* 	yyinput(); */
+  /* 	//yyparse(); */
+  /* 	YY_NEW_FILE; */
+  /* 	fclose(yyin);	 */
+  /*     } */
+
+  /* } */
   void ProcessFunctions()
   {
     
@@ -2486,28 +2505,26 @@
 ;
 
 
-headers: /* empty */
-| 
+headers: 
+| /* empty */
 | headers headers
 {
   //$$.nd = mknode($1.nd, $2.nd, "headers");
-  //strcpy($$.name, $1.name);
+  strcpy($$.name, $1.name);
 }
-| INCLUDE STR
+| headers INCLUDE STR
 {
-  addCompilerMessage( string($2.name), 0 );
-  string tmp_str = stripQuotes($2.name);
-  addCompilerMessage( string( "including: " ) + $2.name, 0 );
+  string tmp_str = stripQuotes($3.name);
+  addCompilerMessage( string( "including: " ) + $3.name, 0 );
   addIncludeFile( tmp_str );
   // add the include file to an include-file vector - process them at the end
   //yyin = fopen( tmp_str.c_str(), "rt" );
-  //strcpy($$.name, $1.name);
-
+  strcpy($$.name, $1.name);
 }
-| tNEEDS '('  STR  ')' ';'
+| headers tNEEDS '('  STR  ')' ';'
 {
   bool correct_usage = false;
-  string s =  stripQuotes($3.name);
+  string s =  stripQuotes($4.name);
   if( s == "stack" )
     {
       stack_is_needed = true;
@@ -2657,18 +2674,20 @@ headers: /* empty */
     }
   if( !correct_usage )
     {
-      addCompilerMessage( "needs \"string\" not found", 0 );
+      addCompilerMessage( string( "needs ") + $4.name + " not found", 0 );
       addCompilerMessage( "valid strings: bin2bit, bmpmem, bnkmem, byte2hex, byte2str, chrmem, cls, deciml digit, div10, getkey, getplot, mcplot, memcpy, modulus, mul16, plot, printf, scanf, scrmem, sidirq, sidrnd, signed cmp, stack, twos, undocumented ops, unsigned mul, unsigned signed cmp, word2dec", 3 );
     }
   else
     {
-      addCompilerMessage( string( "adding built-in fiunctionality: " ) + s, 0 );
+      addCompilerMessage( string( "adding built-in functionality: " ) + s, 0 );
     }
-}
-;
+  strcpy($$.name, $1.name );
 
-argumentlist: /*empty*/
-|
+};
+
+
+argumentlist: 
+| /*empty*/
 | datatype ID
 {
   addDebugComment(string("Argument: ") + $2.name);
@@ -2997,20 +3016,23 @@ numberlist: /* empty */
 // the beginning of the assembler program
 main: datatype ID
 {
-  if( kick )
+  if( !processing_includes )
     {
-      if( basic_upstart )
+      if( kick )
 	{
-	  addAsm( "* = $0801", 0, true );
-	  addAsm( string("BasicUpstart($") + toHex( code_start ) + ")", 0, true );
+	  if( basic_upstart )
+	    {
+	      addAsm( "* = $0801", 0, true );
+	      addAsm( string("BasicUpstart($") + toHex( code_start ) + ")", 0, true );
+	    }
+	  addAsm( string( "* = $") + toHex( code_start ), 0, true );
 	}
-      addAsm( string( "* = $") + toHex( code_start ), 0, true );
+      else
+	{
+	  addAsm( string( ".org $" ) + toHex( code_start ), 0, true );
+	}
+      addCommentSection( "main()" );
     }
-  else
-    {
-      addAsm( string( ".org $" ) + toHex( code_start ), 0, true );
-    }
-  addCommentSection( "main()" );
 };
 
 function: function function
@@ -16811,16 +16833,16 @@ int main(int argc, char *argv[])
       addAsm( str_LDA + "#$00", 2, false ); 
       //addAsm( str_LDA + "#$00", 2, false );
       addAsm( str_LDX + "#$08", 2, false );
-      addAsm( "_UMULTOP:", 0, true );
+      addAsm( "!:", 0, true );
       addAsm( str_LSR + "$03", 2, false );
-      addAsm( str_BCC + "_UMULSKIP", 2, false );
+      addAsm( str_BCC + "!+", 2, false );
       addAsm( str_CLC );
       addAsm( str_ADC + "$02", 2, false );
-      addAsm( "_UMULSKIP", 0, true );
+      addAsm( "!:", 0, true );
       addAsm( str_ASL + "$02", 2, false );
       addAsm( str_CLC );
       addAsm( str_DEX );
-      addAsm( str_BNE + "_UMULTOP", 2, false );
+      addAsm( str_BNE + "!--", 2, false );
       addAsm( str_STA + "$03", 2, false ); // 8 bit result in $0042
       // =================================================================================
       addAsm( str_RTS );
@@ -17424,6 +17446,32 @@ int main(int argc, char *argv[])
     {
       if( !kick ) cout << ".OPT ILLEGALS" << endl;
     }
+
+  //addCompilerMessage( "TODO: Process Includes Here!", 0 );
+  //ProcessIncludes();
+  processing_includes = true;
+  for( int i = 0; i < include_file_vector.size(); i++ )
+    {
+      addCompilerMessage( string( "Processing included file: " ) + include_file_vector[i], 0 );
+      
+      yyin = fopen( include_file_vector[i].c_str(), "r" );
+      yyinput();
+      yyparse();
+      //YY_NEW_FILE;
+      fclose(yyin);
+    }
+
+  
+  //yyin = fopen( "common.c", "r" );
+  //yyinput();
+  //yyparse();
+  //YY_NEW_FILE;
+  //fclose(yyin);
+
+  //yyin = fopen( tmp_str.c_str(), "rt" );
+  //fclose(yyin);
+
+  
   if( arg_optimize ) Optimize();
   ProcessComments();
   ProcessVariables();

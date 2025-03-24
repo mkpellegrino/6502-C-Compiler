@@ -107,9 +107,10 @@ frmt  [{\t}|{\n}]
 "while"	                    { strcpy(yylval.nd_obj.name,(yytext)); return WHILE; }
 "if"	                    { strcpy(yylval.nd_obj.name,(yytext)); return IF; }
 "else"	                    { strcpy(yylval.nd_obj.name,(yytext)); return ELSE; }
-^"#include"[ ]*<.+\.h>      { strcpy(yylval.nd_obj.name,(yytext)); return INCLUDE; }
-^"#include"[ ]*<.+\.asm>      { strcpy(yylval.nd_obj.name,(yytext)); return INCLUDE; }
-^"#include"[ ]*<.+\.c>      { strcpy(yylval.nd_obj.name,(yytext)); return INCLUDE; }
+"#include"                  { strcpy(yylval.nd_obj.name,(yytext)); return INCLUDE; }
+   /* ^"#include"[ ]*<.+\.h>      { strcpy(yylval.nd_obj.name,(yytext)); return INCLUDE; } */
+   /* ^"#include"[ ]*<.+\.asm>      { strcpy(yylval.nd_obj.name,(yytext)); return INCLUDE; } */
+   /* ^"#include"[ ]*<.+\.c>      { strcpy(yylval.nd_obj.name,(yytext)); return INCLUDE; } */ 
 "true"                      { strcpy(yylval.nd_obj.name,(yytext)); return TRUE; }
 "false"                     { strcpy(yylval.nd_obj.name,(yytext)); return FALSE; }
 "0x"({digit}|{halpha})+      { strcpy(yylval.nd_obj.name,(yytext)); return HEX_NUM; }
