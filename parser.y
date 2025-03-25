@@ -3129,7 +3129,8 @@ body: WHILE
   string s = gen_random_str(10);
   rnd_str_vector.push(s);
   
-  addDebugComment( "Preserve $02/$03" );
+  addComment( "Preserve $02/$03" );
+  addDebugComment( string( "vvvv---- Paired with: " ) + s );
   addAsm( str_LDA + "$02", 2, false);
   addAsm( str_PHA );
 
@@ -3161,7 +3162,7 @@ body: WHILE
   //  addDebugComment( string( "<<<<< ") + s );
   rnd_str_vector.pop();
 
-  addDebugComment( "Restore status register" );
+  addComment( "Restore status register" );
   addAsm( str_PLP );
   
   addDebugComment( "Restore $02/$03" );
@@ -3169,6 +3170,9 @@ body: WHILE
   addAsm( str_STA + "$03", 2, false);
   addAsm( str_PLA );
   addAsm( str_STA + "$02", 2, false);
+
+  addDebugComment( string( "^^^^---- Paired with: " ) + s );
+
 }
 '}'
 
@@ -3178,6 +3182,8 @@ body: WHILE
   rnd_str_vector.push(s);
  
   addComment( "Preserve $02/$03" );
+  addDebugComment( string( "vvvv---- Paired with: " ) + s );
+
   addAsm( str_LDA + "$02", 2, false);
   addAsm( str_PHA );
   addAsm( str_LDA + "$03", 2, false);
@@ -3221,7 +3227,8 @@ body: WHILE
 {
 
   // pop that whole statement off of that stack and jump to top of FOR
-  addAsm( "// v v v v v v v moved iterator to here from above", 0, true );
+  addDebugComment( "// v v v v v v v moved iterator to here from above");
+  
   string s = "";
   while( s != "[jump to top of for]" )
     {
@@ -3234,10 +3241,9 @@ body: WHILE
   // delete the TAG
   deletePreviousAsm();
   
-  addAsm( "// ^ ^ ^ ^ ^ ^ ^ moved iterator to here from above", 0, true );
+  addDebugComment( "// ^ ^ ^ ^ ^ ^ ^ moved iterator to here from above");
   
   addAsm( str_JMP + getLabel( ((int)label_vector[label_major]-3), false ), 3, false );
-  //addAsm( "// huh?", 0, false );
   
   addAsm( generateNewLabel(), 0, true );
 
@@ -3265,17 +3271,21 @@ body: WHILE
       addAsm( str_STA + "$03", 2, false);
       addAsm( str_PLA );
       addAsm( str_STA + "$02", 2, false);
+      addDebugComment( string( "^^^^---- Paired with: " ) + s );
+
       //addCommentBreak(2);
 
     }
 };
 | IF
 {
-  string s = gen_random_str(10);
-  rnd_str_vector.push(s);
 
   if( !arg_unsafe_ifs )
     {
+      string s = gen_random_str(10);
+      rnd_str_vector.push(s);
+      addDebugComment( string( "vvvv---- Paired with: " ) + s );
+
       addComment( "Preserve $02/$03" );
       addAsm( str_LDA + "$02", 2, false);
       addAsm( str_PHA );
@@ -3348,7 +3358,6 @@ body: WHILE
   else
     {
       popScope();
-      rnd_str_vector.pop();
 
       addComment( "Restore status register" );
       addAsm( str_PLP );
@@ -3360,6 +3369,10 @@ body: WHILE
 	  addAsm( str_STA + "$03", 2, false);
 	  addAsm( str_PLA );
 	  addAsm( str_STA + "$02", 2, false);
+	  string s = rnd_str_vector.top();
+	  rnd_str_vector.pop();
+	  addDebugComment( string( "^^^^---- Paired with: " ) + s );
+
 	}
       
     }
@@ -4100,6 +4113,7 @@ body: WHILE
   // update: 2023 04 11 - yes - I agree
   // update: 2024 05 06 - yes indeed - I STILL agree
   addComment( string("cursorxy(") + string($3.name) + string(",") + string($5.name) + string( ")" ));
+  addComment( "clc is integral to jsr $FFF0... do not remove" );
   addAsm( str_CLC ); // carry must be set in order to SET the cursor position using kernal call
   if( getTypeOf($3.name) > 1 || getTypeOf($5.name) > 1 )
     {
@@ -10233,7 +10247,7 @@ arithmetic expression
 
 	  // NEGATIVE
 	  addAsm( "!:", 0, true );
-	  addAsm( str_CLC );
+	  //addAsm( str_CLC );
 
 	  // TWO'S COMP
 	  addDebugComment( "take the # out of two's complement" );
@@ -10299,7 +10313,7 @@ arithmetic expression
 	  // then add them.
 	  //  TODO: fixit later
 	  addAsm( "!:", 0, true );
-	  addAsm( str_CLC );
+	  //addAsm( str_CLC );
 
 	  // TWO'S COMP
 	  addDebugComment( "take the # out of two's complement" );
@@ -14813,10 +14827,10 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
 
   if( isUintID( $3.name ) || isIntID( $3.name ))
     {
-      addAsm( str_CLC );
       //addAsm( str_LDA + "$" + toHex(getAddressOf( string($3.name))), 3, false );
       addAsm( str_LDA + getNameOf(getAddressOf( string($3.name))), 3, false );
       addAsm( str_EOR + "#$FF", 2, false);
+      addAsm( str_CLC );
       addAsm( str_ADC + "#$01", 2, false);
       strcpy($$.name, "_A");
     }
@@ -14843,7 +14857,6 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
     {
       int tmp_addr = getAddressOf( $3.name );
 
-      addAsm( str_CLC );
       addAsm( str_LDA + "#$FF", 2, false );
       // 2024 04 15 - mkpellegrino
       addAsm( str_EOR + getNameOf( tmp_addr ) + "+1", 3, false ); // 4 cycles
@@ -14854,6 +14867,7 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
       // 2024 04 15 - mkpellegrino
       addAsm( str_EOR + getNameOf( tmp_addr ), 3, false );
       //addAsm( str_EOR + "$" + toHex( tmp_addr ), 3, false );
+      addAsm( str_CLC );
       addAsm( str_ADC + "#$01", 2, false );
       addAsm( str_TAY );
       addAsm( str_PLA );
@@ -16181,7 +16195,7 @@ int main(int argc, char *argv[])
       addAsm( str_JSR + "PUSH", 3, false );
       addAsm( str_LDA + "$03", 2, false );
       addAsm( str_JSR + "PUSH", 3, false );
-      addAsm( str_CLC );
+      //addAsm( str_CLC );
 
       
       addComment( "number of bytes" );
@@ -16258,7 +16272,7 @@ int main(int argc, char *argv[])
       addAsm( str_LDA + "#$00", 2, false );
       addAsm( str_ADC + "$03", 2, false );
       addAsm( str_STA + "$03", 2, false );
-      addAsm( str_CLC );
+      //addAsm( str_CLC );
 
       addComment( "add #$01 to LOAD16I/LOAD16I+1 (the index)" );
       addAsm( str_CLC );
@@ -16268,7 +16282,7 @@ int main(int argc, char *argv[])
       addAsm( str_LDA + "#$00", 2, false );
       addAsm( str_ADC + "LOAD16I+1", 2, false );
       addAsm( str_STA + "LOAD16I+1", 2, false );
-      addAsm( str_CLC );
+      //addAsm( str_CLC );
       
       addAsm( str_JMP + getLabel( label_vector[label_major]-2, false), 3, false );
       
@@ -16840,7 +16854,7 @@ int main(int argc, char *argv[])
       addAsm( str_ADC + "$02", 2, false );
       addAsm( "!:", 0, true );
       addAsm( str_ASL + "$02", 2, false );
-      addAsm( str_CLC );
+      //addAsm( str_CLC );
       addAsm( str_DEX );
       addAsm( str_BNE + "!--", 2, false );
       addAsm( str_STA + "$03", 2, false ); // 8 bit result in $0042
@@ -17161,7 +17175,7 @@ int main(int argc, char *argv[])
       // a QUICK and DIRTY MEMCPY of 63 BYTES
       addAsm( string("MOBCPY:\t\t") + commentmarker + "Copy 63 bytes from $FB/$FC to $FD/$FE", 0, true );
       addAsm( str_SEI );
-      addAsm( str_CLC );
+      //addAsm( str_CLC );
       /* addAsm( str_LDA + "#$01", 2, false ); */
       /* addAsm( str_ADC + "$FB", 2, false ); */
       /* addAsm( str_STA + "$FB", 2, false ); */
@@ -17449,27 +17463,18 @@ int main(int argc, char *argv[])
 
   //addCompilerMessage( "TODO: Process Includes Here!", 0 );
   //ProcessIncludes();
+  int countn_tmp = countn;
   processing_includes = true;
   for( int i = 0; i < include_file_vector.size(); i++ )
     {
-      addCompilerMessage( string( "Processing included file: " ) + include_file_vector[i], 0 );
-      
+      countn = 0;
+      addCompilerMessage( string( "Processing included file: " ) + include_file_vector[i], 0 );      
       yyin = fopen( include_file_vector[i].c_str(), "r" );
-      yyinput();
       yyparse();
-      //YY_NEW_FILE;
       fclose(yyin);
     }
-
+  countn = countn_tmp;
   
-  //yyin = fopen( "common.c", "r" );
-  //yyinput();
-  //yyparse();
-  //YY_NEW_FILE;
-  //fclose(yyin);
-
-  //yyin = fopen( tmp_str.c_str(), "rt" );
-  //fclose(yyin);
 
   
   if( arg_optimize ) Optimize();
