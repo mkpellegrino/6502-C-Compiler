@@ -5948,8 +5948,10 @@ condition: expression relop expression
 	    }
 	  else
 	    {
-	      addAsm( str_BYTE + "$F0, $03" + commentmarker + "BEQ +3", 2, false ); 
+	      //addAsm( str_BYTE + "$F0, $03" + commentmarker + "BEQ +3", 2, false );
+	      addAsm( str_BEQ + "!+", 2, false );
 	      addAsm( str_JMP +  getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==0 jump to BODY", 3, false );
+	      addAsm( "!:", 0, true );
 	      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR (OPTIMIZE)", 3, false );
 	    }
 	}
@@ -16583,7 +16585,6 @@ int main(int argc, char *argv[])
       addComment( "vvv  Programming for the Commodore 64  vvv" );
       addComment( "vvv w/ some changes to deal with banks vvv" );
       addComment( "vvv------------------------------------vvv" );
-      addAsm( commentmarker, 0, true );
       addAsm( commentmarker + "x = $FA, y = $FC, colour = $FD", 0, true );
       addAsm( commentmarker + "STORE is at $FE(l), $FF(h)", 0, true);
       addAsm( commentmarker + "LOC is at $02(l), $03(h)", 0, true);
@@ -16615,16 +16616,13 @@ int main(int argc, char *argv[])
       addAsm( str_ROR );
       addAsm( str_DEC + "$FE" + commentmarker + "store", 2, false );
       addAsm( str_BPL + "!-", 2, false );
-      //addAsm( str_BYTE +"$10, $FA", 2, false );  // BPL "loop here"
       addAsm( str_STA + "$50" + commentmarker + "mask", 2, false );
       addAsm( str_LDA + "$FA" + commentmarker + "xcoord", 2, false );  // 3 cycles
-      //addAsm( str_LDA + "$FA; xcoord", 2, false );
       addAsm( str_AND + "#$FC", 2, false );
       addAsm( str_ASL );
       addAsm( str_ROL + "$FF" + commentmarker + "store + 1", 2, false );
       addAsm( str_STA + "$FE" + commentmarker + "store", 2, false );
       addAsm( str_LDA + "$FC" + commentmarker + "ycoord", 2, false );  // 3 cycles
-      //addAsm( str_LDA + "$FC; ycoord", 2, false );
       addAsm( str_LSR );
       addAsm( str_LSR );
       addAsm( str_LSR );
@@ -16638,7 +16636,6 @@ int main(int argc, char *argv[])
       addAsm( str_ADC + "$03" + commentmarker + "loc + 1", 2, false );
       addAsm( str_STA + "$03" + commentmarker + "loc + 1", 2, false );
       addAsm( str_LDA + "$FC" + commentmarker + "ycoord", 2, false );  // 3 cycles
-      //addAsm( str_LDA + "$FC; ycoord", 2, false );
       addAsm( str_AND + "#$07", 2, false );
       addAsm( str_ADC + "$02" + commentmarker + "loc", 2, false );
       addAsm( str_ADC + "$FE" + commentmarker + "store ", 2, false );
@@ -16700,14 +16697,14 @@ int main(int argc, char *argv[])
 
 
       addAsm( str_SEI );
-      addAsm( str_LDA + string("$FA"), 2, false ); 
+      addAsm( str_LDA + "$FA", 2, false ); 
 
       //addAsm( str_LDA + "$FA", 2, false );
       addAsm( str_AND + "#$03", 2, false );
       addAsm( str_STA + "$5C", 2, false );
 
       
-      addAsm( str_LDA + string(" #$00"), 2, false ); 
+      addAsm( str_LDA + "#$00", 2, false ); 
       //addAsm( str_LDA + "#$00", 2, false );
       addAsm( str_STA + "$02", 2, false );
       addAsm( str_STA + "$5D", 2, false );
@@ -16877,7 +16874,11 @@ int main(int argc, char *argv[])
   if( bmpmem_is_needed )
     {
       addAsm( "BMPMEM:\t\t" + commentmarker + "Get the bitmap mem location from the vic II", 0, true );
-      saveReturnAddress();
+      //  saveReturnAddress();
+      addAsm( str_PLA );
+      addAsm( str_TAX );
+      addAsm( str_PLA );
+      addAsm( str_TAY );
       // =================================================================================
       addAsm( str_LDA + "$D018", 3, false );
       addAsm( str_AND + "#$08", 2, false );
@@ -16886,14 +16887,23 @@ int main(int argc, char *argv[])
       addAsm( str_ASL );
       addAsm( str_PHA );
       // =================================================================================
-      restoreReturnAddress();
+      //restoreReturnAddress();
+      addAsm( str_TYA );
+      addAsm( str_PHA );
+      addAsm( str_TXA );
+      addAsm( str_PHA );
       addAsm( str_RTS );
     }
 
   if( chrmem_is_needed )
     {
       addAsm( "CHRMEM:\t\t" + commentmarker + "Get the character mem location from the vic II", 0, true );
-      saveReturnAddress();
+      //saveReturnAddress();
+            addAsm( str_PLA );
+      addAsm( str_TAX );
+      addAsm( str_PLA );
+      addAsm( str_TAY );
+
       // =================================================================================
       addAsm( str_LDA + "$D018", 3, false );
       addAsm( str_AND + "#$0E", 2, false );
@@ -16902,7 +16912,12 @@ int main(int argc, char *argv[])
       addAsm( str_ASL );
       addAsm( str_PHA );
       // =================================================================================
-      restoreReturnAddress();
+      //restoreReturnAddress();
+      addAsm( str_TYA );
+      addAsm( str_PHA );
+      addAsm( str_TXA );
+      addAsm( str_PHA );
+
       addAsm( str_RTS );
     }
 
@@ -16911,7 +16926,12 @@ int main(int argc, char *argv[])
       stack_is_needed = true;
       addAsm( string("SCRMEM:\t\t") + commentmarker + "Get the screen mem location from the vic II", 0, true );
 
-      saveReturnAddress();
+      //saveReturnAddress();
+                 addAsm( str_PLA );
+      addAsm( str_TAX );
+      addAsm( str_PLA );
+      addAsm( str_TAY );
+
       // =================================================================================
       addAsm( str_LDA + "$D018", 3, false );
       addAsm( str_AND + "#$F0", 2, false );
@@ -16920,13 +16940,23 @@ int main(int argc, char *argv[])
       addAsm( str_LSR );
       addAsm( str_PHA );
       // =================================================================================
-      restoreReturnAddress();
+      //      restoreReturnAddress();
+            addAsm( str_TYA );
+      addAsm( str_PHA );
+      addAsm( str_TXA );
+      addAsm( str_PHA );
+
       addAsm( str_RTS );
     }
   if( bnkmem_is_needed )
     {
       addAsm( string("BNKMEM:\t\t") + commentmarker + "Get the bank memory from the vic II", 0, true );
-      saveReturnAddress();
+      //saveReturnAddress();
+                 addAsm( str_PLA );
+      addAsm( str_TAX );
+      addAsm( str_PLA );
+      addAsm( str_TAY );
+
       // =================================================================================
       addAsm( str_LDA + "$DD00", 3, false );
       addAsm( str_EOR + "#$FF", 2, false );
@@ -16940,7 +16970,14 @@ int main(int argc, char *argv[])
       addAsm( str_ASL );
       addAsm( str_PHA );
       // =================================================================================
-      restoreReturnAddress();
+      //      restoreReturnAddress();
+            addAsm( str_TYA );
+      addAsm( str_PHA );
+      addAsm( str_TXA );
+      addAsm( str_PHA );
+
+
+
       addAsm( str_RTS );
 
 
