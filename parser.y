@@ -2493,7 +2493,7 @@
 %token VOID 
 %token <nd_obj> CHAR tFCLOSE tFOPEN tFCLRCHN tFCHROUT tFCHRIN tFREADST tFCHKOUT tFCHKIN tSETLFS tSETNAM tSAVE tLOAD tIMPORT tSPRPTR tPUSH tPOP tCOMMENT tDATA tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tSIDIRQ tSIDOFF tSTRTOFLOAT tSTRTOWORD tTOFLOAT tTOUINT tTOWORD tTOBIT tDEC tINC tROL tROR tLSR tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJUMP tSETSCR tJSR tIRQ tROMOUT tROMIN tLDA tASL tSPRITESET  tSPRITEOFF tSPRITETOGGLE tRND tXXX tINLINE tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tRTS tPEEK tPOKE NEWLINE CHARACTER tPRINTS PRINTFF SCANFF   INT FLOAT   WHILE FOR IF ELSE   TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE tSQRT UNARY INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL tSCREEN tNULL tMEMCPY tSEED tNEEDS
 %type <nd_obj> headers main body return function datatype statement arithmetic relop program else 
-   %type <nd_obj2> init value expression charlist numberlist parameterlist argumentlist
+   %type <nd_obj2> init value expression /*charlist*/ numberlist parameterlist argumentlist
       %type <nd_obj3> condition
 
       %%
@@ -16011,7 +16011,7 @@ int main(int argc, char *argv[])
   yyparse(); 
   
   int i=0;
-  for(i=0;i<count;i++){free(symbol_table[i].id_name);free(symbol_table[i].type);}
+  //for(i=0;i<count;i++){free(symbol_table[i].id_name);free(symbol_table[i].type);}
   
   if(sem_errors>0)
     {
@@ -17035,8 +17035,8 @@ int main(int argc, char *argv[])
       saveReturnAddress();
       //==================================================================================
       addAsm( str_PLA ); // the value to be put into the string
-
       addAsm( str_LDX + "#$00", 2, false );
+      
       addAsm( "!:", 0, true );
       
       addAsm( str_SEC );
@@ -17052,10 +17052,9 @@ int main(int argc, char *argv[])
       addAsm( str_CLC );
       addAsm( str_ADC + "#$30", 2, false );
       addAsm( str_PHA );
+      
       addAsm( str_TYA );
       addAsm( str_LDX + "#$00", 2, false );
-
-
       addAsm( "!:", 0, true );
       addAsm( str_SEC );
       addAsm( str_SBC + "#$0A", 2, false );
@@ -17070,10 +17069,13 @@ int main(int argc, char *argv[])
       addAsm( str_CLC );
       addAsm( str_ADC + "#$30", 2, false );
       addAsm( str_PHA );
-      addAsm( str_TYA );
-      addAsm( str_LDX + "#$00", 2, false );
 
+
+      addAsm( str_CLC, 1, false );
       addAsm( str_TYA );
+      //addAsm( str_LDX + "#$00", 2, false );
+
+      //addAsm( str_TYA );
       addAsm( str_ADC + "#$30", 2, false );
       addAsm( str_PHA );
       
@@ -17465,29 +17467,32 @@ int main(int argc, char *argv[])
   if( stack_is_needed )
     {
       addComment( "software stack" );
+      //addCompilerMessage( "DO NOT FORGET TO INIALIZE SOFTWARE STACK!!!! POKE(0xCF00,0x00);", 0 );
       addDebugComment( "my rendition of a software stack at $CF00" );
       addDebugComment( "Y is not destroyed" );
       //addAsm( "STACKTMP:", 0, true );
+      addAsm( "!:", 0, true );
+      addAsm( str_BYTE + "$00", 1, false);
       addDebugComment( "one byte of temp storage for stack" );
       addAsm( "!:", 0, true );
-      addAsm( str_BYTE + string("$00"), 1, false );
+      addAsm( str_BYTE + "$00", 1, false );
       addAsm( "PUSH:", 0, true );
       //addAsm( str_STX + "STACKTMP", 3, false );
       addAsm( str_STX + "!-", 3, false );
-      addAsm( str_LDX + "$CF00", 3, false );
+      addAsm( str_LDX + "!--", 3, false );
       addAsm( str_INX );
       addAsm( str_STA + "$CF00,X", 3, false );
-      addAsm( str_STX + "$CF00", 3, false );
+      addAsm( str_STX + "!--", 3, false );
       //addAsm( str_LDX + "STACKTMP", 3, false );
       addAsm( str_LDX + "!-", 3, false );
       addAsm( str_RTS );
       addAsm( "POP:", 0, true );
       //addAsm( str_STX + "STACKTMP", 3, false );
       addAsm( str_STX + "!-", 3, false );
-      addAsm( str_LDX + "$CF00", 3, false );
+      addAsm( str_LDX + "!--", 3, false );
       addAsm( str_LDA + string("$CF00,X"), 3, false );
       addAsm( str_DEX );
-      addAsm( str_STX + "$CF00", 3, false );
+      addAsm( str_STX + "!--", 3, false );
       //addAsm( str_LDX + "STACKTMP", 3, false );
       addAsm( str_LDX + "!-", 3, false );
       addAsm( str_RTS );
@@ -17546,12 +17551,12 @@ int main(int argc, char *argv[])
 
 int search(char *type) {
   int i;
-  for(i=count-1; i>=0; i--) {
-    if(strcmp(symbol_table[i].id_name, type)==0) {
-      return -1;
-      break;
-    }
-  }
+  //  for(i=count-1; i>=0; i--) {
+  //  if(strcmp(symbol_table[i].id_name, type)==0) {
+  //   return -1;
+  //   break;
+  // }
+  //}
   return 0;
 }
 
@@ -17584,12 +17589,12 @@ int check_types(char *type1, char *type2){
 }
 
 char *get_type(char *var){
-  for(int i=0; i<count; i++) {
+  //for(int i=0; i<count; i++) {
     // Handle case of use before declaration
-    if(!strcmp(symbol_table[i].id_name, var)) {
-      return symbol_table[i].data_type;
-    }
-  }
+  //  if(!strcmp(symbol_table[i].id_name, var)) {
+  //    return symbol_table[i].data_type;
+  // }
+  // }
 }
 
 void add(char c) {
@@ -17604,47 +17609,7 @@ void add(char c) {
     }
   }
   q=search(yytext);
-  if(!q) {
-    if(c == 'H') {
-      symbol_table[count].id_name=strdup(yytext);
-      symbol_table[count].data_type=strdup(type);
-      symbol_table[count].line_no=countn;
-      symbol_table[count].type=strdup("Header");
-      count++;
-    }
-    else if(c == 'K') {
-      symbol_table[count].id_name=strdup(yytext);
-      symbol_table[count].data_type=strdup("N/A");
-      symbol_table[count].line_no=countn;
-      symbol_table[count].type=strdup("Keyword\t");
-      count++;
-    }
-    else if(c == 'V') {
-      symbol_table[count].id_name=strdup(yytext);
-      symbol_table[count].data_type=strdup(type);
-      symbol_table[count].line_no=countn;
-      symbol_table[count].type=strdup("Variable");
-      count++;
-    }
-    else if(c == 'C') {
-      symbol_table[count].id_name=strdup(yytext);
-      symbol_table[count].data_type=strdup("CONST");
-      symbol_table[count].line_no=countn;
-      symbol_table[count].type=strdup("Constant");
-      count++;
-    }
-    else if(c == 'F') {
-      symbol_table[count].id_name=strdup(yytext);
-      symbol_table[count].data_type=strdup(type);
-      symbol_table[count].line_no=countn;
-      symbol_table[count].type=strdup("Function");
-      count++;
-    }
-  }
-  else if(c == 'V' && q) {
-    sprintf(errors[sem_errors], "Line %d: Multiple declarations of \"%s\" not allowed!\n", countn+1, yytext);
-    sem_errors++;
-  }
+
 }
 
 struct node* mknode(struct node *left, struct node *right, char *token) {	
