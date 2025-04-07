@@ -87,18 +87,16 @@ myRand:
 	ldy #$00
 	stx $03
 	lda ($02),Y
-	tax
 
+	sta !mem5- // the return value
 	
 	pla 
 	sta $03
 	pla 
 	sta $02
 
-	txa 
-	sta !mem5- // the return value
 	inc !mem3- // bump the index up by 1
-	php 
+
 // top of if
 	lda !mem3-  // rvindex
 	cmp #$40
@@ -107,7 +105,6 @@ myRand:
 	sta !mem3-
 !:
 
-	plp 
 	pla 
 	tax 
 	pla 
