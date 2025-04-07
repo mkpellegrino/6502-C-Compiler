@@ -8,6 +8,7 @@ INCLUDE=-I/usr/local/include/c++/10.1.0/
 #YACC=/usr/bin/yacc
 #YACC=/usr/local/bin/bison
 LIBRARIES=-ll -ly
+X64=/Applications/Vice64/x64.app/Contents/MacOS/x64
 
 all:	clean lexer parser compiler
 
@@ -20,733 +21,379 @@ lexer:	lexer.l
 compiler: y.tab.c
 	$(CC) $(LIBRARIES) -w  y.tab.c -o compiler
 
-nocomment: nocomment.cpp
-	$(CC) -O3  nocomment.cpp -I/usr/local/include/c++/10.1.0/ -o nocomment
+pause:	pause.c
+	./compiler --kick --basic --code-segment 2100 --data-segment 24000 --no-asm-comments < pause.c > pause.asm
+	java -jar KickAss.jar pause.asm
 
-disk:	deltesting dummy motion memcpy raster3 raster2 charset pokes banks gravity keys city hires quad mul16 datatest roll joystick vscroll hscroll math input screen conway vartests
+sidirq:
+	cat sidirq.c > sidirq.tmp
+	./compiler --kick --basic --code-segment 2100 --data-segment 24000 --asm-comments < sidirq.tmp > sidirq.asm
+	java -jar KickAss.jar sidirq.asm
+	rm -f sidirq.sym
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -delete sidirq -write sidirq.prg sidirq
 
-args:
-	cat ./args.c common.c > args.tmp
-	./compiler --basic --code-segment 2100 --data-segment 820 --kick --no-asm-comments --unsafe-ifs < ./args.tmp > args.asm
-	java -jar KickAss.jar args.asm
-	rm -f args.tmp
-	/Applications/Vice64/tools/c1541 -attach GENERAL.d64 -delete args -write args.prg args
+floattest:
+	cat float-test.c > float-test.tmp
+	./compiler --kick --basic --code-segment 2100 --data-segment 7000 --asm-comments < float-test.tmp > float-test.asm
+	java -jar KickAss.jar float-test.asm
+	rm -f float-test.sym
 
-deltesting:
-	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -dele dummy motion memcpy raster3 raster2 charset pokes banks gravity keys city hires digits quad mul16 datatest roll joystick vscroll vscroll2 hscroll math input fortest screen conway snake2100 vartests
+cosine:
+	cat cosine.c > cosine.tmp
+	./compiler --kick --basic --code-segment 2100 --data-segment 7000 --asm-comments < cosine.tmp > cosine.asm
+	java -jar KickAss.jar cosine.asm
+	rm -f cosine.sym
 
-dummy:
-	cat dummy.c common.c > dummy.tmp
-	./compiler --basic --code-segment 2100 --data-segment 820 --kick --no-asm-comments < ./dummy.tmp > dummy.asm
-	java -jar KickAss.jar dummy.asm
-	rm -f dummy.tmp
-	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -delete dummy -write dummy.prg dummy
+graph:
+	cat graph.c common.c > graph.tmp
+	./compiler --kick --basic --code-segment 2100 --data-segment 8192 < graph.tmp > graph.asm
+	java -jar KickAss.jar graph.asm
+	rm -f graph.sym
 
-demux:
-	java -jar KickAss.jar demux.asm
-
-spritexytest:
-	cat ./spritexytest.c common.c > spritexytest.tmp
-	./compiler --basic --code-segment 2100 --data-segment 820 --kick --no-asm-comments --unsafe-ifs < ./spritexytest.tmp > spritexytest.asm
-	java -jar KickAss.jar spritexytest.asm
-
-spritextest:
-	./compiler --basic --code-segment 2100 --data-segment 820 --kick --no-asm-comments --unsafe-ifs < ./spritextest.c > spritextest.asm
-	java -jar KickAss.jar spritextest.asm
-
-walker8:
-	cat ./walker8.c common.c > walker8.tmp
-	./compiler --basic --unsafe-ifs --code-segment 2100 --data-segment 820 --kick --no-asm-comments < ./walker8.tmp > walker8.asm
-	java -jar KickAss.jar walker8.asm
-	rm -f walker8.tmp
-	/Applications/Vice64/tools/c1541 -attach SPRITES.d64 -delete walker8 -write walker8.prg walker8
-
-pointers:
-	cat ./pointers.c > pointers.tmp
-	./compiler --code-segment 2100 --data-segment 820 --kick --no-asm-comments < ./pointers.tmp > pointers.asm
-	java -jar KickAss.jar pointers.asm
-	rm -f pointers.tmp
-
-helloworld:
-	./compiler --kick --code-segment 2054 --datasegment 2106 --no-asm-comments < ./helloworld.c > helloworld.asm
-	java -jar KickAss.jar helloworld.asm
-	java -jar KickAss.jar hw2.asm
-	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -delete hw2 -delete helloworld -write helloworld.prg helloworld -write hw2.prg hw2
-
-writeprog:
-	./compiler --kick --code-segment 2100 --datasegment 820 --no-asm-comments < ./writeprog.c > writeprog.asm
-	java -jar KickAss.jar writeprog.asm
-	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -delete writeprog -delete prog -write writeprog.prg writeprog
-
-sidint:
-	cat ./sidint.c common.c > sidint.tmp
-	./compiler --kick --code-segment 2100 --data-segment 820 --memory-locations  --no-asm-comments < ./sidint.tmp > sidint.asm
-	java -jar KickAss.jar sidint.asm
-	rm -f sidint.tmp
-
-motion:
-	cat ./motion.c common.c > motion.tmp
-	./compiler --basic --code-segment 2100 --data-segment 820 --no-asm-comments --kick < ./motion.tmp > motion.asm
-	rm -f motion.tmp
-	java -jar KickAss.jar motion.asm
-	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -delete motion -write motion.prg motion
-
-memcpy:
-	cat ./memcpy.c common.c > memcpy.tmp
-	./compiler --basic --kick --code-segment 2100 --data-segment 820 --no-asm-comments < ./memcpy.tmp > memcpy.asm
-	java -jar KickAss.jar memcpy.asm
-	rm -f memcpy.tmp
-	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -delete memcpy -write memcpy.prg memcpy
-
-raster3:
-	cat ./raster3.c common.c > raster3.tmp
-	./compiler --basic --kick --code-segment 2100 --data-segment 820 --no-asm-comments < ./raster3.tmp > raster3.asm
-	rm -f raster3.tmp
-	java -jar KickAss.jar raster3.asm
-	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -delete raster3 -write raster3.prg raster3
-
-irqs:
-	cat ./irqs.c common.c > irqs.tmp
-	./compiler --basic --code-segment 2100 --data-segment 820 --no-asm-comments --kick --unsafe-ifs < ./irqs.tmp > irqs.asm
-	rm -f irqs.tmp
-	java -jar KickAss.jar irqs.asm
-	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -dele irqs -write irqs.prg irqs
-
-irqs2:
-	./compiler --basic --code-segment 2100 --data-segment 820 --kick < ./irqs2.c > irqs2.asm
-	java -jar KickAss.jar irqs2.asm
-	/Applications/Vice64/tools/c1541 -attach SPRITES.d64 -delete irqs2 -write irqs2.prg irqs2
-
-raster2:
-	cat ./raster2.c common.c > raster2.tmp
-	./compiler --kick --basic --code-segment 2100 --data-segment 820 --no-asm-comments  < ./raster2.tmp > raster2.asm
-	rm -f raster2.tmp
-	java -jar KickAss.jar raster2.asm
-	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -dele raster2 -write raster2.prg raster2
-
-raster:
-	./compiler --kick --code-segment 2100 --data-segment 820 --no-asm-comments --unsafe-ifs < ./raster.c > raster.asm
-	java -jar KickAss.jar raster.asm
-	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -dele raster -write raster.prg raster
+spriteanim:
+	cat spriteanim.c common.c > spriteanim.tmp
+	./compiler --kick --basic --code-segment 2100 --data-segment 8192 < spriteanim.tmp > spriteanim.asm
+	java -jar KickAss.jar spriteanim.asm
+	rm -f spriteanim.sym
 
 charset:
-	cat ./charset.c common.c > charset.tmp
-	./compiler --kick --basic --code-segment 2100 --data-segment 820 --no-asm-comments < ./charset.tmp > charset.asm
+	cat charset.c > charset.tmp
+	./compiler --kick --basic --code-segment 2100 --data-segment 7000 < charset.tmp > charset.asm
 	java -jar KickAss.jar charset.asm
-	rm -f charset.tmp
-	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -delete charset -write charset.prg charset
+	rm -f charset.sym
+
+mccharset:
+	cat mccharset.c common.c > mccharset.tmp
+	./compiler --kick --basic --code-segment 2100 --data-segment 7000 < mccharset.tmp > mccharset.asm
+	java -jar KickAss.jar mccharset.asm
+	rm -f mccharset.sym
+
+mcbitmap:
+	cat mcbitmap.c common.c > mcbitmap.tmp
+	./compiler --kick --basic --code-segment 2100 --data-segment 7000 < mcbitmap.tmp > mcbitmap.asm
+	java -jar KickAss.jar mcbitmap.asm
+	rm -f mcbitmap.sym
+
+writesynopsis: sya syb syc syd sye syf syg syh syi syj
+
+# Synopses
+sya:
+	rm -f writesynopsisa.prg writesynopsisa.asm
+	cat writesynopsisa.c common.c > writesynopsisa.tmp
+	./compiler --kick --basic --code-segment 2100 --data-segment 7000 < ./writesynopsisa.tmp > writesynopsisa.asm
+	java -jar KickAss.jar writesynopsisa.asm
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -delete synopsisa -delete writesynopsisa -write writesynopsisa.prg writesynopsisa
+	rm -f writesynopsisa.tmp writesynopsisa.sym
+
+syb:
+	rm -f writesynopsisb.prg writesynopsisb.asm
+	cat writesynopsisb.c common.c > writesynopsisb.tmp
+	./compiler --kick --basic --code-segment 2100 --data-segment 7000 < ./writesynopsisb.tmp > writesynopsisb.asm
+	java -jar KickAss.jar writesynopsisb.asm
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -delete synopsisb -delete writesynopsisb -write writesynopsisb.prg writesynopsisb
+	rm -f writesynopsisb.tmp writesynopsisb.sym
+
+syc:
+	rm -f writesynopsisc.prg writesynopsisc.asm
+	cat writesynopsisc.c common.c > writesynopsisc.tmp
+	./compiler --kick --basic --code-segment 2100 --data-segment 7000 < ./writesynopsisc.tmp > writesynopsisc.asm
+	java -jar KickAss.jar writesynopsisc.asm
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -delete synopsisc -delete writesynopsisc -write writesynopsisc.prg writesynopsisc
+	rm -f writesynopsisc.tmp writesynopsisc.sym
+
+syd:
+	rm -f writesynopsisd.prg writesynopsisd.asm
+	cat writesynopsisd.c common.c > writesynopsisd.tmp
+	./compiler --kick --basic --code-segment 2100 --data-segment 7000 < ./writesynopsisd.tmp > writesynopsisd.asm
+	java -jar KickAss.jar writesynopsisd.asm
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -delete synopsisd -delete writesynopsisd -write writesynopsisd.prg writesynopsisd
+	rm -f writesynopsisd.tmp writesynopsisd.sym
+
+sye:
+	rm -f writesynopsise.prg writesynopsise.asm
+	cat writesynopsise.c common.c > writesynopsise.tmp
+	./compiler --kick --basic --code-segment 2100 --data-segment 7000 < ./writesynopsise.tmp > writesynopsise.asm
+	java -jar KickAss.jar writesynopsise.asm
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -delete synopsise -delete writesynopsise -write writesynopsise.prg writesynopsise
+	rm -f writesynopsise.tmp writesynopsise.sym
+
+syf:
+	rm -f writesynopsisf.prg writesynopsisf.asm
+	cat writesynopsisf.c common.c > writesynopsisf.tmp
+	./compiler --kick --basic --code-segment 2100 --data-segment 7000 < ./writesynopsisf.tmp > writesynopsisf.asm
+	java -jar KickAss.jar writesynopsisf.asm
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -delete synopsisf -delete writesynopsisf -write writesynopsisf.prg writesynopsisf
+	rm -f writesynopsisf.tmp writesynopsisf.sym
+
+syg:
+	rm -f writesynopsisg.prg writesynopsisg.asm
+	cat writesynopsisg.c common.c > writesynopsisg.tmp
+	./compiler --kick --basic --code-segment 2100 --data-segment 7000 < ./writesynopsisg.tmp > writesynopsisg.asm
+	java -jar KickAss.jar writesynopsisg.asm
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -delete synopsisg -delete writesynopsisg -write writesynopsisg.prg writesynopsisg
+	rm -f writesynopsisg.tmp writesynopsisg.sym
+
+syh:
+	rm -f writesynopsish.prg writesynopsish.asm
+	cat writesynopsish.c common.c > writesynopsish.tmp
+	./compiler --kick --basic --code-segment 2100 --data-segment 7000 < ./writesynopsish.tmp > writesynopsish.asm
+	java -jar KickAss.jar writesynopsish.asm
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -delete synopsish -delete writesynopsish -write writesynopsish.prg writesynopsish
+	rm -f writesynopsish.tmp writesynopsish.sym
+
+syi:
+	rm -f writesynopsisi.prg writesynopsisi.asm
+	cat writesynopsisi.c common.c > writesynopsisi.tmp
+	./compiler --kick --basic --code-segment 2100 --data-segment 7000 < ./writesynopsisi.tmp > writesynopsisi.asm
+	java -jar KickAss.jar writesynopsisi.asm
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -delete synopsisi -delete writesynopsisi -write writesynopsisi.prg writesynopsisi
+	rm -f writesynopsisi.tmp writesynopsisi.sym
+
+syj:
+	rm -f writesynopsisj.prg writesynopsisj.asm
+	cat writesynopsisj.c common.c > writesynopsisj.tmp
+	./compiler --kick --basic --code-segment 2100 --data-segment 7000 < ./writesynopsisj.tmp > writesynopsisj.asm
+	java -jar KickAss.jar writesynopsisj.asm
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -delete synopsisj -delete writesynopsisj -write writesynopsisj.prg writesynopsisj
+	rm -f writesynopsisj.tmp writesynopsisj.sym
 
 
-testdrive:
-	cat ./testdrive.c common.c > testdrive.tmp
-	./compiler --kick --code-segment 2100 --data-segment 820 --no-asm-comments < ./testdrive.tmp > testdrive.asm
-	java -jar KickAss.jar testdrive.asm
+savelevela:
+	./compiler --kick --basic --no-optimize --code-segment 2100 --data-segment 21000 < ./savedata-levela.c > savedata-levela.asm
+	java -jar KickAss.jar savedata-levela.asm
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele worlda -dele spritesa -dele savedata-levela -write savedata-levela.prg savedata-levela
+	rm -f savedata-levela.tmp savedata-levela.sym
 
-pokes:
-	cat ./pokes.c common.c > pokes.tmp
-	./compiler --kick --code-segment 2100 --data-segment 820 --no-asm-comments < ./pokes.tmp > pokes.asm
-	java -jar KickAss.jar pokes.asm
-	rm -fR pokes.tmp
-	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -delete pokes -write pokes.prg pokes
+savelevelb:
+	./compiler --kick --basic --no-optimize --code-segment 2100 --data-segment 21000 < ./savedata-levelb.c > savedata-levelb.asm
+	java -jar KickAss.jar savedata-levelb.asm
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele worldb -dele spritesb -dele savedata-levelb -write savedata-levelb.prg savedata-levelb
+	rm -f savedata-levelb.tmp savedata-levelb.sym
 
-show:
-	cat ./showspr.c common.c > showspr.tmp
-	./compiler --basic --kick --code-segment 2100 --data-segment 820 --no-asm-comments < ./showspr.tmp > showspr.asm
-	java -jar KickAss.jar showspr.asm
+savelevelc:
+	./compiler --kick --basic --no-optimize --code-segment 2100 --data-segment 21000 < ./savedata-levelc.c > savedata-levelc.asm
+	java -jar KickAss.jar savedata-levelc.asm
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele worldc -dele spritesc -dele savedata-levelc -write savedata-levelc.prg savedata-levelc
+	rm -f savedata-levelc.tmp savedata-levelc.sym
 
-testprg:
-	cat ./testprg.c common.c > testprg.tmp
-	./compiler --basic --kick --code-segment 2100 --data-segment 820 --no-asm-comments --unsafe-ifs < ./testprg.tmp > testprg.asm
-	java -jar KickAss.jar testprg.asm
+saveleveld:
+	./compiler --kick --basic --no-optimize --code-segment 2100 --data-segment 21000 < ./savedata-leveld.c > savedata-leveld.asm
+	java -jar KickAss.jar savedata-leveld.asm
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele worldd -dele spritesd -dele savedata-leveld -write savedata-leveld.prg savedata-leveld
+	rm -f savedata-leveld.tmp savedata-leveld.sym
 
-fighter:
-	cat ./fighter.c common.c > fighter.tmp
-	./compiler --unsafe-ifs --basic --kick --debug --code-segment 2100 --data-segment 820  < ./fighter.tmp > fighter.asm
-	java -jar KickAss.jar fighter.asm
-	/Applications/Vice64/tools/c1541 -attach SPRITES.d64 -delete fighter -write fighter.prg fighter
+savelevele:
+	./compiler --kick --basic --no-optimize --code-segment 2100 --data-segment 21000 --memory-locations < ./savedata-levele.c > savedata-levele.asm
+	java -jar KickAss.jar savedata-levele.asm
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele worlde -dele spritese -dele savedata-levele -write savedata-levele.prg savedata-levele
+	rm -f savedata-levele.tmp savedata-levele.sym
 
+savelevelf:
+	./compiler --kick --basic --no-optimize --code-segment 2100 --data-segment 21000 < ./savedata-levelf.c > savedata-levelf.asm
+	java -jar KickAss.jar savedata-levelf.asm
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele worldf -dele spritesf -dele savedata-levelf -write savedata-levelf.prg savedata-levelf
+	rm -f savedata-levelf.tmp savedata-levelf.sym
 
-spritecol:
-	cat ./spritecol.c common.c > spritecol.tmp
-	./compiler --basic --kick --code-segment 2100 --data-segment 820 --no-asm-comments < ./spritecol.tmp > spritecol.asm
-	java -jar KickAss.jar spritecol.asm
-	/Applications/Vice64/tools/c1541 -attach SPRITES.d64 -delete spritecol -write spritecol.prg spritecol
+savelevelg:
+	./compiler --kick --basic --no-optimize --code-segment 2100 --data-segment 21000 < ./savedata-levelg.c > savedata-levelg.asm
+	java -jar KickAss.jar savedata-levelg.asm
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele worldg -dele spritesg -dele savedata-levelg -write savedata-levelg.prg savedata-levelg
+	rm -f savedata-levelg.tmp savedata-levelg.sym
 
-spritecol2:
-	cat ./spritecol2.c common.c > spritecol2.tmp
-	./compiler --basic --kick --code-segment 2100 --data-segment 49152 --no-asm-comments < ./spritecol2.tmp > spritecol2.asm
-	java -jar KickAss.jar spritecol2.asm
-	/Applications/Vice64/tools/c1541 -attach SPRITES.d64 -delete spritecol2 -write spritecol2.prg spritecol2
+savelevelh:
+	./compiler --kick --basic --no-optimize --code-segment 2100 --data-segment 21000 < ./savedata-levelh.c > savedata-levelh.asm
+	java -jar KickAss.jar savedata-levelh.asm
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele worldh -dele spritesh -dele savedata-levelh -write savedata-levelh.prg savedata-levelh
+	rm -f savedata-levelh.tmp savedata-levelh.sym  savedata-;eve;ih.asm savedata-levelh.vs
 
-textmode:
-	cat ./textmode.c common.c > textmode.tmp
-	./compiler --basic --kick --code-segment 2100 --data-segment 820 --memory-locations --no-asm-comments < ./textmode.tmp > textmode.asm
-	java -jar KickAss.jar textmode.asm
+saveleveli:
+	./compiler --kick --basic --no-optimize --code-segment 2100 --data-segment 21000 < ./savedata-leveli.c > savedata-leveli.asm
+	java -jar KickAss.jar savedata-leveli.asm
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele worldi -dele spritesi -dele savedata-leveli -write savedata-leveli.prg savedata-leveli
+	rm -f savedata-leveli.tmp savedata-leveli.sym savedata-leveli.asm savedata-leveli.vs
 
+savelevelj:
+	./compiler --kick --basic --no-optimize --code-segment 2100 --data-segment 21000 < ./savedata-levelj.c > savedata-levelj.asm
+	java -jar KickAss.jar savedata-levelj.asm
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele worldj -dele spritesj -dele savedata-levelj -write savedata-levelj.prg savedata-levelj
+	rm -f savedata-levelj.tmp savedata-levelj.sym
 
-poke2:
-	cat ./poke2.c common.c > poke2.tmp
-	./compiler --basic --kick --code-segment 2100 --data-segment 820 --no-asm-comments < ./poke2.tmp > poke2.asm
-	java -jar KickAss.jar poke2.asm
+mandelbrot:
+	cat ./mandelbrot.c common.c > mandelbrot.tmp
+	./compiler --unsafe-ifs --kick --basic --code-segment 2061 --data-segment 8192 < ./mandelbrot.tmp > mandelbrot.asm
+	java -jar KickAss.jar mandelbrot.asm
+	rm -f mandelbrot.tmp
 
-pong:
-	@echo "sys 8448 to execute"
-	java -jar KickAss.jar pong.asm
-#	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -dele pong -write pong.prg pong
+logicalOR:
+	./compiler --unsafe-ifs --kick --basic --code-segment 2061 --data-segment 8192 < ./logicalOR.c > logicalor.asm
+	java -jar KickAss.jar logicalor.asm
 
-banks:
-	cat ./banks.c common.c > banks.tmp
-	./compiler --basic --kick --code-segment 2100 --data-segment 820 --no-asm-comments < ./banks.tmp > banks.asm
-	java -jar KickAss.jar banks.asm
-	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -delete banks -write banks.prg banks
-
-
-#	THIS IS THE EXAMPLE OF A SINGLE COLOUR MOB FIGURE MOBVING AROUND A WORLD
-example:
-	cat ./example.c common.c > example.tmp
-	./compiler --kick --code-segment 2100 --data-segment 820 --no-asm-comments < ./example.tmp > example.asm
-	java -jar KickAss.jar example.asm
-
-terra:
-	cat ./terraform.c common.c > terra.tmp
-	./compiler --basic --code-segment 17626 --data-segment 2062 --kick --no-asm-comments --unsafe-ifs < ./terra.tmp > terra7624.asm
-	java -jar KickAss.jar -asminfo all -asminfofile terra-asminfo.txt -showmem -vicesymbols terra7624.asm
-	rm -f ./terra.tmp
-	rm -f ./terra.tmp.asm
-#	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -dele terra -write terra.prg terra
-
-terraland:
-	cat ./terraland.c common.c > terraland.tmp
-	./compiler --basic --kick --code-segment 7624 --data-segment 49152 --no-asm-comments < ./terraland.tmp > terraland.tmp.asm
-	cat ./terra3.hex cj-sid.asm terraland.tmp.asm > terraland7624.asm
-	java -jar KickAss.jar terraland7624.asm
-	rm -f ./terraland.tmp
-	rm -f ./terraland.tmp.asm
-#	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -dele terraland7624 -write terraland7624.prg terraland7624
-
-dice:
-	cat ./dice.c common.c > dice.tmp
-	./compiler --basic --kick --code-segment 2100 --data-segment 820 --no-asm-comments < ./dice.tmp > dice2100.asm
-	java -jar KickAss.jar dice2100.asm
-	rm -f dice.tmp
-
-gravity:
-	cat ./gravity.c common.c > gravity.tmp
-	./compiler --basic --kick --code-segment 4096 --data-segment 820 --no-asm-comments < ./gravity.tmp > gravity4096.asm
-	java -jar KickAss.jar gravity4096.asm
-	rm -f gravity.tmp
-	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -delete gravity -write gravity4096.prg gravity
-
-keys:
-	./compiler --basic --kick --code-segment 2100 --data-segment 820 --no-asm-comments < ./keys.c > keys.asm
-	java -jar KickAss.jar keys.asm
-	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -dele keys -write keys.prg keys
-
-city:
-	./compiler --unsafe-ifs --basic --kick --code-segment 2100 --data-segment 820 --no-asm-comments < ./city.c > city.asm
-	java -jar KickAss.jar city.asm
-	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -delete city -write city.prg city
-
-hires:
-	cat ./hires.c common.c > hires.tmp
-	./compiler --basic --kick --code-segment 2100 --data-segment 820 --no-asm-comments --unsafe-infs  < ./hires.tmp > hires.asm
-	java -jar KickAss.jar hires.asm
-	rm -f hires.tmp
-	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -dele hires -write hires.prg hires
-
-digits:
-	cat ./digits.c common.c > digits.tmp
-	./compiler --kick --code-segment 2100 --data-segment 820 --no-asm-comments --unsafe-ifs < ./digits.tmp > digits.asm
-	java -jar KickAss.jar digits.asm
-	rm -f digits.tmp
-	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -dele digits -write digits.prg digits
-
-quad:
-	cat ./quadratic.c > quad.tmp
-	./compiler --unsafe-ifs --basic --kick --code-segment 2100 --data-segment 820 --no-asm-comments < ./quad.tmp > quadratic.asm
-	java -jar KickAss.jar quadratic.asm
-	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -dele quadratic -write quadratic.prg quadratic
+infinite:
+	cat ./infinitescroll.c common.c > infinitescroll.tmp
+	./compiler --basic --code-segment 2062 --data-segment 8192 --kick --no-asm-comments < ./infinitescroll.tmp > infinitescroll.asm
+	java -jar KickAss.jar infinitescroll.asm
 
 
-knight:
-	cat ./knight.c common.c > knight.tmp
-	./compiler --kick --basic --code-segment 2100 --data-segment 820 --no-asm-comments < ./knight.tmp > knight.asm
-	java -jar KickAss.jar knight.asm
-	rm -f knight.tmp
+scroller2:
+	cat ./scroller2.c common.c > scroller2.tmp
+	./compiler --basic --code-segment 2062 --data-segment 8192 --kick --no-asm-comments < ./scroller2.tmp > scroller2.asm
+	java -jar KickAss.jar scroller2.asm
 
-loaddata:
-	./compiler --kick --code-segment 2100 --data-segment 3500 --no-asm-comments  < ./loaddata.c > loaddata.asm
-	java -jar KickAss.jar loaddata.asm
-	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -delete loaddata -write loaddata.prg loaddata
-	/Applications/Vice64/tools/c1541 -attach KNIGHTSQUEST.d64 -delete loaddata -write loaddata.prg loaddata
+scroller4:
+	cat ./scroller4.c common.c > scroller4.tmp
+	./compiler --basic --code-segment 2062 --data-segment 8192 --kick --no-asm-comments < ./scroller4.tmp > scroller4.asm
+	cat scroller4.asm charset_1.asm > myscroller.asm
+	java -jar KickAss.jar myscroller.asm
+	java -jar KickAss.jar ./smooth-scroller/main.asm
 
-testload:
-	cat ./testload.c common.c > testload.tmp
-	./compiler --kick --basic --code-segment 2100 --data-segment 820 --memory-locations  < ./testload.tmp > testload.asm
-	java -jar KickAss.jar testload.asm
-#	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -delete testload -write testload.prg testload
-	rm -f ./testload.tmp
+vscroll2:
+	./compiler --basic --code-segment 2062 --data-segment 8192 --kick --no-asm-comments < ./vscroll2.c > vscroll2.asm
+	java -jar KickAss.jar vscroll2.asm
 
-readdisk:
-	./compiler --kick --basic --code-segment 2100 --data-segment 820  < ./readdisk.c > readdisk.asm
-	java -jar KickAss.jar readdisk.asm
-#	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -delete readdisk -write readdisk.prg readdisk
+newscroll:
+	./compiler --basic --code-segment 2062 --data-segment 8192 --kick --no-asm-comments < ./newscroll.c > newscroll.asm
+	java -jar KickAss.jar newscroll.asm
+	java -jar KickAss.jar newscroll-faster.asm
 
-testsave:
-	./compiler --kick --basic --code-segment 2100 --data-segment 820 --memory-locations  < ./testsave.c > testsave.asm
-	./compiler --kick --basic --code-segment 2100 --data-segment 820 --memory-locations  < ./saveworld.c > saveworld.asm
-	java -jar KickAss.jar testsave.asm
-	java -jar KickAss.jar saveworld.asm
-#	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -delete testsave test3k -write testsave.prg testsave -write saveworld.prg saveworld
+snake:
+	./compiler --unsafe-ifs --basic --code-segment 2100 --data-segment 820 --kick < ./snake2100.c > snake2100.asm
+	java -jar KickAss.jar snake2100.asm
+	java -jar KickAss.jar snake2100.op.asm
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach TESTING.d64 -dele snake2100 -write snake2100.prg snake2100
 
-diskwrite:
-	java -jar KickAss.jar writedata.asm
-	java -jar KickAss.jar readdata.asm
+laxtest:
+	java -jar KickAss.jar laxtest.asm
 
-bitmap:
-	cat ./bitmap.c common.c > bitmap.tmp
-	./compiler --kick --basic --code-segment 2100 --data-segment 820 --no-asm-comments --unsafe-ifs < ./bitmap.tmp > bitmap.asm
-	java -jar KickAss.jar bitmap.asm
-	rm -f bitmap.tmp
-#	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -dele bitmap -write bitmap.prg bitmap
+commonmctext:
+	./compiler 00unsafe-ifs --kick --data-segment 820 < ./common-mctext.c > ./common-mctext.asm
 
-mul16:
-	./compiler --basic --kick --code-segment 2100 --data-segment 820 --no-asm-comments < ./mul16.c > mul16.asm
-	java -jar KickAss.jar mul16.asm
-	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -dele mul16 -write mul16.prg mul16
+screentest:
+	cat screentest.c common.c > screentest.tmp
+	./compiler --kick --basic --code-segment 2100 --data-segment 4096 < ./screentest.tmp > screentest.asm
+	java -jar KickAss.jar screentest.asm
 
-datatest:
-	cat datatest.c common.c > datatest.tmp
-	./compiler --basic --kick --code-segment 2100 --data-segment 820 --no-asm-comments < ./datatest.c > datatest.asm
-	java -jar KickAss.jar datatest.asm
-	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -dele datatest -write datatest.prg datatest
+threeonone:
+	cat ./three-on-one.c > three-on-one.tmp
+	./compiler --unsafe-ifs --kick --basic --code-segment 17626 --data-segment 2062 < ./three-on-one.tmp > three-on-one.asm
+	java -jar KickAss.jar three-on-one.asm
+	java -jar KickAss.jar three-on-one.op.asm
+	rm -f three-on-one.tmp
 
-roll:
-	./compiler --basic --kick --code-segment 2100 --data-segment 820 --no-asm-comments < ./roll.c > roll.asm
-	java -jar KickAss.jar roll.asm
-	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -dele roll -write roll.prg roll
+terraform:
+	cat ./terraform.c common.c > terraform.tmp
+	./compiler --kick --basic --code-segment 17626 --data-segment 2062 --no-asm-comments < ./terraform.tmp > terraform.asm
+	java -jar KickAss.jar terraform.asm
+	rm -f terraform.tmp
 
-knightold:
-	cat knight3.bak.c common.c > knight.tmp
-	./compiler --kick --basic --no-optimize --code-segment 2061 --data-segment 21000 < ./knight.tmp > knight.asm
-	java -jar KickAss.jar knight.asm
-	rm -f knight.tmp
-#	/Applications/Vice64/tools/c1541 -attach KNIGHTSQUEST.d64 -delete savedata -delete knight3 -delete knight -write knight.prg knight
+common:
+	./compiler --unsafe-ifs --kick < ./common.c > common.asm
 
-specialbit:
-	./compiler --kick --basic --code-segment 4096 --data-segment 820 --memory-locations < ./specialbit.c > specialbit.asm
-	java -jar KickAss.jar specialbit.asm
+conway:
+	./compiler --unsafe-ifs --kick --basic --code-segment 2100 --data-segment 820 < ./conway.c > conway.asm
+	./nocomment < conway.asm > conway.nc.asm
+	java -jar KickAss.jar conway.asm
 
-knight2:
-	cat ./knight2.c common.c > knight2.tmp
-	./compiler --kick --basic --code-segment 4096 --data-segment 820 < ./knight2.tmp > knight2.asm
-	java -jar KickAss.jar knight2.asm
-	rm -f knight2.tmp
+conwayop:
+	java -jar KickAss.jar conway.op3.asm
+
+newlabels:
+	./compiler --kick --basic --code-segment 2061 --data-segment 820  < ./newlabels.c > newlabels.asm
+	java -jar KickAss.jar newlabels.asm
+
+deltest:
+	./compiler --kick --basic --code-segment 2061 --data-segment 820 --debug < ./deltest.c > deltest.asm
+	java -jar KickAss.jar deltest.asm
+
+syn1:
+	./compiler --kick --basic --code-segment 2100 --data-segment 8192 < ./syn1.c > syn1.asm
+	java -jar KickAss.jar syn1.asm
+
+putsyns:
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele synopsisa -write synopsisa synopsisa,s
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele synopsisb -write synopsisb synopsisb,s
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele synopsisc -write synopsisc synopsisc,s
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele synopsisd -write synopsisd synopsisd,s
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele synopsise -write synopsise synopsise,s
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele synopsisf -write synopsisf synopsisf,s
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele synopsisg -write synopsisg synopsisg,s
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele synopsish -write synopsish synopsish,s
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele synopsisi -write synopsisi synopsisi,s
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele synopsisj -write synopsisj synopsisj,s
+
+testinline:
+	./compiler --unsafe-ifs --kick --basic --code-segment 2061 --data-segment 8192 < ./testinline.c > testinline.asm
+	java -jar KickAss.jar testinline.asm
+
+registers: registers.c
+	./compiler --unsafe-ifs --kick --basic --code-segment 2061 --data-segment 8192 < ./registers.c > registers.asm
+	java -jar KickAss.jar registers.asm
+
+clear:	clear.c
+	./compiler --kick --basic --code-segment 2061 --data-segment 21000 --no-asm-comments < ./clear.c > clear.asm
+	cat memory.inc.asm >> clear.asm
+	cat pause.inc.asm >> clear.asm
+	java -jar KickAss.jar clear.asm
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach line.d64 -dele clear.prg -dele clear -write clear.prg clear,p
+	rm -f clear.vs
+
+line: line.c
+	./compiler --kick --basic --code-segment 2061 --data-segment 21000 --no-asm-comments < ./line.c > line.asm
+	cat segment.inc.asm >> line.asm
+	cat registers.inc.asm >> line.asm
+	cat memory.inc.asm >> line.asm
+	cat getpixel.inc.asm >> line.asm
+	cat pause.inc.asm >> line.asm
+	cat setscreenmode.inc.asm >> line.asm
+	java -jar KickAss.jar line.asm
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach line.d64 -dele line.prg -write line.prg
 
 knight3:
 	cat ./knight3.c common.c > knight3.tmp
-	./compiler --unsafe-ifs  --kick --basic --code-segment 2061 --data-segment 21000 --no-asm-comments < ./knight3.tmp > knight3.asm
-	java -jar KickAss.jar knight3.asm
-#	rm -f knight3.tmp
-	/Applications/Vice64/tools/c1541 -attach KNIGHTSQUEST.d64 -delete knight -delete savedata -delete knight3 -write knight3.prg knight3
-
-
-knight3lean1:
-	cat ./knight3.c common.c > knight3lean1.tmp
-	./compiler --kick --code-segment 2100 --data-segment 21000 --no-asm-comments --unsafe-ifs < ./knight3lean1.tmp > knight3lean1.asm
-	java -jar KickAss.jar knight3lean1.asm
-	/Applications/Vice64/tools/c1541 -attach KNIGHTSQUEST.d64 -delete knight3 -write knight3lean1.prg knight3
-
-	rm -f knight3lean1.tmp
-
-knight3lean:
-	java -jar KickAss.jar knight3lean1.asm
-	/Applications/Vice64/tools/c1541 -attach KNIGHTSQUEST.d64 -delete knight -delete savedata -delete knight3 -write knight3.prg knight3
-
-
-
-joystick:
-	cat ./joystick.c ./common.c > joystick.tmp
-	./compiler --kick --basic --code-segment 2061 --data-segment 820 --no-asm-comments < ./joystick.tmp > joystick.asm
-	java -jar KickAss.jar joystick.asm
-	java -jar KickAss.jar joystick-tiny.asm
-	rm -f joystick.tmp
-	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -delete joystick -write joystick.prg joystick
-
-writebmp:
-	cat ./writebmp.c ./common.c > writebmp.tmp
-	./compiler --kick --basic --code-segment 2061 --data-segment 8192 --no-asm-comments < ./writebmp.tmp > writebmp.asm
-	java -jar KickAss.jar writebmp.asm
-	rm -f writebmp.tmp
-	/Applications/Vice64/tools/c1541 -attach KNIGHTSQUEST.d64 -delete writebmp -write writebmp.prg writebmp 
-
-
-
-rndfx:
-	cat ./rndfx.c common.c > rndfx.tmp
-	./compiler --kick --basic --code-segment 2061 --data-segment 828 --no-asm-comments < ./rndfx.tmp > rndfx.asm
-	java -jar KickAss.jar rndfx.asm
-	java -jar KickAss.jar rndfx2.asm
-	rm -f rndfx.tmp
-	/Applications/Vice64/tools/c1541 -attach RNDSID.d64 -delete rndfx -write rndfx.prg rndfx
-	/Applications/Vice64/tools/c1541 -attach RNDSID.d64 -delete rndfx2 -write rndfx2.prg rndfx2
-	/Applications/Vice64/tools/c1541 -attach RNDSID.d64 -delete rndsid -write rndsid.sid rndsid,s
-
-savedata: 
-	cat ./savedata.c common.c > savedata.tmp
-	./compiler --kick --basic --code-segment 8192 --data-segment 49152 --memory-locations < ./savedata.tmp > savedata.asm
-	java -jar KickAss.jar savedata.asm
-	rm -f savedata.tmp
-	/Applications/Vice64/tools/c1541 -attach KNIGHTSQUEST.d64 -delete knight3 -delete loadsprites -delete savedata -delete savesprites -delete sprites1 -delete world1 -write savedata.prg savedata -write knight3.prg knight3
-
-loadsprites:
-	cat ./loadsprites.c common.c > loadsprites.tmp
-	./compiler --kick --basic --code-segment 2100 --data-segment 49152 < ./loadsprites.tmp > loadsprites.asm
-	java -jar KickAss.jar loadsprites.asm
-	rm -f loadsprites.tmp
-	/Applications/Vice64/tools/c1541 -attach KNIGHTSQUEST.d64 -delete loadsprites -write loadsprites.prg loadsprites
-	/Applications/Vice64/tools/c1541 -attach SPRITES.d64 -delete loadsprites -write loadsprites.prg loadsprites
-
-functions:
-	./compiler --basic --kick --code-segment 2100 --data-segment 820 --memory-locations < ./functions.c > functions.asm
-	java -jar KickAss.jar functions.asm
-
-variables:
-	./compiler --basic --kick --code-segment 2100 --data-segment 820 --unsafe-ifs < ./variables.c > variables.asm
-	java -jar KickAss.jar variables.asm
-
-comparisons:
-	cat ./comparisons.c common.c > comparisons.tmp
-	./compiler --basic --kick --code-segment 2100 --data-segment 820 --memory-locations < ./comparisons.tmp > comparisons.asm
-	java -jar KickAss.jar -vicesymbols comparisons.asm
-	/Applications/Vice64/tools/c1541 -attach COMPARISONS.d64 -delete comparisons -delete symbols -write comparisons.prg comparisons
-
-shifts:
-	./compiler --basic --kick --code-segment 2100 --data-segment 820 --no-asm-comments < ./shifts.c > shifts.asm
-	java -jar KickAss.jar shifts.asm
-
-ldatests:
-	cat ./ldatests.c common.c > ldatests.tmp	
-	./compiler --basic --kick --code-segment 2100 --data-segment 820  < ./ldatests.tmp > ldatests.asm
-	java -jar KickAss.jar ldatests.asm
-
-smallmath:
-	./compiler --basic --kick --code-segment 2100 --data-segment 820 --memory-locations < ./smallmath.c > smallmath.asm
-	java -jar KickAss.jar smallmath.asm
-
-mathtest:
-	./compiler --basic --kick --code-segment 2100 --data-segment 8192 --memory-locations < ./mathtest.c > mathtest.asm
-	java -jar KickAss.jar mathtest.asm
-
-pokepeektest:
-	./compiler --basic --kick --code-segment 2100 --data-segment 820  < ./pokepeektest.c > pokepeektest.asm
-	java -jar KickAss.jar pokepeektest.asm
-
-logictests:
-	./compiler --basic --kick --code-segment 2100 --data-segment 820  < ./logictests.c > logictests.asm
-	java -jar KickAss.jar logictests.asm
-
-collision:
-	./compiler --basic --kick --code-segment 2100 --data-segment 820 --memory-locations  --no-asm-comments < ./collision.c > collision.asm
-	java -jar KickAss.jar collision.asm
-	/Applications/Vice64/tools/c1541 -attach SPRITES.d64 -delete collision -write collision.prg collision
-
-
-vscroll:
-	cat ./vscroll.c common.c > vscroll.tmp
-	./compiler --basic --kick --code-segment 2100 --data-segment 820 --no-asm-comments --memory-locations  < ./vscroll.tmp > vscroll.asm
-	java -jar KickAss.jar vscroll.asm
-	java -jar KickAss.jar vertical-scroll.asm
-	rm -f vscroll.tmp
-	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -dele vscroll1 -write vscroll.prg vscroll1
-
-
-vscroll2:
-	cat ./vscroll2.c common.c > vscroll2.tmp
-	./compiler --basic --kick --code-segment 2100 --data-segment 820 --no-asm-comments  < ./vscroll2.tmp > vscroll2.asm
-	java -jar KickAss.jar vscroll2.asm
-	rm -f vscroll2.tmp
-	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -dele vscroll2 -write vscroll2.prg vscroll2
-
-strings:
-	cat ./strings.c > strings.tmp
-	./compiler --basic --code-segment 2100 --data-segment 820 --kick < ./strings.tmp > strings.asm
-	java -jar KickAss.jar strings.asm
-#	java -jar KickAss.jar strings2.asm
-	rm -f ./strings.tmp
-
-hscroll:
-	./compiler --basic --code-segment 2100 --data-segment 820 --no-asm-comments --kick < ./hscroll.c > hscroll.asm
-	java -jar KickAss.jar hscroll.asm
-	java -jar KickAss.jar horizontal-scroll.asm
-	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -dele hscroll -write hscroll.prg hscroll
-
-math:
-	./compiler --basic --code-segment 2100 --data-segment 820 --no-asm-comments --kick < ./cosine.c > cosine.asm
-	java -jar KickAss.jar cosine.asm
-	cat ./math.c > math.tmp
-	./compiler --basic --code-segment 2100 --data-segment 820 --no-asm-comments --kick < ./math.tmp > math.asm
-	java -jar KickAss.jar math.asm
-#	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -dele math  -write math.prg math
-	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -delete cosine  -write cosine.prg cosine
-
-odds:
-	cat ./sumofodds.c common.c > sumofodds.tmp
-	./compiler --basic --kick --code-segment 2100 --data-segment 820 --no-asm-comments < ./sumofodds.tmp > sumofodds.asm
-	java -jar KickAss.jar sumofodds.asm
-	rm -f sumofodds.tmp
-
-createfiles:
-	./compiler --basic --kick --code-segment 2100 --data-segment 820  < ./createfiles.c > createfiles.asm
-	java -jar KickAss.jar createfiles.asm
-	/Applications/Vice64/tools/c1541 -attach FILES.d64 -dele create -dele file0 -dele file1 -dele file2 -write createfiles.prg create
-
-input:
-	./compiler --basic --kick --code-segment 2100 --data-segment 820  --scanf-buffer-size 32 < ./input.c > input.asm
-	java -jar KickAss.jar input.asm
-	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -delete input  -write input.prg input
-
-
-rocket:
-	cat ./rocket.c common.c > rocket.tmp
-	./compiler --basic --kick --code-segment 2100 --data-segment 820 --memory-locations < ./rocket.tmp > rocket.asm
-	java -jar KickAss.jar rocket.asm
-	rm -f rocket.tmp
-
-general:
-	cat ./general.c common.c > general.tmp
-	./compiler --basic --kick --code-segment 2100 --data-segment 820 --no-asm-comments < ./general.tmp > general.asm
-	java -jar KickAss.jar general.asm
-	rm -f general.tmp
-
-uintcmp:
-	./compiler --basic --kick  --code-segment 2100 --data-segment 820 --no-asm-comment  < ./uintcmp.c > uintcmp.asm
-	java -jar KickAss.jar uintcmp.asm
-
-tests:
-	@echo tests the screen blanking
-	cat ./tests.c common.c > tests.tmp
-	./compiler --kick --code-segment 2100 --data-segment 820  < ./tests.tmp > tests.asm
-	java -jar KickAss.jar tests.asm
-	rm -f tests.tmp
-
-
-fortest:
-	./compiler --kick --basic --code-segment 2100 --data-segment 820 --no-asm-comments < ./fortest.c > fortest.asm
-	java -jar KickAss.jar fortest.asm
-	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -dele fortest -write fortest.prg fortest
-
-
-typetest:
-	./compiler --kick --basic --code-segment 2100 --data-segment 820 --no-asm-comments < ./typetest.c > typetest.asm
-	java -jar KickAss.jar typetest.asm
-
-forloop:
-	cat ./forloop.c common.c > forloop.tmp
-	./compiler --code-segment 2100 --data-segment 820 --no-asm-comments < ./forloop.tmp > forloop.asm
-	rm -f forloop.tmp
-
-looptest:
-	./compiler --basic --kick --code-segment 2100 --data-segment 820 --no-asm-comments --unsafe-ifs < ./looptest.c > looptest.asm
-	java -jar KickAss.jar looptest.asm
-
-
-sound:
-	cat ./sound.c common.c > sound.tmp
-	./compiler --kick --basic --code-segment 2100 --data-segment 820 --no-asm-comments < ./sound.tmp > sound.asm
-	java -jar KickAss.jar sound.asm
-
-
-image:
-	cat ./image.c common.c > image.tmp
-	./compiler --kick --basic --code-segment 2100 --data-segment 820 --no-asm-comments  < ./image.tmp > image.asm
-	java -jar KickAss.jar image.asm
-
-mandel:
-	./compiler --kick --basic --code-segment 2100 --data-segment 820  < ./mandelbrot.c > mandelbrot.asm
-	java -jar KickAss.jar mandelbrot.asm
-
-array:
-	cat ./array.c common.c > array.tmp
-	./compiler --kick --basic --code-segment 2100 --data-segment 820  < ./array.tmp > array.asm
-	java -jar KickAss.jar array.asm
-
-getchar:
-	./compiler --code-segment 2100 --data-segment 820 --no-asm-comments  --memory-locations  < ./getchar.c > getchar.asm
-
-spriteptr:
-	cat ./spriteptr.c common.c > spriteptr.tmp
-	./compiler --kick --basic --code-segment 2100 --data-segment 820 --memory-locations  < ./spriteptr.tmp > spriteptr.asm
-	java -jar KickAss.jar spriteptr.asm
-	/Applications/Vice64/tools/c1541 -attach SPRITES.d64 -delete spriteptr -write spriteptr.prg spriteptr
-
-
-sprite:
-	cat ./sprite.c common.c > sprite.tmp
-	./compiler --kick --basic --code-segment 2100 --data-segment 820 --parser-comments --memory-locations  < ./sprite.tmp > sprite.asm
-	java -jar KickAss.jar sprite.asm
-	/Applications/Vice64/tools/c1541 -attach SPRITES.d64 -delete sprite -write sprite.prg sprite
-
-sprite2:
-	./compiler --kick --basic --code-segment 2100 --data-segment 820 --no-asm-comments < ./sprite2.c > sprite2.asm
-	java -jar KickAss.jar sprite2.asm
-	/Applications/Vice64/tools/c1541 -attach SPRITES.d64 -delete sprite2 -write sprite2.prg sprite2
-
-sprite3:
-	cat ./sprite3.c common.c > sprite3.tmp
-	./compiler --kick --basic --code-segment 2100 --data-segment 820 --parser-comments --memory-locations  < ./sprite3.tmp > sprite3.asm
-	java -jar KickAss.jar sprite3.asm
-	/Applications/Vice64/tools/c1541 -attach SPRITES.d64 -delete sprite3 -write sprite3.prg sprite3
-
-sprite4:
-	cat ./sprite4.c common.c > sprite4.tmp
-	./compiler --kick --basic --code-segment 2100 --data-segment 820 --parser-comments --memory-locations  < ./sprite4.tmp > sprite4.asm
-	java -jar KickAss.jar sprite4.asm
-	/Applications/Vice64/tools/c1541 -attach SPRITES.d64 -delete sprite4 -write sprite4.prg sprite4
-
-sprite5:
-	cat ./sprite5.c common.c > sprite5.tmp
-	./compiler --kick --basic --code-segment 2100 --data-segment 820 --parser-comments --memory-locations  < ./sprite5.tmp > sprite5.asm
-	java -jar KickAss.jar sprite5.asm
-	/Applications/Vice64/tools/c1541 -attach SPRITES.d64 -delete sprite5 -write sprite5.prg sprite5
-
-plot:
-	cat ./plottest.c common.c > plottest.tmp
-	./compiler --basic --kick --code-segment 2100 --data-segment 820 --no-asm-comments < ./plottest.tmp > plottest.asm
-	rm -f plottest.tmp
-	java -jar KickAss.jar plottest.asm
-
-plottest2:
-	cat ./plottest2.c common.c > plottest2.tmp
-	./compiler --basic --kick --code-segment 2100 --data-segment 820 --no-asm-comments < ./plottest2.tmp > plottest2.asm
-	rm -f plottest2.tmp
-	java -jar KickAss.jar plottest2.asm
-
-screen:
-	cat ./screen.c common.c > screen.tmp
-	./compiler --kick --code-segment 2100 --data-segment 820 --no-asm-comments < ./screen.tmp > screen2.tmp
-	cat screen2.tmp terra2img.hex > screen.asm
-	java -jar KickAss.jar screen.asm
-	rm -f screen.tmp
-	rm -f screen2.tmp
-	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -delete screen -write screen.prg screen
-
-decdig:
-	./compiler --code-segment 2100 --data-segment 820 --no-asm-comments < ./decdig.c > decdig.asm
-
-
-return:
-	cat ./return.c common.c > return.tmp
-	./compiler --kick --code-segment 2100 --data-segment 820 --no-asm-comments  < ./return.tmp > return.asm
-	rm -f return.tmp
-
-conway:
-	./compiler --kick --basic --code-segment 2100 --data-segment 820 --no-asm-comments < ./conway.c > conway2100.asm
-	./compiler --kick --unsafe-ifs --basic --code-segment 2100 --data-segment 820 --no-asm-comments < ./conway.c > conway-tiny.asm
-	java -jar KickAss.jar conway2100.asm
-	java -jar KickAss.jar conway-tiny.asm
-	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -dele conway -write conway2100.prg conway
-
-stack:
-	cat ./stack.c common.c > stack.tmp
-	./compiler --kick --code-segment 2100 --data-segment 820 < ./stack.tmp > stack.asm
-	rm -f stack.tmp
-
-recursive:
-#	cat ./recursive.c common.c > recursive.tmp
-	./compiler --basic --kick --code-segment 2100 --data-segment 820 --no-asm-comments --unsafe-ifs < ./recursive.c > recursive.asm
-	java -jar KickAss.jar recursive.asm
-	rm -f recursive.tmp
-#	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -dele recursive -write recursive.prg recursive
-
-bytemath:
-	cat ./bytemath.c common.c > bytemath.tmp
-	./compiler --kick --code-segment 2100 --data-segment 820 < ./bytemath.tmp > bytemath.asm
-	rm -f bytemath.tmp
-
-clearscreen:
-	./compiler --kick --code-segment 2100 --data-segment 820   < ./clearscreen.c > clearscreen.asm
-
-snake2100:
-	./compiler --basic --code-segment 2100 --data-segment 820 --kick --no-asm-comments < ./snake2100.c > snake2100.asm
-	java -jar KickAss.jar snake2100.asm
-	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -dele snake2100 -write snake2100.prg snake2100
-
-
-printftest:
-	cat ./printftest.c common.c > printftest.tmp
-	./compiler --basic --kick --code-segment 2100 --data-segment 820 --no-asm-comments < ./printftest.tmp > printftest.asm
-	java -jar KickAss.jar printftest.asm
-	rm -f ./printftest.tmp
-
-bitswap:
-	java -jar KickAss.jar bitswap.asm
-
-printstest:
-	./compiler --basic --kick --code-segment 4096 --data-segment 820  < ./printstest.c > printstest.asm
-	java -jar KickAss.jar printstest.asm
-
-float:
-	cat ./floatmath.c common.c > floatmath.tmp
-	./compiler --kick --code-segment 2100 --data-segment 820 --no-asm-comments < ./floatmath.tmp > floatmath.asm
-	java -jar KickAss.jar floatmath.asm
-	rm -f ./floatmath.tmp
-
-program:
-	cat ./poketest.c common.c > poketest.tmp
-	./compiler --basic --kick --code-segment 7045 --data-segment 820 --no-asm-comments --unsafe-ifs < ./poketest.tmp > poketest.asm
-#	cat poketest-tmp.asm ufo-sid.asm > poketest.asm
-	java -jar KickAss.jar poketest.asm
-	java -jar KickAss.jar poketest-small.asm
-	rm -f poketest.tmp
-#	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -dele poketest -write poketest.prg poketest
-
-arith:
-	./compiler --basic --kick --code-segment 2100 --data-segment 820  --memory-locations --no-asm-comments  < ./arithtests.c > arithtests.asm
-	java -jar KickAss.jar arithtests.asm
-
-sidirq:
-	cat ./sidirq.c common.c > sidirq.tmp
-	./compiler --basic --kick --code-segment 2100 --data-segment 49152 --memory-locations  < ./sidirq.tmp > sidirq.asm
-	java -jar KickAss.jar -showmem sidirq.asm
-	/Applications/Vice64/tools/c1541 -attach SID.d64 -dele sidirq -write sidirq.prg sidirq 
-
-twosids:
-	cat ./twosids.c common.c > twosids.tmp
-	./compiler --basic --kick --code-segment 2100 --data-segment 49152 --memory-locations  < ./twosids.tmp > twosids.asm
-	java -jar KickAss.jar -showmem twosids.asm
-	/Applications/Vice64/tools/c1541 -attach SID.d64 -dele twosids -write twosids.prg twosids 
-
-
-sidtest:
-	cat ./sidtest.c common.c > sidtest.tmp
-	./compiler --debug --basic --kick --code-segment 2100 --data-segment 828 --memory-locations < ./sidtest.tmp > sidtest.asm
-	java -jar KickAss.jar sidtest.asm
-	./compiler --basic --kick --code-segment 2100 --data-segment 828 < ./sidinfo.c > sidinfo.asm
-	java -jar KickAss.jar sidinfo.asm
-
-
-iftests: iftests.c
-	cat ./iftests.c common.c > iftests.tmp
-	./compiler --unsafe-ifs --basic --kick --code-segment 2100 --data-segment 820 --no-asm-comments < ./iftests.tmp > iftests.asm
-	java -jar KickAss.jar iftests.asm
-
-cond:
-	cat ./cond-tests.c common.c > cond-tests.tmp
-	./compiler --basic --kick --code-segment 2100 --data-segment 820 --no-asm-comments --unsafe-ifs < ./cond-tests.tmp > cond-tests.asm
-	java -jar KickAss.jar cond-tests.asm
-	rm -f cond-tests.tmp
-
-mini:
-	./compiler --basic --kick --code-segment 2100 --data-segment 820  < ./minicond.c > minicond.asm
-	java -jar KickAss.jar minicond.asm
-
-vartests:
-	cat ./vartests.c common.c > vartests.tmp
-	./compiler --basic --kick --code-segment 2100 --data-segment 828 --no-asm-comments < ./vartests.tmp > vartests.asm
-	java -jar KickAss.jar vartests.asm
-	rm -f vartests.tmp
-	/Applications/Vice64/tools/c1541 -attach TESTING.d64 -delete vartests -write vartests.prg vartests
+	./compiler --unsafe-ifs --kick --basic --code-segment 2061 --data-segment 26000 --no-asm-comments < ./knight3.tmp > knight3.asm
+	java -jar KickAss.jar  knight3.asm
+	rm -f knight3.tmp
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -delete knight3 -write knight3.prg knight3
+
+writesyn1: writesynopsis1.c
+	./compiler --unsafe-ifs --kick --basic --code-segment 2061 --data-segment 26000 --no-asm-comments < ./writesynopsis1.c > writesynopsis1.asm
+	java -jar KickAss.jar writesynopsis1.asm
+
+knight3op:
+	java -jar KickAss.jar knight3.op.asm
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -delete knight3 -write knight3.op.prg knight3
+
+
+
+cleanwriters:
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele savedata-level1 -dele savedata-level2 -dele savedata-level3 -dele savedata-level4 -dele savedata-level5 -dele savedata-level6 -dele savedata-level7 -dele savedata-level8 -dele savedata-level9 -dele savedata-levela
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele savedata-levela -dele savedata-levelb -dele savedata-levelc -dele savedata-leveld -dele savedata-levele -dele savedata-levelf -dele savedata-levelg -dele savedata-levelh -dele savedata-leveli -dele savedata-levelj
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele writesynopsis1 -dele writesynopsis2 -dele writesynopsis3 -dele writesynopsis4 -dele writesynopsis5 -dele writesynopsis6 -dele writesynopsis7 -dele writesynopsis8 -dele writesynopsis9 -dele writesynopsisa
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele writesynopsisa -dele writesynopsisb -dele writesynopsisc -dele writesynopsisd -dele writesynopsise -dele writesynopsisf -dele writesynopsisg -dele writesynopsish -dele writesynopsisi -dele writesynopsisj
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -list
+
+wipeworld:
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele sprites1 -dele sprites2 -dele sprites3 -dele sprites4 -dele sprites5 -dele sprites6 -dele sprites7 -dele sprites8 -dele sprites9 -dele spritesa
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele world1 -dele world2 -dele world3 -dele world4 -dele world5 -dele world6 -dele world7 -dele world8 -dele world9 -dele worlda
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele synopsis1 -dele synopsis2 -dele synopsis3 -dele synopsis4 -dele synopsis5 -dele synopsis6 -dele synopsis7 -dele synopsis8 -dele synopsis9 -dele synopsisa
+
+purgeoldworlds:
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -delete world1 -delete world2 -delete world3 -delete world4 -delete world5 -delete world6 -delete world7 -delete world8 -delete world9 -delete worlda
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -delete sprites1 -delete sprites2 -delete sprites3 -delete sprites4 -delete sprites5 -delete sprites6 -delete sprites7 -delete sprites8 -delete sprites9 -delete sprites8
+
+savelevels:
+	make cleanwriters
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele spritesa -dele spritesb -dele spritesc -dele spritesd -dele spritese -dele spritesf -dele spritesg -dele spritesh -dele spritesi -dele spritesj
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele worlda -dele worldb -dele worldc -dele worldd -dele worlde -dele worldf -dele worldg -dele worldh -dele worldi -dele worldj
+	make savelevela
+	make savelevelb
+	make savelevelc
+	make saveleveld
+	make savelevele
+	make savelevelf
+	make savelevelg
+	make savelevelh
+	make saveleveli
+	make savelevelj
 
 clean:
 	rm -fR *.*~
