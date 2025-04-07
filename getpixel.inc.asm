@@ -40,9 +40,9 @@ getpixel:
 	lda cell_addr_hi,x
 	adc !lv_arg1- +1 // xhi byte
 	sta !lv_addr_hi-  // and the upper 8 bits
-	lda !lv_arg1-
-	and #$07
-	tax            // get the Bit to set from X
+	//lda !lv_arg1-
+	//and #$07
+	//tax            // get the Bit to set from X
 	lda !lv_arg0-
 	and #$07         // get the Line we want to set
 	adc !lv_addr_lo-
