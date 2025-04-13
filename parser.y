@@ -2862,7 +2862,6 @@ parameterlist: /* empty */
   else if( isUintIMM($1.name) || isIntIMM($1.name) )
     {
       int tmp_v = atoi(stripFirst($1.name).c_str());
-      
       addAsm( str_LDA + "#$" + toHex( tmp_v ), 2, false );
       addAsm( str_PHA );
     }
@@ -2949,12 +2948,19 @@ parameterlist: /* empty */
       addAsm( str_LDA + "#$" + toHex( tmp_H ), 2, false );
       addAsm( str_PHA );
     }
-  else if( isUintIMM($3.name) || isIntIMM($3.name) )
+  else if( isUintIMM($3.name) )
     {
       int tmp_v = atoi(stripFirst($3.name).c_str());
-      
       addAsm( str_LDA + "#$" + toHex( tmp_v ), 2, false );
       addAsm( str_PHA );
+    }
+  else if( isIntIMM( $3.name ) )
+    {
+      int tmp_v = atoi(stripFirst($3.name).c_str());
+      addAsm( "// ------ ", 0, true );
+      addAsm( str_LDA + "#$" + toHex( tmp_v ), 2, false );
+      addAsm( str_PHA );
+      addAsm( "// ------ ", 0, true );      
     }
   else if( isFloatID($3.name) )
     {
@@ -2987,7 +2993,7 @@ parameterlist: /* empty */
     }
   else
     {
-      addCompilerMessage( "Unhandled Parameter Type for function call" );
+      addCompilerMessage( "Unhandled Parameter Type for function call", 3);
     }
   
   strcpy($$.name, $1.name );
