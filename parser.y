@@ -13012,7 +13012,7 @@ arithmetic expression
 	  
 	  addComment( "UintID * UintIMM (Using 16 bit operation) --> XA" );
 	  int addr_op1 = getAddressOf( $1.name );
-	  mul16_is_needed = true;
+	  //mul16_is_needed = true;
 	  int tmp_v = atoi(stripFirst($4.name).c_str());
 
 	  if( tmp_v == 0 )
@@ -13026,10 +13026,132 @@ arithmetic expression
 	      addAsm( str_LDA + O1, sizeOP1A, false);
 	      addAsm( str_LDX + "#$00", 2, false );
 	    }
+	  else if( tmp_v == 11 )
+	    {
+	      addComment( "multiply by 11 - 145 cycles" );
+	      addComment( "save ZP $02/$03/$04/$05" );
+	      addAsm( str_LDA + "$02", 2, false );
+	      addAsm( str_PHA, 1, false );
+	      addAsm( str_LDA + "$03", 2, false );
+	      addAsm( str_PHA, 1, false );
+	      addAsm( str_LDA + "$04", 2, false );
+	      addAsm( str_PHA, 1, false );
+	      addAsm( str_LDA + "$05", 2, false );
+	      addAsm( str_PHA, 1, false );
+	      addComment( "----------------------" );
+	      addAsm( str_LDA + O1, sizeOP1A, false );
+	      
+	      addAsm( str_STA + "$02", 2, false );
+	      addAsm( str_STA + "$04", 2, false );
+	      addAsm( str_LDA + "#$00", 2, false );
+	      addAsm( str_STA + "$03", 2, false );
+	      addAsm( str_STA + "$05", 2, false );
+
+	      addAsm( str_ASL + "$02", 2, false );
+	      addAsm( str_ROL + "$03", 2, false );
+	      addAsm( str_CLC, 1, false );
+	      addAsm( str_LDA + "$02", 2, false );
+	      addAsm( str_ADC + "$04", 2, false );
+	      addAsm( str_STA + "$02", 2, false );
+	      
+	      addAsm( str_LDA + "$03", 2, false );
+	      addAsm( str_ADC + "$05", 2, false );
+	      addAsm( str_STA + "$03", 2, false );
+	      
+	      addAsm( str_ASL + "$04", 2, false );
+	      addAsm( str_ROL + "$05", 2, false );
+	      addAsm( str_ASL + "$04", 2, false );
+	      addAsm( str_ROL + "$05", 2, false );
+	      addAsm( str_ASL + "$04", 2, false );
+	      addAsm( str_ROL + "$05", 2, false );
+	      
+	      addAsm( str_CLC, 1, false );
+	      addAsm( str_LDA + "$02", 2, false );
+	      addAsm( str_ADC + "$04", 2, false );	      
+	      addAsm( str_STA + "$02", 2, false );
+	      addAsm( str_TAY, 1, false );
+	      
+	      addAsm( str_LDA + "$03", 2, false );
+	      addAsm( str_ADC + "$05", 2, false );
+	      addAsm( str_TAX, 1, false );
+	      addComment( "-------------------" );
+	      addAsm( str_PLA, 1, false );
+	      addAsm( str_STA + "$05", 2, false );
+	      addAsm( str_PLA, 1, false );
+	      addAsm( str_STA + "$04", 2, false );
+	      addAsm( str_PLA, 1, false );
+	      addAsm( str_STA + "$03", 2, false );
+	      addAsm( str_PLA, 1, false );
+	      addAsm( str_STA + "$02", 2, false );
+	      addAsm( str_TYA, 1, false );
+	    }
+
+	  else if( tmp_v == 40 )
+	    {
+	      addComment( "multiply by 11 - 145 cycles" );
+	      addComment( "save ZP $02/$03/$04/$05" );
+	      addAsm( str_LDA + "$02", 2, false );
+	      addAsm( str_PHA, 1, false );
+	      addAsm( str_LDA + "$03", 2, false );
+	      addAsm( str_PHA, 1, false );
+	      addAsm( str_LDA + "$04", 2, false );
+	      addAsm( str_PHA, 1, false );
+	      addAsm( str_LDA + "$05", 2, false );
+	      addAsm( str_PHA, 1, false );
+	      addComment( "----------------------" );
+	      addAsm( str_LDA + O1, sizeOP1A, false );
+
+	      addAsm( str_STA + "$02", 2, false );
+	      addAsm( str_STA + "$04", 2, false );
+	      addAsm( str_LDA + "#$00", 2, false );
+	      addAsm( str_STA + "$03", 2, false );
+	      addAsm( str_STA + "$05", 2, false );
+
+	      addAsm( str_ASL + "$02", 2, false );
+	      addAsm( str_ROL + "$03", 2, false );	      
+	      addAsm( str_ASL + "$02", 2, false );
+	      addAsm( str_ROL + "$03", 2, false );
+	      addAsm( str_ASL + "$02", 2, false );
+	      addAsm( str_ROL + "$03", 2, false );
+	      
+	      addAsm( str_ASL + "$04", 2, false );
+	      addAsm( str_ROL + "$05", 2, false );
+	      
+	      addAsm( str_CLC, 1, false );
+	      addAsm( str_LDA + "$02", 2, false );
+	      addAsm( str_ADC + "$04", 2, false );
+	      addAsm( str_STA + "$02", 2, false );
+	      
+	      addAsm( str_LDA + "$03", 2, false );	      
+	      addAsm( str_ADC + "$05", 2, false );
+	      addAsm( str_STA + "$03", 2, false );
+	      
+	      addAsm( str_ASL + "$02", 2, false );
+	      addAsm( str_ROL + "$03", 2, false );
+	      addAsm( str_ASL + "$02", 2, false );	      
+	      addAsm( str_ROL + "$03", 2, false );
+	      
+	      addAsm( str_LDA + "$03", 2, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_LDY + "$02", 2, false );
+	      
+	      addComment( "-------------------" );
+	      addAsm( str_PLA, 1, false );
+	      addAsm( str_STA + "$05", 2, false );
+	      addAsm( str_PLA, 1, false );
+	      addAsm( str_STA + "$04", 2, false );
+	      addAsm( str_PLA, 1, false );
+	      addAsm( str_STA + "$03", 2, false );
+	      addAsm( str_PLA, 1, false );
+	      addAsm( str_STA + "$02", 2, false );
+	      addAsm( str_TYA, 1, false );
+	    }
+	  
 	  else
 	    {
+	      mul16_is_needed = true;
 	      addAsm( str_LDA + O1, sizeOP1A, false);
-	  
+       
 	      addAsm( str_STA + "_MUL16_FB", 3, false );
 	      addAsm( str_LDA + "#$00", 2, false );
 	      addAsm( str_STA + "_MUL16_FC", 3, false );
