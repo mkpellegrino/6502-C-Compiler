@@ -20,7 +20,6 @@
 !lv_Y:		.byte $00 // Y
 !lv_i:		.byte $00 // i
 
-
 segment:
 	pla 
 	tax 
@@ -195,13 +194,18 @@ segment:
 	beq !+ // jump out of FOR () and then to rts
 	
 	lda !lv_X-
+#if SAFEMCPLOT	
+	sei
+#endif
 	sta $FA	
 	lda !lv_i-
 	sta $FC
 	lda !lv_colour-
 	sta $FD
 	jsr MCPLOT
-
+#if SAFEMCPLOT	
+	cli
+#endif
 	inc !lv_i-
 
 	jmp !-
@@ -226,6 +230,9 @@ segment:
 	beq !+ // jump out of FOR () and on to rts
 	
 	lda !lv_i-
+#if SAFEMCPLOT	
+	sei
+#endif
 	sta $FA
 
 	lda !lv_Y-
@@ -235,6 +242,9 @@ segment:
 	sta $FD
 
 	jsr MCPLOT
+#if SAFEMCPLOT	
+	cli
+#endif
 
 	inc !lv_i-
 
@@ -299,13 +309,18 @@ segment:
 	
 	clc 
 	adc !lv_x1-
-
+#if SAFEMCPLOT	
+	sei
+#endif
 	sta $FA
 	lda !lv_i-
 	sta $FC
 	lda !lv_colour-
 	sta $FD
 	jsr MCPLOT
+#if SAFEMCPLOT	
+	cli
+#endif
 
 	
 	dec !lv_i-
@@ -360,12 +375,18 @@ segment:
 	sta !lv_Zx-
 	clc 
 	adc !lv_x1-
+#if SAFEMCPLOT	
+	sei
+#endif
 	sta $FA
 	lda !lv_i-
 	sta $FC
 	lda !lv_colour-
 	sta $FD
 	jsr MCPLOT
+#if SAFEMCPLOT	
+	cli
+#endif
 	inc !lv_i-
 	jmp !-
 	
@@ -420,6 +441,9 @@ segment:
 	//lda !lv_Zy-
 	adc !lv_y2-
 	//sta !lv_Y-
+#if SAFEMCPLOT	
+	sei
+#endif
 	sta $FC
 
 	lda !lv_i-
@@ -429,6 +453,9 @@ segment:
 	lda !lv_colour-
 	sta $FD
 	jsr MCPLOT
+#if SAFEMCPLOT	
+	cli
+#endif
 	dec !lv_i-
 	jmp !-
 !:
@@ -480,6 +507,9 @@ segment:
 	// not sure this next line is needed
 	//sta !lv_Y-
 	
+#if SAFEMCPLOT	
+	sei
+#endif
 	sta $FC
 	lda !lv_i-
 	sta $FA
@@ -487,6 +517,9 @@ segment:
 	lda !lv_colour-
 	sta $FD
 	jsr MCPLOT
+#if SAFEMCPLOT	
+	cli
+#endif
 	inc !lv_i-
 	jmp !-
 !:
