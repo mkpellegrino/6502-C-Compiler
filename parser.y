@@ -6981,20 +6981,23 @@ statement: datatype ID init
       int x = atoi( stripFirst($3.name).c_str() );
       addAsm( str_LDA + "#$" + toHex( x ), 2, false );
       addAsm( str_ORA + "$D015", 3, false );
+      addAsm( str_STA + "$D015", 3, false );
     }
   else if( isA( $3.name ) )
     {
       addComment( "spriteon( A );" );
       addAsm( str_ORA + "$D015", 3, false );
+      addAsm( str_STA + "$D015", 3, false );
     }
   else
     {
       addComment( "spriteon( ??? );" );
       int x = getAddressOf($3.name);
       addAsm( str_LDA + "$D015", 3, false );
-      addAsm( str_LDA + "$" + toHex( x ), 3, false );
+      // 2025 05 01 - mkpellegrino
+      addAsm( str_ORA + "$" + toHex( x ), 3, false );
+      addAsm( str_STA + "$D015", 3, false );
     }
-  addAsm( str_STA + "$D015", 3, false );
 };
 
 // STATEMENT
@@ -7010,6 +7013,10 @@ statement: datatype ID init
 
       int x = atoi( stripFirst($3.name).c_str() );
       addAsm( str_LDA + "#$" + toHex( x ), 2, false );
+      addAsm( str_EOR + "#$FF", 2, false );
+      addAsm( str_AND + "$D015", 3, false );
+      addAsm( str_STA + "$D015", 3, false );
+
     }
   else if( isA( $3.name ) )
     {
@@ -7026,10 +7033,10 @@ statement: datatype ID init
 
       int x = getAddressOf($3.name);
       addAsm( str_LDA + "$" + toHex( x ), 3, false );
+      addAsm( str_EOR + "#$FF", 2, false );
+      addAsm( str_AND + "$D015", 3, false );
+      addAsm( str_STA + "$D015", 3, false );
     }
-  addAsm( str_EOR + "#$FF", 2, false );
-  addAsm( str_AND + "$D015", 3, false );
-  addAsm( str_STA + "$D015", 3, false );
 };
 
 // STATEMENT
@@ -7599,7 +7606,8 @@ statement: datatype ID init
 	  addAsm( str_LDA + "#$FD", 2, false);
 	  break;
 	case 0:
-	  addAsm( str_LDA + "#$01", 2, false);
+	  addAsm( "// lda #$01", 0, false );
+	  //addAsm( str_LDA + "#$01", 2, false);
 	  addAsm( str_ORA + "$D010", 3, false );
 	  addAsm( str_JMP + "!++", 3, false );
 	  addAsm( string("!:"), 0, true );
@@ -7845,12 +7853,14 @@ statement: datatype ID init
       sprite_address+=base_address;
 
       int addr = hexToDecimal($5.name);
+      // 2025 05 04 - mkpellegrino - moved the next 2 lines to here for speed
+      addAsm( str_LDA + "#$" + toHex(atoi(stripFirst($7.name).c_str())) , 2, false );
+      addAsm( str_STA + "$" + toHex( sprite_address+1 ), 3, false );
+
       // 2024 04 30 - mkpellegrino
       addAsm( str_LDA + getNameOf(addr) , 3, false );
       addAsm( str_STA + "$" + toHex( sprite_address ), 3, false );
       
-      addAsm( str_LDA + "#$" + toHex(atoi(stripFirst($7.name).c_str())) , 2, false );
-      addAsm( str_STA + "$" + toHex( sprite_address+1 ), 3, false );
 
       // need to put the ninth bit into 0xD010
    
@@ -7920,7 +7930,8 @@ statement: datatype ID init
 	  addAsm( str_LDA + "#$FD", 2, false);
 	  break;
 	case 0:
-	  addAsm( str_LDA + "#$01", 2, false);
+	  addAsm( "// lda #$01", 0, false );
+	  //addAsm( str_LDA + "#$01", 2, false);
 	  addAsm( str_ORA + "$D010", 3, false );
 	  addAsm( str_JMP + "!++", 3, false );
 	  addAsm( string("!:"), 0, true );
@@ -7948,11 +7959,12 @@ statement: datatype ID init
 
       int addr = hexToDecimal($5.name);
 
-      addAsm( str_LDA + getNameOf(addr) + commentmarker + "(this _wasn't_ working)", 3, false );
-      addAsm( str_STA + "$" + toHex( sprite_address ), 3, false );
+      // 2025 05 04 - mkpellegrino - swapped the order her, of setting y, and x
       addAsm( str_LDA + getNameOf(hexToDecimal(stripFirst($7.name).c_str())) , 3, false );
       addAsm( str_STA + "$" + toHex( sprite_address+1 ), 3, false );
 
+      addAsm( str_LDA + getNameOf(addr) + commentmarker + "(this _wasn't_ working)", 3, false );
+      addAsm( str_STA + "$" + toHex( sprite_address ), 3, false );
       //============================================0--0-
       // 9th Bit
       // 2024 05 01 - mkpellegrino
@@ -8027,7 +8039,8 @@ statement: datatype ID init
 	  addAsm( str_LDA + "#$FD", 2, false);
 	  break;
 	case 0:
-	  addAsm( str_LDA + "#$01", 2, false);
+	  addAsm( "// lda #$01", 0, false );
+	  //addAsm( str_LDA + "#$01", 2, false);
 	  addAsm( str_ORA + "$D010", 3, false );
 	  addAsm( str_JMP + "!++", 3, false );
 	  //addAsm( str_NOP );
