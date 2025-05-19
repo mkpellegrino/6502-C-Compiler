@@ -17336,50 +17336,71 @@ int main(int argc, char *argv[])
       saveReturnAddress();
       //==================================================================================
       addAsm( str_PLA ); // the value to be put into the string
-      addAsm( str_LDX + "#$00", 2, false );
-      
+
+      addComment( "Taken from: codebase64.org/doku.php?id=base:tiny_.a_to_ascii_routine" );
+      addAsm( str_LDY + "#$2F", 2, false );
+      addAsm( str_LDX + "#$3A", 2, false );
+      addAsm( str_SEC, 1, false );
       addAsm( "!:", 0, true );
-      
-      addAsm( str_SEC );
+      addAsm( str_INY, 1, false );
       addAsm( str_SBC + "#$64", 2, false );
-      addAsm( str_BCC + "!+", 2, false );
-      addAsm( str_INX );
-      addAsm( str_JMP + "!-", 3, false );
+      addAsm( str_BCS + "!-", 2, false );
       addAsm( "!:", 0, true );
-      addAsm( str_CLC );
-      addAsm( str_ADC + "#$64", 2, false );
-      addAsm( str_TAY );
-      addAsm( str_TXA );
-      addAsm( str_CLC );
-      addAsm( str_ADC + "#$30", 2, false );
-      addAsm( str_PHA );
-      
-      addAsm( str_TYA );
-      addAsm( str_LDX + "#$00", 2, false );
-      addAsm( "!:", 0, true );
-      addAsm( str_SEC );
-      addAsm( str_SBC + "#$0A", 2, false );
-      addAsm( str_BCC + "!+", 2, false );
-      addAsm( str_INX );
-      addAsm( str_JMP + "!-", 3, false );
-      addAsm( "!:", 0, true );
-      addAsm( str_CLC );
+      addAsm( str_DEX, 1, false );
       addAsm( str_ADC + "#$0A", 2, false );
-      addAsm( str_TAY );
-      addAsm( str_TXA );
-      addAsm( str_CLC );
-      addAsm( str_ADC + "#$30", 2, false );
-      addAsm( str_PHA );
+      addAsm( str_BMI + "!-", 2, false );
+      addAsm( str_ADC + "#$2F", 2, false );
 
-
-      addAsm( str_CLC, 1, false );
-      addAsm( str_TYA );
-      //addAsm( str_LDX + "#$00", 2, false );
-
-      //addAsm( str_TYA );
-      addAsm( str_ADC + "#$30", 2, false );
-      addAsm( str_PHA );
       
+      // push A onto STACK
+      addAsm( str_JSR + "PUSH", 3, false );
+      addAsm( str_TYA, 1, false );
+      addAsm( str_PHA, 1, false );
+      addAsm( str_TXA, 1, false );
+      addAsm( str_PHA, 1, false );
+      addAsm( str_JSR + "POP", 3, false );
+      addAsm( str_PHA, 1, false );
+            
+      
+      /* addAsm( str_LDX + "#$00", 2, false ); */
+      /* addAsm( "!:", 0, true ); */
+      /* addAsm( str_SEC ); */
+      /* addAsm( str_SBC + "#$64", 2, false ); */
+      /* addAsm( str_BCC + "!+", 2, false ); */
+      /* addAsm( str_INX ); */
+      /* addAsm( str_JMP + "!-", 3, false ); */
+      /* addAsm( "!:", 0, true ); */
+      /* addAsm( str_CLC ); */
+      /* addAsm( str_ADC + "#$64", 2, false ); */
+      /* addAsm( str_TAY ); */
+      /* addAsm( str_TXA ); */
+      /* addAsm( str_CLC ); */
+      /* addAsm( str_ADC + "#$30", 2, false ); */
+      /* addAsm( str_PHA );       */
+      /* addAsm( str_TYA ); */
+      /* addAsm( str_LDX + "#$00", 2, false ); */
+      /* addAsm( "!:", 0, true ); */
+      /* addAsm( str_SEC ); */
+      /* addAsm( str_SBC + "#$0A", 2, false ); */
+      /* addAsm( str_BCC + "!+", 2, false ); */
+      /* addAsm( str_INX ); */
+      /* addAsm( str_JMP + "!-", 3, false ); */
+      /* addAsm( "!:", 0, true ); */
+      /* addAsm( str_CLC ); */
+      /* addAsm( str_ADC + "#$0A", 2, false ); */
+      /* addAsm( str_TAY ); */
+      /* addAsm( str_TXA ); */
+      /* addAsm( str_CLC ); */
+      /* addAsm( str_ADC + "#$30", 2, false ); */
+      /* addAsm( str_PHA ); */
+      
+      /* addAsm( str_CLC, 1, false ); */
+      /* addAsm( str_TYA ); */
+      /* //addAsm( str_LDX + "#$00", 2, false ); */
+
+      /* //addAsm( str_TYA ); */
+      /* addAsm( str_ADC + "#$30", 2, false ); */
+      /* addAsm( str_PHA ); */
       
       //==================================================================================
       restoreReturnAddress();
