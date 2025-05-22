@@ -3,6 +3,11 @@ void main()
   uint general8bit = NULL;
   uint userinput = ' ';
   uint filestatus = NULL;
+  uint bytesread = NULL;
+  uint lnL = NULL;
+  uint lnH = NULL;
+  word ln = NULL;
+  uint proceed = NULL;
   data renameText = { "R0:HAROLD=MYFILE" };
   data copyText = { "C0:MAUDE=HAROLD" };
   data deleteText0 = { "S0:MYFILE" };
@@ -10,11 +15,11 @@ void main()
   
   data text0 = { "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG." };
 
-  data menu0 = { "1) CREATE FILE (MYFILE)\n" };
-  data menu1 = { "2) DELETE FILES (MYFILE & HAROLD)\n" };
-  data menu2 = { "3) DISPLAY FILE (MYFILE)\n" };
-  data menu3 = { "4) COPY FILE (HAROLD -> MAUDE)\n" };
-  data menu4 = { "5) RENAME FILE (MYFILE -> HAROLD)\n" };
+  data menu0 = { "1) CREATE FILE      (MYFILE)\n" };
+  data menu1 = { "2) DELETE FILES     (MYFILE & HAROLD)\n" };
+  data menu2 = { "3) DISPLAY FILE     (MYFILE)\n" };
+  data menu3 = { "4) COPY FILE        (HAROLD -> MAUDE)\n" };
+  data menu4 = { "5) RENAME FILE      (MYFILE -> HAROLD)\n" };
   data menu5 = { "6) VALIDATE DISK\n" };
   data menu6 = { "7) READ DISK STATUS\n" };
   data menu7 = { "8) FORMAT DISK\n" };
@@ -28,7 +33,6 @@ void main()
 	{
 	  initdrive();
 	}
-
       if( userinput == '1' )
 	{
 	  createfile();
@@ -60,15 +64,13 @@ void main()
       if( userinput == '8' )
 	{
 	  format();
-
 	}
       if( userinput == '9' )
 	{
 	  directory();
 	}
 
-      //derror();
-      
+      asmcomment( "close all channels" );
       closeall();
       
       menu();
@@ -82,24 +84,45 @@ void main()
 
 void displayfile()
 {
-  asmcomment( "setfilename( ''MYFILE,S,R'' );" );  
-  setfilename( "MYFILE,S,R" );
+  asmcomment( "setfilename( ''MYFILE'' );" );  
+  setfilename( "MYFILE" );
   asmcomment( "setlfs(3,8,3);" );
   setlfs( 0x03, 0x08, 0x03 );
   asmcomment( "fopen()" );
   fopen();
-  asmcomment( "fchkin(1);" );
+  asmcomment( "fchkin(3);" );
   fchkin( 0x03 );
   asmcomment( "read and display file" );
-  
+
+  general8bit = fchrin();
   filestatus = peek( 0x90 );
   while( filestatus == 0x00 )
     {
-      prchar( fchrin() );
+      prchar( general8bit );
+      general8bit = fchrin();
       filestatus = peek( 0x90 );
     }
+  
   prchar( 0x0D );
   asmcomment( "fclrchn();" );
+  fclrchn();
+  asmcomment( "read the error string" );
+  derror();
+  asmcomment( "fclose(3);" );
+  fclose(3);
+  return;
+}
+
+void initdrive()
+{
+  asmcomment( "for a command like this, filename" );
+  asmcomment( "IS the command (I0 for INITIALISE" );
+  setfilename( "I0" );
+  asmcomment( "setlfs(1,8,15);" );
+  setlfs( 1,8,15 );
+  asmcomment( "fopen();" );
+  fopen();
+  asmcomment( "fclrchn();");
   fclrchn();
   asmcomment( "read the error string" );
   derror();
@@ -108,35 +131,37 @@ void displayfile()
   return;
 }
 
-void initdrive()
-{
-  setfilename( "I0" );
-  setlfs( 1,8,15 );
-  fopen();
-  fclrchn();
-  derror();
-  fclose(1);
-  return;
-}
-
 void copyfile()
 {
+  asmcomment( "for a command like this, filename" );
+  asmcomment( "should NOT be set... so set it with zeroes" );
+  clearfilename();
+  asmcomment( "setlfs(15,8,15);" );
   setlfs( 0x0F, 0x08, 0x0F );
-  fopen();  
+  asmcomment( "fopen();" );
+  fopen();
+  asmcomment( "fchkout(15);" );
   fchkout( 0x0F );
+  asmcomment( "send the string to the device" );
   writeuntil0( copyText );
+  asmcomment( "fclrchn();");
   fclrchn();
+  asmcomment( "read the error string" );
   derror();
+  asmcomment( "fclose(15);" );
   fclose( 0x0F );
-  fclrchn();
+  //fclrchn();
   return;
 }
 
 void renamefile()
 {
+  asmcomment( "for a command like this, filename" );
+  asmcomment( "should NOT be set... so set it with zeroes" );
+  clearfilename();
   asmcomment( "setlfs(15,8,15);" );
   setlfs( 0x0F, 0x08, 0x0F );
-  asmcomment( "fopen()" );
+  asmcomment( "fopen();" );
   fopen();
   asmcomment( "fchkout(15);" );
   fchkout( 0x0F );
@@ -151,8 +176,20 @@ void renamefile()
   return;
 }
 
+void clearfilename()
+{
+  asmcomment( "clear filename" );
+  inline( "lax #$00", 2 );
+  inline( "tay", 1 );
+  inline( "jsr $FDF9", 3 );
+  return;
+}
+
 void deletefile()
 {
+  asmcomment( "for a command like this, filename" );
+  asmcomment( "should NOT be set... so set it with zeroes" );
+  clearfilename();
   asmcomment( "setlfs(15,8,15);" );
   setlfs( 0x0F, 0x08, 0x0F );
   asmcomment( "fopen()" );
@@ -168,8 +205,9 @@ void deletefile()
   asmcomment( "fclose(15);" );
   fclose( 0x0F );
 
-  asmcomment( "do it again with" );
+  asmcomment( "do it all again with" );
   asmcomment( "the other string" );
+  asmcomment( "vvvvvvvvvvvvvvvv" );
   setlfs( 0x0F, 0x08, 0x0F );
   fopen();  
   fchkout( 0x0F );
@@ -177,6 +215,7 @@ void deletefile()
   fclrchn();
   derror();
   fclose( 0x0F );
+  asmcomment( "^^^^^^^^^^^^^^^^" );
   return;
 }
 
@@ -204,26 +243,30 @@ void createfile()
   asmcomment( "read the error string" );
   derror();
   asmcomment( "fclose(1);" );
-  fclose( 0x01 );  
+  fclose( 0x01 );
   return;
 }
 
 void derror()
 {
+  asmcomment( "Send TALK command to serial bus" );
   poke( 0x90, 0x00 );
   poke( 0xBA, 0x08 );
   jsr( 0xFFB4 );
+  asmcomment( "Send TALK secondary address to serial bus" );
   poke( 0xB9, 0x6F );
   jsr( 0xFF96 );
   
   inline( "!:", 0 );
   inline( "ldy $90", 2 );
   inline( "bne !+", 2 );
+  asmcomment( "Read byte from serial bus" );
   jsr( 0xFFA5 );
   jsr( 0xFFD2 );
   inline( "cmp #$0D", 2 );
   inline( "bne !-", 2 );
   inline( "!:", 0 );
+  asmcomment( "Send UNTALK command to serial bus" );
   jsr( 0xFFAB );
   prchar( 0x0D );
   return;
@@ -231,47 +274,76 @@ void derror()
 
 void directory()
 {
-  setlfs(0x02, 0x08, 0x00);
-  setfilename( "$" );
-  fopen();
-  fchkin(2);
-  uint bytesread = 0x00; 
-  
+  asmcomment( "zero out the # of bytes read and filestatus" );
+  bytesread = 0x00; 
   filestatus = 0x00;
 
-  // skip 1st 2 bytes
-  uint b = fchrin();
-  b = fchrin();
+  asmcomment( "setlfs(2,8,0);" );
+  setlfs(0x02, 0x08, 0x00);
+  asmcomment( "set the filename to '$' for" );
+  asmcomment( "directory" );
+  setfilename( "$" );
+  asmcomment( "fopen();" );
+  fopen();
 
+  asmcomment( "fchkin(2);" );
+  fchkin(2);
+  
+  // skip 1st 2 bytes
+  asmcomment( "OPTIMISE general8bit OUT" );
+
+  asmcomment( "skip first 2 bytes" );
+  general8bit = fchrin();
+  general8bit = fchrin();
+
+  
   while( filestatus == 0x00 )
     {
-      // skip 2 bytes of each line
-      b = fchrin();
-      b = fchrin();
+      asmcomment( "also skip 2 bytes of each" );
+      asmcomment( "line in the directory" );
+      general8bit = fchrin();
+      general8bit = fchrin();
+
+      asmcomment( "get filestatus" );
       filestatus = peek( 0x90 );
       
       if( filestatus == 0x00 )
 	{
-	  // read line #
-	  uint lnL = fchrin();
-	  uint lnH = fchrin();
-	  // convert to an actual line number
-	  word ln = lnL + lnH * 256;
+	  asmcomment( "read the low and high bytes" );
+	  asmcomment( "of the line number" );
+	  lnL = fchrin();
+	  lnH = fchrin();
+	  asmcomment( "put them together to form the" );
+	  asmcomment( "actual line number" );
+	  ln = lnL + lnH * 256;
 	}
+
+      asmcomment( "get filestatus" );
       filestatus = peek( 0x90 );
       if( filestatus == 0x00 )
 	{
+	  asmcomment( "display the line #" );
 	  printf( ln );
+	  asmcomment( "display a space" );
 	  prchar( 0x20 );
+	  asmcomment( "read and display the" );
+	  asmcomment( "zero-terminated line" );
 	  readuntil0();
 	}
 
+      asmcomment( "display a newline" );
       prchar( 0x0D );
-      
+
+      asmcomment( "get the filestatus (again)" );
       filestatus = peek( 0x90 );
+      asmcomment( "get next line of directory" );
     }
+
+  asmcomment( "fclrchn();" );
   fclrchn();
+  asmcomment( "read the error string" );
   derror();
+  asmcomment( "fclose(2);" );
   fclose(2);
   
   return;
@@ -286,11 +358,18 @@ void prchar( uint prcharARG0 )
 
 void format()
 {
+
+  asmcomment( "setlfs(1,8,15);" );
   setlfs( 0x01, 0x08, 0x0F );
+  asmcomment( "setfilename( ''NEW:BLANK DISK,60''" );
   setfilename( "NEW:BLANK DISK,60" );
+  asmcomment( "fopen();" );
   fopen();
+  asmcomment( "fclrchn();" );
   fclrchn();
+  asmcomment( "derror();" );
   derror();
+  asmcomment( "fclose(1);" );
   fclose(1);
   return;
 }
@@ -322,23 +401,16 @@ void writeuntil0( word writeuntil0ARG0 )
 
 void readuntil0()
 {
-  uint keepreading = 0x01;
+  general8bit = fchrin();
   filestatus = peek( 0x90 );
-  general8bit = 0x00;
-  while( keepreading == 0x01 )
+  while( filestatus == 0x00 )
     {
-      general8bit = fchrin();      
+      prchar( general8bit );      
+      general8bit = fchrin();
       filestatus = peek( 0x90 );
-      
-      if( filestatus != 0x00 || general8bit == 0x00 )
+      if( general8bit == 0x00 )
 	{
-	  dec( keepreading );
-	}
-      else
-	{
-	  prchar( general8bit );
-	  //lda( general8bit );
-	  //jsr( 0xFFD2 );
+	  filestatus = 0x01;
 	}
     }
   return;
@@ -346,19 +418,28 @@ void readuntil0()
 
 void validate()
 {
+  asmcomment( "setlfs( 1, 8, 15 );" );
   setlfs( 1, 8, 15 );
+  asmcomment( "setfilename( ''V0'' );" );
   setfilename( "V0" );
+  asmcomment( "fopen();" );
   fopen();
+  asmcomment( "fclrchn();" );
   fclrchn();
+  asmcomment( "derror();" );
   derror();
+  asmcomment( "fclose(1);" );
   fclose(1);
   return;
 }
 
 void getuserinput()
 {
+  asmcomment( "zero out keyboard buffer" );
   poke( 0xC6, 0x00 );
   userinput = 0x00;
+  asmcomment( "call getchar() repeatedly until" );
+  asmcomment( "it returns something other than 0" );
   while( userinput == 0x00 )
     {
       userinput = getchar();

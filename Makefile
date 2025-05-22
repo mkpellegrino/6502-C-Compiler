@@ -22,9 +22,23 @@ lexer:	lexer.l
 compiler: y.tab.c
 	$(CC) $(LIBRARIES) -w  y.tab.c -o compiler
 
+bin:
+	java -jar KickAss.jar binaryfractions.asm
+
+binaryfractions:
+	./compiler --kick --basic --code-segment 2100 --data-segment 8192 --no-asm-comments < binaryfractions.c > binaryfractions.asm
+	java -jar KickAss.jar binaryfractions.asm
+
 pause:	pause.c
 	./compiler --kick --basic --code-segment 2100 --data-segment 24000 --no-asm-comments < pause.c > pause.asm
 	java -jar KickAss.jar pause.asm
+
+wedge.op: wedge.op.asm
+	java -jar KickAss.jar wedge.op.asm
+
+wedge: wedge.c
+	./compiler --kick --code-segment 2100 --data-segment 828 --no-asm-comments < wedge.c > wedge.asm
+	java -jar KickAss.jar wedge.asm
 
 sidirq:
 	cat sidirq.c > sidirq.tmp
@@ -32,6 +46,16 @@ sidirq:
 	java -jar KickAss.jar sidirq.asm
 	rm -f sidirq.sym
 	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -delete sidirq -write sidirq.prg sidirq
+
+gravity: gravity.c
+	./compiler --kick --basic --code-segment 2100 --data-segment 49152 < gravity.c > gravity.asm
+	cat pause.inc.asm >> gravity.asm
+	java -jar KickAss.jar gravity.asm
+
+times40: times40.c
+	./compiler --kick --basic --code-segment 2100 --data-segment 820 < times40.c > times40.asm
+	cat pause.inc.asm >> times40.asm
+	java -jar KickAss.jar times40.asm
 
 floattest:
 	cat float-test.c > float-test.tmp
@@ -169,69 +193,86 @@ syj:
 	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -delete synopsisj -delete writesynopsisj -write writesynopsisj.prg writesynopsisj
 	rm -f writesynopsisj.tmp writesynopsisj.sym
 
+createspritefiles:
+	./compiler --kick --basic --no-optimize --code-segment 2100 --data-segment 8192 < ./createspritefiles.c > createspritefiles.asm
+	java -jar KickAss.jar createspritefiles.asm
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -delete rorbit -delete henchman -delete dragon -delete ghost -write createspritefiles.prg createsprites,p
 
 savelevela:
 	./compiler --kick --basic --no-optimize --code-segment 2100 --data-segment 21000 < ./savedata-levela.c > savedata-levela.asm
 	java -jar KickAss.jar savedata-levela.asm
-	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele worlda -dele spritesa -dele savedata-levela -write savedata-levela.prg savedata-levela
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele worlda -dele spritesa -dele savedata-levela -write savedata-levela.prg savedata-levela -dele mapa
 	rm -f savedata-levela.tmp savedata-levela.sym
 
 savelevelb:
 	./compiler --kick --basic --no-optimize --code-segment 2100 --data-segment 21000 < ./savedata-levelb.c > savedata-levelb.asm
 	java -jar KickAss.jar savedata-levelb.asm
-	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele worldb -dele spritesb -dele savedata-levelb -write savedata-levelb.prg savedata-levelb
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele worldb -dele spritesb -dele savedata-levelb -write savedata-levelb.prg savedata-levelb -dele mapb
 	rm -f savedata-levelb.tmp savedata-levelb.sym
 
 savelevelc:
 	./compiler --kick --basic --no-optimize --code-segment 2100 --data-segment 21000 < ./savedata-levelc.c > savedata-levelc.asm
 	java -jar KickAss.jar savedata-levelc.asm
-	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele worldc -dele spritesc -dele savedata-levelc -write savedata-levelc.prg savedata-levelc
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele worldc -dele spritesc -dele savedata-levelc -write savedata-levelc.prg savedata-levelc -dele mapc
 	rm -f savedata-levelc.tmp savedata-levelc.sym
 
 saveleveld:
 	./compiler --kick --basic --no-optimize --code-segment 2100 --data-segment 21000 < ./savedata-leveld.c > savedata-leveld.asm
 	java -jar KickAss.jar savedata-leveld.asm
-	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele worldd -dele spritesd -dele savedata-leveld -write savedata-leveld.prg savedata-leveld
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele worldd -dele spritesd -dele savedata-leveld -write savedata-leveld.prg savedata-leveld -dele mapd
 	rm -f savedata-leveld.tmp savedata-leveld.sym
 
 savelevele:
 	./compiler --kick --basic --no-optimize --code-segment 2100 --data-segment 21000 --memory-locations < ./savedata-levele.c > savedata-levele.asm
 	java -jar KickAss.jar savedata-levele.asm
-	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele worlde -dele spritese -dele savedata-levele -write savedata-levele.prg savedata-levele
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele worlde -dele spritese -dele savedata-levele -write savedata-levele.prg savedata-levele -dele mape
 	rm -f savedata-levele.tmp savedata-levele.sym
 
 savelevelf:
 	./compiler --kick --basic --no-optimize --code-segment 2100 --data-segment 21000 < ./savedata-levelf.c > savedata-levelf.asm
 	java -jar KickAss.jar savedata-levelf.asm
-	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele worldf -dele spritesf -dele savedata-levelf -write savedata-levelf.prg savedata-levelf
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele worldf -dele spritesf -dele savedata-levelf -write savedata-levelf.prg savedata-levelf -dele mapf
 	rm -f savedata-levelf.tmp savedata-levelf.sym
 
 savelevelg:
 	./compiler --kick --basic --no-optimize --code-segment 2100 --data-segment 21000 < ./savedata-levelg.c > savedata-levelg.asm
 	java -jar KickAss.jar savedata-levelg.asm
-	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele worldg -dele spritesg -dele savedata-levelg -write savedata-levelg.prg savedata-levelg
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele worldg -dele spritesg -dele savedata-levelg -write savedata-levelg.prg savedata-levelg -dele mapg
 	rm -f savedata-levelg.tmp savedata-levelg.sym
 
 savelevelh:
 	./compiler --kick --basic --no-optimize --code-segment 2100 --data-segment 21000 < ./savedata-levelh.c > savedata-levelh.asm
 	java -jar KickAss.jar savedata-levelh.asm
-	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele worldh -dele spritesh -dele savedata-levelh -write savedata-levelh.prg savedata-levelh
-	rm -f savedata-levelh.tmp savedata-levelh.sym  savedata-;eve;ih.asm savedata-levelh.vs
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele worldh -dele spritesh -dele savedata-levelh -write savedata-levelh.prg savedata-levelh -dele maph
+	rm -f savedata-levelh.tmp savedata-levelh.sym savedata-levelh.asm savedata-levelh.vs
 
 saveleveli:
 	./compiler --kick --basic --no-optimize --code-segment 2100 --data-segment 21000 < ./savedata-leveli.c > savedata-leveli.asm
 	java -jar KickAss.jar savedata-leveli.asm
-	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele worldi -dele spritesi -dele savedata-leveli -write savedata-leveli.prg savedata-leveli
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele worldi -dele spritesi -dele savedata-leveli -write savedata-leveli.prg savedata-leveli -dele mapi
 	rm -f savedata-leveli.tmp savedata-leveli.sym savedata-leveli.asm savedata-leveli.vs
 
 savelevelj:
 	./compiler --kick --basic --no-optimize --code-segment 2100 --data-segment 21000 < ./savedata-levelj.c > savedata-levelj.asm
 	java -jar KickAss.jar savedata-levelj.asm
-	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele worldj -dele spritesj -dele savedata-levelj -write savedata-levelj.prg savedata-levelj
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele worldj -dele spritesj -dele savedata-levelj -write savedata-levelj.prg savedata-levelj -dele mapj
 	rm -f savedata-levelj.tmp savedata-levelj.sym
+
+test:	test.c
+	./compiler --kick --code-segment 2100 --data-segment 828 < ./test.c > test.asm
+	java -jar KickAss.jar test.asm
 
 bmprint.op: bmprint.op.asm
 	java -jar KickAss.jar bmprint.op.asm
+
+bmprint-test: bmprint-test.c
+	./compiler --kick --basic --no-optimize --code-segment 2100 --data-segment 21000 --no-asm-comments < ./bmprint-test.c > bmprint-test.asm
+	cat registers.inc.asm >> bmprint-test.asm
+	cat memory.inc.asm >> bmprint-test.asm
+	cat pause.inc.asm >> bmprint-test.asm
+	cat bmprint.inc.asm >> bmprint-test.asm
+	cat setscreenmode.inc.asm >> bmprint-test.asm
+	java -jar KickAss.jar bmprint-test.asm
 
 bmprint: bmprint.c registers.inc.asm memory.inc.asm pause.inc.asm
 	./compiler --kick --basic --no-optimize --code-segment 2100 --data-segment 21000 --no-asm-comments < ./bmprint.c > bmprint.asm
@@ -239,6 +280,7 @@ bmprint: bmprint.c registers.inc.asm memory.inc.asm pause.inc.asm
 	cat memory.inc.asm >> bmprint.asm
 	cat pause.inc.asm >> bmprint.asm
 	cat bmprint.inc.asm >> bmprint.asm
+#	cat mcplot.inc.asm >> bmprint.asm
 	cat setscreenmode.inc.asm >> bmprint.asm
 	java -jar KickAss.jar bmprint.asm
 
@@ -329,6 +371,22 @@ byte2hex: byte2hex.c
 syn1:
 	./compiler --kick --basic --code-segment 2100 --data-segment 8192 < ./syn1.c > syn1.asm
 	java -jar KickAss.jar syn1.asm
+	c1541 -attach KNIGHTSQUEST.d64 -dele completed -dele shoppe -dele syn1 -write syn1.prg syn1,p
+
+shoptext:
+	./compiler --kick --basic --code-segment 2100 --data-segment 8192 < ./shop-text.c > shop-text.asm
+	java -jar KickAss.jar shop-text.asm
+	c1541 -attach KNIGHTSQUEST.d64 -dele shoppe -dele shop-text -write shop-text.prg shop-text,p
+
+endtext:
+	./compiler --kick --basic --code-segment 2100 --data-segment 8192 < ./end-text.c > end-text.asm
+	java -jar KickAss.jar end-text.asm
+	c1541 -attach KNIGHTSQUEST.d64 -dele endofgame -dele -write end-text.prg end-text,p
+
+lastword:
+	./compiler --kick --basic --code-segment 2100 --data-segment 8192 < ./last-word.c > last-word.asm
+	java -jar KickAss.jar last-word.asm
+	c1541 -attach KNIGHTSQUEST.d64 -dele end-text -dele last-word -write last-word.prg last-word,p
 
 putsyns:
 	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele synopsisa -write synopsisa synopsisa,s
@@ -366,27 +424,78 @@ randomtest: randomtest.c random.inc.asm
 	java -jar KickAss.jar randomtest.asm
 	java -jar KickAss.jar randomtest.op.asm
 
+underlying.op: underlying.op.asm
+	java -jar KickAss.jar -vicesymbols underlying.op.asm
+
+underlying: underlying.c
+	./compiler --kick --basic --code-segment 2061 --data-segment 21000 --memory-locations --no-asm-comments < ./underlying.c > underlying.asm
+	cat mcplot.inc.asm >> underlying.asm
+	cat segment.inc.asm >> underlying.asm
+	cat registers.inc.asm >> underlying.asm
+	cat memory.inc.asm >> underlying.asm
+	cat pause.inc.asm >> underlying.asm
+	cat bmprint.inc.asm >> underlying.asm
+	cat setscreenmode.inc.asm >> underlying.asm
+	cat getoffset.inc.asm >> underlying.asm
+	java -jar KickAss.jar -vicesymbols -bytedump underlying.asm
+
+disk-procedures.op:
+	java -jar KickAss.jar disk-procedures.op.asm
+
+disk-procedures:
+	./compiler --kick --basic --code-segment 2061 --data-segment 8192 < ./disk-procedures.c > disk-procedures.asm
+	java -jar KickAss.jar disk-procedures.asm
+
+dironly:
+	./compiler --kick --code-segment 2061 --data-segment 8192 < ./dironly.c > dironly.asm
+	java -jar KickAss.jar dironly.asm
+	java -jar KickAss.jar dironly.op.asm -o dironly52915
+
 line.op: line.op.asm
 	java -jar KickAss.jar line.op.asm
 
+joystick:
+	./compiler --kick --basic --code-segment 2061 --data-segment 8192 --no-asm-comments < ./joystick.c > joystick.asm
+	java -jar KickAss.jar ./joystick.asm
+
+getchar: getchar.c getin.c
+	./compiler --kick --basic --code-segment 2061 --data-segment 8192 --no-asm-comments < ./getchar.c > getchar.asm
+	./compiler --kick --basic --code-segment 2061 --data-segment 8192 --no-asm-comments < ./getin.c > getin.asm
+	java -jar KickAss.jar -vicesymbols -bytedump getchar.asm
+	java -jar KickAss.jar -vicesymbols -bytedump getin.asm
+
 line: line.c
-	./compiler --kick --basic --code-segment 2061 --data-segment 21000 --no-asm-comments < ./line.c > line.asm
+	./compiler --kick --basic --code-segment 2061 --data-segment 21000 --memory-locations --no-asm-comments < ./line.c > line.asm
+	cat mcplot.inc.asm >> line.asm
 	cat segment.inc.asm >> line.asm
 	cat registers.inc.asm >> line.asm
 	cat memory.inc.asm >> line.asm
 	cat getpixel.inc.asm >> line.asm
 	cat pause.inc.asm >> line.asm
+	cat bmprint.inc.asm >> line.asm
 	cat setscreenmode.inc.asm >> line.asm
-	java -jar KickAss.jar line.asm
+	cat getoffset.inc.asm >> line.asm
+	java -jar KickAss.jar -vicesymbols -bytedump line.asm
 	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach line.d64 -dele line.prg -write line.prg
 
-knight3:
+hires:	hires.c
+	./compiler --unsafe-ifs --kick --basic --code-segment 2061 --data-segment 32768 --no-asm-comments < ./hires.c > hires.asm
+	cat registers.inc.asm >> hires.asm
+	cat memory.inc.asm >> hires.asm
+	cat pause.inc.asm >> hires.asm
+	java -jar KickAss.jar hires.asm
+
+knight3: knight3.c keyup.inc.asm random.inc.asm memory.inc.asm segment.inc.asm registers.inc.asm modulus.inc.asm 
 #	cat ./knight3.c common.c > knight3.tmp
-	./compiler --unsafe-ifs --kick --basic --code-segment 2061 --data-segment 27000 --no-asm-comments < ./knight3.c > knight3.asm
+	./compiler --unsafe-ifs --kick --basic --code-segment 2061 --data-segment 32768 --no-asm-comments < ./knight3.c > knight3.asm
 	cat random.inc.asm >> knight3.asm
+	cat keyup.inc.asm >> knight3.asm
 	cat memory.inc.asm >> knight3.asm
 	cat registers.inc.asm >> knight3.asm
-	java -jar KickAss.jar  knight3.asm
+	cat segment.inc.asm >> knight3.asm
+	cat modulus.inc.asm >> knight3.asm
+	java -jar KickAss.jar -define SAFEMCPLOT knight3.asm
+#	java -jar KickAss.jar knight3.asm
 	rm -f knight3.tmp
 	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -delete knight3 -write knight3.prg knight3
 
@@ -394,17 +503,53 @@ writesyn1: writesynopsis1.c
 	./compiler --unsafe-ifs --kick --basic --code-segment 2061 --data-segment 26000 --no-asm-comments < ./writesynopsis1.c > writesynopsis1.asm
 	java -jar KickAss.jar writesynopsis1.asm
 
-knight3op:
-	java -jar KickAss.jar knight3.op.asm
+knight3.op:
+	java -jar KickAss.jar -define SAFEMCPLOT knight3.op.asm
 	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -delete knight3 -write knight3.op.prg knight3
 
+array:	array.c
+	./compiler --unsafe-ifs --kick --basic --code-segment 2061 --data-segment 8192 --no-asm-comments < ./array.c > array.asm
+	java -jar KickAss.jar array.asm
+
+8sprites: 8sprites.c
+	./compiler --unsafe-ifs --kick --basic --code-segment 2061 --data-segment 8192 --no-asm-comments < ./8sprites.c > 8sprites.asm
+	cat pause.inc.asm >> 8sprites.asm
+	cat registers.inc.asm >> 8sprites.asm
+#	cat setscreenmode.inc.asm >> 8sprites.asm
+	cat memory.inc.asm >> 8sprites.asm
+	java -jar KickAss.jar 8sprites.asm
+
+bitmap2: bitmap2.c
+	./compiler --unsafe-ifs --kick --basic --code-segment 2061 --data-segment 8192 --no-asm-comments < ./bitmap2.c > bitmap2.asm
+	cat pause.inc.asm >> bitmap2.asm
+	cat registers.inc.asm >> bitmap2.asm
+	cat memory.inc.asm >> bitmap2.asm
+	cat segment.inc.asm >> bitmap2.asm
+	java -jar KickAss.jar bitmap2.asm
+
+emptymap.op: emptymap.op.asm
+	java -jar KickAss.jar emptymap.op.asm
+
+emptymap: emptymap.c
+	./compiler --unsafe-ifs --kick --basic --code-segment 2061 --data-segment 8192 --no-asm-comments < ./emptymap.c > emptymap.asm
+	cat pause.inc.asm >> emptymap.asm
+	cat registers.inc.asm >> emptymap.asm
+	cat memory.inc.asm >> emptymap.asm
+	cat segment.inc.asm >> emptymap.asm
+	java -jar KickAss.jar emptymap.asm
+	rm -f emptymap.c~
+
+sprite: sprite.c
+	./compiler --unsafe-ifs --kick --basic --code-segment 2061 --data-segment 8192 --no-asm-comments < ./sprite.c > sprite.asm
+	cat pause.inc.asm >> sprite.asm
+	cat registers.inc.asm >> sprite.asm
+	cat setscreenmode.inc.asm >> sprite.asm
+	cat memory.inc.asm >> sprite.asm
+	java -jar KickAss.jar sprite.asm
 
 
 cleanwriters:
-	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele savedata-level1 -dele savedata-level2 -dele savedata-level3 -dele savedata-level4 -dele savedata-level5 -dele savedata-level6 -dele savedata-level7 -dele savedata-level8 -dele savedata-level9 -dele savedata-levela
 	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele savedata-levela -dele savedata-levelb -dele savedata-levelc -dele savedata-leveld -dele savedata-levele -dele savedata-levelf -dele savedata-levelg -dele savedata-levelh -dele savedata-leveli -dele savedata-levelj
-	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele writesynopsis1 -dele writesynopsis2 -dele writesynopsis3 -dele writesynopsis4 -dele writesynopsis5 -dele writesynopsis6 -dele writesynopsis7 -dele writesynopsis8 -dele writesynopsis9 -dele writesynopsisa
-	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele writesynopsisa -dele writesynopsisb -dele writesynopsisc -dele writesynopsisd -dele writesynopsise -dele writesynopsisf -dele writesynopsisg -dele writesynopsish -dele writesynopsisi -dele writesynopsisj
 	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -list
 
 wipeworld:
