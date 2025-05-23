@@ -5077,7 +5077,7 @@ body: WHILE
       addAsm( str_STA + "($04),Y", 2, false); 
 
       addAsm( str_DEY );
-      addAsm( str_CPY + "#$00", 2, false );
+      addAsm( str_CPY + "#$FF", 2, false );
       addAsm( str_BNE + "!-", 2, false );
     }
   else
