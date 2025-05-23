@@ -5060,6 +5060,26 @@ body: WHILE
       addCompilerMessage( "memcpy(wordid,wordid,uintimm): Not Yet Implemented", 3 );
       //popScope();
     }
+  else if( isXA( $3.name ) && isWordIMM($6.name) && isUintIMM($9.name) )
+    {
+      int dest_addr = atoi(stripFirst($6.name).c_str());
+      int cpy_size = atoi(stripFirst($9.name).c_str());
+      addAsm( str_STA + "$02", 2, false );
+      addAsm( str_STX + "$03", 2, false );
+      addAsm( str_LDA + "#$" + toHex(get_word_L(dest_addr)), 3, false );
+      addAsm( str_STA + "$04", 2, false );
+      addAsm( str_LDA + "#$" + toHex(get_word_H(dest_addr)), 3, false );
+      addAsm( str_STA + "$05", 2, false );
+
+      addAsm( str_LDY + "#$" + toHex(atoi(stripFirst($9.name).c_str())), 2, false ); // ldy size
+      addAsm( "!:", 0, true );
+      addAsm( str_LDA + "($02),Y", 2, false);
+      addAsm( str_STA + "($04),Y", 2, false); 
+
+      addAsm( str_DEY );
+      addAsm( str_CPY + "#$00", 2, false );
+      addAsm( str_BNE + "!-", 2, false );
+    }
   else
     {
       addCompilerMessage( "memcpy not yet implemented for arguments of those types", 3 );
@@ -9606,9 +9626,16 @@ statement: datatype ID init
     {
       addAsm( str_LDX + "#$" + toHex(atoi(stripFirst($3.name).c_str())), 2, false );
     }
+  else if( isUintID( $3.name ) )
+    {
+      int tmp_addr = hexToDecimal($3.name); 
+      int size_of_instruction = 3;
+      if( tmp_addr <= 255 ) size_of_instruction = 2;
+      addAsm( str_LDX + getNameOf(tmp_addr), size_of_instruction, false );      
+    }
   else
     {
-      addCompilerMessage( "for now Param1 (Logical#) must be a UintIMM", 3);
+      addCompilerMessage( "for now Param1 (Logical#) must be a UintIMM or UintID", 3);
     }
   addAsm( str_JSR + "$FFC6", 3, false );
   
