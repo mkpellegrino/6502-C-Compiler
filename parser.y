@@ -3438,7 +3438,7 @@ body: WHILE
     }
   else if( isIntID($3.name) || isUintID($3.name) )
     {
-      addAsm( str_LDA + $3.name, 3, false );
+      addAsm( str_LDA + getNameOf(hexToDecimal($3.name)), 3, false );
     }
   else if( isIntIMM($3.name) || isUintIMM($3.name) )
     {
@@ -9597,7 +9597,7 @@ statement: datatype ID init
     }
   else if( isUintID($3.name) )
     {
-      addAsm( str_LDA + $3.name, 3, false );
+      addAsm( str_LDA + getNameOf(hexToDecimal($3.name)), 3, false );
     }
   else
     {
@@ -9611,6 +9611,10 @@ statement: datatype ID init
   if( isUintIMM( $3.name ) )
     {
       addAsm( str_LDX + "#$" + toHex(atoi(stripFirst($3.name).c_str())), 2, false );
+    }
+  else if( isUintID($3.name) )
+    {
+      addAsm( str_LDX + getNameOf(hexToDecimal($3.name)), 3, false );
     }
   else
     {
@@ -9626,6 +9630,10 @@ statement: datatype ID init
     {
       addAsm( str_LDX + "#$" + toHex(atoi(stripFirst($3.name).c_str())), 2, false );
     }
+  else if( isA( $3.name ) )
+    {
+      addAsm( str_TAX, 1, false );
+    }
   else if( isUintID( $3.name ) )
     {
       int tmp_addr = hexToDecimal($3.name); 
@@ -9635,7 +9643,7 @@ statement: datatype ID init
     }
   else
     {
-      addCompilerMessage( "for now Param1 (Logical#) must be a UintIMM or UintID", 3);
+      addCompilerMessage( "for now Param1 (Logical#) must be a A, UintIMM or UintID", 3);
     }
   addAsm( str_JSR + "$FFC6", 3, false );
   
