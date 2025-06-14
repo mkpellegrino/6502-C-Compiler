@@ -6325,7 +6325,6 @@ statement: datatype ID init
   string _dt = string($1.name);
   string _id = string($2.name);
   string _init = string($3.name);
-  
   //  ASSIGNMENTS
   addParserComment( "RULE: statement: datatype ID init" );
   //addCompilerMessage( _init, 0 );
@@ -6335,6 +6334,7 @@ statement: datatype ID init
   if( !isMOB(_init) )
     {
       addAsmVariable(_id, current_variable_type );
+      //addCompilerMessage( _dt, 0 );
     }
   else
     {
@@ -6346,6 +6346,7 @@ statement: datatype ID init
   
   if(isFloatDT(_dt) && isFloatID(_id) && isARG(_init))
     {
+      // This is likely not needed
       addComment( "float FloatID = ARG" );
       addAsm( str_LDA + "#69", 2, false );
       addAsm( str_LDY + "#$00", 2, false );
@@ -6358,12 +6359,12 @@ statement: datatype ID init
     {
       string s = string("Creating variable ") + getNameOf(getAddressOf(_id)) + " but not setting it (may contain garbage).";
       addCompilerMessage( s, 0 );
-      addComment( _dt + " " + getNameOf(getAddressOf(_id)) + " = NULL;" );
+      //addComment( _dt + " " + getNameOf(getAddressOf(_id)) + " = NULL;" );
     }
   else if( _init == string("Slipstream"))
     {
       // I have no idea WTF I was thinking here... Slipstream?!?
-      if(  (isIntDT(_dt) || isUintDT(_dt)) &&  (isIntID(_id) || isUintID(_id)) )
+      if( (isIntDT(_dt) || isUintDT(_dt)) && (isIntID(_id) || isUintID(_id)) )
 	{
 	  addComment( "Slipstream (U)Int" );
 	  int addr1 = getAddressOf(_id);
@@ -6394,61 +6395,59 @@ statement: datatype ID init
     }
   else if(isFloatDT(_dt) && isFloatID(_id) && isXA(_init))
     {
-      // TODO: This needs to be changed so that if isXA(_init) then
-      // it uses that as the address of a float
       addComment( "FLOAT FloatID = XA" );
-      int src_addr_L = get_word_L(hexToDecimal(stripFirst(_init)));
-      int src_addr_H = get_word_H(hexToDecimal(stripFirst(_init)));
-
-      int dst_addr_L = get_word_L((getAddressOf(_id)));
-      int dst_addr_H = get_word_H((getAddressOf(_id)));
-      addComment(getNameOf(getAddressOf(_id)));
-      
-      addAsm( str_TAY ); //move X -> Y
-      addAsm( str_TXA ); //
-      addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
-      addAsm( str_LDX + "#$" + toHex(dst_addr_L), 3, false );
-      addAsm( str_LDY + "#$" + toHex(dst_addr_H), 3, false );
-      addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM" + _id, 3, false );
+      addComment( "^v^ OPTIMIZE v^v" );
+      addAsm( str_TAY, 1, false );
+      addAsm( str_TXA, 1, false );
+      addComment( "WORD -> FAC" );
+      addAsm( str_JSR + "$B391", 3, false );
+      addAsm( str_LDX + "#<" + getNameOf(getAddressOf( _id )), 3, false );
+      addAsm( str_LDY + "#>" + getNameOf(getAddressOf( _id )), 3, false );
+      addComment( "FAC -> MEM" );
+      addAsm( str_JSR + "$BBD4", 3, false );
     }
    else if(isFloatDT(_dt) && isFloatID(_id) && isA(_init))
      {
        addComment( "FLOAT FloatID = A" );
-       addAsm( str_TAY );
+       addComment( "^v^ OPTIMIZE v^v" );
+       addAsm( str_TAY, 1, false );
        addAsm( str_LDA + "#$00", 2, false );
-       addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
-       addAsm( str_LDX + "#<" + getNameOf(getAddressOf(_id)), 3, false );
-       addAsm( str_LDY + "#>" + getNameOf(getAddressOf(_id)), 3, false );
-       addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );
+       addComment( "WORD -> FAC" );
+       addAsm( str_JSR + "$B391", 3, false );
+       addAsm( str_LDX + "#<" + getNameOf(getAddressOf( _id )), 3, false );
+       addAsm( str_LDY + "#>" + getNameOf(getAddressOf( _id )), 3, false );
+       addComment( "FAC -> MEM" );
+       addAsm( str_JSR + "$BBD4", 3, false );
      }
-   else if(isFloatDT(_dt) && isFloatID(_id) && isUintID(_init))
-     {
-       addComment( "FLOAT FloatID = UIntID" );
-       addCompilerMessage( "UInt --> Float conversion", 0 );
-       addAsm( str_LDY + getNameOf(getAddressOf($3.name)), 3, false );
-       addAsm( str_LDA + "#$00", 2, false );
-       addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
-       addAsm( str_LDX + "#<" + getNameOf(getAddressOf(_id)), 3, false );
-       addAsm( str_LDY + "#>" + getNameOf(getAddressOf(_id)), 3, false );
-       addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );
-     }
-    else if(isFloatDT(_dt) && isFloatID(_id) && isWordID(_init))
-    {
-      addComment( "FLOAT FloatID = WordID" );
-      addCompilerMessage( "16 bit signed Word --> Float (-32767 < word < 32768)", 2 );
-      addAsm( str_LDY + getNameOf(getAddressOf($3.name)), 3, false );
-      addAsm( str_LDY + getNameOf(getAddressOf($3.name)) + "+1", 3, false );
-      addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
-      addAsm( str_LDX + "#<" + getNameOf(getAddressOf(_id)), 3, false );
-      addAsm( str_LDY + "#>" + getNameOf(getAddressOf(_id)), 3, false );
-      addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );
-    }
+   /* else if(isFloatDT(_dt) && isFloatID(_id) && isUintID(_init)) */
+   /*   { */
+   /*     addComment( "FLOAT FloatID = UIntID" ); */
+   /*     addCompilerMessage( "UInt --> Float conversion", 0 ); */
+   /*     addAsm( str_LDY + getNameOf(getAddressOf($3.name)), 3, false ); */
+   /*     addAsm( str_LDA + "#$00", 2, false ); */
+   /*     addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false ); */
+   /*     addAsm( str_LDX + "#<" + getNameOf(getAddressOf(_id)), 3, false ); */
+   /*     addAsm( str_LDY + "#>" + getNameOf(getAddressOf(_id)), 3, false ); */
+   /*     addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false ); */
+   /*   } */
+    /* else if(isFloatDT(_dt) && isFloatID(_id) && isWordID(_init)) */
+    /* { */
+    /*   addComment( "FLOAT FloatID = WordID" ); */
+    /*   addCompilerMessage( "16 bit signed Word --> Float (-32767 < word < 32768)", 2 ); */
+    /*   addAsm( str_LDY + getNameOf(getAddressOf($3.name)), 3, false ); */
+    /*   addAsm( str_LDY + getNameOf(getAddressOf($3.name)) + "+1", 3, false ); */
+    /*   addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false ); */
+    /*   addAsm( str_LDX + "#<" + getNameOf(getAddressOf(_id)), 3, false ); */
+    /*   addAsm( str_LDY + "#>" + getNameOf(getAddressOf(_id)), 3, false ); */
+    /*   addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false ); */
+    /* } */
   else if(isFloatDT(_dt) && isFloatID(_id) && isFAC(_init))
     {
       addComment( "FLOAT FloatID = FAC" );
       addAsm( str_LDX + "#<" + getNameOf(getAddressOf(_id)), 2, false );
       addAsm( str_LDY + "#>" + getNameOf(getAddressOf(_id)), 2, false );
-      addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> RAM", 3, false );
+      addComment( "FAC -> RAM" );
+      addAsm( str_JSR + "$BBD4", 3, false );
     }
   else if(isFloatDT(_dt) && isFloatID(_id) && isFloatIMM(_init))
     {
@@ -6471,7 +6470,8 @@ statement: datatype ID init
     }
   else if((isUintDT(_dt)||isIntDT(_dt)) && (isUintID(_id)||isIntID(_id)) && isXA(_init))
     {
-      addComment( "uint UintID = XA    or    int IntID = XA" );
+      deletePreviousAsm();
+      addComment( "UInt UIntID = XA" );
       addCompilerMessage("Initialising a 1 byte memory location with a 2 byte value; losing High Byte",0);
       int instr_size = 3;
       if( current_variable_base_address < 256 ) instr_size = 2;
@@ -6485,7 +6485,7 @@ statement: datatype ID init
       addAsm( str_LDX + "#$00", 2, false );
       int instr_size = 3;
       if( current_variable_base_address < 256 ) instr_size = 2;
-      addAsm(str_STA + string(_id), instr_size, false );	    
+      addAsm(str_STA + _id, instr_size, false );	    
       instr_size = 3;
       if( current_variable_base_address+1 < 256 ) instr_size = 2;
       addAsm(str_STX + _id + "+1", instr_size, false );
@@ -6496,6 +6496,15 @@ statement: datatype ID init
       addAsm(str_STA + _id, 3, false );
       addAsm(str_STX + _id + "+1", 3, false );
     }
+  else if(isWordDT(_dt) && isWordID(_id) && isFAC(_init))
+    {
+      addComment( "FAC -> WORD" );
+      addAsm( str_JSR + "$B1AA", 3, false );
+      addComment("WordID = FAC" );
+      addAsm( str_STY + getNameOf(getAddressOf($2.name)), 3, false );
+      addAsm( str_STA + getNameOf(getAddressOf($2.name)) + " +1", 3, false );      
+    }
+    
   else if(isMOB(_init))
     {
       // 2024 05 13 - This should be _compLETEly_ redone (but it works).
@@ -6610,15 +6619,10 @@ statement: datatype ID init
       mobcpy_is_needed = true;
       popScope();
     }
-  else if( isStringDT(_dt) )
-    {
-      addCompilerMessage( "found a string!", 0 );
-
-    }
   else
     {
       string msg = string( "Undefined variable: ") + string( _dt ) + string(" ") +  string( _id ) + string("=") + string( _init );
-      addCompilerMessage( msg, 3);
+      addCompilerMessage( msg, 3 );
     }
 };
 | datatype ID '[' expression ']'
@@ -9158,35 +9162,16 @@ statement: datatype ID init
   current_variable_base_address = getAddressOf($1.name);
   if(current_variable_base_address == -1)
     {
-      addCompilerMessage( "ERROR: Undeclared Variable", 3 );
+      addCompilerMessage( string("ERROR: Undeclared Variable: ") + $1.name, 3 );
     }
   addParserComment( "RULE: statement: ID init" );
 
   if( (isIntID($1.name) || isUintID($1.name)) && isWordID($2.name) )
     {
-      addComment("UintID = WordID" );
-      addCompilerMessage( "Setting UINT = WORD, losing high byte", 0 );
+      addComment( "This Can't Happen" );
+      /*  addComment("UIntID = WordID" ); */
+  /*     addCompilerMessage( "Setting UINT = WORD, losing high byte", 0 ); */
 
-      int addr1 = getAddressOf($1.name);
-      int addr2 = getAddressOf($2.name);
-      int instr_size = 3;
-      if( addr2 < 256 ) instr_size = 2;
-      addAsm( str_LDA + getNameOf( addr2 ), instr_size, false );
-      instr_size = 3;
-      if( addr1 < 256 ) instr_size = 2;
-      addAsm( str_LDA + getNameOf( addr1 ), instr_size, false );
-    }
-  else if( isUintID($1.name) && isNULL($2.name ) )
-    {
-      string s = string("Setting variable ") + getNameOf(getAddressOf($1.name)) + " to NULL is not necessary.";
-      addCompilerMessage( s, 0 );
-      //addComment( getNameOf(getAddressOf($1.name)) + " = NULL;" );
-    }
-  /* else if( isUintID($1.name) && isUintID($2.name) ) */
-  /*   { */
-  /*     addComment( "???? - Something is incorrect here. - 2023 08 08" ); */
-  /*     //addComment( string( "$1.name = " ) + $1.name + "\t$2.name = " + $2.name );  */
-  /*     addComment("UintID = UintID" ); */
   /*     int addr1 = getAddressOf($1.name); */
   /*     int addr2 = getAddressOf($2.name); */
   /*     int instr_size = 3; */
@@ -9194,45 +9179,14 @@ statement: datatype ID init
   /*     addAsm( str_LDA + getNameOf( addr2 ), instr_size, false ); */
   /*     instr_size = 3; */
   /*     if( addr1 < 256 ) instr_size = 2; */
-  /*     addAsm( str_STA + getNameOf( addr1 ), instr_size, false );       */
+  /*     addAsm( str_LDA + getNameOf( addr1 ), instr_size, false ); */
   /*   } */
-  /* else if( isWordID($1.name) && isWordID($2.name) ) */
+  /* else if( isUintID($1.name) && isNULL($2.name ) ) */
   /*   { */
-  /*     addComment("WordID = WordID" ); */
-  /*     int addr1 = getAddressOf($1.name); */
-  /*     int addr2 = getAddressOf($2.name); */
-  /*     int instr_size = 3; */
-  /*     if( addr2 < 256 ) instr_size = 2; */
-  /*     addAsm( str_LDA + getNameOf(addr2), instr_size, false ); */
-  /*     instr_size = 3; */
-  /*     if( addr1 < 256 ) instr_size = 2; */
-  /*     addAsm( str_STA + getNameOf(addr1), instr_size, false ); */
-      
-  /*     instr_size = 3; */
-  /*     if( addr2+1 < 256 ) instr_size = 2; */
-  /*     addAsm( str_LDA + getNameOf(addr2) + "+1", instr_size, false ); */
-  /*     instr_size = 3; */
-  /*     if( addr1+1 < 256 ) instr_size = 2; */
-  /*     addAsm( str_STA + getNameOf(addr1) + "+1", instr_size, false ); */
-  /*   } */
-  /* else if( isWordID($1.name) && (isUintID($2.name) || isIntID($2.name) )) */
-  /*   { */
-  /*     addComment("WordID = UintID||IntID" ); */
-  /*     int addr1 = getAddressOf($1.name); */
-  /*     int addr2 = getAddressOf($2.name); */
-  /*     int instr_size = 3; */
-  /*     if( addr2 < 256 ) instr_size = 2; */
-  /*     addAsm( str_LDA + getNameOf( addr2 ), instr_size, false ); */
-  /*     instr_size = 3; */
-  /*     if( addr1 < 256 ) instr_size = 2; */
-  /*     addAsm( str_STA + getNameOf( addr1 ), instr_size, false ); */
-
-  /*     // high byte */
-  /*     addAsm( str_LDA + "#$00" , 2, false ); */
-  /*     instr_size = 3; */
-  /*     if( addr1+1 < 256 ) instr_size = 2; */
-  /*     addAsm( str_STA + getNameOf(addr1) + "+1", instr_size, false ); */
-  /*   } */
+  /*     string s = string("Setting variable ") + getNameOf(getAddressOf($1.name)) + " to NULL is not necessary."; */
+  /*     addCompilerMessage( s, 0 ); */
+  /*     //addComment( getNameOf(getAddressOf($1.name)) + " = NULL;" ); */
+    }
   else if( isWordID($1.name) && isA($2.name) )
     {
       addComment("WordID = A" );
@@ -9263,6 +9217,14 @@ statement: datatype ID init
       if( addr+1 < 256 ) instr_size = 2;
       addAsm( str_STX + getNameOf(addr) + "+1", instr_size, false);
     }
+  else if( isWordID($1.name) && isFAC($2.name) )
+    {
+      addComment( "FAC -> WORD" );
+      addAsm( str_JSR + "$B1AA", 3, false );
+      addComment("WordID = FAC" );
+      addAsm( str_STY + getNameOf(getAddressOf($1.name)), 3, false );
+      addAsm( str_STA + getNameOf(getAddressOf($1.name)) + " +1", 3, false );
+    }  
   else if( isFloatID($1.name) && isXA( $2.name ) )
     {
       addComment( "^v^ OPTIMIZE v^v" );
@@ -9289,73 +9251,27 @@ statement: datatype ID init
       addAsm( str_LDY + "#>" + getNameOf(getAddressOf( $1.name )), 3, false );
       addAsm( str_JSR + "$BBD4", 3, false );
     }
-  
-  /* else if(isARG($2.name)) */
-  /*   { */
-  /*     addComment( "LINE 9268:  else if(isARG($2.name))" ); */
-  /*   } */
-  /* else if( isFAC($2.name)) */
-  /*   { */
-  /*     addAsm( str_LDX + "#<" + getNameOf(current_variable_base_address), 2, false ); */
-  /*     addAsm( str_LDY + "#>" + getNameOf(current_variable_base_address), 2, false ); */
-  /*     addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false ); */
-  /*   } */
-  /* else if( isMOB($2.name) ) */
-  /*   { */
-  /*     addComment( "ID init [else if( isMOB($2.name) )]" ); */
-  /*   } */
-  /* else if( isFloatIMM($2.name) ) */
-  /*   { */
-  /*     addComment( string("FLOAT v. IMM FLOAT) [") + string($1.name) + string(":") + string($2.name) + string( "]" ) ); */
-  /*     int base_address = getAddressOf($1.name); */
-  /*     if( base_address == -1 ) base_address = 105; */
-  /*     inlineFloat($2.name, base_address ); */
-  /*   } */
-  /* else if( (current_variable_type==0||current_variable_type==1) && isUintIMM($2.name) ) */
-  /*   { */
-  /*     addAsm( str_LDA + "#$" + toHex(atoi(stripFirst($2.name).c_str())) , 2, false ); */
-  /*   } */
-  /* else if( current_variable_type==2  && (isUintIMM($2.name)||isIntIMM($2.name))) */
-  /*   { */
-  /*     addAsm( str_LDA + "#$" + toHex(atoi(stripFirst($2.name).c_str())), 2, false ); */
-  /*     addAsm( str_LDX + "#$00", 2, false ); */
-  /*   } */
-  /* else if( isWordID($1.name) && isXA($2.name) ) */
-  /*   { */
-  /*     int instr_size = 3; */
-  /*     if( current_variable_base_address < 256 ) instr_size=2;  */
-  /*     addAsm( str_STA + getNameOf(current_variable_base_address), instr_size, false); */
-  /*     if( (current_variable_base_address+1) < 256 ) */
-  /* 	{ */
-  /* 	  instr_size=2; */
-  /* 	} */
-  /*     else */
-  /* 	{ */
-  /* 	  instr_size=3; */
-  /* 	} */
-  /*     addAsm( str_STX + getNameOf(current_variable_base_address) + "+1", instr_size, false); */
-  /*   } */
   else if( (isUintID($1.name)||isIntID($1.name)) && isA($2.name) )
     {
       int instr_size = 3;
       if( current_variable_base_address < 256 ) instr_size=2; 
       addAsm( str_STA + getNameOf(current_variable_base_address), instr_size, false);
     }
-  else if( (isUintID($1.name)||isIntID($1.name)) &&  isXA($2.name) )
+  else if( (isUintID($1.name)||isIntID($1.name)) && isXA($2.name) )
     {
+      deletePreviousAsm();
       addCompilerMessage("setting a 1 byte memory location to a 2 byte value... losing High Byte",0);
       int instr_size = 3;
       if( current_variable_base_address < 256 ) instr_size = 2;
       addAsm( str_STA + getNameOf( current_variable_base_address), instr_size, false );
     }
-  /* else if( (isUintID($1.name)||isIntID($1.name) ) && (isIntIMM($2.name)||isUintIMM($2.name))) */
-  /*   { */
-  /*     addComment( string($1.name) + string( " = " ) + string($2.name) ); */
-  /*     //addAsm( str_LDA + "#$" + toHex( atoi($2.name) ), 2, false ); */
-  /*     int instr_size = 3; */
-  /*     if( current_variable_base_address < 256 ) instr_size=2;  */
-  /*     addAsm( str_STA + getNameOf(current_variable_base_address), instr_size, false); */
-  /*   } */
+  else if( (isUintID($1.name)||isIntID($1.name)) && isFAC($2.name) )
+    {
+      addComment( "FAC -> WORD" );
+      addAsm( str_JSR + "$B1AA", 3, false );
+      addComment("UIntID = FAC" );
+      addAsm( str_STY + getNameOf(getAddressOf($1.name)), 3, false );
+    }
   else
     {
       addCompilerMessage( "ID initialisation error - invalid initialiser", 3 );
@@ -9970,17 +9886,17 @@ init: '=' expression
 
   if( isARG($2.name)  )
     {
-      addComment( "initialising a float with ARG" );
+      addComment( "initialising with ARG" );
       strcpy($$.name, "_ARG" );
     }
   else if( isXA($2.name)  )
     {
-      addComment( "initialising a word with XA" );
+      addComment( "initialising with XA" );
       strcpy($$.name, "_XA" );
     }
   else if( isFAC($2.name)  )
     {
-      addComment( "initialising a float with FAC" );
+      addComment( "initialising with FAC" );
       strcpy($$.name, "_FAC" );
     }  
   else if( isMOB($2.name)  )
@@ -9990,20 +9906,36 @@ init: '=' expression
     }  
   else if( isA($2.name) )
     {
-      addComment( "initialising a byte with A" );
+      addComment( "initialising with A" );
       strcpy($$.name, "_A" );
     }
   else if( isFloatIMM($2.name) )
     {
-      addComment( "initialising FloatIMM" );
-      strcpy($$.name, $2.name);
+      addComment( "initialising with FloatIMM" );
+      inlineFloat( $2.name, 105 );
+
+      //addAsm( str_LDY + "$69", 3, false );
+      //addAsm( str_LDA + "$00", 3, false );
+      //addComment( "RAM -> FAC" );
+      //addAsm( str_JSR + "$BBA2", 3, false );
+      
+      strcpy($$.name, "_FAC");
+    }
+  else if( isFloatID($2.name) )
+    {
+      addComment( "initialising with FloatID" );
+      addAsm( str_LDA + "#<" + getNameOf(getAddressOf($2.name)), 3, false );
+      addAsm( str_LDY + "#>" + getNameOf(getAddressOf($2.name)), 3, false );
+      addComment( "RAM -> FAC" );
+      addAsm( str_JSR + "$BBA2", 3, false );
+      strcpy($$.name, "_FAC" );
     }
   else if( isWordID( $2.name ) )
     {
       int tmp_addr = hexToDecimal($2.name);
       int instr_size = 3;
       if(tmp_addr < 256) instr_size = 2;
-      addComment( "initialising WordID" );
+      addComment( "initialising with WordID" );
 
       addAsm( str_LDA + getNameOf(tmp_addr), instr_size, false );
       instr_size = 3;
@@ -10014,7 +9946,7 @@ init: '=' expression
   else if( isUintID( $2.name ) )
     {
       int tmp_addr = hexToDecimal($2.name); 
-      addComment( "initialising UintID" );
+      addComment( "initialising with UintID" );
       int instr_size = 3;
       if(tmp_addr < 256) instr_size = 2;
       addAsm( str_LDA + getNameOf(tmp_addr), instr_size, false );
@@ -10023,7 +9955,7 @@ init: '=' expression
   else if( isIntID( $2.name ) )
     {
       int tmp_addr = hexToDecimal($2.name); 
-      addComment( "initialising IntID" );
+      addComment( "initialising with IntID" );
       int instr_size = 3;
       if(tmp_addr < 256) instr_size = 2;
 
@@ -10032,14 +9964,14 @@ init: '=' expression
     }
   else if( isUintIMM($2.name) )
     {
-      addComment( "initialising UintIMM" );
+      addComment( "initialising with UintIMM" );
       int v = atoi( stripFirst($2.name).c_str() );
       addAsm( str_LDA + "#$" + toHex(v), 2, false );
       strcpy( $$.name, "_A" );
     }
   else if( isIntIMM($2.name) )
     {
-      addComment( string("initialising IntIMM: ") + $2.name );
+      addComment( string("initialising with IntIMM: ") + $2.name );
       int v = atoi( stripFirst($2.name).c_str() );
       if( v < 0 )
 	{
@@ -10052,7 +9984,7 @@ init: '=' expression
     }
   else if( isWordIMM($2.name) )
     {
-      addComment( string("initialising WordIMM: ") + $2.name );
+      addComment( string("initialising with WordIMM: ") + $2.name );
 
       int tmp_int = atoi( stripFirst($2.name).c_str() );
       if( get_word_L(tmp_int) ==  get_word_H(tmp_int) )
@@ -10083,12 +10015,7 @@ init: '=' expression
 }
 |
 {
-  //cerr << $$.name << endl;
   addParserComment( "RULE: init: nothing (not NULL)" );
-  //sprintf($$.type, "null");
-  //$$.nd = mknode(NULL, NULL, "0");
-  //strcpy($$.name, "w0" );
-  //strcpy($$.name, "_A");
   strcpy($$.name, "Slipstream");
 };
 
@@ -11703,9 +11630,7 @@ arithmetic expression
     }
   else if( isA($1.name) && isA($4.name) )
     {
-      // BROKEN (i think)
-      //addComment( "A arithmetic A" );
-      //addAsm( str_PLA );
+      addComment( "A arithmetic A" );
       if( op == string("+"))
 	{
 	  addComment( "A + A (Destroys $FB)" );
@@ -11734,9 +11659,6 @@ arithmetic expression
 	}
       else if( op == string("/") )
 	{
-	  //int addr_op1 = hexToDecimal($1.name);
-	  //int addr_op2 = hexToDecimal($4.name);
-
 	  addComment( "A / A" );
 	  div16_is_needed = true;
 	  addAsm( str_STA + "_DIV16_FD", 3, false );
@@ -11848,20 +11770,24 @@ arithmetic expression
            
       if( op == string("*"))
 	{
-	  addAsm( str_JSR + "$BA28" + commentmarker + "RAM * FAC", 3, false );
+	  addComment( "RAM * FAC" );
+	  addAsm( str_JSR + "$BA28", 3, false );
 	}
       else if( op == string("+"))
 	{
-	  addAsm( str_JSR + "$B867" + commentmarker + "RAM + FAC", 3, false );
+	  addComment( "RAM + FAC" );
+	  addAsm( str_JSR + "$B867", 3, false );
 	}
       else if( op == string("-"))
 	{
-	  addAsm( str_JSR + "$B850" + commentmarker + "RAM - FAC", 3, false );
+	  addComment( "RAM - FAC" );
+	  addAsm( str_JSR + "$B850", 3, false );
 	}
       else if( op == string("/"))
 	{
+	  addComment( "RAM / FAC" );
 	  addComment( "If Y is ZERO at this point, we'll be dividing by 0 (or at least attempting to)" );
-	  addAsm( str_JSR + "$BB0F" + commentmarker + "RAM/FAC", 3, false );
+	  addAsm( str_JSR + "$BB0F", 3, false );
 	}
       strcpy($$.name, "_FAC" );
     }
