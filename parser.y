@@ -15709,11 +15709,15 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
   else if( isXA($3.name) )
     {
       addComment( "peek( XA );" );
-      addAsm( str_STX + "!+ -1", 3, false );
-      addAsm( str_STA + "!+ -2", 3, false );
+      addAsm( str_STA + "!+", 3, false );
+      addAsm( str_STX + "!++", 3, false );
 
-      addAsm( str_LDA + "$0000", 3, false );
+      addAsm( str_BYTE + "$AD", 1, false );
       addAsm( "!:", 0, true );
+      addAsm( str_BYTE + "$00", 1, false );
+      addAsm( "!:", 0, true );
+      addAsm( str_BYTE + "$00", 1, false );
+      
       
     }
   else if( isIntID($3.name) || isUintID($3.name) )
@@ -15869,8 +15873,6 @@ value: FLOAT_NUM
     {
       strcpy($$.name, string( string("i") + string($1.name)).c_str());
     }
-
-  addComment( string( "\n\n\n//passing up: " ) + $$.name ); 
 }
 | tWORD
 {
