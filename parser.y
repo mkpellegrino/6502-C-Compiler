@@ -3428,10 +3428,10 @@ body: WHILE
       addDebugComment( "String type added as a word variable" );
       addAsmVariable($3.name, 2);
       int addr = getAddressOf( $3.name );
-      addAsm( str_LDA + "#<STRLBL" + itos(string_number), 2, false );
+      //addAsm( str_LDA + "#<STRLBL" + itos(string_number), 2, false );
       addAsm( str_STA + getNameOf( addr ), 3, false );
-      addAsm( str_LDA + "#>STRLBL" + itos(string_number++), 2, false );
-      addAsm( str_STA + getNameOf( addr ) + "+1", 3, false );
+      //addAsm( str_LDA + "#>STRLBL" + itos(string_number++), 2, false );
+      addAsm( str_STX + getNameOf( addr ) + "+1", 3, false );
     }
   else
     {
@@ -3601,7 +3601,7 @@ body: WHILE
   addAsm( str_JSR + "SCANF", 3, false );  
 };
 // STATEMENT
-| tPRINTS '(' expression ')' ';'
+| tPRINTS '(' expression ')'
 {
   //addCommentSection( string("prints(") + string($3.name) + string( ");") );
   if( isUintID($3.name) )
@@ -3688,33 +3688,30 @@ body: WHILE
       addComment(string("printf(") + getNameOf(getAddressOf($3.name)) + string(");"));
       pushScope( "PRINTF(UintID)" );
       int addr = hexToDecimal(stripFirst($3.name).c_str());
-      // 2024 04 14 - mkpellegrino
       addAsm( str_LDA + getNameOf(addr), 3, false );
-      //addAsm( str_LDA + $3.name, 3, false );
       addAsm( str_PHA );
       addAsm( str_JSR + "BYT2STR", 3, false ); byt2str_is_needed = true;
       addAsm( str_PLA );
       addAsm( str_TAX );
       addAsm( str_PLA );
       addAsm( str_TAY );
-      addAsm( str_PLA );
+      addAsm( str_PLA );      
       addAsm( str_CMP + "#$30", 2, false );
-      addAsm( str_BEQ + getLabel( label_vector[label_major]+2,false), 2, false ); // BNE AA
+      addAsm( str_BEQ + "!+++", 2, false );
       addAsm( str_JSR + "$FFD2", 3, false );
       addAsm( str_TYA );
-      addAsm( generateNewLabel() + "\t\t\t" + commentmarker + "Just Two Bytes", 0, true ); // LABEL BB
+      addAsm( "!:", 0, true );
       addAsm( str_JSR + "$FFD2", 3, false );
-      addAsm( generateNewLabel() + "\t\t\t" + commentmarker + "Only One Byte", 0, true ); // LABEL CC
+      addAsm( "!:", 0, true );
       addAsm( str_TXA );
       addAsm( str_JSR + "$FFD2", 3, false );
-      addComment( "jump to label below" );
-      addAsm( str_JMP + getLabel( label_vector[label_major]+1,false), 3, false );
-      addAsm( generateNewLabel() + string( "\t\t\t") + commentmarker + "Label CMP2", 0, true ); // LABEL AA
+      addAsm( str_JMP + "!++", 3, false );
+      addAsm( "!:", 0, true );
       addAsm( str_TYA );
       addAsm( str_CMP + "#$30", 2, false );
-      addAsm( str_BEQ + getLabel( label_vector[label_major]-2,false), 2, false );
-      addAsm( str_JMP + getLabel( label_vector[label_major]-3,false), 3, false );
-      addAsm( generateNewLabel() + string( "\t\t\t") + commentmarker + "Done", 0, true );
+      addAsm( str_BEQ + "!--", 2, false );
+      addAsm( str_JMP + "!---", 3, false );
+      addAsm( "!:", 0, true );
       popScope();
     }
   else if( isA($3.name) )
@@ -3734,9 +3731,9 @@ body: WHILE
       addAsm( str_JSR + "$FFD2", 3, false );
 
       addAsm( str_TYA );
-      addAsm( generateNewLabel() + string( "\t\t\t") + commentmarker + string( " Just Two Bytes"), 0, true ); // LABEL BB
+      addAsm( generateNewLabel() + commentmarker + string( "Just Two Bytes"), 0, true ); // LABEL BB
       addAsm( str_JSR + "$FFD2", 3, false );
-      addAsm( generateNewLabel() + string( "\t\t\t") + commentmarker + string( " Only One Byte"), 0, true ); // LABEL CC
+      addAsm( generateNewLabel() + commentmarker + string( "Only One Byte"), 0, true ); // LABEL CC
       addAsm( str_TXA );
       addAsm( str_JSR + "$FFD2", 3, false );
 
@@ -3753,12 +3750,11 @@ body: WHILE
   else if( isIntID($3.name) )
     {
       addComment(string("printf(") + getNameOf(getAddressOf($3.name)) + string(");"));
-      pushScope( "PRINTF" );
+      //pushScope( "PRINTF" );
       addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
       addAsm( str_PHA );
       addAsm( str_CMP + "#$7F", 2, false );
-      addAsm( str_BCC + getLabel( label_vector[label_major],false), 2, false ); // BCC Skip
-      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
+      addAsm( str_BCC + "!+", 2, false ); // BCC Skip
       addAsm( str_LDA + "#$2D", 2, false );
       addAsm( str_JSR + "$FFD2", 3, false );
       // put it into two's complement
@@ -3767,7 +3763,7 @@ body: WHILE
       addAsm( str_SBC + "#$01", 2, false );
       addAsm( str_EOR + "#$FF", 2, false );
       addAsm( str_PHA );
-      addAsm( generateNewLabel() , 0, true ); // LABEL BB      
+      addAsm( "!:", 0, true );
       addAsm( str_JSR + "BYT2STR", 3, false ); byt2str_is_needed = true;
 
       addAsm( str_PLA );
@@ -3776,25 +3772,23 @@ body: WHILE
       addAsm( str_TAY );
       addAsm( str_PLA );
       addAsm( str_CMP + "#$30", 2, false );
-      addAsm( str_BEQ + getLabel( label_vector[label_major]+2,false), 2, false ); // BNE AA
-      
+      addAsm( str_BEQ + "!+++", 2, false );
       addAsm( str_JSR + "$FFD2", 3, false );
 
       addAsm( str_TYA );
-      addAsm( generateNewLabel() + string( "\t\t\t") + commentmarker + "Just Two Bytes", 0, true ); // LABEL BB
+      addAsm( "!:", 0, true );
       addAsm( str_JSR + "$FFD2", 3, false );
-      addAsm( generateNewLabel() + string( "\t\t\t") + commentmarker + "Only One Byte", 0, true ); // LABEL CC
+      addAsm( "!:", 0, true );
       addAsm( str_TXA );
       addAsm( str_JSR + "$FFD2", 3, false );
-      addComment( "jump to label below " );
-      addAsm( str_JMP + getLabel( label_vector[label_major]+1,false), 3, false );
-      addAsm( generateNewLabel() + string( "\t\t\t" ) + commentmarker + "Label CMP2", 0, true ); // LABEL AA
+      addAsm( str_JMP + "!++", 3, false );
+      addAsm( "!:", 0, true );
       addAsm( str_TYA );
       addAsm( str_CMP + "#$30", 2, false );
-      addAsm( str_BEQ + getLabel( label_vector[label_major]-2,false), 2, false );
-      addAsm( str_JMP + getLabel( label_vector[label_major]-3,false), 3, false );
-      addAsm( generateNewLabel() + string( "\t\t\t" ) + commentmarker + "Done", 0, true );
-      popScope();
+      addAsm( str_BEQ + "!--", 2, false );
+      addAsm( str_JMP + "!---", 2, false );
+      addAsm( "!:", 0, true );
+      //popScope();
     }
   else if( isARG($3.name) )
     {
@@ -3809,7 +3803,8 @@ body: WHILE
       addAsm( str_STA + "$02", 2, false );
       addAsm( str_LDA + "#$01", 2, false );
       addAsm( str_STA + "$03", 2, false );
-      addAsm( str_JSR + "PRN", 3, false); printf_is_needed = true;
+      addAsm( str_JSR + "PRN", 3, false);
+      printf_is_needed = true;
     }
   else if( isFAC($3.name) )
     {
@@ -3854,47 +3849,31 @@ body: WHILE
       int base_address_op1 = hexToDecimal($3.name);
       int inst_size = 3;
       if( base_address_op1 < 256 ) inst_size = 2;
-      // 2024 04 14 - mkpellegrino
       addAsm( str_LDA + getNameOf(base_address_op1), inst_size, false );
-      //addAsm( str_LDA + "$" + toHex( ( base_address_op1 )), inst_size, false );
       addAsm( str_STA + "HTD_IN", 3, false );
-      // 2024 04 14 - mkpellegrino
       addAsm( str_LDA + getNameOf(base_address_op1) + "+1", inst_size, false );
-      //addAsm( str_LDA + "$" + toHex( ( base_address_op1+1 )), inst_size, false );
       addAsm( str_STA + "HTD_IN+1", 3, false );
       addAsm( str_JSR + "WORD2DEC", 3, false );
 
-
       // find the 1st non-30 ('0') byte
       addAsm( str_LDX + "#$00", 2, false );
-      addAsm( generateNewLabel(), 0, true );
+      addAsm( "!:", 0, true );
       addAsm( str_LDA + "HTD_STR,X", 3, false );
       addAsm( str_CMP + "#$30", 2, false );
-
-      //addAsm( str_BYTE + "$D0, $04" + commentmarker + "BNE SKIP", 2, false );
       addAsm( str_BNE + "!+", 2, false );
       addAsm( str_INX );
-      addAsm( str_JMP +  getLabel( label_vector[label_major]-1,false), 3, false );
+      addAsm( str_JMP + "!-", 3, false );
       addAsm( "!:", 0, true );
-      // ---------------------------------
-      // 2022 12 16 - mkpellegrino
-      // make sure it prints a 0 if it's 0
-      // and not just a blank space!
       addAsm( str_CPX + "#$06", 2, false );
-      //addAsm( str_BYTE + string("$D0, $01") + commentmarker + "BNE SKIP", 2, false ); // BNE to skip
-
       addAsm( str_BNE + "!+", 2, false );
       addAsm( str_DEX );
       addAsm( "!:", 0, true );
-      // ---------------------------------
-      addAsm( generateNewLabel(), 0, true );
-
       addAsm( str_LDA + "HTD_STR,X", 3, false );
       addAsm( str_CMP + "#$00", 2, false );
       addAsm( str_BEQ + "!+", 2, false );
       addAsm( str_INX );
       addAsm( str_JSR + "$FFD2", 3, false );
-      addAsm( str_JMP + getLabel( label_vector[label_major]-1,false), 3, false );
+      addAsm( str_JMP + "!-", 0, true );
       addAsm( "!:", 0, true );
       popScope();
     }
@@ -5127,26 +5106,29 @@ body: WHILE
       
       /* get & store the low byte of the poke address */
 
-      // 2024 04 14 - mkpellegrino
       addAsm( str_LDA + tmp_addr_name, instr_size, false );      
-      addAsm( str_STA + getLabel( label_vector[label_major],false), 3, false );
+      //addAsm( str_STA + getLabel( label_vector[label_major],false), 3, false );
+      addAsm( str_STA + "!+", 3, false );
+
       /* get & store the high byte of the poke address */
       instr_size = 3;
       if( addr_addr+1 < 256 ) instr_size = 2;
 
       // 2024 04 14 - mkpellegrino
       addAsm( str_LDA + tmp_addr_name + "+1", instr_size, false );
-      addAsm( str_STA + getLabel( label_vector[label_major]+1,false), 3, false );
+      //addAsm( str_STA + getLabel( label_vector[label_major]+1,false), 3, false );
+      addAsm( str_STA + "!++", 3, false );
 
       instr_size = 3;
       if( valu_addr < 256 ) instr_size = 2;
 
-      // 2024 04 14 - mkpellegrino
       addAsm( str_LDA + getNameOf(getAddressOf(param2)), instr_size, false );
-      addAsm( str_BYTE + "$8D\t" + commentmarker + "STA absolute", 1, false );
-      addAsm( generateNewLabel() + "\t\t\t" + commentmarker + "<-- low byte", 0, true );
+      addAsm( str_BYTE + "$8D" + commentmarker + "STA absolute", 1, false );
+      //addAsm( generateNewLabel() + commentmarker + "<-- low byte", 0, true );
+      addAsm( "!:", 0, true );
       addAsm( str_BYTE + "$00", 1, false );
-      addAsm( generateNewLabel() + "\t\t\t" + commentmarker + "<-- hi byte", 0, true );
+      //addAsm( generateNewLabel() + commentmarker + "<-- hi byte", 0, true );
+      addAsm( "!:", 0, true );
       addAsm( str_BYTE + "$00", 1, false );
       popScope();
     }
@@ -5164,7 +5146,7 @@ body: WHILE
       addAsm( str_JSR + "POP", 3, false );
       addAsm( str_STA + "!+", 3, false ); // A
       
-      addAsm( str_BYTE + "$8C\t" + commentmarker + "<-- STY absolute", 1, false );
+      addAsm( str_BYTE + "$8C" + commentmarker + "<-- STY absolute", 1, false );
       addAsm( "!:", 0, true );
       addAsm( str_BYTE + "$00", 1, false );
       addAsm( "!:", 0, true );
@@ -5237,22 +5219,26 @@ body: WHILE
       /* get & store the low byte of the poke address */
 
       addAsm( str_LDA + getNameOf(addr_addr), instr_size, false );
-      addAsm( str_STA + getLabel( label_vector[label_major],false), 3, false );
+      //addAsm( str_STA + getLabel( label_vector[label_major],false), 3, false );
+      addAsm( str_STA + "!+", 3, false );
       /* get & store the high byte of the poke address */
       instr_size = 3;
       if( addr_addr+1 < 256 ) instr_size = 2;
 
       addAsm( str_LDA + getNameOf(addr_addr)+"+1", instr_size, false );
-      addAsm( str_STA + getLabel( label_vector[label_major]+1,false), 3, false );
+      addAsm( str_STA + "!++", 3, false );
+      //addAsm( str_STA + getLabel( label_vector[label_major]+1,false), 3, false );
 
       /* load the value into acc */
-      addAsm( str_LDA+"#$" + toHex( value ), 2, false );
+      addAsm( str_LDA + "#$" + toHex( value ), 2, false );
 
       /* store it in the instruction */
       addAsm( str_BYTE + "$8D" + commentmarker + "<-- STA absolute", 1, false );
-      addAsm( generateNewLabel() + "\t\t\t" + commentmarker + "<-- low byte", 0, true );
+      //addAsm( generateNewLabel() + "\t\t\t" + commentmarker + "<-- low byte", 0, true );
+      addAsm( "!:", 0, true );
       addAsm( str_BYTE + "$00", 1, false );
-      addAsm( generateNewLabel() + "\t\t\t" + commentmarker + "<-- hi byte", 0, true );
+      addAsm( "!:", 0, true );
+      //      addAsm( generateNewLabel() + "\t\t\t" + commentmarker + "<-- hi byte", 0, true );
       addAsm( str_BYTE + "$00", 1, false );
       popScope();
     }
@@ -6348,7 +6334,7 @@ statement: datatype ID init
     }
 
   current_variable_base_address = getAddressOf(_id);
-  
+
   if(isFloatDT(_dt) && isFloatID(_id) && isARG(_init))
     {
       // This is likely not needed
@@ -6839,108 +6825,59 @@ statement: datatype ID init
       addCompilerMessage( "dec(??) error - invalid argument type", 3 );
     } 
 };
-| tROL '(' ID ')'
+
+
+
+| tROL '(' expression ')'
 {
   addComment( "rol statement" );
-  if( isUintID($3.name) || isIntID($3.name)  )
+  if( isWordIMM($3.name))
     {
-      addComment( "rol( UIntID ) -> M" );
-      addDebugComment( "This does NOT roll into carry." );
-      addDebugComment( "10000000 -> 00000001 -> 00000010" );
-
-      int a = getAddressOf($3.name);
-      int size_of_instruction = 3;
-      if( a < 256 ) size_of_instruction = 2;
-
-      addAsm( str_LDA + getNameOf(a), size_of_instruction, false );
-      addAsm( str_ASL ); 
+      addAsm( str_LDA + "$" + toHex(atoi(stripFirst($3.name).c_str())), 3, false );
+      addAsm( str_ASL, 1, false );
       addAsm( str_BCC + "!+", 2, false );
       addAsm( str_ORA + "#$01", 2, false );
       addAsm( "!:", 0, true );
-      addAsm( str_STA + getNameOf(a), size_of_instruction, false );
-
+      addAsm( str_STA + "$" + toHex(atoi(stripFirst($3.name).c_str())), 3, false );
     }
-  else if( isWordID($3.name) )
-    {
-      addComment( "rol( WordID ) -> M" );
-      addComment( "This rolls into the carry" );
-
-
-      int a = getAddressOf($3.name);
-      int size_of_instruction = 3;
-      if( a < 256 ) size_of_instruction = 2;
-      
-      addAsm( str_LDA + getNameOf(a), size_of_instruction, false );
-      addAsm( str_ASL ); 
-      addAsm( str_TAY );
-      
-      size_of_instruction = 3;
-      if( a+1 < 256 ) size_of_instruction = 2;
-      addAsm( str_LDA + getNameOf(a) + "+1", size_of_instruction, false );
-      
-      addAsm( str_ROL );
-      addAsm( str_TAX );
-      addAsm( str_TYA );
-      addAsm( str_BCC + "!+", 2, false );
-      addAsm( str_ORA + "#$01", 2, false );
-      addAsm( "!:", 0, true );
-      
-      if( a < 256 ) size_of_instruction = 2;
-      addAsm( str_STA + getNameOf(a), size_of_instruction, false );
-      
-      size_of_instruction = 3;
-      if( a+1 < 256 ) size_of_instruction = 2;
-      addAsm( str_STX + getNameOf(a) + "+1", size_of_instruction, false );
-    }
-  else addCompilerMessage( "ROL of type not permitted", 3 );
+  else
+    addCompilerMessage( "ROL (statement) of type not permitted... yet", 3 );
 };
-| tROR '(' ID ')'
+| tROR '(' expression ')'
 {
-  // TODO: 2024 05 04 (Kentucky Derby Day) - mkpellegrino
-  // ror( UintID ) statement not working yet
   addComment( "ror statement" );
-  if( isUintID($3.name) || isIntID($3.name))
+  if( isWordIMM($3.name))
     {
-      addComment( "ror( UIntID ) -> M" );
-      addDebugComment( "This does NOT roll into carry." );
-      addDebugComment( "00000001 -> 10000000 -> 01000000" );
-      //pushScope("ROR");
-      int a = getAddressOf($3.name);
-      int size_of_instruction = 3;
-      if( a < 256 ) size_of_instruction = 2;
-
-      addAsm( str_LDA + getNameOf(a), size_of_instruction, false );
-      addAsm( str_LSR ); 
+      addAsm( str_LDA + "$" + toHex(atoi(stripFirst($3.name).c_str())), 3, false );
+      addAsm( str_LSR, 1, false );
       addAsm( str_BCC + "!+", 2, false );
       addAsm( str_ORA + "#$80", 2, false );
       addAsm( "!:", 0, true );
-      addAsm( str_STA + getNameOf(a), size_of_instruction, false );
-      //popScope();
-
+      addAsm( str_STA + "$" + toHex(atoi(stripFirst($3.name).c_str())), 3, false );
     }
-  else if( isWordID($3.name) )
+  else
+    addCompilerMessage( "ROR (statement) of type not permitted... yet", 3 );
+};
+| tLSR '(' expression ')'
+{
+  addComment( "lsr statement" );
+  if( isWordIMM($3.name))
     {
-      addComment( "ror( WordID ) -> M" );
-
-      addDebugComment( "This rolls into the carry" );
-      addAsm( str_CLC );
-      int a = getAddressOf($3.name);
-
-      int size_of_instruction = 3;
-      if( a > 255 ) size_of_instruction = 3;
-
-      addAsm( str_ROR + getNameOf(a), size_of_instruction, false );
-      if( a+1 < 256 ) size_of_instruction = 2;
-      addAsm( str_ROR + getNameOf(a)+"+1", size_of_instruction, false );
-      addAsm( str_BCC + "!+", 2, false );
-      addAsm( str_LDA + getNameOf(a), size_of_instruction, false );
-      addAsm( str_ORA + "#$80", 2, false );
-      addAsm( str_STA + getNameOf(a), size_of_instruction, false );
-      addAsm( "!:", 0, true );
+      addAsm( str_LSR + "$" + toHex(atoi(stripFirst($3.name).c_str())), 3, false );
     }
-  else addCompilerMessage( "ROR of type not permitted... yet", 3 );
-  
-}
+  else
+    addCompilerMessage( "LSR (statement) of type not permitted... yet", 3 );
+};
+| tASL '(' expression ')'
+{
+  addComment( "asl statement" );
+  if( isWordIMM($3.name))
+    {
+      addAsm( str_ASL + "$" + toHex(atoi(stripFirst($3.name).c_str())), 3, false );
+    }
+  else
+    addCompilerMessage( "ASL (statement) of type not permitted... yet", 3 );
+};
 
 // STATEMENT
 | tSPRITECOLOUR '(' expression ',' expression ')'
@@ -8838,65 +8775,6 @@ statement: datatype ID init
   string commentstring = string($3.name);
   // strip the quotes off of the string and remove an unnecessary space at the beginning
   addAsm( commentmarker.substr(1,3) + commentstring.substr(1,commentstring.length()-2), 0, true );
-};
-// STATEMENT
-| tLSR '(' expression ')'
-{
-  addComment( "lsr statement" );
-  if( isUintID($3.name) || isIntID($3.name)  )
-    {    
-      addComment( "lsr(UintID) -> M");
-      int a = getAddressOf($3.name);
-      int size_of_instruction = 3;
-      if( a < 256 ) size_of_instruction = 2;
-      addAsm( str_LSR + getNameOf(a), size_of_instruction, false );
-    }
-  else if( isWordID($3.name) )
-    {
-      addComment( "lsr( WordID ) -> M");
-      int a = getAddressOf($3.name);
-      int size_of_instruction = 3;
-      if( a+1 < 256 ) size_of_instruction = 2;
-      addAsm( str_LSR + getNameOf(a) + "+1", size_of_instruction, false );
-      if( a < 256 ) size_of_instruction = 2;
-      addAsm( str_ROR + getNameOf(a), size_of_instruction, false );
-    }
-  else
-    {
-      addCompilerMessage( "LSR [statement] of type not permitted", 3 );
-    }  
-};
-// STATEMENT
-| tASL '(' expression ')'
-{
-  addComment( "asl statement" );
-  if( isUintID($3.name) || isIntID($3.name) )
-    {    
-      addComment( "asl( UIntID ) -> M");
-      int a = getAddressOf($3.name);
-      int size_of_instruction = 3;
-      if( a < 256 ) size_of_instruction = 2;
-      addAsm( str_ASL + getNameOf(a), size_of_instruction, false );
-    }
-  else if( isWordID($3.name) )
-    {
-      addComment( "asl( WordID ) -> M");
-      int a = getAddressOf($3.name);
-      int size_of_instruction = 3;
-      if( a < 256 ) size_of_instruction = 2;
-      addAsm( str_ASL + getNameOf(a), size_of_instruction, false );
-      if( a+1 > 255 ) size_of_instruction = 3;
-      addAsm( str_ROL + getNameOf(a) + "+1", size_of_instruction, false );
-    }
-  else if( isWordIMM($3.name) )
-    {
-      addComment( "asl( WordIMM ) -> M (changing byte at memory location)");
-
-      int a = hexToDecimal(stripFirst($3.name));
-      addAsm( str_ASL + "$" + toHex(atoi(stripFirst($3.name).c_str())), 3, false );
-    }
-  else
-    addCompilerMessage( "ASL [statement] of type not permitted... yet", 3 );
 };
 
 // THIS IS BROKEN - mkpellegrino 2023 02 15
@@ -13339,8 +13217,7 @@ arithmetic expression
     }
   else if( isUintIMM($1.name) && isUintID($4.name) )     // MEM vs. IMM
     {
-      addDebugComment( "UintIMM arith UintID" );
-      addAsm( str_LDA +  $4.name, 3, false); // 
+      addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false); // 
       if( op == string("+"))
 	{
 	  int tmp_int = atoi(stripFirst($1.name).c_str());
@@ -13772,11 +13649,34 @@ arithmetic expression
 };
 | '{' expression '}'
 {
-  strcpy( $$.name, $2.name );
+  if( isXA( $2.name ) )
+    {
+      strcpy( $$.name, "_XA" );
+    }
+  else if( isA( $2.name ) )
+    {
+      strcpy( $$.name, "_A" );
+    }
+  else if( isFAC( $2.name ) )
+    {
+      strcpy( $$.name, "_FAC" );
+    }
 };
 | '(' expression ')'
 {
-  strcpy( $$.name, $2.name );
+  if( isXA( $2.name ) )
+    {
+      strcpy( $$.name, "_XA" );
+    }
+  else if( isA( $2.name ) )
+    {
+      strcpy( $$.name, "_A" );
+    }
+  else if( isFAC( $2.name ) )
+    {
+      strcpy( $$.name, "_FAC" );
+    }
+
 };
 | tNULL
 {
@@ -13846,7 +13746,7 @@ arithmetic expression
     }
   else if( isUintID( $3.name ) || isIntID( $3.name ))
     {
-
+      addCompilerMessage( "NYI", 3 );
 
     }
   else if( isWordID( $3.name ) )
@@ -13856,6 +13756,7 @@ arithmetic expression
     }
   else if( isA( $3.name ) )
     {
+      addCompilerMessage( "NYI", 3 );
 
     }
   else if( isXA( $3.name ))
@@ -13865,11 +13766,10 @@ arithmetic expression
     }
 
   strcpy( $$.name, "_XA" );
-}
+};
 | tASL '(' expression ')'
 {
   addComment( "asl expression" );
-
   if( isA( $3.name ) )
     {
       addComment( "asl( A ) -> A" );
@@ -13913,10 +13813,91 @@ arithmetic expression
       addAsm( str_ASL, 1, false );
       strcpy( $$.name, "_A" );
     }
+  else if( isWordIMM($3.name))
+    {
+      addComment( "asl( WordIMM ) -> A" );
+      addAsm( str_LDA + "$" + toHex(atoi(stripFirst($3.name).c_str())), 3, false );
+      addAsm( str_ASL, 1, false );
+      strcpy( $$.name, "_A" );
+    }
   else
     {
       addCompilerMessage("some kind of error occurred.  look at the ASL instructions", 3 );
     }
+};
+| tROL '(' expression ')'
+{
+  if( isUintID($3.name) || isIntID($3.name)  )
+    {
+      addComment( "rol( UIntID ) -> A" );
+      int a = getAddressOf($3.name);
+      int size_of_instruction = 3;
+      if( a < 256 ) size_of_instruction = 2;
+      //addAsm( str_CLC, 1, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), size_of_instruction, false );
+      addAsm( str_ASL ); 
+      addAsm( str_BCC + "!+", 2, false );
+      addAsm( str_ORA + "#$01", 2, false );
+      addAsm( "!:", 0, true );
+      strcpy( $$.name, "_A" );
+    }
+  else if( isXA($3.name) )
+    {
+      addComment( "rol( XA ) -> XA" );
+      addAsm( str_ASL, 1, false );
+      addAsm( str_TAY, 1, false );
+      addAsm( str_TXA, 1, false );
+      addAsm( str_ROL, 1, false );
+      addAsm( str_TAX, 1, false );
+      addAsm( str_TYA, 1, false );
+      addAsm( str_BCC + "!+", 2, false );
+      addAsm( str_ORA + "#$01", 2, false );
+      addAsm( "!:", 0, true );
+      strcpy( $$.name, "_XA" );
+    }
+  else if( isWordID($3.name) )
+    {
+      addComment( "rol( WordID ) -> XA" );
+
+      int a = getAddressOf($3.name);
+      int size_of_instruction = 3;
+      if( a < 256 ) size_of_instruction = 2;
+      
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), size_of_instruction, false );
+      addAsm( str_ASL ); 
+      addAsm( str_TAY );
+      
+      size_of_instruction = 3;
+      if( a+1 < 256 ) size_of_instruction = 2;
+      addAsm( str_LDA + getNameOf(a) + "+1", size_of_instruction, false );
+      
+      addAsm( str_ROL );
+      addAsm( str_TAX );
+      addAsm( str_TYA );
+      addAsm( str_BCC + "!+", 2, false );
+      addAsm( str_ORA + "#$01", 2, false );
+      addAsm( "!:", 0, true );
+      strcpy( $$.name, "_XA" );
+    }
+  else if( isA($3.name) )
+    {
+      addComment( "rol( A ) -> A" );
+      //addAsm( str_CLC );
+      addAsm( str_ASL, 1, false );
+      addAsm( str_BCC + "!+", 2, false );
+      addAsm( str_ORA + "#$01", 2, false );
+      addAsm( "!:", 0, true );
+      strcpy( $$.name, "_A" );
+    }
+  else if( isWordIMM($3.name) )
+    {
+      addAsm( str_ASL + "$" + toHex(atoi(stripFirst($3.name).c_str())), 3, false );
+      addAsm( str_BCC + "!+", 2, false );
+      addAsm( str_ORA + "#$01", 2, false );
+      addAsm( "!:", 0, true );
+      strcpy( $$.name, "_XA" );
+    }
+ else addCompilerMessage( "ROL of type not permitted", 3 );
 };
 | tROR '(' expression ')'
 {
@@ -13924,8 +13905,11 @@ arithmetic expression
   if( isA( $3.name ) )
     {
       addComment( "ror( A ) -> A" );
-      addAsm( str_CLC );
-      addAsm( str_ROR, 1, false );
+      //addAsm( str_CLC );
+      addAsm( str_LSR, 1, false );
+      addAsm( str_BCC + "!+", 2, false );
+      addAsm( str_ORA + "#$80", 2, false );
+      addAsm( "!:", 0, true );
       strcpy( $$.name, "_A" );
     }
   else if( isXA( $3.name ) )
@@ -13946,15 +13930,18 @@ arithmetic expression
       addAsm( "!:", 0, true );
       strcpy( $$.name, "_XA" );
     }
-  else if( isUintID( $3.name ) )
+  else if( isUintID( $3.name )|| isIntID($3.name) )
     {
       addComment( "ror( UIntID ) -> A" );
       int a = getAddressOf($3.name);
       int size_of_instruction = 3;
       if( a < 256 ) size_of_instruction = 2;
-      addAsm( str_CLC );
-      addAsm( str_LDA + getNameOf(a), size_of_instruction, false );
-      addAsm( str_ROR, 1, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), size_of_instruction, false );
+      //addAsm( str_CLC, 1, false );
+      addAsm( str_LSR, 1, false );
+      addAsm( str_BCC + "!+", 2, false );
+      addAsm( str_ORA + "#$80", 2, false );
+      addAsm( "!:", 0, true );
       strcpy( $$.name, "_A" );
     }
   else if( isWordID( $3.name ) )
@@ -13980,7 +13967,14 @@ arithmetic expression
       addAsm( str_TYA );
       addAsm( "!:", 0, true );
       strcpy( $$.name, "_XA" );
-
+    }
+   else if( isWordIMM($3.name) )
+    {
+      addAsm( str_LSR + "$" + toHex(atoi(stripFirst($3.name).c_str())), 3, false );
+      addAsm( str_BCC + "!+", 2, false );
+      addAsm( str_ORA + "#$80", 2, false );
+      addAsm( "!:", 0, true );
+      strcpy( $$.name, "_XA" );
     }
   else
     {
@@ -13989,7 +13983,7 @@ arithmetic expression
 };
 | tLSR '(' expression ')'
 {
-  addComment( "lsr [expression]" );
+  addComment( "lsr(expression)" );
   if( isA( $3.name ) )
     {
       addComment( "lsr( A ) -> A" );
@@ -14021,7 +14015,7 @@ arithmetic expression
       addAsm( str_ROR );
       strcpy( $$.name, "_XA" );
     }
-  else if( isUintID($3.name ))
+  else if( isUintID($3.name) || isIntID($3.name))
     {
       addComment( "lsr( UintID ) -> A" );
       int a = getAddressOf($3.name);
@@ -14031,6 +14025,14 @@ arithmetic expression
       addAsm( str_LSR, 1, false );
       strcpy( $$.name, "_A" );
     }
+    else if( isWordIMM($3.name))
+    {
+      addComment( "lsr( WordIMM ) -> A" );
+      addAsm( str_LDA + "$" + toHex(atoi(stripFirst($3.name).c_str())), 3, false );
+      addAsm( str_LSR, 1, false );
+      strcpy( $$.name, "_A" );
+    }
+
   else
     {
       addCompilerMessage("some kind of error occurred.  look at the LSR instructions", 3 );
@@ -14044,15 +14046,20 @@ arithmetic expression
     {
       int addr = getAddressOf( $2.name );
       int index_addr = getAddressOf( $5.name );
-      addComment( string("Indirect: ") + $2.name  );
       addAsm( str_LDA + getNameOf( addr ), 3, false );
-      addAsm( str_STA + getLabel( label_vector[label_major], false), 3, false );
+      //addAsm( str_STA + getLabel( label_vector[label_major], false), 3, false );
+      addAsm( str_STA + "!+", 3, false );
       addAsm( str_LDA + getNameOf( addr ) + "+1", 3, false );
-      addAsm( str_STA + getLabel( label_vector[label_major], false) + "+1", 3, false );
+      //addAsm( str_STA + getLabel( label_vector[label_major], false) + "+1", 3, false );
+      addAsm( str_STA + "!++", 3, false );
       addAsm( str_LDX + "#$" + toHex(atoi(stripFirst($5.name).c_str())), 2, false );
-      addAsm( str_BYTE + "$BD\t\t"+ commentmarker + str_LDA + "ABS,X", 1, false );
-      addAsm( generateNewLabel(), 0, true );
-      addAsm( str_BYTE + "$00, $00", 2, false );
+      addAsm( str_BYTE + "$BD"+ commentmarker + str_LDA + "ABS,X", 1, false );
+      //addAsm( generateNewLabel(), 0, true );
+      addAsm( "!:", 0, true );
+      addAsm( str_BYTE + "$00", 1, false );
+      addAsm( "!:", 0, true );
+      addAsm( str_BYTE + "$00", 1, false );
+    
       //addAsm( ".byte #$00", 1, false );
       //addAsm( ".byte #$00", 1, false );
     }
@@ -14062,13 +14069,22 @@ arithmetic expression
       int index_addr = getAddressOf( $5.name );
       addComment( string("Dereference: ") + $2.name  );
       addAsm( str_LDA + getNameOf( addr ), 3, false );
-      addAsm( str_STA + getLabel( label_vector[label_major], false), 3, false );
+      //addAsm( str_STA + getLabel( label_vector[label_major], false), 3, false );
+      addAsm( str_STA + "!+", 3, false );
       addAsm( str_LDA + getNameOf(addr) + "+1", 3, false );      
-      addAsm( str_STA + getLabel( label_vector[label_major], false) + "+1", 3, false );   
+      //addAsm( str_STA + getLabel( label_vector[label_major], false) + "+1", 3, false );   
+      addAsm( str_STA + "!++", 3, false );
       addAsm( str_LDX + getNameOf(index_addr), 3, false );
-      addAsm( str_BYTE + "$BD\t\t"+ commentmarker + str_LDA + "ABS,X", 1, false );
-      addAsm( generateNewLabel(), 0, true );
-      addAsm( str_BYTE + "$00, $00", 2, false );
+      //addAsm( str_BYTE + "$BD\t\t"+ commentmarker + str_LDA + "ABS,X", 1, false );
+      //addAsm( generateNewLabel(), 0, true );
+      //addAsm( str_BYTE + "$00, $00", 2, false );
+
+      addAsm( str_BYTE + "$BD"+ commentmarker + str_LDA + "ABS,X", 1, false );
+      //addAsm( generateNewLabel(), 0, true );
+      addAsm( "!:", 0, true );
+      addAsm( str_BYTE + "$00", 1, false );
+      addAsm( "!:", 0, true );
+      addAsm( str_BYTE + "$00", 1, false );
     }
   else if( isA( $5.name ) )
     {
@@ -14077,12 +14093,22 @@ arithmetic expression
       addComment( string("Dereference: ") + $2.name );
       addAsm( str_TAX );
       addAsm( str_LDA + getNameOf(addr), 3, false );
-      addAsm( str_STA + getLabel( label_vector[label_major], false), 3, false );
+      //addAsm( str_STA + getLabel( label_vector[label_major], false), 3, false );
+      addAsm( str_STA + "!+", 3, false );
       addAsm( str_LDA + getNameOf(addr)+"+1", 3, false );
-      addAsm( str_STA + getLabel( label_vector[label_major], false) + "+1", 3, false );   
-      addAsm( str_BYTE + "$BD\t\t"+ commentmarker + str_LDA + "ABS,X", 1, false );
-      addAsm( generateNewLabel(), 0, true );
-      addAsm( str_BYTE + "$00, $00", 2, false );
+      //addAsm( str_STA + getLabel( label_vector[label_major], false) + "+1", 3, false );   
+      addAsm( str_STA + "!++", 3, false );
+
+      addAsm( str_BYTE + "$BD"+ commentmarker + str_LDA + "ABS,X", 1, false );
+      //addAsm( generateNewLabel(), 0, true );
+      addAsm( "!:", 0, true );
+      addAsm( str_BYTE + "$00", 1, false );
+      addAsm( "!:", 0, true );
+      addAsm( str_BYTE + "$00", 1, false );
+      
+      //addAsm( str_BYTE + "$BD\t\t"+ commentmarker + str_LDA + "ABS,X", 1, false );
+      //addAsm( generateNewLabel(), 0, true );
+      //addAsm( str_BYTE + "$00, $00", 2, false );
     }
   else
     {
@@ -14093,70 +14119,45 @@ arithmetic expression
 }
 | ID '[' expression ']'
 {
-  //int type_of_variable = getTypeOf($1.name);
-
-  if( (isUintID($1.name)||isIntID($1.name))  && (isUintID($3.name) || isIntID($3.name)))
+  if( (isUintID($1.name)||isIntID($1.name)) && (isUintID($3.name) || isIntID($3.name)))
     {
       addComment( "UIntID '[' UIntID ']' -> A" );
-      // 2024 04 14 - mkpellegrino
       int addr = hexToDecimal( stripFirst($3.name).c_str());
       addAsm( str_LDX + getNameOf(addr), 3, false );
-      //addAsm( str_LDX + $3.name, 3, false );
-      
       addAsm( str_LDA + getNameOf(getAddressOf($1.name)) + ",X", 3, false );
-      //addAsm( str_LDA + "$" + toHex(getAddressOf($1.name)) + ",X", 3, false );
-      strcpy($$.name, "_A" );
-  
+      strcpy($$.name, "_A" );  
     }
-  else if((isUintID($1.name)||isIntID($1.name))  && isA($3.name))
+  else if((isUintID($1.name)||isIntID($1.name)) && isA($3.name))
     {
-      addComment( "UIntID '[' A ']' -> A" );
+      addComment( "UIntID[A] -> A" );
       addAsm( str_TAX );
-      // 2024 05 03 - mkpellegrino
-      //addAsm( str_LDA + "$" + toHex(getAddressOf($1.name)) + ",X", 3, false );
       addAsm( str_LDA + getNameOf(getAddressOf($1.name)) + ",X", 3, false );
       strcpy($$.name, "_A" );
-
     }
-  else if( (isUintID($1.name)||isIntID($1.name))  && (isIntIMM($3.name) || isUintIMM($3.name)) )
+  else if( (isUintID($1.name)||isIntID($1.name)) && (isIntIMM($3.name) || isUintIMM($3.name)) )
     {
-      addComment( "UIntID '[' UIntIMM ']' -> A" );
- 
-      if( atoi($3.name) > 255 || atoi($3.name) < 0 ) addCompilerMessage( "Index Out of Range", 3 );
-      //addAsm( str_LDX + "#$" + toHex( atoi( stripFirst($3.name).c_str() ) ), 2, false );
-      // 2024 05 03 - mkpellegrino
-      //addAsm( str_LDA + "$" + toHex(getAddressOf($1.name)) + ",X", 3, false );
-      // 2024 05 15 - mkpellegrino 
-      //addAsm( str_LDA + getNameOf(getAddressOf($1.name)) + ",X", 3, false );
+      addComment( "UIntID[UIntIMM] -> A" );
+      //if( atoi($3.name) > 255 || atoi($3.name) < 0 ) addCompilerMessage( "Index Out of Range", 3 );
       addAsm( str_LDA + getNameOf(getAddressOf($1.name)) + "+" + itos(atoi( stripFirst($3.name).c_str() )), 3, false );
       strcpy($$.name, "_A" );
     }
 
   else if(isWordID($1.name) && isA($3.name))
     {
-      addComment( "WordID '[' A ']' -> XA" );
+      addComment( "WordID[A] -> XA" );
       addAsm( str_ASL ); //  because a word is twice as long as a byte!
 
-      // 2024 05 15 - mkpellegrino
       addAsm( str_TAY );
-      // 2024 05 03 - mkpellegrino
-      // addAsm( str_LDA + "$" + toHex(getAddressOf($1.name)) + ",X", 3, false );
       addAsm( str_LDA + getNameOf(getAddressOf($1.name)) + ",Y", 3, false );
-      //addAsm( str_PHA );
       addAsm( str_INY );
-      // 2024 05 03 - mkpellegrino
-      // addAsm( str_LDA + "$" + toHex(getAddressOf($1.name)) + ",X", 3, false );
       addAsm( str_LDX + getNameOf(getAddressOf($1.name)) + ",Y", 3, false );
-      //addAsm( str_TAX );
-      //addAsm( str_PLA );
-
       strcpy($$.name, "_XA" );
 
     }
 
   else if( isWordID( $1.name ) && (isUintIMM($3.name)||isIntIMM($3.name))  )
     {
-      addComment( "WordID '[' UIntIMM ']' -> XA" );
+      addComment( "WordID[UIntIMM] -> XA" );
  
       int tmp_i = atoi( stripFirst($3.name).c_str() );
       tmp_i*=2; // *2 because a word is twice as long as a byte!
@@ -14366,13 +14367,11 @@ arithmetic expression
       
       addAsm( str_LDA + getNameOf(addr1), 3, false);
       addAsm( str_AND + getNameOf(addr2), 3, false);
-      //addAsm( str_PHA );
       addAsm( str_TAY );
       addAsm( str_LDA + getNameOf(addr1) + "+1", 3, false);
       addAsm( str_AND + getNameOf(addr2) + "+1", 3, false);
       addAsm( str_TAX );
       addAsm( str_TYA );
-      //addAsm( str_PLA );
       strcpy( $$.name, "_XA" );
     }
   else if( isWordID($1.name) && isXA($3.name) )
@@ -14382,22 +14381,15 @@ arithmetic expression
       int addr = getAddressOf($1.name);
       int instr_size = 3;
       if( addr < 256 ) instr_size = 2;
-      // 2024 05 03 - mkpellegrino
-      //addAsm( str_AND + "$"  + toHex(addr), instr_size, true );
       addAsm( str_AND + getNameOf(addr), instr_size, true );
-      //addAsm( str_PHA );
       addAsm( str_TAY );
       addAsm( str_TXA );
       if( addr + 1 > 255 ) instr_size = 3;
 
       addAsm( str_AND + getNameOf(addr) + "+1", instr_size, true );
-      //addAsm( str_AND + "$" + toHex(addr+1), instr_size, true );
       addAsm( str_TAX );
-      //addAsm( str_PLA );
       addAsm( str_TYA );
       strcpy( $$.name, "_XA" );
-      //addCompilerMessage( "TBD bitwise and of WordID & XA", 3 );
-      
     }
   else if( isWordID($1.name) && isWordIMM($3.name) )
     {
@@ -14683,7 +14675,7 @@ arithmetic expression
   addAsm( str_JSR + "POP", 3, false );
   addAsm( str_STA + "$5d", 2, false );
   addAsm( str_JSR + "POP", 3, false );
-  addAsm( str_STA + "$5c", 2, false );
+  addAsm( str_STA + "$5C", 2, false );
   addAsm( str_JSR + "POP", 3, false );
   addAsm( str_STA + "$03", 2, false );
   addAsm( str_JSR + "POP", 3, false );
@@ -14695,7 +14687,7 @@ arithmetic expression
 }
 | tBANK '(' ')'
 {
-  addComment( "bank();" );
+  addComment( "bank()" );
   addAsm( str_LDA + "$DD00", 3, false );
   addAsm( str_EOR + "#$FF", 2, false );
   addAsm( str_AND + "#$03", 2, false );
@@ -14709,10 +14701,13 @@ arithmetic expression
       addAsm( str_INX );
       addAsm( str_LDA + "#$00", 2, false );
       addAsm( str_SEC );
-      addComment( "top-of-loop" );
+      addAsm( " ", 0, true );
+      addAsm( "!:", 0, true );
       addAsm( str_ROL );
       addAsm( str_DEX );
-      addAsm( str_BYTE + "$D0, $FC" + commentmarker + "BNE top-of-loop", 2, false );  
+      
+      addAsm( str_BNE + "!-" + commentmarker + "BNE top-of-loop", 2, false );
+
     }
   else if( isUintIMM($3.name) || isIntIMM($3.name) )
     {
@@ -14720,10 +14715,11 @@ arithmetic expression
       addAsm( str_INX );
       addAsm( str_LDA + "#$00", 2, false );
       addAsm( str_SEC );
-      addComment( "top-of-loop" );
+      addAsm( " ", 0, true );
+      addAsm( "!:", 0, true );
       addAsm( str_ROL );
       addAsm( str_DEX );
-      addAsm( str_BYTE + "$D0, $FC" + commentmarker + "BNE top-of-loop", 2, false );  
+      addAsm( str_BNE + "!-" + commentmarker + "BNE top-of-loop", 2, false );
     }
   else if( isA( $3.name) )
     {
@@ -14731,11 +14727,11 @@ arithmetic expression
       addAsm( str_INX );
       addAsm( str_LDA + "#$00", 2, false );
       addAsm( str_SEC );
-      addComment( "top-of-loop" );
+      addAsm( " ", 0, true );
+      addAsm( "!:", 0, true );
       addAsm( str_ROL );
       addAsm( str_DEX );
-      addAsm( str_BYTE + "$D0, $FC" + commentmarker + "BNE top-of-loop", 2, false );  
-
+      addAsm( str_BNE + "!-" + commentmarker + "BNE top-of-loop", 2, false );
     }
   else
     {
@@ -14769,8 +14765,8 @@ arithmetic expression
     }
   else if( isWordID($3.name) )
     {
-      addAsm( str_LDA + "#<" + getNameOf(getAddressOf($3.name)), 3, false );
-      addAsm( str_LDX + "#>" + getNameOf(getAddressOf($3.name)), 3, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
+      addAsm( str_LDX + getNameOf(getAddressOf($3.name)) + " +1", 3, false );
       strcpy($$.name, "_XA" );      
     }
   else if( isUintID($3.name) || isIntID($3.name) )
@@ -14792,14 +14788,13 @@ arithmetic expression
     }
   else if( isXA($3.name) )
     {
-      // do nothing - low byte is in A already
+      // do nothing, XA is already in XA
       addComment( "toword(XA) --> XA... nothing to do");
       strcpy($$.name, "_XA" );    }
   else
     {
       addCompilerMessage( "type Not Yet Implemented for touint(exp)", 3);
     }
-  //strcpy($$.name, "_A" );
 };
 
 | tTOUINT '(' expression ')'
@@ -15922,7 +15917,7 @@ value: FLOAT_NUM
 
   addAsm( str_LDA + "#<STRLBL" + itos(string_number), 2, false );
   addAsm( str_LDX + "#>STRLBL" + itos(string_number++), 2, false );
-  strcpy( $$.name, "_XA" );
+  strcpy( $$.name, "str" );
 }
 ;
 
