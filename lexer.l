@@ -142,7 +142,9 @@ frmt  [{\t}|{\n}]
 .	                        { return *yytext; }
 \"([^\\\"]|\\.)*\"                    { strcpy(yylval.nd_obj.name,(yytext)); return STR; }
 
-['].[']                     { strcpy(yylval.nd_obj.name,(yytext)); return CHARACTER; }
+
+'(\\.|.)'  { strcpy(yylval.nd_obj.name,(yytext)); return CHARACTER; }
+   /*['].[']                     { strcpy(yylval.nd_obj.name,(yytext)); return CHARACTER; }*/
 %%
 
 int yywrap() {
