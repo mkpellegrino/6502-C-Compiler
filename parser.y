@@ -510,6 +510,13 @@
     if(s == string("VOID")) return_value = true;
     return return_value;
   }
+
+  bool isString( string s )
+  {
+    bool return_value = false;
+    if(s == string("str")) return_value = true;
+    return return_value;  
+  }
   
   void addCompilerMessage(string msg, int level = 0)
   {
@@ -3026,7 +3033,7 @@ numberlist: /* empty */
 |  
 | value
 {
-  if( string( $1.name )  != "str" )
+  if( !isString( $1.name ) )
     {
       // the label was already added as a STRLBL
       // so don't add the string here
@@ -3423,7 +3430,7 @@ body: WHILE
 }
 '=' '{' numberlist '}' ';'
 {
-  if( string( $7.name ) == "str"  )
+  if( isString( $7.name ) )
     {
       addDebugComment( "String type added as a word variable" );
       addAsmVariable($3.name, 2);
@@ -3601,9 +3608,10 @@ body: WHILE
   addAsm( str_JSR + "SCANF", 3, false );  
 };
 // STATEMENT
-| tPRINTS '(' expression ')'
+| tPRINTS '(' expression ')' ';'
 {
   //addCommentSection( string("prints(") + string($3.name) + string( ");") );
+  
   if( isUintID($3.name) )
     {
       addComment( "prints(UintID);");
@@ -3629,11 +3637,23 @@ body: WHILE
       int tmp_v = atoi(stripFirst($3.name).c_str());
       int tmp_L = get_word_L(tmp_v);
       int tmp_H = get_word_H(tmp_v);
+
+      addAsm( str_LDX + "$02", 2, false );
+      addAsm( str_LDA + "$03", 2, false );
+      addAsm( str_PHA, 1, false );
+
+      
       addAsm( str_LDA + "#$" + toHex(tmp_L), 2, false );
       addAsm( str_STA + "$02", 2, false );
       addAsm( str_LDA + "#$" + toHex(tmp_H), 2, false );
       addAsm( str_STA + "$03", 2, false );
       addAsm( str_JSR + "PRN", 3, false );
+
+      addAsm( str_PLA, 1, false );
+      addAsm( str_STA + "$03", 2, false );
+      addAsm( str_STX + "$02", 2, false );
+
+      
     }
   
   else if( isWordID($3.name) )
@@ -3642,12 +3662,22 @@ body: WHILE
       printf_is_needed = true;
       int addr = getAddressOf( $3.name );
       string OP3 = getNameOf(addr);
-     
+
+      addAsm( str_LDX + "$02", 2, false );
+      addAsm( str_LDA + "$03", 2, false );
+      addAsm( str_PHA, 1, false );
+      
       addAsm( str_LDA + OP3, 3, false );
       addAsm( str_STA + "$02", 2, false );
       addAsm( str_LDA + OP3 + "+1", 3, false );
       addAsm( str_STA + "$03", 2, false );
       addAsm( str_JSR + "PRN", 3, false );
+
+      addAsm( str_PLA, 1, false );
+      addAsm( str_STA + "$03", 2, false );
+      addAsm( str_STX + "$02", 2, false );
+      
+      
     }
   else if( isXA($3.name) )
     {
@@ -3655,34 +3685,30 @@ body: WHILE
       // TODO: TEST THIS!
       addCompilerMessage( "If you're using a pointer here, you could pass the WordID instead to reduce the size of the code.", 0 );
       printf_is_needed = true;
+      addAsm( str_LDX + "$02", 2, false );
+      addAsm( str_LDA + "$03", 2, false );
+      addAsm( str_PHA, 1, false );
+
+      
       addAsm( str_STA + "$02", 2, false );
       addAsm( str_STX + "$03", 2, false );
-      /* addAsm( str_LDY + "#$00", 2, false ); */
-      /* addAsm( str_LDA + "($02),Y", 2, false ); */
-
-      /* // 2024 05 22 - mkpellegrino */
-      /* addAsm( str_TAX ); */
-      /* //addAsm( str_PHA ); */
-      
-      /* addAsm( str_INY ); */
-      /* addAsm( str_LDA + "($02),Y", 2, false ); */
-      /* addAsm( str_STA + "$03", 2, false ); */
-
-      /* // mabe: addAsm( str_TXA ); */
-      /* //addAsm( str_PLA ); */
-      /* //addAsm( str_STA + "$02", 2, false ); */
-      /* addAsm( str_STX + "$02", 2, false ); */
-      
       addAsm( str_JSR + "PRN", 3, false );
+
+      addAsm( str_PLA, 1, false );
+      addAsm( str_STA + "$03", 2, false );
+      addAsm( str_STX + "$02", 2, false );
+
     }
   else
     {
       addCompilerMessage( string("prints of unknown type: ") + $3.name, 3 );
     }
+  strcpy( $$.name, "NULL" );
 };
 // STATEMENT
-| PRINTFF '(' expression ')' ';'
+| PRINTFF '(' expression ')' 
 {
+
   if( isUintID($3.name) )
     {
       addComment(string("printf(") + getNameOf(getAddressOf($3.name)) + string(");"));
@@ -3995,12 +4021,14 @@ body: WHILE
       addAsm( str_JMP + getLabel( label_vector[label_major]-1,false), 3, false );
       addAsm( "!:", 0, true );
       popScope();
+      
     }
   else
     {
       addCompilerMessage( "printf of unknown type", 3 );
     }
-};
+
+}
 // STATEMENT
 | PRINTFF '(' STR ')' ';'
 {
@@ -4021,9 +4049,9 @@ body: WHILE
   addAsm( str_JSR + "PRN", 3, false );
 
   addComment( "restore $02/$03" );
-  addAsm( str_PLA ); 
+  addAsm( str_PLA );
   addAsm( str_STA + "$03", 2, false );
-  addAsm( str_PLA ); 
+  addAsm( str_PLA );
   addAsm( str_STA + "$02", 2, false );
   printf_is_needed = true;
 };
@@ -15913,6 +15941,7 @@ value: FLOAT_NUM
 }
 | STR
 {
+
   addString( string("STRLBL") + itos(string_number), string($1.name).substr(1,string($1.name).length()-2), 0   );
 
   addAsm( str_LDA + "#<STRLBL" + itos(string_number), 2, false );
