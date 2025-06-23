@@ -9756,26 +9756,28 @@ arithmetic expression
 	  if( arg_unsafe_math )
 	    {
 	      addComment( "A + A (Destroys $FB)" );	   
-	      addAsm( str_STA + "$FB", 2, false ); // temporaily store OP2 in zp
-	      addAsm( str_PLA ); 
-	      addAsm( str_ADC + "$FB", 2, false );
+	      addAsm( str_STA + "$FB" + commentmarker + "(2:3)", 2, false ); // temporaily store OP2 in zp
+	      addAsm( str_PLA + commentmarker + "(1:4)", 1, false ); 
+	      addAsm( str_ADC + "$FB" + commentmarker + "(2:3)" , 2, false );
+	      addCompilerMessage( "--unsafe-math saved 11 bytes and 22 clock cycles", 0 );
 	    }
 	  else
 	    {
 	      addComment( "A + A" );
-	      addAsm( str_TAX, 1, false );
-	      addAsm( str_PLA, 1, false );
-	      addAsm( str_TAY, 1, false );
-	      addAsm( str_LDA + "$FB", 2, false );
-	      addAsm( str_PHA, 1, false );
-	      addAsm( str_STX + "$FB", 2, false );
-	      addAsm( str_TYA, 1, false );
+	      addAsm( str_TAX + commentmarker + "(1:2)", 1, false );
+	      addAsm( str_PLA + commentmarker + "(1:4)", 1, false );
+	      addAsm( str_TAY + commentmarker + "(1:2)", 1, false );
+	      addAsm( str_LDA + "$FB" + commentmarker + "(2:2)", 2, false );
+	      addAsm( str_PHA + commentmarker + "(1:3)", 1, false );
+	      addAsm( str_STX + "$FB" + commentmarker + "(2:3)", 2, false );
+	      addAsm( str_TYA + commentmarker + "(1:2)", 1, false );
 	      
-	      addAsm( str_ADC + "$FB", 2, false );
-	      addAsm( str_TAY, 1, false );
-	      addAsm( str_PLA, 1, false );
-	      addAsm( str_STA + "$FB", false );
-	      addAsm( str_TYA, 1, false );
+	      addAsm( str_ADC + "$FB" + commentmarker + "(2:3)", 2, false );
+	      addAsm( str_TAY + commentmarker + "(1:2)", 1, false );
+	      addAsm( str_PLA + commentmarker + "(1:4)", 1, false );
+	      addAsm( str_STA + "$FB" + commentmarker + "(2:3)", false );
+	      addAsm( str_TYA + commentmarker + "(1:2)", 1, false );
+
 	    }	  
 	  strcpy($$.name, "_A" );
 	}
@@ -11126,23 +11128,170 @@ arithmetic expression
 	}
       else if( op == string("*") )
 	{
-	  addComment( "A * WordIMM --> XA" );
-	  addCompilerMessage( "Operation not implemented for: IntID * A", 3);
-	  strcpy($$.name, "_A");
+	  addCompilerMessage( "IntID * A only returns 8-bit SIGNED result", 1 );			      
+	  addComment( "IntID * A --> A" );
+
+	  addAsm( str_TAX, 1, false );
+	  addAsm( str_LDA + "#$38" + commentmarker + "(Opcode #$38 = SEC)", 2, false );
+	  addAsm( str_STA + "!sign+", 3, false );
+
+	  addAsm( str_LDA + O1, sizeOP1A, false );
+	  addAsm( str_CMP + "#$80", 2, false );
+	  addAsm( str_BCC + "!_skip+", 2, false );
+
+	  // must be negative
+	  addAsm( str_LDA + "#$18" + commentmarker + "(Opcode #$18 = CLC)", 2, false );
+	  addAsm( str_STA + "!sign+", 3, false );
+	  
+	  addAsm( str_LDA + O1, sizeOP1A, false );
+	  addAsm( str_EOR + "#$FF", 2, false );
+	  addAsm( str_CLC, 1, false );
+	  addAsm( str_ADC + "#$01", 2, false );
+
+	  
+	  addAsm( "!_skip:", 0, true );	  
+
+	  umul_is_needed = true;
+
+	  addAsm( str_TAY, 1, false );
+	  
+	  if( !arg_unsafe_math )
+	    {
+	      addAsm( str_LDA + "$02", 2, false );
+	      addAsm( str_PHA );
+	      addAsm( str_LDA + "$03", 2, false );
+	      addAsm( str_PHA );
+	    }
+	  
+	  addAsm( str_STX + "$02", 2, false );
+	  addAsm( str_LDA + O1, sizeOP1A, false);
+	  addAsm( str_STY + "$03", 2, false );
+	  addAsm( str_JSR + "UMUL", 3, false );
+	  
+	  addAsm( str_LDY + "$03", 2, false );
+
+	  if( !arg_unsafe_math )
+	    {
+	      addAsm( str_PLA );
+	      addAsm( str_STA + "$03", 2, false );
+	      addAsm( str_PLA );
+	      addAsm( str_STA + "$02", 2, false );
+	    }
+	  
+	  addAsm( str_TYA );
+	  addAsm( "!sign:\t" + str_BYTE + "$00" + commentmarker + "sec or clc", 1, true );
+	  
+	  addAsm( str_BCS + "!_skip+", 2, false );
+	  addAsm( str_EOR + "#$FF", 2, false );
+	  addAsm( str_CLC, 1, false );
+	  addAsm( str_ADC + "#$01", 2, false );
+	  addAsm( "!_skip:", 0, true );	  
+	  strcpy($$.name, "_A" );	  
 	}
       else if( op == string("/") )
 	{
+	  div16_is_needed = true;
+	  addCompilerMessage( "IntID / A only returns 8-bit SIGNED result", 1 );
 	  addComment( "IntID / A --> A" );
-	  addCompilerMessage( "Operation not implemented for: IntID / A", 3);
+
+	  addAsm( str_TAX, 1, false );
+	  addAsm( str_LDA + "#$38" + commentmarker + "(Opcode #$38 = SEC)", 2, false );
+	  addAsm( str_STA + "!sign+", 3, false );
+
+	  addAsm( str_LDA + O1, sizeOP1A, false );
+	  addAsm( str_CMP + "#$80", 2, false );
+	  addAsm( str_BCC + "!_skip+", 2, false );
+
+	  // must be negative
+	  addAsm( str_LDA + "#$18" + commentmarker + "(Opcode #$18 = CLC)", 2, false );
+	  addAsm( str_STA + "!sign+", 3, false );
+	  
+	  addAsm( str_LDA + O1, sizeOP1A, false );
+	  addAsm( str_EOR + "#$FF", 2, false );
+	  addAsm( str_CLC, 1, false );
+	  addAsm( str_ADC + "#$01", 2, false );
+
+	  
+	  addAsm( "!_skip:", 0, true );	  
+
+	  div16_is_needed = true;
+	  addAsm( str_STA + "_DIV16_FB", 3, false );
+	  addAsm( str_STX + "_DIV16_FD", 3, false );
+	  addAsm( str_LDA + "#$00", 2, false ); 
+	  addAsm( str_STA + "_DIV16_FC", 3, false );
+	  addAsm( str_STA + "_DIV16_FE", 3, false );
+	  addAsm( str_JSR + "DIV16", 3, false );
+
+
+	  addAsm( str_LDA + "_DIV16_FB", 3, false );
+
+	  
+	  addAsm( "!sign:\t" + str_BYTE + "$00" + commentmarker + "sec or clc", 1, true );
+	  
+	  addAsm( str_BCS + "!_skip+", 2, false );
+	  addAsm( str_EOR + "#$FF", 2, false );
+	  addAsm( str_CLC, 1, false );
+	  addAsm( str_ADC + "#$01", 2, false );
+	  addAsm( "!_skip:", 0, true );	  
+
+
+
+
+
 	  strcpy($$.name, "_A");
 	}
-      else if( op == string( "**" ) )
+      else if( op == string("**"))
 	{
-	  addCompilerMessage( "** (exponents) nyi", 3 );
+	  addComment( "IntID ** A" );
+	  addCompilerMessage( "IntID ** A only returns 8-bit SIGNED result", 1 );			      
+	  pow16_is_needed = true;
+	  mul16_is_needed = true;
+	  
+	  addAsm( str_TAX, 1, false );
+	  addAsm( str_LDA + "#$38" + commentmarker + "(Opcode #$38 = SEC)", 2, false );
+	  addAsm( str_STA + "!sign+", 3, false );
+
+	  addAsm( str_LDA + O1, sizeOP1A, false );
+	  addAsm( str_CMP + "#$80", 2, false );
+	  addAsm( str_BCC + "!_skip+", 2, false );
+
+	  // must be negative
+	  addAsm( str_LDA + "#$18" + commentmarker + "(Opcode #$18 = CLC)", 2, false );
+	  addAsm( str_STA + "!sign+", 3, false );
+	  
+	  addAsm( str_LDA + O1, sizeOP1A, false );
+	  addAsm( str_EOR + "#$FF", 2, false );
+	  addAsm( str_CLC, 1, false );
+	  addAsm( str_ADC + "#$01", 2, false );
+	  
+	  addAsm( "!_skip:", 0, true );	  
+	  addAsm( str_PHA, 1, false );
+
+	  // for pow16vv
+	  addAsm( str_LDA + "#$00", 2, false );
+	  addAsm( str_PHA, 1, false );
+	  // for pow16^^
+
+	  addAsm( str_TXA, 1, false );
+	  addAsm( str_PHA, 1, false );
+	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_PLA, 1, false );
+	  addAsm( str_TAX, 1, false );// not needed
+
+	  addAsm( str_PLA, 1, false );
+
+	  addAsm( "!sign:\t" + str_BYTE + "$00" + commentmarker + "sec or clc", 1, true );
+	  
+	  addAsm( str_BCS + "!_skip+", 2, false );
+	  addAsm( str_EOR + "#$FF", 2, false );
+	  addAsm( str_CLC, 1, false );
+	  addAsm( str_ADC + "#$01", 2, false );
+	  addAsm( "!_skip:", 0, true );	  
+	  strcpy($$.name, "_A" );	  
 	}
       else
 	{
-	  addCompilerMessage( "Operation not implemented for: IntID arith A", 3);
+	  addCompilerMessage( "Operation not implemented for: IntID math A", 3);
 	}
     }
   else if( isIntID( $1.name ) && isIntID( $4.name ) )
@@ -11170,6 +11319,7 @@ arithmetic expression
 	  addAsm( str_PHA );
 	  addAsm( str_LDA + "$03", 2, false );
 	  addAsm( str_PHA );
+
 	  addAsm( str_STY + "$02", 2, false );
 	  addAsm( str_LDA + O2, sizeOP2A, false);
 	  addAsm( str_STA + "$03", 2, false );
@@ -11403,10 +11553,12 @@ arithmetic expression
 	  addAsm( str_STA + "_DIV16_FB", 3, false );
 	  addAsm( str_LDA + "#$00", 2, false ); 
 	  addAsm( str_STA + "_DIV16_FC", 3, false );
+
 	  addAsm( str_LDA + "#$" + toHex(op2), 2, false );
 	  addAsm( str_STA + "_DIV16_FD", 3, false );
 	  addAsm( str_LDA + "#$00", 2, false ); 
 	  addAsm( str_STA + "_DIV16_FE", 3, false );
+
 	  addAsm( str_JSR + "DIV16", 3, false );
 	  addAsm( str_LDA + "_DIV16_FB", 3, false );
 	  strcpy($$.name, "_A" );
@@ -17808,6 +17960,7 @@ int main(int argc, char *argv[])
       if( a == "--unsafe-math" )
 	{
 	  arg_unsafe_math = true;
+	  addCompilerMessage( "Unsafe Math", 1);
 	}
       if( a == "--kick" )
 	{
