@@ -9653,7 +9653,7 @@ init: '=' expression
 
 // START OF MATH
 
-expression: expression
+expression: expression[LHS]
 {
   // MIDRULE ACTION
   if(isA($1.name)) {addComment("OP1 (A)");addAsm( str_PHA );}
@@ -9667,7 +9667,7 @@ expression: expression
   else if(isUintID($1.name)) {addComment("OP1 (UintID)");}
   else if(isUintIMM($1.name)) {addComment("OP1 (UintIMM)");}
 }
-arithmetic expression
+arithmetic expression[RHS]
 {
   if(isA($4.name)) {addComment("OP2 (A)");}
   else if(isXA($4.name)) {addComment("OP2 (XA)");}
@@ -9680,8 +9680,9 @@ arithmetic expression
   else if(isUintID($4.name)) {addComment("OP2 (UintID)");}
   else if(isUintIMM($4.name)) {addComment("OP2 (UintIMM)");}
 }
+
+
 {
-  
   if( isXA($1.name) && (!isXA($4.name) && !isA($4.name) ) )
     {
       // 2024 04 15 - ??????  I deleted the first delete
@@ -11008,7 +11009,75 @@ arithmetic expression
     }
   else if( isFloatID($1.name) && isXA($4.name) )
     {
-      addCompilerMessage( "FloatID math XA (nyi): TOC", 3 );
+      addComment( "FloatID math XA: TOC" );
+
+      int base_address_op1 = hexToDecimal($LHS.name); 
+      int base_address_op2 = hexToDecimal($RHS.name); 
+      string OP1 = getNameOf( base_address_op1 );
+      string OP2 = getNameOf( base_address_op2 );
+
+      if( op == string("+"))
+	{
+	  addAsm( str_TAY, 1, false );
+	  addAsm( str_TXA, 1, false );
+	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
+
+	  addAsm( str_LDA + "#<" + OP1, 3, false );
+	  addAsm( str_LDY + "#>" + OP1, 3, false );
+	  addAsm( str_JSR + "$B867" + commentmarker + "MEM + FAC -> FAC", 3, false );
+	  strcpy( $$.name, "_FAC" );
+	}
+      else if( op == string( "-" ))
+	{
+	  addAsm( str_TAY, 1, false );
+	  addAsm( str_TXA, 1, false );
+	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
+	  addAsm( str_LDA + "#<" + OP1, 3, false );
+	  addAsm( str_LDY + "#>" + OP1, 3, false );
+	  addAsm( str_JSR + "$B850" + commentmarker + "MEM - FAC -> FAC", 3, false );
+	  strcpy( $$.name, "_FAC" );
+	}
+      else if( op == string( "*" ))
+	{
+	  addAsm( str_TAY, 1, false );
+	  addAsm( str_TXA, 1, false );
+	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
+	  
+	  addAsm( str_LDA + "#<" + OP1, 3, false );
+	  addAsm( str_LDY + "#>" + OP1, 3, false );
+	  addAsm( str_JSR + "$BA28" + commentmarker + "MEM * FAC -> FAC", 3, false );
+	  strcpy( $$.name, "_FAC" );
+	}
+      else if( op == string( "/" ))
+	{
+	  addAsm( str_TAY, 1, false );
+	  addAsm( str_TXA, 1, false );
+	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
+	  
+	  addAsm( str_LDA + "#<" + OP1, 3, false );
+	  addAsm( str_LDY + "#>" + OP1, 3, false );
+
+	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
+       	  addAsm( str_JSR + "$BB12" + commentmarker + "ARG/FAC -> FAC", 3, false );
+	  strcpy($$.name, "_FAC" );
+	}
+      else if( op == string( "**" ))
+	{
+	  addAsm( str_TAY, 1, false );
+	  addAsm( str_TXA, 1, false );
+	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
+	  
+	  addAsm( str_LDA + "#<" + OP1, 3, false );
+	  addAsm( str_LDY + "#>" + OP1, 3, false );
+
+	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
+       	  addAsm( str_JSR + "$BF7B" + commentmarker + "ARG**FAC -> FAC", 3, false );
+	  strcpy($$.name, "_FAC" );
+	}
+      else
+	{
+	  addCompilerMessage( "Operation not implemented for: FloatID math XA", 3);
+	}
     }
 
   else if( isFloatIMM($1.name) && isFloatID($4.name))
@@ -11107,7 +11176,7 @@ arithmetic expression
     }
   else if( isIntID($1.name) && isA($4.name) )
     {
-      addComment( "IntID math A" );
+      addComment( "IntID math A: TOC" );
       if( op == string("+") )
 	{
 	  addComment( "IntID + A --> A" );
@@ -11147,7 +11216,6 @@ arithmetic expression
 	  addAsm( str_EOR + "#$FF", 2, false );
 	  addAsm( str_CLC, 1, false );
 	  addAsm( str_ADC + "#$01", 2, false );
-
 	  
 	  addAsm( "!_skip:", 0, true );	  
 
@@ -11292,6 +11360,39 @@ arithmetic expression
       else
 	{
 	  addCompilerMessage( "Operation not implemented for: IntID math A", 3);
+	}
+    }
+  else if( isIntID( $1.name ) && isFloatID( $4.name ) )
+    {
+      addComment( "IntID math FloatID: TOC (in progress)" );
+      if( op == string("+"))
+	{
+
+
+	}
+      else if( op == string( "-" ))
+	{
+
+
+	}
+      else if( op == string( "*" ))
+	{
+
+
+	}
+      else if( op == string( "/" ))
+	{
+
+
+	}
+      else if( op == string( "**" ))
+	{
+
+
+	}
+      else
+	{
+	  addCompilerMessage( "Operation not implemented for: IntID math FloatID", 3);
 	}
     }
   else if( isIntID( $1.name ) && isIntID( $4.name ) )
