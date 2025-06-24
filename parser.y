@@ -10587,7 +10587,81 @@ arithmetic expression[RHS]
     }
     else if( isFloatID($1.name) && isA($4.name) )
     {
-      addCompilerMessage( "FloatID math A (nyi): TOC", 3 );
+      addComment( "FloatID math A: TOC" );
+      addCompilerMessage( "FloatID math A (in progress): TOC", 1 );
+
+      int base_address_op1 = hexToDecimal($LHS.name); 
+      string OP1 = getNameOf( base_address_op1 );
+      addCompilerMessage( "16-bit word is SIGNED", 1 );
+
+      if( op == string("+"))
+	{
+	  addAsm( str_TAY, 1, false );
+	  addAsm( str_LDA + "#$00", 2, false );
+	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
+
+	  addAsm( str_LDA + "#<" + OP1, 3, false );
+	  addAsm( str_LDY + "#>" + OP1, 3, false );
+	  addAsm( str_JSR + "$B867" + commentmarker + "MEM + FAC -> FAC", 3, false );
+	  strcpy( $$.name, "_FAC" );
+	}
+      else if( op == string( "-" ))
+	{
+	  addAsm( str_TAY, 1, false );
+	  addAsm( str_LDA + "#$00", 2, false );
+	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
+	  addAsm( str_LDA + "#<" + OP1, 3, false );
+	  addAsm( str_LDY + "#>" + OP1, 3, false );
+	  addAsm( str_JSR + "$B850" + commentmarker + "MEM - FAC -> FAC", 3, false );
+	  strcpy( $$.name, "_FAC" );
+	}
+      else if( op == string( "*" ))
+	{
+	  addAsm( str_TAY, 1, false );
+	  addAsm( str_LDA + "#$00", 2, false );
+	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
+	  
+	  addAsm( str_LDA + "#<" + OP1, 3, false );
+	  addAsm( str_LDY + "#>" + OP1, 3, false );
+	  addAsm( str_JSR + "$BA28" + commentmarker + "MEM * FAC -> FAC", 3, false );
+	  strcpy( $$.name, "_FAC" );
+	}
+      else if( op == string( "/" ))
+	{
+	  addAsm( str_TAY, 1, false );
+	  addAsm( str_LDA + "#$00", 2, false );
+	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
+	  
+	  addAsm( str_LDA + "#<" + OP1, 3, false );
+	  addAsm( str_LDY + "#>" + OP1, 3, false );
+
+	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
+       	  addAsm( str_JSR + "$BB12" + commentmarker + "ARG/FAC -> FAC", 3, false );
+	  strcpy($$.name, "_FAC" );
+	}
+      else if( op == string( "**" ))
+	{
+	  addAsm( str_TAY, 1, false );
+	  addAsm( str_LDA + "#$00", 2, false );
+	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
+	  
+	  addAsm( str_LDA + "#<" + OP1, 3, false );
+	  addAsm( str_LDY + "#>" + OP1, 3, false );
+
+	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
+       	  addAsm( str_JSR + "$BF7B" + commentmarker + "ARG**FAC -> FAC", 3, false );
+	  strcpy($$.name, "_FAC" );
+	}
+      else
+	{
+	  addCompilerMessage( "Operation not implemented for: FloatID math A", 3);
+	}
+
+
+
+
+
+      
     }
 
     else if( isFloatID($1.name) && isFloatID($4.name ) )
@@ -10870,7 +10944,8 @@ arithmetic expression[RHS]
       string OP1 = getNameOf( base_address_op1 );
       string OP2 = getNameOf( base_address_op2 );
 
-      
+      addCompilerMessage( "16-bit word is SIGNED", 1 );
+
       if( op == string("*"))
 	{
 	  addAsm( str_LDY + OP2, 3, false ); 
@@ -10948,6 +11023,8 @@ arithmetic expression[RHS]
       string OP2L = toHex(get_word_L(atoi(stripFirst($3.name).c_str())));
       
       string OP2 = toHex( atoi( stripFirst($4.name).c_str() ) );
+      addCompilerMessage( "16-bit word is SIGNED", 1 );
+
       if( op == string("*") )
 	{
 	  addAsm( str_LDY + "#$" + OP2L, 3, false );
@@ -11012,9 +11089,8 @@ arithmetic expression[RHS]
       addComment( "FloatID math XA: TOC" );
 
       int base_address_op1 = hexToDecimal($LHS.name); 
-      int base_address_op2 = hexToDecimal($RHS.name); 
       string OP1 = getNameOf( base_address_op1 );
-      string OP2 = getNameOf( base_address_op2 );
+      addCompilerMessage( "16-bit word is SIGNED", 1 );
 
       if( op == string("+"))
 	{
@@ -13635,7 +13711,8 @@ arithmetic expression[RHS]
   else if( isWordID($1.name) && isFloatID($4.name) )
     {
       addComment( "WordID math FloatID: TOC" );
-      int base_address_op1 = hexToDecimal($1.name);      
+      addCompilerMessage( "16-bit word is SIGNED", 1 );
+      int base_address_op1 = hexToDecimal($1.name);
       int base_address_op2 = hexToDecimal($4.name);
 
       string OP1 = getNameOf( base_address_op1 );
@@ -16958,6 +17035,8 @@ arithmetic expression[RHS]
     }
   else if(isWordID($3.name) )
     {
+      addCompilerMessage( "16-bit word is SIGNED", 1 );
+
       //addAsm( str_LDY + string($3.name), 3, false ); 
       //addAsm( str_LDA + string($3.name) + "+1", 3, false ); 
       
@@ -16969,6 +17048,7 @@ arithmetic expression[RHS]
     }
   else if( isXA($3.name) )
     {
+      addCompilerMessage( "16-bit word is SIGNED", 1 );
       addAsm( str_TAY );
       addAsm( str_TXA );
       addAsm( str_JSR + "$B391", 3, false );
@@ -16988,6 +17068,7 @@ arithmetic expression[RHS]
     }
   else if( isWordIMM($3.name) )
     {
+      addCompilerMessage( "16-bit word is SIGNED", 1 );
       int L = get_word_L(atoi( stripFirst($3.name).c_str() ));
       int H = get_word_H(atoi( stripFirst($3.name).c_str() ));
       addAsm( str_LDY + "#$" + toHex(L), 2, false );
@@ -17183,71 +17264,76 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
 };
 | tSIN '(' expression ')'
 {
-  addComment( "=========================================================");  
-  addComment( "                 sine");
-  addComment( "=========================================================");
-  addParserComment( "RULE: expression: sin( expression );" );
   if( isFloatIMM($3.name) )
     {
+      addComment( "sin( FloatIMM )" );
       // IMM float
       inlineFloat($3.name);
       // calculate the sine of it
-      addAsm( str_JSR + "$E26B" + commentmarker + "SIN(FAC) -> FAC", 3, false ); 
+      addAsm( str_JSR + "$E26B" + commentmarker + "sin(FAC) -> FAC", 3, false ); 
       // result is in FAC
       strcpy($$.name, "_FAC");
     }
   else if( isFloatID($3.name) )
     {
-      // float
+      addComment( "sin( FloatID )" );
       addAsm( str_LDA + "#<" + getNameOf(getAddressOf($3.name)), 2, false  );
       addAsm( str_LDY + "#>" + getNameOf(getAddressOf($3.name)), 2, false  );
-
       addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false ); // FP ->FAC
-      addAsm( str_JSR + "$E26B" + commentmarker + "SIN(FAC) -> FAC", 3, false ); // sine
+      addAsm( str_JSR + "$E26B" + commentmarker + "sin(FAC) -> FAC", 3, false ); // sine
       strcpy($$.name, "_FAC");
     }
   else if( isWordID($3.name) )
     {
-      addComment( "https://www.c64-wiki.com/wiki/GIVAYF" );
-      //addAsm( str_LDY + "#<" + getNameOf(getAddressOf($3.name)), 2, false  );
-      //addAsm( str_LDA + "#>" + getNameOf(getAddressOf($3.name)), 2, false  );
+      addComment( "sin( WordID )" );
+      addComment( "https://c64os.com/post/floatingpointmath" );
       addAsm( str_LDY + getNameOf(getAddressOf($3.name)), 3, false  );
       addAsm( str_LDA + getNameOf(getAddressOf($3.name)) + "+1", 3, false  );
-      //addAsm( str_JSR + "$B391" + commentmarker + "Word -> FAC", 3, false );
-      addAsm( str_JSR + "$B395" + commentmarker + "Word -> FAC", 3, false );
-      addAsm( str_JSR + "$E26B" + commentmarker + "SIN(FAC) -> FAC", 3, false ); // sine
+      addAsm( str_STY + "$63", 2, false );
+      addAsm( str_STA + "$62", 2, false );
+      addAsm( str_LDX + "#$90", 2, false );
+      addAsm( str_SEC, 1, false );
+      addAsm( str_JSR + "$BC49", 3, false );
+      addAsm( str_JSR + "$E26B" + commentmarker + "sin(FAC) -> FAC", 3, false );
       strcpy($$.name, "_FAC");
     }
   else if( isUintID($3.name) || isIntID($3.name) )
     {
-      addComment( "https://www.c64-wiki.com/wiki/GIVAYF" );
+      addComment( "sin( UintID ) / sin( IntID )" );
       addAsm( str_LDY + getNameOf(getAddressOf($3.name)), 3, false ); 
       addAsm( str_LDA + "#$00", 2, false );
-      //addAsm( str_JSR + "$B391" + commentmarker + "Word -> FAC", 3, false );
-      addAsm( str_JSR + "$B395" + commentmarker + "Word -> FAC", 3, false );
-      addAsm( str_JSR + "$E26B" + commentmarker + "SIN(FAC) -> FAC", 3, false ); // sine
+      addComment( "https://c64os.com/post/floatingpointmath" );
+      addAsm( str_STY + "$63", 2, false );
+      addAsm( str_STA + "$62", 2, false );
+      addAsm( str_LDX + "#$90", 2, false );
+      addAsm( str_SEC, 1, false );
+      addAsm( str_JSR + "$BC49", 3, false );
+      addAsm( str_JSR + "$E26B" + commentmarker + "sin(FAC) -> FAC", 3, false );
       strcpy($$.name, "_FAC");
     }
   else if( isXA($3.name) )
     {
-      addAsm( str_PHA );
-      addAsm( str_TXA );
-      addAsm( str_TAY );
-      addAsm( str_PLA );
-      addAsm( str_TAX );
-      addAsm( str_TYA );
-      //addAsm( str_JSR + "$B391" + commentmarker + "Word -> FAC", 3, false );
-      addAsm( str_JSR + "$B395" + commentmarker + "Word -> FAC", 3, false );
-
-      addAsm( str_JSR + "$E26B" + commentmarker + "SIN(FAC) -> FAC", 3, false ); // sine
+      addComment( "sin( XA )" );
+      addComment( "https://c64os.com/post/floatingpointmath" );
+      addAsm( str_STA + "$63", 2, false );
+      addAsm( str_STX + "$62", 2, false );
+      addAsm( str_LDX + "#$90", 2, false );
+      addAsm( str_SEC, 1, false );
+      addAsm( str_JSR + "$BC49", 3, false );
+      addAsm( str_JSR + "$E26B" + commentmarker + "sin(FAC) -> FAC", 3, false );
       strcpy($$.name, "_FAC");
     }
   else if( isA($3.name) )
     {
-      addAsm( str_TAX );
-      addAsm( str_LDA + "#$00", 2, false );
-      addAsm( str_JSR + "$B391" + commentmarker + "Word -> FAC", 3, false );
-      addAsm( str_JSR + "$E26B" + commentmarker + "SIN(FAC) -> FAC", 3, false ); // sine
+      addComment( "sin( A )" );
+      addComment( "https://c64os.com/post/floatingpointmath" );
+      addAsm( str_STA + "$63", 2, false );      
+      addAsm( str_LDX + "#$00", 2, false );
+      addAsm( str_STX + "$62", 2, false );
+      addAsm( str_LDX + "#$90", 2, false );
+      addAsm( str_SEC, 1, false );
+      addAsm( str_JSR + "$BC49", 3, false );
+      addAsm( str_JSR + "$E26B" + commentmarker + "sin(FAC) -> FAC", 3, false );
       strcpy($$.name, "_FAC");
     }
   else
@@ -17264,7 +17350,7 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
   if( isFloatIMM($3.name) )
     {
       inlineFloat($3.name);
-      addAsm( str_JSR + "$E264" + commentmarker + "COS(FAC) -> FAC", 3, false ); 
+      addAsm( str_JSR + "$E264" + commentmarker + "cos(FAC) -> FAC", 3, false ); 
       strcpy($$.name, "_FAC");
     }
   else if( isFloatID($3.name) )
@@ -17272,52 +17358,57 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
       int base_address = getAddressOf($3.name);
       addAsm( str_LDA + "#<" + getNameOf(getAddressOf($3.name)), 2, false  );
       addAsm( str_LDY + "#>" + getNameOf(getAddressOf($3.name)), 2, false  );
-
-      //addAsm( str_LDA + "#$" + toHex(get_word_L(base_address)), 2, false  );
-      //addAsm( str_LDY + "#$" + toHex(get_word_H(base_address)), 2, false  );
       addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false ); // FP ->FAC
-      addAsm( str_JSR + "$E264" + commentmarker + "COS(FAC) -> FAC", 3, false ); // cos
+      addAsm( str_JSR + "$E264" + commentmarker + "cos(FAC) -> FAC", 3, false ); // cos
       strcpy($$.name, "_FAC");
     }
   else if( isWordID($3.name) )
     {
-      addAsm( str_LDA + "#<" + getNameOf(getAddressOf($3.name)), 2, false  );
-      addAsm( str_LDY + "#>" + getNameOf(getAddressOf($3.name)), 2, false  );
-
-      
-      //addAsm( str_LDY + $3.name, 3, false ); 
-      //addAsm( str_LDA + $3.name + "+1", 3, false ); 
-      addAsm( str_JSR + "$B391" + commentmarker + "Word -> FAC", 3, false );
-      addAsm( str_JSR + "$E264" + commentmarker + "COS(FAC) -> FAC", 3, false ); // cos
+      addAsm( str_LDY + getNameOf(getAddressOf($3.name)), 3, false  );
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)) + "+1", 3, false  );
+      addComment( "https://c64os.com/post/floatingpointmath" );
+      addAsm( str_STY + "$63", 2, false );
+      addAsm( str_STA + "$62", 2, false );
+      addAsm( str_LDX + "#$90", 2, false );
+      addAsm( str_SEC, 1, false );
+      addAsm( str_JSR + "$BC49", 3, false );
+      addAsm( str_JSR + "$E264" + commentmarker + "cos(FAC) -> FAC", 3, false ); // cos
       strcpy($$.name, "_FAC");
     }
   else if( isUintID($3.name) || isIntID($3.name) )
     {
-      //addAsm( str_LDY + $3.name, 3, false );
       addAsm( str_LDY + getNameOf(getAddressOf($3.name)), 3, false ); 
       addAsm( str_LDA + "#$00", 2, false );
-      addAsm( str_JSR + "$B391" + commentmarker + "Word -> FAC (int->FAC)", 3, false );
-      addAsm( str_JSR + "$E264" + commentmarker + "COS(FAC) -> FAC", 3, false ); // cos
+      addComment( "https://c64os.com/post/floatingpointmath" );
+      addAsm( str_STY + "$63", 2, false );
+      addAsm( str_STA + "$62", 2, false );
+      addAsm( str_LDX + "#$90", 2, false );
+      addAsm( str_SEC, 1, false );
+      addAsm( str_JSR + "$BC49", 3, false );
+      addAsm( str_JSR + "$E264" + commentmarker + "cos(FAC) -> FAC", 3, false ); // cos
       strcpy($$.name, "_FAC");
     }
   else if( isXA($3.name) )
     {
-      addAsm( str_PHA );
-      addAsm( str_TXA );
-      addAsm( str_TAY );
-      addAsm( str_PLA );
-      addAsm( str_TAX );
-      addAsm( str_TYA );
-      addAsm( str_JSR + "$B391" + commentmarker + "Word -> FAC", 3, false );
-      addAsm( str_JSR + "$E264" + commentmarker + "COS(FAC) -> FAC", 3, false ); // cos
+      addComment( "https://c64os.com/post/floatingpointmath" );
+      addAsm( str_STA + "$63", 2, false );      
+      addAsm( str_STX + "$62", 2, false );
+      addAsm( str_LDX + "#$90", 2, false );
+      addAsm( str_SEC, 1, false );
+      addAsm( str_JSR + "$BC49", 3, false );
+      addAsm( str_JSR + "$E264" + commentmarker + "cos(FAC) -> FAC", 3, false ); // cos
       strcpy($$.name, "_FAC");
     }
   else if( isA($3.name) )
     {
-      addAsm( str_TAX );
-      addAsm( str_LDA + "#$00", 2, false );
-      addAsm( str_JSR + "$B391" + commentmarker + "Word -> FAC", 3, false );
-      addAsm( str_JSR + "$E264" + commentmarker + "COS(FAC) -> FAC", 3, false ); // cos
+      addComment( "https://c64os.com/post/floatingpointmath" );
+      addAsm( str_STA + "$63", 2, false );      
+      addAsm( str_LDX + "#$00", 2, false );
+      addAsm( str_STX + "$62", 2, false );
+      addAsm( str_LDX + "#$90", 2, false );
+      addAsm( str_SEC, 1, false );
+      addAsm( str_JSR + "$BC49", 3, false );
+      addAsm( str_JSR + "$E264" + commentmarker + "cos(FAC) -> FAC", 3, false ); // cos
       strcpy($$.name, "_FAC");
     }
   else
@@ -17344,47 +17435,59 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
     {
       // float
       int base_address = getAddressOf($3.name);
-      addAsm( str_LDA+"#$" + toHex(get_word_L(base_address)), 2, false  );
-      addAsm( str_LDY + "#$" + toHex(get_word_H(base_address)), 2, false  );
+      addAsm( str_LDA + "#<" + getNameOf(getAddressOf($3.name)), 2, false  );
+      addAsm( str_LDY + "#>" + getNameOf(getAddressOf($3.name)), 2, false  );
       addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false ); // FP ->FAC
-      // calculate the cosine of it
-      addAsm( str_JSR + "$E2B4" + commentmarker + "TAN(FAC) -> FAC", 3, false ); // tan
+      addAsm( str_JSR + "$E2B4" + commentmarker + "tan(FAC) -> FAC", 3, false ); // tan
       strcpy($$.name, "_FAC");
     }
   else if( isWordID($3.name) )
     {
-      addAsm( str_LDY + $3.name, 3, false ); 
-      addAsm( str_LDA + $3.name + "+1", 3, false ); 
-      addAsm( str_JSR + "$B391" + commentmarker + "Word -> FAC", 3, false );
-      addAsm( str_JSR + "$E2B4" + commentmarker + "TAN(FAC) -> FAC", 3, false ); // tan
+      addAsm( str_LDY + getNameOf(getAddressOf($3.name)), 3, false  );
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)) + "+1", 3, false  );
+      addComment( "https://c64os.com/post/floatingpointmath" );
+      addAsm( str_STY + "$63", 2, false );      
+      addAsm( str_STA + "$62", 2, false );
+      addAsm( str_LDX + "#$90", 2, false );
+      addAsm( str_SEC, 1, false );
+      addAsm( str_JSR + "$BC49", 3, false );
+      addAsm( str_JSR + "$E2B4" + commentmarker + "tan(FAC) -> FAC", 3, false ); // tan
       strcpy($$.name, "_FAC");
     }
   else if( isUintID($3.name)||isIntID($3.name) )
     {
-      addAsm( str_LDY + $3.name, 3, false ); 
-      addAsm( str_LDA+"#$00", 2, false );
-      addAsm( str_JSR + "$B391" + commentmarker + "Word -> FAC", 3, false );
-      addAsm( str_JSR + "$E2B4" + commentmarker + "TAN(FAC) -> FAC", 3, false ); // tan
+      addAsm( str_LDY + getNameOf(getAddressOf($3.name)), 3, false ); 
+      addAsm( str_LDA + "#$00", 2, false );
+      addComment( "https://c64os.com/post/floatingpointmath" );
+      addAsm( str_STY + "$63", 2, false );
+      addAsm( str_STA + "$62", 2, false );
+      addAsm( str_LDX + "#$90", 2, false );
+      addAsm( str_SEC, 1, false );
+      addAsm( str_JSR + "$BC49", 3, false );
+      addAsm( str_JSR + "$E2B4" + commentmarker + "tan(FAC) -> FAC", 3, false ); // tan
       strcpy($$.name, "_FAC");
     }
   else if( isXA($3.name) )
     {
-      addAsm( str_PHA );
-      addAsm( str_TXA );
-      addAsm( str_TAY );
-      addAsm( str_PLA );
-      addAsm( str_TAX );
-      addAsm( str_TYA );
-      addAsm( str_JSR + "$B391" + commentmarker + "Word -> FAC", 3, false );
-      addAsm( str_JSR + "$E2B4" + commentmarker + "TAN(FAC) -> FAC", 3, false ); // tan
+      addComment( "https://c64os.com/post/floatingpointmath" );
+      addAsm( str_STA + "$63", 2, false );
+      addAsm( str_STX + "$62", 2, false );
+      addAsm( str_LDX + "#$90", 2, false );
+      addAsm( str_SEC, 1, false );
+      addAsm( str_JSR + "$BC49", 3, false );
+      addAsm( str_JSR + "$E2B4" + commentmarker + "tan(FAC) -> FAC", 3, false ); // tan
       strcpy($$.name, "_FAC");
     }
   else if( isA($3.name) )
     {
-      addAsm( str_TAX );
-      addAsm( str_LDA + "#$00", 2, false );
-      addAsm( str_JSR + "$B391" + commentmarker + "Word -> FAC", 3, false );
-      addAsm( str_JSR + "$E2B4" + commentmarker + "TAN(FAC) -> FAC", 3, false ); // tan
+      addComment( "https://c64os.com/post/floatingpointmath" );
+      addAsm( str_STA + "$63", 2, false );      
+      addAsm( str_LDX + "#$00", 2, false );
+      addAsm( str_STX + "$62", 2, false );
+      addAsm( str_LDX + "#$90", 2, false );
+      addAsm( str_SEC, 1, false );
+      addAsm( str_JSR + "$BC49", 3, false );
+      addAsm( str_JSR + "$E2B4" + commentmarker + "tan(FAC) -> FAC", 3, false ); // tan
       strcpy($$.name, "_FAC");
     }
   else
