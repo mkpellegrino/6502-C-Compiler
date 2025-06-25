@@ -10656,12 +10656,6 @@ arithmetic expression[RHS]
 	{
 	  addCompilerMessage( "Operation not implemented for: FloatID math A", 3);
 	}
-
-
-
-
-
-      
     }
 
     else if( isFloatID($1.name) && isFloatID($4.name ) )
@@ -10733,8 +10727,6 @@ arithmetic expression[RHS]
 	}
       strcpy($$.name, "_FAC" );
     }
-
-
     else if( isFloatID($1.name) && isFloatIMM($4.name) )
     {
       addComment( "FloatID math FloatIMM: TOC" );
@@ -10749,26 +10741,28 @@ arithmetic expression[RHS]
      
       if( op == string("*"))
 	{
-	  addAsm( str_JSR + "$BA28" + commentmarker + "RAM * FAC", 3, false );
+	  addAsm( str_JSR + "$BA28" + commentmarker + "MEM * FAC -> FAC", 3, false );
 	}
       else if( op == string("+"))
 	{
-	  addAsm( str_JSR + "$B867" + commentmarker + "RAM + FAC", 3, false );
+	  addAsm( str_JSR + "$B867" + commentmarker + "MEM + FAC -> FAC", 3, false );
 	}
       else if( op == string("-"))
 	{
-	  addAsm( str_JSR + "$B850" + commentmarker + "RAM - FAC", 3, false );
+	  addAsm( str_JSR + "$B850" + commentmarker + "MEM - FAC -> FAC", 3, false );
 	}
       else if( op == string("/"))
 	{
-	  addComment( "If Y is ZERO at this point, we'll be dividing by 0 (or at least attempting to)" );
+	  addComment( "If denominator is ZERO at this point, we'll be dividing by 0 (or at least attempting to)" );
 	  float f = atof( stripFirst($4.name).c_str() );
 	  if( f == 0 ) addCompilerMessage( "error - division by 0", 3 );
-	  addAsm( str_JSR + "$BB0F" + commentmarker + "RAM/FAC", 3, false );
+	  addAsm( str_JSR + "$BB0F" + commentmarker + "MEM / FAC -> FAC", 3, false );
 	}
       else if( op == string( "**" ) )
 	{
-	  addCompilerMessage( "** (exponents) nyi", 3 );
+	  addComment( "for some reason $BF78 doesn't work here." );
+	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG", 3, false );
+	  addAsm( str_JSR + "$BF7B" + commentmarker + "ARG ** FAC -> FAC", 3, false );
 	}
       else
 	{
@@ -10779,7 +10773,55 @@ arithmetic expression[RHS]
 
     else if( isFloatID($1.name) && isIntID($4.name) )
     {
-      addCompilerMessage( "FloatID math IntID (nyi): TOC", 3 );
+      addCompilerMessage( "FloatID math IntID (in progress): TOC", 1 );
+      addAsm( str_LDX + "#$00", 2, false );
+      addAsm( str_LDY + getNameOf(getAddressOf($4.name)), 3, false ); 
+      addAsm( str_TYA, 1, false );
+      addAsm( str_ASL, 1, false );
+      addAsm( str_BCC + "!pos+", 2, false );
+      // result is negative
+      addAsm( str_LDX + "#$FF", 2, false );
+      addAsm( "!pos:", 0, true );
+      addAsm( str_STY + "$63", 2, false );
+      addAsm( str_STX + "$62", 2, false );
+      addAsm( str_LDX + "#$90", 2, false );
+      addAsm( str_JSR + "$BC44" + commentmarker + "signed word16 -> FAC", 3, false );
+
+      addAsm( str_LDA + "#<" + getNameOf(getAddressOf($1.name)), 2, false );
+      addAsm( str_LDY + "#>" + getNameOf(getAddressOf($1.name)), 2, false );
+      if( op == string("+") )
+	{
+
+	  addAsm( str_JSR + "$B867" + commentmarker + "MEM + FAC -> FAC", 3, false );
+
+	}
+      else if( op == string("-") )
+	{
+	  addAsm( str_JSR + "$B850" + commentmarker + "MEM - FAC -> FAC", 3, false );
+
+
+	}
+      else if( op == string("*") )
+	{
+	  addAsm( str_JSR + "$BA28" + commentmarker + "MEM * FAC -> FAC", 3, false );
+	}
+	else if( op == string("/") )
+	{
+	  addCompilerMessage( "Potential for Division by 0", 1 );
+	  addAsm( str_JSR + "$BB0F" + commentmarker + "MEM / FAC -> FAC", 3, false );
+	}
+	else if( op == string("**") )
+	{
+	  addComment( "for some reason $BF78 doesn't work here." );
+	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG", 3, false );
+	  addAsm( str_JSR + "$BF7B" + commentmarker + "ARG ** FAC -> FAC", 3, false );
+	}
+      else
+	{
+	  addCompilerMessage("Math operation not implemented yet. (FloatID arith IntID)", 3);
+	}
+      strcpy( $$.name, "_FAC" );
+      
     }
   else if( isFloatID($1.name) && isIntIMM($4.name) )
     {
@@ -17313,7 +17355,7 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
       addAsm( str_STY + "$63", 2, false );
       addAsm( str_STX + "$62", 2, false );
       addAsm( str_LDX + "#$90", 2, false );
-      addAsm( str_JSR + "$BC44", 3, false );
+      addAsm( str_JSR + "$BC44" + commentmarker + "signed word16 -> FAC", 3, false );
       addAsm( str_JSR + "$E26B" + commentmarker + "sin(FAC) -> FAC", 3, false );
       strcpy($$.name, "_FAC");
     }
@@ -17413,10 +17455,6 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
 };
 | tCOS '(' expression ')'
 {
-  addComment( "=========================================================");  
-  addComment( "                 cosine");
-  addComment( "=========================================================");
-  addParserComment( "RULE: expression: cos( expression );" );
   if( isFloatIMM($3.name) )
     {
       inlineFloat($3.name);
@@ -17544,10 +17582,6 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
 };
 | tTAN '(' expression ')'
 {
-  addComment( "=========================================================");  
-  addComment( "                 tangent");
-  addComment( "=========================================================");
-  addParserComment( "RULE: expression: tan( expression );" );
   if( isFloatIMM($3.name) )
     {
       // IMM float
@@ -17645,7 +17679,7 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
       int tmp_low = atoi(stripFirst($3.name).c_str());
       string tmp_hi_value = "00";
       string tmp_value = toHex(tmp_low);
-      addCompilerMessage( "tan(UntIMM) should be hard-coded for efficiency.", 1 );
+      addCompilerMessage( "tan(UintIMM) should be hard-coded for efficiency.", 1 );
       addComment( "tan(UintIMM)" );
       addComment( "https://www.c64-wiki.com/wiki/Floating_point_arithmetic" );
       addAsm( str_LDY + "#$" + tmp_value, 2, false );
