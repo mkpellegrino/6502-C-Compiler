@@ -17266,7 +17266,9 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
 {
   if( isFloatIMM($3.name) )
     {
+      addCompilerMessage( "sin(FloatIMM) should be hard-coded for efficiency.", 1 );
       addComment( "sin( FloatIMM )" );
+      
       // IMM float
       inlineFloat($3.name);
       // calculate the sine of it
@@ -17297,9 +17299,27 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
       addAsm( str_JSR + "$E26B" + commentmarker + "sin(FAC) -> FAC", 3, false );
       strcpy($$.name, "_FAC");
     }
-  else if( isUintID($3.name) || isIntID($3.name) )
+  else if( isIntID($3.name) )
     {
-      addComment( "sin( UintID ) / sin( IntID )" );
+      addComment( "sin( IntID )" );
+      addAsm( str_LDX + "#$00", 2, false );
+      addAsm( str_LDY + getNameOf(getAddressOf($3.name)), 3, false ); 
+      addAsm( str_TYA, 1, false );
+      addAsm( str_ASL, 1, false );
+      addAsm( str_BCC + "!pos+", 2, false );
+      // result is negative
+      addAsm( str_LDX + "#$FF", 2, false );
+      addAsm( "!pos:", 0, true );
+      addAsm( str_STY + "$63", 2, false );
+      addAsm( str_STX + "$62", 2, false );
+      addAsm( str_LDX + "#$90", 2, false );
+      addAsm( str_JSR + "$BC44", 3, false );
+      addAsm( str_JSR + "$E26B" + commentmarker + "sin(FAC) -> FAC", 3, false );
+      strcpy($$.name, "_FAC");
+    }
+  else if( isUintID($3.name) )
+    {
+      addComment( "sin( UintID )" );
       addAsm( str_LDY + getNameOf(getAddressOf($3.name)), 3, false ); 
       addAsm( str_LDA + "#$00", 2, false );
       addComment( "https://c64os.com/post/floatingpointmath" );
@@ -17336,6 +17356,56 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
       addAsm( str_JSR + "$E26B" + commentmarker + "sin(FAC) -> FAC", 3, false );
       strcpy($$.name, "_FAC");
     }
+  else if( isUintIMM($3.name) )
+    {      
+      string tmp_value = toHex(atoi(stripFirst($3.name).c_str()));
+      addCompilerMessage( "sin(UintIMM) should be hard-coded for efficiency.", 1 );
+      addComment( "sin(UintIMM)" );
+      addComment( "https://c64os.com/post/floatingpointmath" );
+      addAsm( str_LDA + "#$" + tmp_value, 2, false );
+      addAsm( str_STA + "$63", 2, false );      
+      addAsm( str_LDX + "#$00", 2, false );
+      addAsm( str_STX + "$62", 2, false );
+      addAsm( str_LDX + "#$90", 2, false );
+      addAsm( str_SEC, 1, false );
+      addAsm( str_JSR + "$BC49", 3, false );
+      addAsm( str_JSR + "$E26B" + commentmarker + "sin(FAC) -> FAC", 3, false );
+      strcpy($$.name, "_FAC");
+    }
+  else if( isIntIMM($3.name) )
+    {
+      int tmp_low = atoi(stripFirst($3.name).c_str());
+      string tmp_hi_value = "00";      
+      if( tmp_low < 0 )
+	{
+	  tmp_hi_value = "FF";
+	  tmp_low = twos_complement(tmp_low);
+	}
+      string tmp_value = toHex(tmp_low);
+
+      addCompilerMessage( "sin(IntIMM) should be hard-coded for efficiency.", 1 );
+      addComment( "sin(IntIMM)" );
+      addComment( "https://www.c64-wiki.com/wiki/Floating_point_arithmetic" );
+      addAsm( str_LDY + "#$" + tmp_value, 2, false );
+      addAsm( str_LDA + "#$" + tmp_hi_value, 2, false );
+      addAsm( str_JSR + "$B391", 3, false );
+      addAsm( str_JSR + "$E26B" + commentmarker + "sin(FAC) -> FAC", 3, false );
+      strcpy($$.name, "_FAC");
+    }
+  else if( isUintIMM($3.name) )
+    {
+      int tmp_low = atoi(stripFirst($3.name).c_str());
+      string tmp_hi_value = "00";
+      string tmp_value = toHex(tmp_low);
+      addCompilerMessage( "sin(UintIMM) should be hard-coded for efficiency.", 1 );
+      addComment( "sin(UintIMM)" );
+      addComment( "https://www.c64-wiki.com/wiki/Floating_point_arithmetic" );
+      addAsm( str_LDY + "#$" + tmp_value, 2, false );
+      addAsm( str_LDA + "#$" + tmp_hi_value, 2, false );
+      addAsm( str_JSR + "$B391", 3, false );
+      addAsm( str_JSR + "$E26B" + commentmarker + "sin(FAC) -> FAC", 3, false );
+      strcpy($$.name, "_FAC");
+    }
   else
     {
       addCompilerMessage( "trying to calculate sine of unknown type", 3);
@@ -17350,6 +17420,7 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
   if( isFloatIMM($3.name) )
     {
       inlineFloat($3.name);
+      addCompilerMessage( "This should be hard-coded for efficiency.", 1 );
       addAsm( str_JSR + "$E264" + commentmarker + "cos(FAC) -> FAC", 3, false ); 
       strcpy($$.name, "_FAC");
     }
@@ -17358,8 +17429,8 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
       int base_address = getAddressOf($3.name);
       addAsm( str_LDA + "#<" + getNameOf(getAddressOf($3.name)), 2, false  );
       addAsm( str_LDY + "#>" + getNameOf(getAddressOf($3.name)), 2, false  );
-      addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false ); // FP ->FAC
-      addAsm( str_JSR + "$E264" + commentmarker + "cos(FAC) -> FAC", 3, false ); // cos
+      addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
+      addAsm( str_JSR + "$E264" + commentmarker + "cos(FAC) -> FAC", 3, false );
       strcpy($$.name, "_FAC");
     }
   else if( isWordID($3.name) )
@@ -17372,11 +17443,32 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
       addAsm( str_LDX + "#$90", 2, false );
       addAsm( str_SEC, 1, false );
       addAsm( str_JSR + "$BC49", 3, false );
-      addAsm( str_JSR + "$E264" + commentmarker + "cos(FAC) -> FAC", 3, false ); // cos
+      addAsm( str_JSR + "$E264" + commentmarker + "cos(FAC) -> FAC", 3, false );
       strcpy($$.name, "_FAC");
     }
-  else if( isUintID($3.name) || isIntID($3.name) )
+  else if( isIntID($3.name) )
     {
+      addComment( "cos( IntID )" );
+      addAsm( str_LDX + "#$00", 2, false );
+      addAsm( str_LDY + getNameOf(getAddressOf($3.name)), 3, false ); 
+      addAsm( str_TYA, 1, false );
+      addAsm( str_ASL, 1, false );
+      addAsm( str_BCC + "!pos+", 2, false );
+      // result is negative
+      addAsm( str_LDX + "#$FF", 2, false );
+      //addAsm( str_DEX, 1, false );
+      addAsm( "!pos:", 0, true );
+      addAsm( str_STY + "$63", 2, false );
+      addAsm( str_STX + "$62", 2, false );
+      addAsm( str_LDX + "#$90", 2, false );
+      addAsm( str_JSR + "$BC44", 3, false );
+      
+      addAsm( str_JSR + "$E264" + commentmarker + "cos(FAC) -> FAC", 3, false );
+      strcpy($$.name, "_FAC");
+    }
+  else if( isUintID($3.name) )
+    {
+      addComment( "cos( UintID )" );
       addAsm( str_LDY + getNameOf(getAddressOf($3.name)), 3, false ); 
       addAsm( str_LDA + "#$00", 2, false );
       addComment( "https://c64os.com/post/floatingpointmath" );
@@ -17385,7 +17477,7 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
       addAsm( str_LDX + "#$90", 2, false );
       addAsm( str_SEC, 1, false );
       addAsm( str_JSR + "$BC49", 3, false );
-      addAsm( str_JSR + "$E264" + commentmarker + "cos(FAC) -> FAC", 3, false ); // cos
+      addAsm( str_JSR + "$E264" + commentmarker + "cos(FAC) -> FAC", 3, false );
       strcpy($$.name, "_FAC");
     }
   else if( isXA($3.name) )
@@ -17396,7 +17488,7 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
       addAsm( str_LDX + "#$90", 2, false );
       addAsm( str_SEC, 1, false );
       addAsm( str_JSR + "$BC49", 3, false );
-      addAsm( str_JSR + "$E264" + commentmarker + "cos(FAC) -> FAC", 3, false ); // cos
+      addAsm( str_JSR + "$E264" + commentmarker + "cos(FAC) -> FAC", 3, false );
       strcpy($$.name, "_FAC");
     }
   else if( isA($3.name) )
@@ -17408,10 +17500,44 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
       addAsm( str_LDX + "#$90", 2, false );
       addAsm( str_SEC, 1, false );
       addAsm( str_JSR + "$BC49", 3, false );
-      addAsm( str_JSR + "$E264" + commentmarker + "cos(FAC) -> FAC", 3, false ); // cos
+      addAsm( str_JSR + "$E264" + commentmarker + "cos(FAC) -> FAC", 3, false );
       strcpy($$.name, "_FAC");
     }
-  else
+  else if( isIntIMM($3.name) )
+    {      
+      int tmp_low = atoi(stripFirst($3.name).c_str());
+      string tmp_hi_value = "00";      
+      if( tmp_low < 0 )
+	{
+	  tmp_hi_value = "FF";
+	  tmp_low = twos_complement(tmp_low);
+	}
+      string tmp_value = toHex(tmp_low);
+
+      addCompilerMessage( "cos(IntIMM) should be hard-coded for efficiency.", 1 );
+      addComment( "cos(IntIMM)" );
+      addComment( "https://www.c64-wiki.com/wiki/Floating_point_arithmetic" );
+      addAsm( str_LDY + "#$" + tmp_value, 2, false );
+      addAsm( str_LDA + "#$" + tmp_hi_value, 2, false );
+      addAsm( str_JSR + "$B391", 3, false );
+      addAsm( str_JSR + "$E264" + commentmarker + "cos(FAC) -> FAC", 3, false );
+      strcpy($$.name, "_FAC");
+    }
+    else if( isUintIMM($3.name) )
+    {
+      int tmp_low = atoi(stripFirst($3.name).c_str());
+      string tmp_hi_value = "00";
+      string tmp_value = toHex(tmp_low);
+      addCompilerMessage( "cos(UintIMM) should be hard-coded for efficiency.", 1 );
+      addComment( "cos(UintIMM)" );
+      addComment( "https://www.c64-wiki.com/wiki/Floating_point_arithmetic" );
+      addAsm( str_LDY + "#$" + tmp_value, 2, false );
+      addAsm( str_LDA + "#$" + tmp_hi_value, 2, false );
+      addAsm( str_JSR + "$B391", 3, false );
+      addAsm( str_JSR + "$E264" + commentmarker + "cos(FAC) -> FAC", 3, false );
+      strcpy($$.name, "_FAC");
+    }
+  else    
     {
       addCompilerMessage( "trying to calculate cosine of unknown type" );
     }
@@ -17427,7 +17553,8 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
       // IMM float
       inlineFloat($3.name);
       // calculate the sine of it
-      addAsm( str_JSR + "$E2B4" + commentmarker + "TAN(FAC) -> FAC", 3, false ); 
+      addCompilerMessage( "This should be hard-coded for efficiency.", 1 );
+      addAsm( str_JSR + "$E2B4" + commentmarker + "tan(FAC) -> FAC", 3, false ); 
       // result is in FAC
       strcpy($$.name, "_FAC");
     }
@@ -17437,8 +17564,8 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
       int base_address = getAddressOf($3.name);
       addAsm( str_LDA + "#<" + getNameOf(getAddressOf($3.name)), 2, false  );
       addAsm( str_LDY + "#>" + getNameOf(getAddressOf($3.name)), 2, false  );
-      addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false ); // FP ->FAC
-      addAsm( str_JSR + "$E2B4" + commentmarker + "tan(FAC) -> FAC", 3, false ); // tan
+      addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
+      addAsm( str_JSR + "$E2B4" + commentmarker + "tan(FAC) -> FAC", 3, false );
       strcpy($$.name, "_FAC");
     }
   else if( isWordID($3.name) )
@@ -17451,11 +17578,34 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
       addAsm( str_LDX + "#$90", 2, false );
       addAsm( str_SEC, 1, false );
       addAsm( str_JSR + "$BC49", 3, false );
-      addAsm( str_JSR + "$E2B4" + commentmarker + "tan(FAC) -> FAC", 3, false ); // tan
+      addAsm( str_JSR + "$E2B4" + commentmarker + "tan(FAC) -> FAC", 3, false );
       strcpy($$.name, "_FAC");
     }
-  else if( isUintID($3.name)||isIntID($3.name) )
+  else if( isIntID($3.name) )
     {
+      addComment( "tan( IntID )" );
+      addComment( "https://skoolkid.github.io/sk6502/c64rom/asm/B391.html" );
+
+      addAsm( str_LDX + "#$00", 2, false );
+      addAsm( str_LDY + getNameOf(getAddressOf($3.name)), 3, false ); 
+      addAsm( str_TYA, 1, false );
+      addAsm( str_ASL, 1, false );
+      addAsm( str_BCC + "!pos+", 2, false );
+      // result is negative
+      addAsm( str_LDX + "#$FF", 2, false );
+      addAsm( "!pos:", 0, true );
+      addAsm( str_STY + "$63", 2, false );
+      addAsm( str_STX + "$62", 2, false );
+      addAsm( str_LDX + "#$90", 2, false );
+      addAsm( str_JSR + "$BC44", 3, false );
+
+      
+      addAsm( str_JSR + "$E2B4" + commentmarker + "tan(FAC) -> FAC", 3, false );
+      strcpy($$.name, "_FAC");
+    }
+  else if( isUintID($3.name) )
+    {
+      addComment( "tan( UintID )" );
       addAsm( str_LDY + getNameOf(getAddressOf($3.name)), 3, false ); 
       addAsm( str_LDA + "#$00", 2, false );
       addComment( "https://c64os.com/post/floatingpointmath" );
@@ -17464,7 +17614,7 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
       addAsm( str_LDX + "#$90", 2, false );
       addAsm( str_SEC, 1, false );
       addAsm( str_JSR + "$BC49", 3, false );
-      addAsm( str_JSR + "$E2B4" + commentmarker + "tan(FAC) -> FAC", 3, false ); // tan
+      addAsm( str_JSR + "$E2B4" + commentmarker + "tan(FAC) -> FAC", 3, false );
       strcpy($$.name, "_FAC");
     }
   else if( isXA($3.name) )
@@ -17475,7 +17625,7 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
       addAsm( str_LDX + "#$90", 2, false );
       addAsm( str_SEC, 1, false );
       addAsm( str_JSR + "$BC49", 3, false );
-      addAsm( str_JSR + "$E2B4" + commentmarker + "tan(FAC) -> FAC", 3, false ); // tan
+      addAsm( str_JSR + "$E2B4" + commentmarker + "tan(FAC) -> FAC", 3, false );
       strcpy($$.name, "_FAC");
     }
   else if( isA($3.name) )
@@ -17487,9 +17637,43 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
       addAsm( str_LDX + "#$90", 2, false );
       addAsm( str_SEC, 1, false );
       addAsm( str_JSR + "$BC49", 3, false );
-      addAsm( str_JSR + "$E2B4" + commentmarker + "tan(FAC) -> FAC", 3, false ); // tan
+      addAsm( str_JSR + "$E2B4" + commentmarker + "tan(FAC) -> FAC", 3, false );
       strcpy($$.name, "_FAC");
     }
+  else if( isUintIMM($3.name) )
+    {
+      int tmp_low = atoi(stripFirst($3.name).c_str());
+      string tmp_hi_value = "00";
+      string tmp_value = toHex(tmp_low);
+      addCompilerMessage( "tan(UntIMM) should be hard-coded for efficiency.", 1 );
+      addComment( "tan(UintIMM)" );
+      addComment( "https://www.c64-wiki.com/wiki/Floating_point_arithmetic" );
+      addAsm( str_LDY + "#$" + tmp_value, 2, false );
+      addAsm( str_LDA + "#$" + tmp_hi_value, 2, false );
+      addAsm( str_JSR + "$B391", 3, false );
+      addAsm( str_JSR + "$E2B4" + commentmarker + "tan(FAC) -> FAC", 3, false );
+      strcpy($$.name, "_FAC");
+    }
+  else if( isIntIMM($3.name) )
+    {      
+      int tmp_low = atoi(stripFirst($3.name).c_str());
+      string tmp_hi_value = "00";      
+      if( tmp_low < 0 )
+	{
+	  tmp_hi_value = "FF";
+	  tmp_low = twos_complement(tmp_low);
+	}
+      string tmp_value = toHex(tmp_low);
+      addCompilerMessage( "tan(IntIMM) should be hard-coded for efficiency.", 1 );
+      addComment( "tan(IntIMM)" );
+      addComment( "https://www.c64-wiki.com/wiki/Floating_point_arithmetic" );
+      addAsm( str_LDY + "#$" + tmp_value, 2, false );
+      addAsm( str_LDA + "#$" + tmp_hi_value, 2, false );
+      addAsm( str_JSR + "$B391", 3, false );
+      addAsm( str_JSR + "$E2B4" + commentmarker + "tan(FAC) -> FAC", 3, false ); // tan      
+      strcpy($$.name, "_FAC");
+    }
+
   else
     {
       addCompilerMessage( "trying to calculate tangent of unknown type" );
