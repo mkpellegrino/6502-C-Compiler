@@ -14,7 +14,8 @@ X64=/Applications/Vice64/x64.app/Contents/MacOS/x64
 all:	clean lexer parser compiler
 
 parser: parser.y
-	$(YACC) -d -v parser.y
+	$(YACC) -d -v  parser.y
+#	$(YACC) -d -v -Wcounterexamples parser.y
 
 lexer:	lexer.l
 	$(LEX) lexer.l
@@ -25,9 +26,16 @@ compiler: y.tab.c
 bin:
 	java -jar KickAss.jar binaryfractions.asm
 
+cleanup: cleanup.cpp
+	g++ cleanup.cpp -o cleanup
+
 binaryfractions:
 	./compiler --kick --basic --code-segment 2100 --data-segment 8192 --no-asm-comments < binaryfractions.c > binaryfractions.asm
 	java -jar KickAss.jar binaryfractions.asm
+
+fortest:
+	./compiler --kick --basic --code-segment 2100 --data-segment 828 --no-asm-comments < fortest.c > fortest.asm
+	java -jar KickAss.jar fortest.asm
 
 pause:	pause.c
 	./compiler --kick --basic --code-segment 2100 --data-segment 24000 --no-asm-comments < pause.c > pause.asm
@@ -74,6 +82,13 @@ graph:
 	./compiler --kick --basic --code-segment 2100 --data-segment 8192 < graph.tmp > graph.asm
 	java -jar KickAss.jar graph.asm
 	rm -f graph.sym
+
+rand.op: randomtest.asm
+	java -jar KickAss.jar randomtest.asm
+
+rand:	randomtest.c
+	./compiler --kick --basic --code-segment 2100 --data-segment 8192 --no-asm-comments < randomtest.c > randomtest.asm
+	cat random.inc.asm >> randomtest.asm
 
 shell: mcbitmap-shell.c pause.inc.asm setscreenmode.inc.asm registers.inc.asm memory.inc.asm
 	./compiler --kick --basic --code-segment 2100 --data-segment 8192 < mcbitmap-shell.c > mcbitmap.asm
@@ -246,8 +261,21 @@ savelevelh:
 	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele worldh -dele spritesh -dele savedata-levelh -write savedata-levelh.prg savedata-levelh -dele maph
 	rm -f savedata-levelh.tmp savedata-levelh.sym savedata-levelh.asm savedata-levelh.vs
 
+noholds: noholds.c
+	./compiler --kick --basic --code-segment 2100 --data-segment 828 < ./noholds.c > noholds.asm
+#	java -jar KickAss.jar noholds.asm
+	java -jar KickAss.jar noholds.op.asm
+
+dumpworld: dumpworld.c
+	./compiler --kick --basic --no-optimize --code-segment 2100 --data-segment 21000 < ./dumpworld.c > dumpworld.asm
+	cat discerror.inc.asm >> dumpworld.asm
+	cat pause.inc.asm >> dumpworld.asm
+	java -jar KickAss.jar dumpworld.asm
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele dumpworld -write dumpworld.prg dumpworld 
+
 saveleveli:
 	./compiler --kick --basic --no-optimize --code-segment 2100 --data-segment 21000 < ./savedata-leveli.c > savedata-leveli.asm
+	cat discerror.inc.asm >> savedata-leveli.asm
 	java -jar KickAss.jar savedata-leveli.asm
 	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele worldi -dele spritesi -dele savedata-leveli -write savedata-leveli.prg savedata-leveli -dele mapi
 	rm -f savedata-leveli.tmp savedata-leveli.sym savedata-leveli.asm savedata-leveli.vs
@@ -258,8 +286,24 @@ savelevelj:
 	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -dele worldj -dele spritesj -dele savedata-levelj -write savedata-levelj.prg savedata-levelj -dele mapj
 	rm -f savedata-levelj.tmp savedata-levelj.sym
 
+16times: 16times.asm
+	java -jar KickAss.jar 16times.asm
+
+pow16: pow16.asm
+	java -jar KickAss.jar pow16.asm
+
+AmathA:	AmathA.c
+	./compiler --kick --basic --unsafe-math --code-segment 2100 --data-segment 8192 < ./AmathA.c > AmathA.asm
+	java -jar KickAss.jar AmathA.asm
+
+facmath: facmath.c
+	./compiler --kick --basic --code-segment 2100 --data-segment 8192 --unsafe-math < ./facmath.c > facmath.asm
+	cat pause.inc.asm >> facmath.asm
+	java -jar KickAss.jar facmath.asm
+
 test:	test.c
-	./compiler --kick --code-segment 2100 --data-segment 828 < ./test.c > test.asm
+	./compiler --kick --basic --code-segment 2100 --data-segment 8192 --unsafe-math < ./test.c > test.asm
+	cat pause.inc.asm >> test.asm
 	java -jar KickAss.jar test.asm
 
 bmprint.op: bmprint.op.asm
@@ -280,9 +324,10 @@ bmprint: bmprint.c registers.inc.asm memory.inc.asm pause.inc.asm
 	cat memory.inc.asm >> bmprint.asm
 	cat pause.inc.asm >> bmprint.asm
 	cat bmprint.inc.asm >> bmprint.asm
-#	cat mcplot.inc.asm >> bmprint.asm
+	cat mcplot.inc.asm >> bmprint.asm
 	cat setscreenmode.inc.asm >> bmprint.asm
 	java -jar KickAss.jar bmprint.asm
+#	java -jar KickAss.jar bmprint.op2.asm
 
 logicalOR:
 	./compiler --unsafe-ifs --kick --basic --code-segment 2061 --data-segment 8192 < ./logicalOR.c > logicalor.asm
@@ -316,9 +361,9 @@ newscroll:
 	java -jar KickAss.jar newscroll-faster.asm
 
 snake:
-	./compiler --unsafe-ifs --basic --code-segment 2100 --data-segment 820 --kick --no-asm-comments < ./snake2100.c > snake2100.asm
+	./compiler --unsafe-ifs --basic --code-segment 2100 --data-segment 820 --kick < ./snake2100.c > snake2100.asm
+#	java -jar KickAss.jar snake2100.asm
 	java -jar KickAss.jar snake2100.asm
-	java -jar KickAss.jar snake2100.op.asm
 	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach TESTING.d64 -dele snake2100 -write snake2100.prg snake2100
 
 laxtest:
@@ -333,10 +378,15 @@ screentest:
 	java -jar KickAss.jar screentest.asm
 
 threeonone:
-	cat ./three-on-one.c > three-on-one.tmp
+	cat ./poketest.c > three-on-one.tmp
 	./compiler --unsafe-ifs --kick --basic --code-segment 17626 --data-segment 2062 < ./three-on-one.tmp > three-on-one.asm
+	cat registers.inc.asm >> three-on-one.asm
+	cat memory.inc.asm >> three-on-one.asm
+	cat pause.inc.asm >> three-on-one.asm
+	cat bmprint.inc.asm >> three-on-one.asm
+	cat setscreenmode.inc.asm >> three-on-one.asm
+	cat getoffset.inc.asm >> three-on-one.asm
 	java -jar KickAss.jar three-on-one.asm
-	java -jar KickAss.jar three-on-one.op.asm
 	rm -f three-on-one.tmp
 
 terraform:
@@ -349,9 +399,10 @@ common:
 	./compiler --unsafe-ifs --kick < ./common.c > common.asm
 
 conway:
-	./compiler --unsafe-ifs --kick --basic --code-segment 2100 --data-segment 820 < ./conway.c > conway.asm
-	./nocomment < conway.asm > conway.nc.asm
-	java -jar KickAss.jar conway.asm
+#	./compiler --unsafe-ifs --kick --basic --code-segment 2100 --data-segment 820 --no-asm-comments < ./conway.c > conway.asm
+#	./nocomment < conway.asm > conway.nc.asm
+#	./cleanup < conway.asm > conway.clean.asm
+	java -jar KickAss.jar conway.clean.asm
 
 conwayop:
 	java -jar KickAss.jar conway.op3.asm
@@ -439,6 +490,12 @@ underlying: underlying.c
 	cat getoffset.inc.asm >> underlying.asm
 	java -jar KickAss.jar -vicesymbols -bytedump underlying.asm
 
+zpcode:
+	./compiler --kick --basic --code-segment 2061 --data-segment 210 < ./zpcode.c > zpcode.asm
+	java -jar KickAss.jar zpcode.asm
+	java -jar KickAss.jar zpcode.op.asm
+
+
 disk-procedures.op:
 	java -jar KickAss.jar disk-procedures.op.asm
 
@@ -456,6 +513,7 @@ line.op: line.op.asm
 
 joystick:
 	./compiler --kick --basic --code-segment 2061 --data-segment 8192 --no-asm-comments < ./joystick.c > joystick.asm
+	cat joystick.inc.asm >> joystick.asm
 	java -jar KickAss.jar ./joystick.asm
 
 getchar: getchar.c getin.c
@@ -465,7 +523,7 @@ getchar: getchar.c getin.c
 	java -jar KickAss.jar -vicesymbols -bytedump getin.asm
 
 line: line.c
-	./compiler --kick --basic --code-segment 2061 --data-segment 21000 --memory-locations --no-asm-comments < ./line.c > line.asm
+	./compiler --kick --basic --code-segment 2061 --data-segment 21000 --unsafe-ifs --no-asm-comments < ./line.c > line.asm
 	cat mcplot.inc.asm >> line.asm
 	cat segment.inc.asm >> line.asm
 	cat registers.inc.asm >> line.asm
@@ -478,12 +536,39 @@ line: line.c
 	java -jar KickAss.jar -vicesymbols -bytedump line.asm
 	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach line.d64 -dele line.prg -write line.prg
 
+keybind: keybind.c keybind.clean.asm
+#	./compiler --unsafe-ifs --kick --basic --code-segment 2061 --data-segment 32768 --no-asm-comments < ./keybind.c > keybind.asm
+	java -jar KickAss.jar keybind.asm
+#	java -jar KickAss.jar keybind.clean.asm
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -delete keybind -write keybind.prg keybind
+
 hires:	hires.c
 	./compiler --unsafe-ifs --kick --basic --code-segment 2061 --data-segment 32768 --no-asm-comments < ./hires.c > hires.asm
 	cat registers.inc.asm >> hires.asm
 	cat memory.inc.asm >> hires.asm
 	cat pause.inc.asm >> hires.asm
 	java -jar KickAss.jar hires.asm
+
+knight3.release: knight3.clean.op.asm
+	java -jar KickAss.jar -define SAFEMCPLOT knight3.clean.op.asm -o knight3.prg
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -delete knight3 -delete knightsquest -write knight3.prg knightsquest
+
+knight3.clean: knight3.clean.asm
+	./compiler --unsafe-ifs --kick --basic --code-segment 2061 --data-segment 32768 --no-asm-comments < ./knight3.c > knight3.asm
+	cat random.inc.asm >> knight3.asm
+	cat keyup.inc.asm >> knight3.asm
+	cat memory.inc.asm >> knight3.asm
+	cat registers.inc.asm >> knight3.asm
+	cat segment.inc.asm >> knight3.asm
+	cat modulus.inc.asm >> knight3.asm
+	cat discerror.inc.asm >> knight3.asm
+	cleanup < knight3.asm > knight3.clean.asm
+	java -jar KickAss.jar -define RICH -define MAXHP -define HASMAP -define SAFEMCPLOT knight3.clean.asm -o knight3.prg
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -delete knight3 -write knight3.prg knight3
+
+knight3.op: knight3.op.asm
+	java -jar KickAss.jar -define SAFEMCPLOT knight3.op.asm -o knight3.prg
+	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -delete knight3 -write knight3.prg knight3
 
 knight3: knight3.c keyup.inc.asm random.inc.asm memory.inc.asm segment.inc.asm registers.inc.asm modulus.inc.asm 
 #	cat ./knight3.c common.c > knight3.tmp
@@ -494,6 +579,8 @@ knight3: knight3.c keyup.inc.asm random.inc.asm memory.inc.asm segment.inc.asm r
 	cat registers.inc.asm >> knight3.asm
 	cat segment.inc.asm >> knight3.asm
 	cat modulus.inc.asm >> knight3.asm
+	cat discerror.inc.asm >> knight3.asm
+#	cat detectkeydown.inc.asm >> knight3.asm
 	java -jar KickAss.jar -define SAFEMCPLOT knight3.asm
 #	java -jar KickAss.jar knight3.asm
 	rm -f knight3.tmp
@@ -503,9 +590,9 @@ writesyn1: writesynopsis1.c
 	./compiler --unsafe-ifs --kick --basic --code-segment 2061 --data-segment 26000 --no-asm-comments < ./writesynopsis1.c > writesynopsis1.asm
 	java -jar KickAss.jar writesynopsis1.asm
 
-knight3.op:
-	java -jar KickAss.jar -define SAFEMCPLOT knight3.op.asm
-	/opt/homebrew/Cellar/vice/3.9/bin/c1541 -attach KNIGHTSQUEST.d64 -delete knight3 -write knight3.op.prg knight3
+math:   math.c
+	./compiler --kick --basic --code-segment 2061 --data-segment 8192 --no-asm-comments < ./math.c > math.asm
+	java -jar KickAss.jar math.asm
 
 array:	array.c
 	./compiler --unsafe-ifs --kick --basic --code-segment 2061 --data-segment 8192 --no-asm-comments < ./array.c > array.asm
