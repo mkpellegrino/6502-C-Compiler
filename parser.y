@@ -879,6 +879,60 @@
     return;
   }
 
+  void fAdd()
+  {
+    addAsm( str_JSR + "$B867" + commentmarker + "MEM + FAC -> FAC", 3, false );
+    return;
+  }
+
+  void fAddT()
+  {
+    addAsm( str_JSR + "$B86A" + commentmarker + "ARG + FAC -> FAC", 3, false );
+    return;
+  }
+
+  void fSub()
+  {
+    addAsm( str_JSR + "$B850" + commentmarker + "MEM - FAC -> FAC", 3, false );
+  }
+
+  void fSubT()
+  {
+    addAsm( str_JSR + "$B853" + commentmarker + "ARG - FAC -> FAC", 3, false );
+  }
+  
+  void fMult()
+  {
+    addAsm( str_JSR + "$BA28" + commentmarker + "MEM * FAC -> FAC", 3, false );
+  }
+
+  void fMultT()
+  {
+    addAsm( str_JSR + "$BA2B" + commentmarker + "ARG * FAC -> FAC", 3, false );
+  }
+
+  void fDiv()
+  {
+    addAsm( str_JSR + "$BB0F" + commentmarker + "MEM / FAC -> FAC", 3, false );
+  }
+
+  void fDivT()
+  {
+    addAsm( str_JSR + "$BB12" + commentmarker + "ARG / FAC -> FAC", 3, false );
+  }
+
+  void fPwr()
+  {
+    addAsm( str_JSR + "$BF78" + commentmarker + "MEM ** FAC -> FAC", 3, false );
+  }
+
+  void fPwrT()
+  {
+    addAsm( str_JSR + "$BF7B" + commentmarker + "ARG ** FAC -> FAC", 3, false );
+  }
+
+
+
   void pushFAC()
   {
     addComment( "FAC -> Stack" );
@@ -9876,14 +9930,14 @@ arithmetic expression[RHS]
   //int type1 = getTypeOf($1.name);
   //int type2 = getTypeOf($4.name);
 
-  if( op == string( "-" ))
-    {
-      addAsm( str_SEC );
-    }
-  else if( op == string("+") )
-    {
-      addAsm( str_CLC );
-    }
+  //if( op == string( "-" ))
+  //  {
+  //    addAsm( str_SEC );
+  //  }
+  //else if( op == string("+") )
+  //  {
+  //    addAsm( str_CLC );
+  //  }
 
 
   if( isA($1.name) && isA($4.name) )
@@ -9896,6 +9950,7 @@ arithmetic expression[RHS]
 	      addComment( "A + A (Destroys $FB)" );	   
 	      addAsm( str_STA + "$FB" + commentmarker + "(2:3)", 2, false ); // temporaily store OP2 in zp
 	      addAsm( str_PLA + commentmarker + "(1:4)", 1, false ); 
+	      addAsm( str_CLC, 1, false );
 	      addAsm( str_ADC + "$FB" + commentmarker + "(2:3)" , 2, false );
 	      addCompilerMessage( "--unsafe-math saved 11 bytes and 22 clock cycles", 0 );
 	    }
@@ -9909,7 +9964,8 @@ arithmetic expression[RHS]
 	      addAsm( str_PHA + commentmarker + "(1:3)", 1, false );
 	      addAsm( str_STX + "$FB" + commentmarker + "(2:3)", 2, false );
 	      addAsm( str_TYA + commentmarker + "(1:2)", 1, false );
-	      
+	      addAsm( str_CLC, 1, false );
+
 	      addAsm( str_ADC + "$FB" + commentmarker + "(2:3)", 2, false );
 	      addAsm( str_TAY + commentmarker + "(1:2)", 1, false );
 	      addAsm( str_PLA + commentmarker + "(1:4)", 1, false );
@@ -9922,10 +9978,12 @@ arithmetic expression[RHS]
       else if( op == string("-"))
 	{
 	  addComment( "A - A" );
+
 	  if( arg_unsafe_math )
 	    {
 	      addAsm( str_STA + "$FB", 2, false ); // temporaily store OP2 in zp
 	      addAsm( str_PLA ); 
+	      addAsm( str_SEC );
 	      addAsm( str_SBC + "$FB", 2, false );
 	    }
 	  else
@@ -9937,6 +9995,7 @@ arithmetic expression[RHS]
 	      addAsm( str_PHA, 1, false );
 	      addAsm( str_STX + "$FB", 2, false );
 	      addAsm( str_TYA, 1, false );
+	      addAsm( str_SEC );
 	      addAsm( str_SBC + "$FB", 2, false );
 	      addAsm( str_TAY, 1, false );
 	      addAsm( str_PLA, 1, false );
@@ -9992,7 +10051,7 @@ arithmetic expression[RHS]
 	}
       else
 	{
-	  addCompilerMessage("Math operation not implemented yet. (A arith A)", 3);
+	  addCompilerMessage("A math A: Unknown Operation", 3);
 	}
     }
 
@@ -10002,111 +10061,89 @@ arithmetic expression[RHS]
       addComment( "A math FAC: TOC" );
       if( op == string( "+" ) )
 	{
-	  addAsm( str_PHA, 1, false );
-	  addAsm( str_LDX + "#<!fp0+", 2, false );
-	  addAsm( str_LDY + "#>!fp0+", 2, false );
-	  addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );
-	  addAsm( str_PLA, 1, false );
-	  addAsm( str_TAY, 1, false );
+	  addAsm( str_STA + "$02", 2, false );	  
+	  pushFAC();	  
+	  addAsm( str_LDY + "$02", 2, false );	  
 	  addAsm( str_LDA + "#$00", 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
-	  addAsm( str_LDA + "#<!fp0+", 2, false );
-	  addAsm( str_LDY + "#>!fp0+", 2, false );  
-	  addAsm( str_JSR + "$B867" + commentmarker + "MEM + FAC -> FAC", 3, false );
+	  popARG();
+	  fAddT();
+	}
+      else if( op == string( "-" ) )
+	{
+	  float_swap_space_is_needed = true;
+	  addAsm( str_STA + "$02", 2, false );
+	  pushFAC();
+	  addAsm( str_LDY + "$02", 2, false );	  
+	  addAsm( str_LDA + "#$00", 2, false );
+	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
+
+	  addAsm( str_LDX + "#<!fp1+", 2, false );
+	  addAsm( str_LDY + "#>!fp1+", 2, false );
+	  addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );
+
+	  popFAC();
+	  addAsm( str_LDA + "#<!fp1+", 2, false );
+	  addAsm( str_LDY + "#>!fp1+", 2, false );
+	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
+	  fSubT();
 	}
       else if( op == string( "*" ) )
 	{
-	  addAsm( str_PHA, 1, false );
-	  addAsm( str_LDX + "#<!fp0+", 2, false );
-	  addAsm( str_LDY + "#>!fp0+", 2, false );
-	  addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );
-	  addAsm( str_PLA, 1, false );
-	  addAsm( str_TAY, 1, false );
+	  addAsm( str_STA + "$02", 2, false );	  
+	  pushFAC();	  
+	  addAsm( str_LDY + "$02", 2, false );	  
 	  addAsm( str_LDA + "#$00", 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
-	  addAsm( str_LDA + "#<!fp0+", 2, false );
-	  addAsm( str_LDY + "#>!fp0+", 2, false );  
-	  addAsm( str_JSR + "$BA28" + commentmarker + "MEM * FAC -> FAC", 3, false );
-	}
-      else if( op == string("-") )
-	{
-	  addAsm( str_PHA, 1, false );
-	  addAsm( str_LDX + "#<!fp0+", 2, false );
-	  addAsm( str_LDY + "#>!fp0+", 2, false );
-	  addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );
-	  addAsm( str_PLA, 1, false );
-	  addAsm( str_TAY, 1, false );
-	  addAsm( str_LDA + "#$00", 2, false );
-	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
-	  addAsm( str_LDX + "#<!fp1+", 2, false );
-	  addAsm( str_LDY + "#>!fp1+", 2, false );
-	  addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );
-	  addAsm( str_LDA + "#<!fp0+", 2, false );
-	  addAsm( str_LDY + "#>!fp0+", 2, false );
-	  addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
-
-	  addAsm( str_LDA + "#<!fp1+", 2, false );
-	  addAsm( str_LDY + "#>!fp1+", 2, false );
-	  addAsm( str_JSR + "$B850" + commentmarker + "MEM - FAC -> FAC", 3, false );
-
-	  
+	  popARG();
+	  fMultT();
 	}
       else if( op == string("/") )
 	{
-	  addAsm( str_PHA, 1, false );
-	  addAsm( str_LDX + "#<!fp0+", 2, false );
-	  addAsm( str_LDY + "#>!fp0+", 2, false );
-	  addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );
-	  addAsm( str_PLA, 1, false );
-	  addAsm( str_TAY, 1, false );
+	  float_swap_space_is_needed = true;
+	  addAsm( str_STA + "$02", 2, false );
+
+	  pushFAC();
+	  addAsm( str_LDY + "$02", 2, false );	  
 	  addAsm( str_LDA + "#$00", 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
+
 	  addAsm( str_LDX + "#<!fp1+", 2, false );
 	  addAsm( str_LDY + "#>!fp1+", 2, false );
 	  addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );
-	  addAsm( str_LDA + "#<!fp1+", 2, false );
-	  addAsm( str_LDY + "#>!fp1+", 2, false );
-	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG", 3, false );
-	  addAsm( str_LDA + "#<!fp0+", 2, false );
-	  addAsm( str_LDY + "#>!fp0+", 2, false );
-	  addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
+
+	  popFAC();
 
 	  addAsm( str_LDA + "#<!fp1+", 2, false );
 	  addAsm( str_LDY + "#>!fp1+", 2, false );
-	  addAsm( str_JSR + "$BB0F" + commentmarker + "MEM / FAC -> FAC", 3, false );
-
+	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  
+	  fDivT();
 	}
       else if( op == string("**") )
 	{
-	  addAsm( str_PHA, 1, false );
-	  addAsm( str_LDX + "#<!fp0+", 2, false );
-	  addAsm( str_LDY + "#>!fp0+", 2, false );
-	  addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );
-	  addAsm( str_PLA, 1, false );
-	  
-	  addAsm( str_TAY, 1, false );
+	  float_swap_space_is_needed = true;
+	  addAsm( str_STA + "$02", 2, false );
+
+	  pushFAC();
+	  addAsm( str_LDY + "$02", 2, false );	  
 	  addAsm( str_LDA + "#$00", 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
+
 	  addAsm( str_LDX + "#<!fp1+", 2, false );
 	  addAsm( str_LDY + "#>!fp1+", 2, false );
 	  addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );
 
+	  popFAC();
 
 	  addAsm( str_LDA + "#<!fp1+", 2, false );
 	  addAsm( str_LDY + "#>!fp1+", 2, false );
-	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG", 3, false );
- 	  addAsm( str_LDA + "#<!fp0+", 2, false );
-	  addAsm( str_LDY + "#>!fp0+", 2, false );
-	  addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
-
-	  addAsm( str_LDA + "#<!fp1+", 2, false );
-	  addAsm( str_LDY + "#>!fp1+", 2, false );
-	  addAsm( str_JSR + "$BF7B" + commentmarker + "ARG ** FAC -> FAC", 3, false );
+	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
+	  fPwrT();
 	}
       else
 	{
-	  addCompilerMessage( "A math FAC: operation nyi", 3 );
+	  addCompilerMessage( "A math FAC: unknown operation", 3 );
 	}
       strcpy( $$.name, "_FAC" );
     }
@@ -10127,6 +10164,7 @@ arithmetic expression[RHS]
 	}
       else if( op == string( "-" ))
 	{
+	  addAsm( str_SEC );
 	  float_swap_space_is_needed = true;
 	  addAsm( str_TAY, 1, false );
 	  addAsm( str_LDA + "#$00", 2, false );
@@ -10239,6 +10277,8 @@ arithmetic expression[RHS]
 	}
       else if( op == string("-") )
 	{	  
+	  addAsm( str_SEC );
+
 	  float_swap_space_is_needed = true;
 	  addAsm( str_PHA, 1, false );
 	  inlineFloat($4.name);
@@ -10319,11 +10359,13 @@ arithmetic expression[RHS]
 
       if( op == string( "+" ) )
 	{
+	  addAsm( str_CLC, 1, false );
 	  addAsm( str_ADC + O2, instr_size, false );
 	  strcpy($$.name, "_A" );
 	}
       else if( op == string( "-" ) )
 	{
+	  addAsm( str_SEC );
 	  addAsm( str_SBC + O2, instr_size, false );
 	  strcpy($$.name, "_A" );
 	}
@@ -10453,11 +10495,13 @@ arithmetic expression[RHS]
       
       if( op == string( "+" ) )
 	{
+	  addAsm( str_CLC, 1, false );
 	  addAsm( str_ADC + O2, 2, false );
 	  strcpy($$.name, "_A" );
 	}
       else if( op == string( "-" ) )
 	{
+	  addAsm( str_SEC );
 	  addAsm( str_SBC + O2, 2, false );
 	  strcpy($$.name, "_A" );
 	}
@@ -10589,12 +10633,14 @@ arithmetic expression[RHS]
       if( op == string("+"))
 	{
 	  addComment( "A + UintID --> A" );
+	  addAsm( str_CLC, 1, false );
 	  addAsm( str_ADC + O2, sizeOP2A, false );
 	  strcpy($$.name, "_A" );
 	}
       else if( op == string("-"))
 	{
 	  addComment( "A - UintID --> A" );
+	  addAsm( str_SEC );
 	  addAsm( str_SBC + O2, sizeOP2A, false );
 	  strcpy($$.name, "_A" );
 	}
@@ -10652,11 +10698,13 @@ arithmetic expression[RHS]
       addAsm( str_PLA );   // <<-- if prev. loc's deleted then this is not needed
       if( op == string( "-" ))
 	{
+	  addAsm( str_SEC );
 	  addAsm( str_SBC + "#$" + toHex(tmp_v), 2, false );
 	  strcpy($$.name, "_A");
 	}
       else if( op == string("+") )
 	{
+	  addAsm( str_CLC, 1, false );
 	  addAsm( str_ADC + "#$" + toHex(tmp_v), 2, false );
 	  strcpy($$.name, "_A");
 	}
@@ -10676,6 +10724,7 @@ arithmetic expression[RHS]
       addAsm( str_PLA );   // <<-- if prev. loc's deleted then this is not needed
       if( op == string( "+" ))
 	{
+	  addAsm( str_CLC, 1, false );
 	  addAsm( str_ADC + getNameOf(getAddressOf($4.name)), 3, false );
 	  addAsm( str_TAY );
 	  addAsm( str_LDA + "#$00", 2, false );
@@ -10686,6 +10735,7 @@ arithmetic expression[RHS]
 	}
       else if( op == string( "-" ))
 	{
+	  addAsm( str_SEC );
 	  addAsm( str_SBC + getNameOf(getAddressOf($4.name)), 3, false );
 	  addAsm( str_TAY );
 	  addAsm( str_LDA + "#$00", 2, false );
@@ -10745,6 +10795,7 @@ arithmetic expression[RHS]
       addAsm( str_PLA );   // <<-- if prev. loc's deleted then this is not needed
       if( op == string( "-" ))
 	{
+	  addAsm( str_SEC );
 	  addAsm( str_SBC + "#$" + toHex(get_word_L(atoi(stripFirst($4.name).c_str()))), 2, false );
 	  addAsm( str_TAY );
 	  addAsm( str_LDA + "#$00", 2, false );
@@ -10755,6 +10806,7 @@ arithmetic expression[RHS]
 	}
       else if( op == string("+") )
 	{
+	  addAsm( str_CLC, 1, false );
 	  addAsm( str_ADC + "#$" + toHex(get_word_L(atoi(stripFirst($4.name).c_str()))), 2, false );
 	  addAsm( str_TAY );
 	  addAsm( str_LDA + "#$00", 2, false );
@@ -10782,11 +10834,12 @@ arithmetic expression[RHS]
 	  addAsm( str_STA + "!+", 3, false );
 	  addAsm( str_STX + "!++", 3, false );
 	  addAsm( str_PLA );
-	  addAsm( str_BYTE + "$69", 1, false );
+	  addAsm( str_CLC, 1, false );
+	  addAsm( str_BYTE + "$69" + commentmarker + "ASD Immediate", 1, false );
 	  addAsm( "!:\t" + str_BYTE + "$00", 1, true );
 	  addAsm( str_TAY );
 	  addAsm( str_LDA + "#$00", 2, false );
-	  addAsm( str_BYTE + "$69", 1, false );
+	  addAsm( str_BYTE + "$69" + commentmarker + "ADC Immediate", 1, false );
 	  addAsm( "!:\t" + str_BYTE + "$00", 1, true );
 	  addAsm( str_TAX );
 	  addAsm( str_TYA );
@@ -10795,6 +10848,7 @@ arithmetic expression[RHS]
       else if( op == string( "-" ) )
 	{
 	  addComment( "A - XA --> XA" );
+	  addAsm( str_SEC );
 	  addAsm( str_TAY );                    // 2
 	  addAsm( str_LDA + "$02", 2, false );  // 3
 	  addAsm( str_STY + "$02", 2, false );  // 3
@@ -10849,29 +10903,24 @@ arithmetic expression[RHS]
 	  addAsm( str_LDA + "#$00", 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  popARG();
-	  addAsm( str_JSR + "$B86A" + commentmarker + "ARG + FAC -> FAC", 3, false );
+	  fAddT();
 	}
       else if( op == string( "-" ) )
 	{
+
 	  addAsm( str_TAY, 1, false );
 	  addAsm( str_LDA + "#$00", 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
-
 	  popARG();
-	  addAsm( str_JSR + "$B853" + commentmarker + "ARG - FAC -> FAC", 3, false );
+	  fSubT();
 	}
       else if( op == string( "*" ) )
 	{
 	  addAsm( str_TAY, 1, false );
 	  addAsm( str_LDA + "#$00", 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
-
-	  addAsm( str_TSX, 1, false );
-	  addAsm( str_INX, 1, false );
-	  addAsm( str_TXA, 1, false );
-	  addAsm( str_LDY + "#$01", 2, false );
-	  addAsm( str_JSR + "$BA28" + commentmarker + "MEM * FAC -> FAC", 3, false );
-	  unstack6();
+	  popARG();
+	  fMultT();
 	}
       else if( op == string( "/" ) )
 	{
@@ -10879,7 +10928,7 @@ arithmetic expression[RHS]
 	  addAsm( str_LDA + "#$00", 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  popARG();
-	  addAsm( str_JSR + "$BB12" + commentmarker + "ARG / FAC -> FAC", 3, false );
+	  fDivT();
 	}
       else if( op == string( "**" ) )
 	{
@@ -10887,7 +10936,7 @@ arithmetic expression[RHS]
 	  addAsm( str_LDA + "#$00", 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  popARG();
-	  addAsm( str_JSR + "$BF7B" + commentmarker + "ARG ** FAC -> FAC", 3, false );
+	  fPwrT();
 	}
       else
 	{
@@ -10901,31 +10950,27 @@ arithmetic expression[RHS]
       if( op == string( "+" ) )
 	{
 	  popARG();
-	  addAsm( str_JSR + "$B86A" + commentmarker + "ARG + FAC -> FAC", 3, false );
+	  fAddT();
 	}
       else if( op == string( "-" ) )
 	{
 	  popARG();
-	  addAsm( str_JSR + "$B853" + commentmarker + "ARG - FAC -> FAC" );
+	  fSubT();
 	}
       else if( op == string( "*" ) )
 	{
-	  addAsm( str_TSX, 1, false );
-	  addAsm( str_INX, 1, false );
-	  addAsm( str_TXA, 1, false );
-	  addAsm( str_LDY + "#$01", 2, false );
-	  addAsm( str_JSR + "$BA28" + commentmarker + "MEM * FAC -> FAC", 3, false );
-	  unstack6();
+	  popARG();
+	  fMultT();
 	}
       else if( op == string( "/" ) )
 	{
 	  popARG();
-	  addAsm( str_JSR + "$BB12" + commentmarker + "ARG / FAC -> FAC" );
+	  fDivT();
 	}
       else if( op == string( "**" ) )
 	{
 	  popARG();
-	  addAsm( str_JSR + "$BF7B" + commentmarker + "ARG ** FAC -> FAC" );
+	  fPwrT();
 	}
       else
 	{
@@ -10938,11 +10983,11 @@ arithmetic expression[RHS]
       addComment( "FAC math FloatID: TOC" );
       if( op == string( "+" ) )
 	{
-	  popFAC();
-	  addComment( "^^-- OPTIMIZE --^^" );
 	  addAsm( str_LDA + "#<" + getNameOf(getAddressOf($4.name)), 2, false );
 	  addAsm( str_LDY + "#>" + getNameOf(getAddressOf($4.name)), 2, false );
-	  addAsm( str_JSR + "$B867" + commentmarker + "MEM + FAC -> FAC", 3, false );
+	  addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
+	  popARG();
+	  fAddT();
 	  strcpy($$.name, "_FAC" );
 	}
       else if( op == string( "-" ) )
@@ -10951,16 +10996,16 @@ arithmetic expression[RHS]
 	  addAsm( str_LDY + "#>" + getNameOf(getAddressOf($4.name)), 2, false );
 	  addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
 	  popARG();
-	  addAsm( str_JSR + "$B853" + commentmarker + "ARG - FAC -> FAC" );
+	  fSubT();
 	  strcpy($$.name, "_FAC" );
 	}
       else if( op == string( "*" ) )
 	{
-	  popFAC();
-	  addComment( "^^-- OPTIMIZE --^^" );
 	  addAsm( str_LDA + "#<" + getNameOf(getAddressOf($4.name)), 2, false );
 	  addAsm( str_LDY + "#>" + getNameOf(getAddressOf($4.name)), 2, false );
-	  addAsm( str_JSR + "$BA28" + commentmarker + "MEM * FAC -> FAC", 3, false );
+	  addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
+	  popARG();
+	  fMultT();
 	  strcpy($$.name, "_FAC" );
 	}
       else if( op == string( "/" ) )
@@ -10969,7 +11014,7 @@ arithmetic expression[RHS]
 	  addAsm( str_LDY + "#>" + getNameOf(getAddressOf($4.name)), 2, false );
 	  addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
 	  popARG();
-	  addAsm( str_JSR + "$BB12" + commentmarker + "ARG / FAC -> FAC" );
+	  fDivT();
 	  strcpy($$.name, "_FAC" );
 	}
       else if( op == string( "**" ) )
@@ -10978,7 +11023,7 @@ arithmetic expression[RHS]
 	  addAsm( str_LDY + "#>" + getNameOf(getAddressOf($4.name)), 2, false );
 	  addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
 	  popARG();
-	  addAsm( str_JSR + "$BF7B" + commentmarker + "ARG ** FAC -> FAC" );
+	  fPwrT();
 	  strcpy($$.name, "_FAC" );
 	}
       else
@@ -10993,35 +11038,31 @@ arithmetic expression[RHS]
 	{
 	  inlineFloat( $4.name );
 	  popARG();
-	  addAsm( str_JSR + "$B86A" + commentmarker + "ARG + FAC -> FAC", 3, false );
+	  fAddT();
 	}
       else if( op == string( "-" ))
 	{
 	  inlineFloat( $4.name );
 	  popARG();
-	  addAsm( str_JSR + "$B853" + commentmarker + "ARG - FAC -> FAC", 3, false );
+	  fSubT();
 	}
       else if( op == string( "*" ) )
 	{
 	  inlineFloat( $4.name );
-	  addAsm( str_TSX, 1, false );
-	  addAsm( str_INX, 1, false );
-	  addAsm( str_TXA, 1, false );
-	  addAsm( str_LDY + "#$01", 2, false );
-	  addAsm( str_JSR + "$BA28" + commentmarker + "MEM * FAC -> FAC", 3, false );
-	  unstack6();
+	  popARG();
+	  fMultT();
 	}
       else if( op == string( "/" ))
 	{
 	  inlineFloat( $4.name );
 	  popARG();
-	  addAsm( str_JSR + "$BB12" + commentmarker + "ARG / FAC -> FAC", 3, false );
+	  fDivT();
 	}
       else if( op == string( "**" ))
 	{
 	  inlineFloat( $4.name );
 	  popARG();
-	  addAsm( str_JSR + "$BF7B" + commentmarker + "ARG ** FAC -> FAC", 3, false );
+	  fPwrT();
 	}
       else
 	{
@@ -11050,31 +11091,27 @@ arithmetic expression[RHS]
       if( op == string( "+" ))
 	{
 	  popARG();
-	  addAsm( str_JSR + "$B86A" + commentmarker + "ARG + FAC -> FAC", 3, false );
+	  fAddT();
 	}
       else if( op == string( "-" ) )
 	{
 	  popARG();
-	  addAsm( str_JSR + "$B853" + commentmarker + "ARG - FAC -> FAC", 3, false );
+	  fSubT();
 	}
       else if( op == string( "*" ) )
 	{
-	  addAsm( str_TSX, 1, false );
-	  addAsm( str_INX, 1, false );
-	  addAsm( str_TXA, 1, false );
-	  addAsm( str_LDY + "#$01", 2, false );
-	  addAsm( str_JSR + "$BA28" + commentmarker + "MEM * FAC -> FAC", 3, false );
-	  unstack6();
+	  popARG();
+	  fMultT();
 	}
       else if( op == string( "/" ) )
 	{
 	  popARG();
-	  addAsm( str_JSR + "$BB12" + commentmarker + "ARG / FAC -> FAC", 3, false );
+	  fDivT();
 	}
       else if( op == string( "**" ) )
 	{
 	  popARG();
-	  addAsm( str_JSR + "$BF7B" + commentmarker + "ARG ** FAC -> FAC", 3, false );
+	  fPwrT();
 	}
       else
 	{
@@ -11093,7 +11130,7 @@ arithmetic expression[RHS]
 	  addAsm( str_LDA + "#$FF", 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  popARG();
-	  addAsm( str_JSR + "$B86A" + commentmarker + "ARG + FAC -> FAC", 3, false );	  
+	  fAddT();
 	}
       else if( op == string( "-" ) )
 	{
@@ -11101,7 +11138,7 @@ arithmetic expression[RHS]
 	  addAsm( str_LDA + "#$FF", 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  popARG();
-	  addAsm( str_JSR + "$B853" + commentmarker + "ARG - FAC -> FAC", 3, false );
+	  fSubT();
 	}
       else if( op == string( "*" ) )
 	{
@@ -11109,13 +11146,8 @@ arithmetic expression[RHS]
 	  addAsm( str_LDY + "#$" + toHex(tmp_int), 2, false );
 	  addAsm( str_LDA + "#$FF", 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
-
-	  addAsm( str_TSX, 1, false );
-	  addAsm( str_INX, 1, false );
-	  addAsm( str_TXA, 1, false );
-	  addAsm( str_LDY + "#$01", 2, false );
-	  addAsm( str_JSR + "$BA28" + commentmarker + "MEM * FAC -> FAC", 3, false );
-	  unstack6();
+	  popARG();
+	  fMultT();
 	}
       else if( op == string( "/" ) )
 	{
@@ -11123,7 +11155,7 @@ arithmetic expression[RHS]
 	  addAsm( str_LDA + "#$FF", 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  popARG();
-	  addAsm( str_JSR + "$BB12" + commentmarker + "ARG / FAC -> FAC", 3, false );
+	  fDivT();
 	}
       else if( op == string( "**" ) )
 	{
@@ -11131,7 +11163,7 @@ arithmetic expression[RHS]
 	  addAsm( str_LDA + "#$FF", 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  popARG();
-	  addAsm( str_JSR + "$BF7B" + commentmarker + "ARG ** FAC -> FAC", 3, false );
+	  fPwrT();
 	}
       else
 	{
@@ -11151,7 +11183,7 @@ arithmetic expression[RHS]
 	  addAsm( str_LDA + "#$00", 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  popARG();
-	  addAsm( str_JSR + "$B86A" + commentmarker + "ARG + FAC -> FAC", 3, false );
+	  fAddT();
 	}
       else if( op == string( "-" ) )
 	{
@@ -11159,21 +11191,15 @@ arithmetic expression[RHS]
 	  addAsm( str_LDA + "#$00", 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  popARG();
-	  addAsm( str_JSR + "$B853" + commentmarker + "ARG - FAC -> FAC", 3, false );
-
+	  fSubT();
 	}
       else if( op == string( "*" ) )
 	{
 	  addAsm( str_LDY + OP2, 3, false );
 	  addAsm( str_LDA + "#$00", 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
-	  addAsm( str_TSX, 1, false );
-	  addAsm( str_INX, 1, false );
-	  addAsm( str_TXA, 1, false );
-	  addAsm( str_LDY + "#$01", 2, false );
-	  addAsm( str_JSR + "$BA28" + commentmarker + "MEM * FAC -> FAC", 3, false );
-	  unstack6();
-
+	  popARG();
+	  fMultT();
 	}
       else if( op == string( "/" ) )
 	{
@@ -11181,8 +11207,7 @@ arithmetic expression[RHS]
 	  addAsm( str_LDA + "#$00", 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  popARG();
-	  addAsm( str_JSR + "$BB12" + commentmarker + "ARG / FAC -> FAC", 3, false );
-
+	  fDivT();
 	}
       else if( op == string( "**" ) )
 	{
@@ -11190,8 +11215,7 @@ arithmetic expression[RHS]
 	  addAsm( str_LDA + "#$00", 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  popARG();
-	  addAsm( str_JSR + "$BF7B" + commentmarker + "ARG ** FAC -> FAC", 3, false );
-
+	  fPwrT();
 	}
       else
 	{
@@ -11210,7 +11234,7 @@ arithmetic expression[RHS]
 	  addAsm( str_LDA + "#$00", 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  popARG();
-	  addAsm( str_JSR + "$B86A" + commentmarker + "ARG + FAC -> FAC", 3, false );	  
+	  fAddT();
 	}
       else if( op == string( "-" ) )
 	{
@@ -11218,7 +11242,7 @@ arithmetic expression[RHS]
 	  addAsm( str_LDA + "#$00", 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  popARG();
-	  addAsm( str_JSR + "$B853" + commentmarker + "ARG - FAC -> FAC", 3, false );
+	  fSubT();
 	}
       else if( op == string( "*" ) )
 	{
@@ -11226,13 +11250,8 @@ arithmetic expression[RHS]
 	  addAsm( str_LDY + "#$" + toHex(tmp_int), 2, false );
 	  addAsm( str_LDA + "#$00", 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
-
-	  addAsm( str_TSX, 1, false );
-	  addAsm( str_INX, 1, false );
-	  addAsm( str_TXA, 1, false );
-	  addAsm( str_LDY + "#$01", 2, false );
-	  addAsm( str_JSR + "$BA28" + commentmarker + "MEM * FAC -> FAC", 3, false );
-	  unstack6();
+	  popARG();
+	  fMultT();
 	}
       else if( op == string( "/" ) )
 	{
@@ -11240,7 +11259,7 @@ arithmetic expression[RHS]
 	  addAsm( str_LDA + "#$00", 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  popARG();
-	  addAsm( str_JSR + "$BB12" + commentmarker + "ARG / FAC -> FAC", 3, false );
+	  fDivT();
 	}
       else if( op == string( "**" ) )
 	{
@@ -11248,7 +11267,7 @@ arithmetic expression[RHS]
 	  addAsm( str_LDA + "#$00", 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  popARG();
-	  addAsm( str_JSR + "$BF7B" + commentmarker + "ARG ** FAC -> FAC", 3, false );
+	  fPwrT();
 	}
       else
 	{
@@ -11268,7 +11287,7 @@ arithmetic expression[RHS]
 	  addAsm( str_LDA + OP2 + " +1", 3, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  popARG();
-	  addAsm( str_JSR + "$B86A" + commentmarker + "ARG + FAC -> FAC", 3, false );
+	  fAddT();
 	}
       else if( op == string( "-" ) )
 	{
@@ -11276,21 +11295,15 @@ arithmetic expression[RHS]
 	  addAsm( str_LDA + OP2 + " +1", 3, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  popARG();
-	  addAsm( str_JSR + "$B853" + commentmarker + "ARG - FAC -> FAC", 3, false );
-
+	  fSubT();
 	}
       else if( op == string( "*" ) )
 	{
 	  addAsm( str_LDY + OP2, 3, false );
 	  addAsm( str_LDA + OP2 + " +1", 3, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
-	  addAsm( str_TSX, 1, false );
-	  addAsm( str_INX, 1, false );
-	  addAsm( str_TXA, 1, false );
-	  addAsm( str_LDY + "#$01", 2, false );
-	  addAsm( str_JSR + "$BA28" + commentmarker + "MEM * FAC -> FAC", 3, false );
-	  unstack6();
-
+	  popARG();
+	  fMultT();
 	}
       else if( op == string( "/" ) )
 	{
@@ -11298,8 +11311,7 @@ arithmetic expression[RHS]
 	  addAsm( str_LDA + OP2 + " +1", 3, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  popARG();
-	  addAsm( str_JSR + "$BB12" + commentmarker + "ARG / FAC -> FAC", 3, false );
-
+	  fDivT();
 	}
       else if( op == string( "**" ) )
 	{
@@ -11307,8 +11319,7 @@ arithmetic expression[RHS]
 	  addAsm( str_LDA + OP2 + " +1", 3, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  popARG();
-	  addAsm( str_JSR + "$BF7B" + commentmarker + "ARG ** FAC -> FAC", 3, false );
-
+	  fPwrT();
 	}
       else
 	{
@@ -11328,7 +11339,7 @@ arithmetic expression[RHS]
 	  addAsm( str_LDA + "#$" + hi, 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  popARG();
-	  addAsm( str_JSR + "$B86A" + commentmarker + "ARG + FAC -> FAC", 3, false );	  
+	  fAddT();
 	}
       else if( op == string( "-" ) )
 	{
@@ -11336,7 +11347,7 @@ arithmetic expression[RHS]
 	  addAsm( str_LDA + "#$" + hi, 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  popARG();
-	  addAsm( str_JSR + "$B853" + commentmarker + "ARG - FAC -> FAC", 3, false );
+	  fSubT();
 	}
       else if( op == string( "*" ) )
 	{
@@ -11344,13 +11355,8 @@ arithmetic expression[RHS]
 	  addAsm( str_LDY + "#$" + lo, 2, false );
 	  addAsm( str_LDA + "#$" + hi, 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
-
-	  addAsm( str_TSX, 1, false );
-	  addAsm( str_INX, 1, false );
-	  addAsm( str_TXA, 1, false );
-	  addAsm( str_LDY + "#$01", 2, false );
-	  addAsm( str_JSR + "$BA28" + commentmarker + "MEM * FAC -> FAC", 3, false );
-	  unstack6();
+	  popARG();
+	  fMultT();
 	}
       else if( op == string( "/" ) )
 	{
@@ -11358,7 +11364,7 @@ arithmetic expression[RHS]
 	  addAsm( str_LDA + "#$" + hi, 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  popARG();
-	  addAsm( str_JSR + "$BB12" + commentmarker + "ARG / FAC -> FAC", 3, false );
+	  fDivT();
 	}
       else if( op == string( "**" ) )
 	{
@@ -11366,7 +11372,7 @@ arithmetic expression[RHS]
 	  addAsm( str_LDA + "#$" + hi, 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  popARG();
-	  addAsm( str_JSR + "$BF7B" + commentmarker + "ARG ** FAC -> FAC", 3, false );
+	  fPwrT();
 	}
       else
 	{
@@ -11384,7 +11390,7 @@ arithmetic expression[RHS]
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 
 	  popARG();
-	  addAsm( str_JSR + "$B86A" + commentmarker + "ARG + FAC -> FAC", 3, false );
+	  fAddT();
 	}
       else if( op == string( "-" ) )
 	{
@@ -11392,19 +11398,15 @@ arithmetic expression[RHS]
 	  addAsm( str_TXA, 1, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  popARG();
-	  addAsm( str_JSR + "$B853" + commentmarker + "ARG - FAC -> FAC", 3, false );	  
+	  fSubT();
 	}
       else if( op == string( "*" ) )
 	{
 	  addAsm( str_TAY, 1, false );
 	  addAsm( str_TXA, 1, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
-	  addAsm( str_TSX, 1, false );
-	  addAsm( str_INX, 1, false );
-	  addAsm( str_TXA, 1, false );
-	  addAsm( str_LDY + "#$01", 2, false );
-	  addAsm( str_JSR + "$BA28" + commentmarker + "MEM * FAC -> FAC", 3, false );
-	  unstack6();
+	  popARG();
+	  fMultT();
 	}
       else if( op == string( "/" ) )
 	{
@@ -11412,7 +11414,7 @@ arithmetic expression[RHS]
 	  addAsm( str_TXA, 1, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  popARG();
-	  addAsm( str_JSR + "$BB12" + commentmarker + "ARG / FAC -> FAC", 3, false );	  
+	  fDivT();
 	}
       else if( op == string( "**" ) )
 	{
@@ -11420,23 +11422,20 @@ arithmetic expression[RHS]
 	  addAsm( str_TXA, 1, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  popARG();	  
-	  addAsm( str_JSR + "$BF7B" + commentmarker + "ARG ** FAC -> FAC", 3, false );
+	  fPwrT();
 	}
       else
 	{
 	  addCompilerMessage("FAC math A: unknown operation", 3);
 	}
       strcpy( $$.name, "_FAC" );
-
     }
   else if( isFloatID($1.name) && isA($4.name) )
     {
       addComment( "FloatID math A: TOC" );
-      addCompilerMessage( "FloatID math A: TOC", 1 );
 
       int base_address_op1 = hexToDecimal($LHS.name); 
       string OP1 = getNameOf( base_address_op1 );
-      addCompilerMessage( "16-bit word is SIGNED", 1 );
 
       if( op == string("+"))
 	{
@@ -11446,16 +11445,21 @@ arithmetic expression[RHS]
 
 	  addAsm( str_LDA + "#<" + OP1, 3, false );
 	  addAsm( str_LDY + "#>" + OP1, 3, false );
-	  addAsm( str_JSR + "$B867" + commentmarker + "MEM + FAC -> FAC", 3, false );
+	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
+
+	  fAddT();
 	}
       else if( op == string( "-" ))
 	{
+	  addAsm( str_SEC );
 	  addAsm( str_TAY, 1, false );
 	  addAsm( str_LDA + "#$00", 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  addAsm( str_LDA + "#<" + OP1, 3, false );
 	  addAsm( str_LDY + "#>" + OP1, 3, false );
-	  addAsm( str_JSR + "$B850" + commentmarker + "MEM - FAC -> FAC", 3, false );
+	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
+	  
+	  fSubT();
 	}
       else if( op == string( "*" ))
 	{
@@ -11465,7 +11469,9 @@ arithmetic expression[RHS]
 	  
 	  addAsm( str_LDA + "#<" + OP1, 3, false );
 	  addAsm( str_LDY + "#>" + OP1, 3, false );
-	  addAsm( str_JSR + "$BA28" + commentmarker + "MEM * FAC -> FAC", 3, false );
+	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
+
+	  fMultT();
 	}
       else if( op == string( "/" ))
 	{
@@ -11476,7 +11482,7 @@ arithmetic expression[RHS]
 	  addAsm( str_LDA + "#<" + OP1, 3, false );
 	  addAsm( str_LDY + "#>" + OP1, 3, false );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
-       	  addAsm( str_JSR + "$BB12" + commentmarker + "ARG/FAC -> FAC", 3, false );
+	  fDivT();
 	}
       else if( op == string( "**" ))
 	{
@@ -11487,13 +11493,13 @@ arithmetic expression[RHS]
 	  addAsm( str_LDA + "#<" + OP1, 3, false );
 	  addAsm( str_LDY + "#>" + OP1, 3, false );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
-       	  addAsm( str_JSR + "$BF7B" + commentmarker + "ARG**FAC -> FAC", 3, false );
+	  fPwrT();
 	}
       else
 	{
-	  addCompilerMessage( "Operation not implemented for: FloatID math A", 3);
+	  addCompilerMessage( "FloatID math A: Unknown Operation", 3);
 	}
-	  strcpy($$.name, "_FAC" );
+      strcpy($$.name, "_FAC" );
     }
   else if( isFloatID($1.name) && isFAC($4.name) )
     {      
@@ -11509,6 +11515,7 @@ arithmetic expression[RHS]
 	}
       else if( op == string( "-" ))
 	{
+	  addAsm( str_SEC );
 	  addAsm( str_LDA + "#<" + OP1, 3, false );
 	  addAsm( str_LDY + "#>" + OP1, 3, false );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
@@ -11571,6 +11578,7 @@ arithmetic expression[RHS]
 	}
       else if( op == string("-"))
 	{
+	  addAsm( str_SEC );
 	  addAsm( str_LDA + "#<" + OP2, 2, false );
 	  addAsm( str_LDY + "#>" + OP2, 2, false );
 	  addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
@@ -11673,15 +11681,11 @@ arithmetic expression[RHS]
       addAsm( str_LDY + "#>" + getNameOf(getAddressOf($1.name)), 2, false );
       if( op == string("+") )
 	{
-
 	  addAsm( str_JSR + "$B867" + commentmarker + "MEM + FAC -> FAC", 3, false );
-
 	}
       else if( op == string("-") )
 	{
 	  addAsm( str_JSR + "$B850" + commentmarker + "MEM - FAC -> FAC", 3, false );
-
-
 	}
       else if( op == string("*") )
 	{
@@ -12004,8 +12008,6 @@ arithmetic expression[RHS]
 	}
       strcpy($$.name, "_FAC" );
     }
-
-
   else if( isFloatID($1.name) && isWordIMM($4.name) )
     {
       // $B391: Convert 16-bit signed integer to floating point number in FAC. Expects lowbyte in Y- and highbyte in A-register.
@@ -12254,7 +12256,6 @@ arithmetic expression[RHS]
       else
 	{
 	  addCompilerMessage( "Operation not implemented for: FloatIMM math A", 3);
-
 	}
     }
    else if( isFloatIMM($1.name) && isFAC($4.name) )
@@ -12547,15 +12548,15 @@ arithmetic expression[RHS]
       addComment( "FloatIMM math UintIMM: TOC" );
       if( op == "-" )
 	{
-	  deletePreviousAsm();
-	  addCompilerMessage( "deleting 'sec'", 1 );
-	  addAsm( "// sec",0,false );
+	  //deletePreviousAsm();
+	  //addCompilerMessage( "deleting 'sec'", 1 );
+	  //addAsm( "// sec",0,false );
 	}
       else if( op == "+" )
 	{
-	  deletePreviousAsm();
-	  addCompilerMessage( "deleting 'clc'", 1 );
-	  addAsm( "// clc",0,false );
+	  //deletePreviousAsm();
+	  //addCompilerMessage( "deleting 'clc'", 1 );
+	  //addAsm( "// clc",0,false );
 	}
       float tmp_int1 = atof( stripFirst($1.name).c_str() );
       float tmp_int2 = atof( stripFirst($4.name).c_str() );
@@ -12789,12 +12790,14 @@ arithmetic expression[RHS]
       if( op == string("+") )
 	{
 	  addComment( "IntID + A --> A" );
+	  addAsm( str_CLC, 1, false );
 	  addAsm( str_ADC + O1, 2, false );
 	  strcpy($$.name, "_A");	  
 	}
       else if( op == string("-") )
 	{
 	  addComment( "IntID - A --> A" );
+	  addAsm( str_SEC );
 	  addAsm( str_TAY, 1, false );
 	  addAsm( str_LDA + O1, sizeOP1A, false );
 	  // mkpellegrino - 20250313
@@ -13411,12 +13414,14 @@ arithmetic expression[RHS]
       if( op == string("+"))
 	{
 	  addComment( "IntID + IntID --> A" );
+	  addAsm( str_CLC, 1, false );
 	  addAsm( str_ADC + O2, sizeOP2A, false );
 	  strcpy($$.name, "_A" );
 	}
       else if( op == string("-"))
 	{
 	  addComment( "IntID - IntID --> A" );
+	  addAsm( str_SEC );
 	  addAsm( str_SBC + O2, sizeOP2A, false );
 	  strcpy($$.name, "_A" );
 	}
@@ -13467,6 +13472,7 @@ arithmetic expression[RHS]
 	    {
 	      tmp_int = twos_complement( tmp_int );
 	    }
+	  addAsm( str_CLC, 1, false );
 	  addAsm( str_ADC + "#$" + toHex(tmp_int), 2, false );
 	}
       else if( op == string("-"))
@@ -13477,6 +13483,7 @@ arithmetic expression[RHS]
 	    {
 	      tmp_int = twos_complement( tmp_int );
 	    }
+	  addAsm( str_SEC );
 	  addAsm( str_SBC + "#$" +  toHex(tmp_int), 2, false );
 	}
       else if( op == string("*"))
@@ -13632,6 +13639,7 @@ arithmetic expression[RHS]
 	{
 	  addComment( "IntID + UintIMM --> A" );
 	  int tmp_int = atoi(stripFirst($4.name).c_str());
+	  addAsm( str_CLC, 1, false );
 	  addAsm( str_ADC + "#$"  + toHex(tmp_int), 2, false );
 	  strcpy($$.name, "_A" );
 	}
@@ -13639,6 +13647,7 @@ arithmetic expression[RHS]
 	{
 	  addComment( "IntID / UintIMM --> A" );
 	  int tmp_int = atoi(stripFirst($4.name).c_str());
+	  addAsm( str_SEC );
 	  addAsm( str_SBC + "#$" + toHex(tmp_int), 2, false );
 	  strcpy($$.name, "_A" );
 	}
@@ -13698,8 +13707,8 @@ arithmetic expression[RHS]
 	{
 	  addCompilerMessage( "Arithmetic: Signed Int - Word may produce unexpected results", 0);
 	  addComment( "IntID - WordID --> XA" );
-	  addAsm( str_SEC, 1, false );
 	  addAsm( str_LDA + "#$00", 2, false );
+	  addAsm( str_SEC, 1, false );
 	  addAsm( str_SBC + O2 + " +1", 3, false );	  
 	  addAsm( str_TAX, 1, false );	  
 	  addAsm( str_LDA + O1, sizeOP1A, false );
@@ -13959,6 +13968,7 @@ arithmetic expression[RHS]
 	{
 	  if( OP1value > 127 )
 	    {
+	      addAsm( str_CLC, 1, false );
 	      addAsm( str_ADC + "#$" + toHex(twos_complement(atoi(stripFirst($1.name).c_str()))), 2, false ); 
 	      addAsm( str_TAY, 1, false );
 	      addAsm( str_LDA + "#$FF", 2, false );
@@ -13968,6 +13978,7 @@ arithmetic expression[RHS]
 	    }
 	  else
 	    {
+	      addAsm( str_CLC, 1, false );
 	      addAsm( str_ADC + "#$" + toHex(twos_complement(atoi(stripFirst($1.name).c_str()))), 2, false ); 
 	      addAsm( str_TAY, 1, false );
 	      addAsm( str_LDA + "#$00", 2, false );
@@ -13978,6 +13989,7 @@ arithmetic expression[RHS]
 	}
       else if( op == string("-") )
 	{
+	  addAsm( str_SEC );
 	  addAsm( str_STA + "!+", 3, false );
 	  addAsm( str_LDA + "#$" + toHex(twos_complement(atoi(stripFirst($1.name).c_str()))), 2, false );
 	  addAsm( str_BYTE + "$E9" + commentmarker + "<-- SBC Immediate", 1, false );
@@ -14119,18 +14131,6 @@ arithmetic expression[RHS]
     }
   else if(isIntIMM($1.name) && isIntIMM($4.name))
     {
-      if( op == "-" )
-	{
-	  deletePreviousAsm();
-	  addCompilerMessage( "deleting 'sec'", 1 );
-	  addAsm( "// sec",0,false );
-	}
-      else if( op == "+" )
-	{
-	  deletePreviousAsm();
-	  addCompilerMessage( "deleting 'clc'", 1 );
-	  addAsm( "// clc",0,false );
-	}
       addComment( "IntIMM math IntIMM: TOC" );
       
       int tmp_int1 = atoi( stripFirst($1.name).c_str() );
@@ -14302,6 +14302,7 @@ arithmetic expression[RHS]
       if( op == string("+"))
 	{
 	  addComment( "UintID + A --> A" );
+	  addAsm( str_CLC, 1, false );
 	  addAsm( str_ADC + O1, sizeOP1A, false );
 	  strcpy($$.name, "_A" );
 	}
@@ -14310,6 +14311,7 @@ arithmetic expression[RHS]
 	  // TODO: Test this... I'm not sure it's correct
 	  // it might be backwards (see IntID - A)
 	  addComment( "UintID - A --> A" );
+	  addAsm( str_SEC );
 	  addAsm( str_SBC + O1, sizeOP1A, false );
 	  strcpy($$.name, "_A" );
 	}
@@ -14360,20 +14362,88 @@ arithmetic expression[RHS]
   else if( isUintID($1.name) && isFAC($4.name) )
     {      
       addComment( "UintID math FAC (in progress): TOC" );
+      int base_address_op1 = hexToDecimal($1.name);
+      string OP1 = getNameOf( base_address_op1 );
+
       if( op == string( "+" ))
 	{
+	  // since addition is commutative, the order here doesn't matter
+	  pushFAC();
+	  //addAsm( str_JSR + "$BC0F" + commentmarker + "FAC -> ARG", 3, false );
+	  addAsm( str_LDY + OP1, 3, false );
+	  addAsm( str_LDA + "#$00", 2, false );
+	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
+	  popARG();
+	  //addAsm( str_JSR + "$BC0F" + commentmarker + "FAC -> ARG", 3, false );
+	  fAddT();
+	  //addAsm( str_JSR + "$B86A" + commentmarker + "ARG + FAC -> FAC", 3, false );
+
 	}
       else if( op == string( "-" ))
 	{
+	  pushFAC();
+	  addAsm( str_LDY + OP1, 3, false );
+	  addAsm( str_LDA + "#$00", 2, false );
+	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );	  
+	  popARG();
+	  fSubT();
+	  //addAsm( str_JSR + "$B853" + commentmarker + "ARG - FAC -> FAC", 3, false );
+	  addAsm( str_JSR + "$BFB4" + commentmarker + "+FAC -> -FAC", 3, false );
 	}
       else if( op == string( "*" ))
 	{
+	  pushFAC();
+	  addAsm( str_LDY + OP1, 3, false );
+	  addAsm( str_LDA + "#$00", 2, false );
+	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
+	  popARG();
+	  fMultT();
+	  //addAsm( str_JSR + "$BA2B" + commentmarker + "ARG * FAC -> FAC", 3, false );
+
 	}
       else if( op == string( "/" ))
 	{
+	  float_swap_space_is_needed = true;
+	  addComment( "Use the Floating Point Swap Space" );
+	  addAsm( str_LDX + "#<!fp0+", 2, false );
+	  addAsm( str_LDY + "#>!fp0+", 2, false );
+	  addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );
+	  addAsm( str_LDY + OP1, 3, false );
+	  addAsm( str_LDA + "#$00", 2, false );
+	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );	  
+
+	  pushFAC();
+	  
+	  addAsm( str_LDA + "#<!fp0+", 2, false );
+	  addAsm( str_LDY + "#>!fp0+", 2, false );
+	  addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
+	  popARG();
+
+	  fDivT();
+	  //addAsm( str_JSR + "$BB12" + commentmarker + "ARG / FAC -> FAC", 3, false );
+	  
+
 	}
       else if( op == string( "**" ))
 	{
+
+	  float_swap_space_is_needed = true;
+	  addComment( "Use the Floating Point Swap Space" );
+	  addAsm( str_LDX + "#<!fp0+", 2, false );
+	  addAsm( str_LDY + "#>!fp0+", 2, false );
+	  addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );
+	  addAsm( str_LDY + OP1, 3, false );
+	  addAsm( str_LDA + "#$00", 2, false );
+	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );	  
+
+	  pushFAC();
+	  
+	  addAsm( str_LDA + "#<!fp0+", 2, false );
+	  addAsm( str_LDY + "#>!fp0+", 2, false );
+	  addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
+	  popARG();
+	  fPwrT();
+	  //addAsm( str_JSR + "$BF7B" + commentmarker + "ARG ** FAC -> FAC", 3, false );
 	}
       else
 	{
@@ -14403,7 +14473,8 @@ arithmetic expression[RHS]
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  addAsm( str_LDA + "#<" + OP2, 3, false );
 	  addAsm( str_LDY + "#>" + OP2, 3, false );
-	  addAsm( str_JSR + "$BA28" + commentmarker + "MEM * FAC -> FAC", 3, false );
+	  fMult();
+	  //addAsm( str_JSR + "$BA28" + commentmarker + "MEM * FAC -> FAC", 3, false );
 	  strcpy($$.name, "_FAC" );
 	}
       else if( op == string( "/" ) )
@@ -14412,6 +14483,7 @@ arithmetic expression[RHS]
 	  addAsm( str_LDY + OP1, 3, false );
 	  addAsm( str_LDA + "#$00", 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
+
 	  addComment( "Use the Floating Point Swap Space" );
 	  addAsm( str_LDX + "#<!fp0+", 2, false );
 	  addAsm( str_LDY + "#>!fp0+", 2, false );
@@ -14424,7 +14496,9 @@ arithmetic expression[RHS]
 	  addAsm( str_LDA + "#<!fp0+", 2, false );
 	  addAsm( str_LDY + "#>!fp0+", 2, false );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
-       	  addAsm( str_JSR + "$BB12" + commentmarker + "ARG/FAC -> FAC", 3, false );
+
+	  fDivT();
+       	  //addAsm( str_JSR + "$BB12" + commentmarker + "ARG/FAC -> FAC", 3, false );
 	  strcpy($$.name, "_FAC" );
 	}
       else if( op == string( "+" ) )
@@ -14434,7 +14508,8 @@ arithmetic expression[RHS]
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  addAsm( str_LDA + "#<" + OP2, 3, false );
 	  addAsm( str_LDY + "#>" + OP2, 3, false );
-	  addAsm( str_JSR + "$B867" + commentmarker + "MEM + FAC -> FAC", 3, false );
+	  fAdd();
+	  //addAsm( str_JSR + "$B867" + commentmarker + "MEM + FAC -> FAC", 3, false );
 	  strcpy($$.name, "_FAC" );
 	}
       else if( op == string( "-" ) )
@@ -14443,19 +14518,22 @@ arithmetic expression[RHS]
 	  addAsm( str_LDY + OP1, 3, false );
 	  addAsm( str_LDA + "#$00", 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
-	  addComment( "Use the Floating Point Swap Space" );
-	  addAsm( str_LDX + "#<!fp0+", 2, false );
-	  addAsm( str_LDY + "#>!fp0+", 2, false );
-	  addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );
-	  
+	  //addComment( "Use the Floating Point Swap Space" );
+	  //addAsm( str_LDX + "#<!fp0+", 2, false );
+	  //addAsm( str_LDY + "#>!fp0+", 2, false );
+	  //addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );
+
+	  pushFAC();
 	  addAsm( str_LDA + "#<" + OP2, 3, false );
 	  addAsm( str_LDY + "#>" + OP2, 3, false );
 	  addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
-	  
-	  addAsm( str_LDA + "#<!fp0+", 2, false );
-	  addAsm( str_LDY + "#>!fp0+", 2, false );
+
+	  popARG();
+	  //addAsm( str_LDA + "#<!fp0+", 2, false );
+	  //addAsm( str_LDY + "#>!fp0+", 2, false );
 	  //addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
-	  addAsm( str_JSR + "$B850" + commentmarker + "MEM - FAC -> FAC", 3, false );
+	  fSubT();
+	  //addAsm( str_JSR + "$B850" + commentmarker + "MEM - FAC -> FAC", 3, false );
 	  strcpy($$.name, "_FAC" );
 	}
       else if( op == string( "**" ) )
@@ -14484,12 +14562,14 @@ arithmetic expression[RHS]
       if( op == string("+") )
 	{
 	  addComment( "UintID + IntID --> A" );
+	  addAsm( str_CLC, 1, false );
 	  addAsm( str_ADC + O2, sizeOP2A, false);
 	  strcpy($$.name, "_A" );
 	}
       else if ( op == string("-") )
 	{
 	  addComment( "UintID - IntID --> A" );
+	  addAsm( str_SEC );
 	  addAsm( str_SBC + O2, sizeOP2A, false);
 	  strcpy($$.name, "_A" );
 	}
@@ -14623,6 +14703,7 @@ arithmetic expression[RHS]
 	  addComment( "UintID + IntIMM --> A" );
 	  addAsm( str_LDA + getNameOf(getAddressOf($1.name)), 3, false );
 	  int tmp_int = atoi(stripFirst($4.name).c_str());
+	  addAsm( str_CLC, 1, false );
 	  addAsm( str_ADC + "#$"  + toHex(tmp_int), 2, false );
 	  strcpy($$.name, "_A" );
 
@@ -14632,6 +14713,7 @@ arithmetic expression[RHS]
 	  addComment( "UintID - IntIMM -->" ); 
 	  addAsm( str_LDA + getNameOf(getAddressOf($1.name)), 3, false );
 	  int tmp_int = atoi(stripFirst($4.name).c_str());
+	  addAsm( str_SEC );
 	  addAsm( str_SBC + "#$" + toHex(tmp_int), 2, false );
 	  strcpy($$.name, "_A" );
 
@@ -14869,12 +14951,14 @@ arithmetic expression[RHS]
       if( op == string("+"))
 	{
 	  addComment( "UintID + UintID --> A" );
+	  addAsm( str_CLC, 1, false );
 	  addAsm( str_ADC + O2, sizeOP2A, false );
 	  strcpy($$.name, "_A" );
 	}
       else if( op == string("-"))
 	{
 	  addComment( "UintID - UintID --> A" );
+	  addAsm( str_SEC );
 	  addAsm( str_SBC + O2, sizeOP2A, false );
 	  strcpy($$.name, "_A" );
 	}
@@ -14950,6 +15034,7 @@ arithmetic expression[RHS]
 	    {
 	      tmp_int = twos_complement( tmp_int );
 	    }
+	  addAsm( str_CLC, 1, false );
 	  addAsm( str_ADC + "#$" + toHex(tmp_int), 2, false );
 	  strcpy($$.name, "_A" );
 	}
@@ -14963,6 +15048,7 @@ arithmetic expression[RHS]
 	    {
 	      tmp_int = twos_complement( tmp_int );
 	    }
+	  addAsm( str_SEC );
 	  addAsm( str_SBC + "#$" + toHex(tmp_int), 2, false );
 	  strcpy($$.name, "_A" );
 	}
@@ -15174,6 +15260,7 @@ arithmetic expression[RHS]
       if( op == string("+") )
 	{
 	  addComment( "UintID + WordIMM" );
+	  addAsm( str_CLC, 1, false );
 	  addAsm( str_LDA + O1, sizeOP1A, false );
 	  addAsm( str_ADC + "#$" + IMM2L, 2, false );
 	  addAsm( str_TAY );
@@ -15186,6 +15273,7 @@ arithmetic expression[RHS]
       else if( op == string("-") )
 	{
 	  addComment( "UintID - WordIMM" );
+	  addAsm( str_SEC );
 	  addAsm( str_LDA + O1, sizeOP1A, false );
 	  addAsm( str_SBC + "#$" + IMM2L, 2, false );	  
 	  addAsm( str_TAY );
@@ -15250,6 +15338,7 @@ arithmetic expression[RHS]
 	  addAsm( str_STY + "$02", 2, false );
 	  //addAsm( str_STX + "$03", 2, false );
 	  addAsm( str_LDA + O1, sizeOP1A, false  );
+	  addAsm( str_SEC );
 	  addAsm( str_SBC + "$02", 2, false );
 	  addAsm( str_TAY );
 	  addAsm( str_STX + "$02", 2, false );
@@ -15266,7 +15355,7 @@ arithmetic expression[RHS]
       else if( op == string("+") )
 	{
 	  addComment( "UIntID + XA --> XA");
-
+	  addAsm( str_CLC, 1, false );
 	  addAsm( str_ADC + O1, sizeOP1A, false );
 	  addAsm( str_TAY );
 	  addAsm( str_TXA );
@@ -15320,12 +15409,14 @@ arithmetic expression[RHS]
       if( op == string("+"))
 	{
 	  addComment( "IntIMM + A --> A" );
+	  addAsm( str_CLC, 1, false );
 	  addAsm( str_ADC + "#$" + toHex( tmp_i ), 2);
 	  strcpy($$.name, "_A" );
 	}
       else if( op == string("-"))
 	{
 	  addComment( "IntIMM - A --> A" );
+	  addAsm( str_SEC );
 
 	  addAsm( str_STA + "!+", 3, false );
 
@@ -15535,24 +15626,29 @@ arithmetic expression[RHS]
 
 	  if( tmp_int != 0 )
 	    {
+	      addAsm( str_CLC, 1, false );
 	      addAsm( str_ADC + "#$" + toHex(tmp_int), 2, false );
 	    }
 	  else
 	    {
 	      addComment( "no need to add 0" );
+	      addAsm( commentmarker + str_CLC, 0, true );
+	      addAsm( commentmarker + str_ADC + "#$00", 0, true );
+
 	    }
 	  strcpy($$.name, "_A" );
 	}
       else if( op == string("-"))
 	{
+	  addComment( "UIntIMM - IntID --> A" );
 	  addAsm( str_LDA + O2, sizeOP2A, false);
 
-	  addComment( "UIntIMM - IntID --> A" );
 	  int tmp_int = atoi(stripFirst($1.name).c_str());
 	  if( tmp_int < 0 )
 	    {
 	      tmp_int = twos_complement( tmp_int );
 	    }
+	  addAsm( str_SEC );
 	  addAsm( str_SBC + "#$" +  toHex(tmp_int), 2, false );
 	  strcpy($$.name, "_A" );
 	}
@@ -15657,6 +15753,7 @@ arithmetic expression[RHS]
 	{
 	  addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false); // 
 	  int tmp_int = atoi(stripFirst($1.name).c_str());
+	  addAsm( str_CLC, 1, false );
 	  addAsm( str_ADC + "#$"  + toHex(tmp_int), 2, false );
 	  strcpy($$.name, "_A" );
 	}
@@ -15664,6 +15761,7 @@ arithmetic expression[RHS]
 	{
 	  int tmp_int = atoi(stripFirst($1.name).c_str());
 	  addAsm( str_LDA + "#$" + toHex(tmp_int), 2, false );
+	  addAsm( str_SEC );
 	  addAsm( str_SBC + getNameOf(getAddressOf($4.name)), 3, false );
 	  strcpy($$.name, "_A" );
 	}
@@ -15842,19 +15940,6 @@ arithmetic expression[RHS]
 
   else if( isUintIMM($1.name) && isUintIMM($4.name) )
     {
-      if( op == "-" )
-	{
-	  deletePreviousAsm();
-	  addCompilerMessage( "deleting 'sec'", 1 );
-	  addAsm( "// sec",0,false );
-	}
-      else if( op == "+" )
-	{
-	  deletePreviousAsm();
-	  addCompilerMessage( "deleting 'clc'", 1 );
-	  addAsm( "// clc",0,false );
-	}
-
       addComment( "UintIMM math UintIMM: TOC" );      
       int tmp_int1 = atoi( stripFirst($1.name).c_str() );
       int tmp_int2 = atoi( stripFirst($4.name).c_str() );
@@ -15968,6 +16053,7 @@ arithmetic expression[RHS]
       if( op == string("+") )
 	{  
 	  addComment( "WordID + A --> XA" );
+	  addAsm( str_CLC, 1, false );
 	  addAsm( str_ADC + O1, sizeOP1A, false );
 	  addAsm( str_TAY );
 	  addAsm( str_LDA + "#$00", 2, false );
@@ -15978,7 +16064,8 @@ arithmetic expression[RHS]
 	}
       else if( op == string("-") )
 	{  
-	  addComment( "WordID - A --> XA" );      
+	  addComment( "WordID - A --> XA" );
+	  addAsm( str_SEC );
 	  addAsm( str_SBC + O1, sizeOP1A, false );
 	  addAsm( str_TAY );
 	  addAsm( str_LDA+"#$00", 2, false );
@@ -16196,6 +16283,7 @@ arithmetic expression[RHS]
 	  int addr_op1 = hexToDecimal($1.name);
 	  int addr_op2 = hexToDecimal($4.name);
 	  addComment( "WordID + UIntID --> XA" );
+	  addAsm( str_CLC, 1, false );
 
 	  int size_op1=2;
 	  int size_op2=2;
@@ -16221,7 +16309,7 @@ arithmetic expression[RHS]
 	  int addr_op1 = hexToDecimal($1.name);
 	  int addr_op2 = hexToDecimal($4.name);
 	  addComment( "WordID - UIntID --> XA" );
-
+	  addAsm( str_SEC );
 	  addAsm( str_LDA + getNameOf(getAddressOf($1.name)), 3, false );
 	  addAsm( str_SBC + getNameOf(getAddressOf($4.name)), 3, false );
 	  addAsm( str_TAY );
@@ -16269,6 +16357,7 @@ arithmetic expression[RHS]
       int IMMvalue = atoi(stripFirst($4.name).c_str());
       if( op == string( "+" ) )
 	{
+	  addAsm( str_CLC, 1, false );
 
 	  addComment( "(OPTIMIZE)" );
 	  addComment( "WordID + UIntIMM --> XA" );      
@@ -16295,10 +16384,10 @@ arithmetic expression[RHS]
 	}
       else if( op == string( "-" ) )
 	{
-	  addComment( "WordID - UIntIMM -->" );      
+	  addComment( "WordID - UIntIMM --> XA" );      
 	  int size_of_instruction = 3;
 	  if( a < 256 ) size_of_instruction = 2;
-	  // addAsm( str_SEC );
+	  addAsm( str_SEC );
 	  addAsm( str_LDA + getNameOf(a), size_of_instruction, false );
 	  addAsm( str_SBC + "#$" + toHex(IMMvalue), 2, false );
 	  addAsm( str_PHA );
@@ -16474,6 +16563,7 @@ arithmetic expression[RHS]
       if( op == string( "+" ) )
 	{
 	  addComment( "WordID + WordID --> XA" );
+	  addAsm( str_CLC, 1, false );
 	  addAsm( str_LDA + O1, sizeOP1A, false );
 	  addAsm( str_ADC + O2, sizeOP2A, false );
 	  addAsm( str_TAY );
@@ -16486,6 +16576,7 @@ arithmetic expression[RHS]
       else if( op == string( "-" ) )
 	{
 	  addComment( "WordID - WordID --> XA" );
+	  addAsm( str_SEC );
 	  addAsm( str_LDA + O1, sizeOP1A, false );
 	  addAsm( str_SBC + O2, sizeOP2A, false );
 	  addAsm( str_TAY );
@@ -16571,6 +16662,7 @@ arithmetic expression[RHS]
 	{
 	  addComment( "(OPTIMIZE)" );
 	  addComment( "WordID + WordIMM -> XA" );
+	  addAsm( str_CLC, 1, false );
 	  addAsm( str_LDA + O1, sizeOP1A, false );
 	  addAsm( str_ADC + "#$" + toHex(get_word_L( OP2 )), 2, false );	  
 	  addAsm( str_TAY );
@@ -16584,6 +16676,7 @@ arithmetic expression[RHS]
 	{
 	  addComment( "(OPTIMIZE)" );
 	  addComment( "WordID - WordIMM -> XA" );
+	  addAsm( str_SEC );
 	  addAsm( str_LDA + O1, sizeOP1A, false );
 	  addAsm( str_SBC + "#$" + toHex(get_word_L( OP2 )), 2, false );	  
 	  addAsm( str_TAY );
@@ -16882,6 +16975,7 @@ arithmetic expression[RHS]
       if( op == string("-") )
 	{
 	  addComment( "WordID - XA --> XA" );
+	  addAsm( str_SEC );
 	  addAsm( str_STA + "!+", 3, false );
 	  addAsm( str_STX + "!++", 3, false );
 	  addAsm( str_LDA + O1, sizeOP1A, false  );
@@ -16899,6 +16993,7 @@ arithmetic expression[RHS]
       else if( op == string("+") )
 	{
 	  addComment( "WordID + XA --> XA" );
+	  addAsm( str_CLC, 1, false );
 	  addAsm( str_ADC + O1, sizeOP1A, false  );
 	  addAsm( str_TAY );
 	  addAsm( str_TXA );
@@ -16953,18 +17048,6 @@ arithmetic expression[RHS]
     }
   else if( isWordIMM($1.name) && isUintIMM($4.name) )
     {
-      if( op == "-" )
-	{
-	  deletePreviousAsm();
-	  addCompilerMessage( "deleting 'sec'", 1 );
-	  addAsm( "// sec",0,false );
-	}
-      if( op == "+" )
-	{
-	  deletePreviousAsm();
-	  addCompilerMessage( "deleting 'clc'", 1 );
-	  addAsm( "// clc",0,false );
-	}
       addComment( "WordIMM math UintIMM: TOC" );
       int tmp_int1 = atoi( stripFirst($1.name).c_str() );
       int tmp_int2 = atoi( stripFirst($4.name).c_str() );
@@ -16972,15 +17055,15 @@ arithmetic expression[RHS]
       if( op == "+" )
 	{
 	  tmp_int3 = tmp_int1 + tmp_int2;
-	  addAsm( str_LDA + "#$" + toHex ( get_word_L(tmp_int3)  ), 2, false );
-	  addAsm( str_LDX + "#$" + toHex ( get_word_H(tmp_int3)  ), 2, false );
+	  addAsm( str_LDA + "#$" + toHex( get_word_L(tmp_int3)  ), 2, false );
+	  addAsm( str_LDX + "#$" + toHex( get_word_H(tmp_int3)  ), 2, false );
 	  strcpy($$.name, "_XA" );
 	}
       else if( op == "-" )
 	{
 	  tmp_int3 = tmp_int1 - tmp_int2;
-	  addAsm( str_LDA + "#$" + toHex ( get_word_L(tmp_int3)  ), 2, false );
-	  addAsm( str_LDX + "#$" + toHex ( get_word_H(tmp_int3)  ), 2, false );
+	  addAsm( str_LDA + "#$" + toHex( get_word_L(tmp_int3)  ), 2, false );
+	  addAsm( str_LDX + "#$" + toHex( get_word_H(tmp_int3)  ), 2, false );
 	  strcpy($$.name, "_XA" );
 	}
       else if( op == "*" )
@@ -17019,6 +17102,7 @@ arithmetic expression[RHS]
       int OP1L = get_word_L( OP1 );
       if( op == string("+") )
 	{
+	  addAsm( str_CLC, 1, false );
 	  addAsm( str_ADC + "#$" + toHex(OP1L), 2, false );
 	  addAsm( str_TAY );
 	  addAsm( str_LDA + "#$00", 2, false );
@@ -17030,6 +17114,7 @@ arithmetic expression[RHS]
       else if( op == string("-") )
 	{
 	  addAsm( str_STA + "!+" + commentmarker + "Save A a little further ahead", 3, false );	  
+	  addAsm( str_SEC );
 	  addAsm( str_LDA + "#$" + toHex(OP1L), 2, false );
 	  addAsm( str_BYTE + "$E9" + commentmarker + "<-- SBC Immediate", 1, false );
 	  addAsm( "!:\t" + str_BYTE + "$00" + commentmarker + "Low", 1, true );
@@ -17209,9 +17294,9 @@ arithmetic expression[RHS]
     {
       if( op == "-" )
 	{
-	  deletePreviousAsm();
-	  addCompilerMessage( "deleting 'sec'", 1 );
-	  addAsm( "// sec",0,false );
+	  //deletePreviousAsm();
+	  //addCompilerMessage( "deleting 'sec'", 1 );
+	  //addAsm( "// sec",0,false );
 	}
       addComment( "WordIMM math WordIMM: TOC" );
       
@@ -17329,7 +17414,8 @@ arithmetic expression[RHS]
       int OP1L = get_word_L( OP1 );
       if( op == string("+") )
 	{
-	  addComment( "WordIMM + XA" );
+	  addComment( "WordIMM + XA --> XA" );
+	  addAsm( str_CLC, 1, false );
 	  addAsm( str_ADC + "#$" + toHex(OP1L), 2, false );
 	  addAsm( str_TAY );
 	  addAsm( str_TXA );
@@ -17340,9 +17426,11 @@ arithmetic expression[RHS]
 	}
       else if( op == string("-") )
 	{
-	  addComment( "WordIMM + XA" );
+	  addComment( "WordIMM + XA --> XA" );
 	  addAsm( str_STA + "!+" + commentmarker + "Save XA a little further ahead", 3, false );
 	  addAsm( str_STX + "!++", 3, false );
+
+	  addAsm( str_SEC );
 	  
 	  addAsm( str_LDA + "#$" + toHex(OP1L), 2, false );
 	  addAsm( str_BYTE + "$E9" + commentmarker + "<-- SBC Immediate", 1, false );
@@ -17424,7 +17512,8 @@ arithmetic expression[RHS]
 	  addAsm( str_PLA );
 	  addAsm( str_TAX );
 	  addAsm( str_PLA );
-	  addAsm( str_BYTE + "$69", 1, false );
+	  addAsm( str_CLC, 1, false );
+	  addAsm( str_BYTE + "$69" + commentmarker + "ADC Immediate", 1, false );
 	  addAsm( "!:\t" + str_BYTE + "$00", 1, true );
 	  addAsm( str_TAY );
 	  addAsm( str_TXA );
@@ -17435,12 +17524,13 @@ arithmetic expression[RHS]
 	}
       else if( op == string("-") )
 	{
-	  addComment( "XA - A" );
+	  addComment( "XA - A --> XA" );
+	  addAsm( str_SEC );
 	  addAsm( str_STA + "!+", 3, false );
 	  addAsm( str_PLA );
 	  addAsm( str_TAX );
 	  addAsm( str_PLA );
-	  addAsm( str_BYTE + "$E9", 1, false );
+	  addAsm( str_BYTE + "$E9" + commentmarker + "SBC Immediate", 1, false );
 	  addAsm( "!:\t" + str_BYTE + "$00", 1, true );
 	  addAsm( str_TAY );
 	  addAsm( str_TXA );
@@ -17521,6 +17611,7 @@ else if( isXA($1.name) && isUintID($4.name) )
 	{
 	  // 2024 05 19 - mkpellegrino
 	  addComment( "XA + UintID --> XA" );
+	  addAsm( str_CLC, 1, false );
 	  addAsm( str_ADC + O2, sizeOP2A, false );
 	  addAsm( str_TAY );
 	  addAsm( str_TXA );
@@ -17531,7 +17622,8 @@ else if( isXA($1.name) && isUintID($4.name) )
 	}
       else if( op == string("-") )
 	{
-	  addComment( "XA - UintID --> XA" );	  
+	  addComment( "XA - UintID --> XA" );
+	  addAsm( str_SEC );
 	  addAsm( str_SBC + O2, sizeOP2A, false );
 	  strcpy($$.name, "_XA");
 	}
@@ -17586,6 +17678,7 @@ else if( isXA($1.name) && isUintID($4.name) )
 	{
 	  addComment( "XA - UintIMM --> XA" );
 	  int tmp_v = atoi(stripFirst($4.name).c_str());
+	  addAsm( str_SEC );
 	  addAsm( str_SBC + "#$" + toHex(tmp_v), 2, false  );
 	  addAsm( str_TAY );
 	  addAsm( str_TXA );
@@ -17598,6 +17691,7 @@ else if( isXA($1.name) && isUintID($4.name) )
 	{
 	  addComment( "XA + UintIMM --> XA" );
 	  int tmp_v = atoi(stripFirst($4.name).c_str());
+	  addAsm( str_CLC, 1, false );
 	  addAsm( str_ADC + "#$" + toHex(tmp_v), 2, false  );
 	  addAsm( str_TAY );
 	  addAsm( str_TXA );
@@ -17825,6 +17919,7 @@ else if( isXA($1.name) && isUintID($4.name) )
       if( op == string("-") )
 	{
 	  addComment( "XA - WordID --> XA" );
+	  addAsm( str_SEC );
 	  addAsm( str_SBC + O2, sizeOP2A, false );
 	  addAsm( str_TAY );
 	  addAsm( str_TXA );
@@ -17836,6 +17931,7 @@ else if( isXA($1.name) && isUintID($4.name) )
       else if( op == string("+") )
 	{
 	  addComment( "XA + WordID --> XA" );
+	  addAsm( str_CLC, 1, false );
 	  addAsm( str_ADC + O2, sizeOP2A, false );
 	  addAsm( str_TAY );
 	  addAsm( str_TXA );
@@ -17893,6 +17989,7 @@ else if( isXA($1.name) && isUintID($4.name) )
 	{
 	  addComment( "XA - WordIMM --> XA" );
 	  int tmp_v = atoi(stripFirst($4.name).c_str());
+	  addAsm( str_SEC );
 	  addAsm( str_SBC + "#$" + toHex(get_word_L(tmp_v)), 2, false  );
 	  addAsm( str_TAY );
 	  addAsm( str_TXA );
@@ -17905,6 +18002,7 @@ else if( isXA($1.name) && isUintID($4.name) )
 	{
 	  addComment( "XA + WordIMM --> XA" );
 	  int tmp_v = atoi(stripFirst($4.name).c_str());
+	  addAsm( str_CLC, 1, false );
 	  addAsm( str_ADC + "#$" + toHex(get_word_L(tmp_v)), 2, false  );
 	  addAsm( str_TAY );
 	  addAsm( str_TXA );
@@ -18161,6 +18259,7 @@ else if( isXA($1.name) && isUintID($4.name) )
 	  addAsm( str_PLA ); // the X in XA
 	  addAsm( str_TAX );
 	  addAsm( str_PLA ); // the A in XA
+	  addAsm( str_CLC, 1, false );
 	  addAsm( str_ADC + "$FB", 2, false );
 	  addAsm( str_TAY );
 	  addAsm( str_TXA );
@@ -18178,6 +18277,7 @@ else if( isXA($1.name) && isUintID($4.name) )
 	  addAsm( str_PLA ); // the X in XA
 	  addAsm( str_TAX );
 	  addAsm( str_PLA ); // the A in XA
+	  addAsm( str_SEC );
 	  addAsm( str_SBC + "$FB", 2, false );
 	  addAsm( str_TAY );
 	  addAsm( str_TXA );
@@ -18231,12 +18331,6 @@ else if( isXA($1.name) && isUintID($4.name) )
 	   (isUintIMM($1.name) && isUintIMM($4.name)) ||
 	   (isWordIMM($1.name) && isWordIMM($4.name)) )
     {
-      if( op == "-" )
-	{
-	  deletePreviousAsm();
-	  addCompilerMessage( "deleting 'sec'", 1 );
-	  addAsm( "// sec",0,false );
-	}
       addComment( "IntIMM math IntIMM or UintIMM math UintIMM or WordIMM math WordIMM: TOC" );
       
       int tmp_int1 = atoi( stripFirst($1.name).c_str() );
