@@ -73,6 +73,7 @@ frmt  [{\t}|{\n}]
 "tofloat"   { strcpy(yylval.nd_obj.name,(yytext)); return tTOFLOAT; }
 "touint"   { strcpy(yylval.nd_obj.name,(yytext)); return tTOUINT; }
 "toword"   { strcpy(yylval.nd_obj.name,(yytext)); return tTOWORD; }
+"inttoword" { strcpy(yylval.nd_obj.name,(yytext)); return tINTTOWORD; }
 "cls"           { strcpy(yylval.nd_obj.name,(yytext)); return tCLS; }
 "getin"           { strcpy(yylval.nd_obj.name,(yytext)); return tGETIN; }
 "getchar"           { strcpy(yylval.nd_obj.name,(yytext)); return tGETCHAR; }
@@ -85,7 +86,6 @@ frmt  [{\t}|{\n}]
 "jmp"                    { strcpy(yylval.nd_obj.name,(yytext)); return tJMP; }
 "twos"                   { strcpy(yylval.nd_obj.name,(yytext)); return tTWOS; }
 "byte2hex"                   { strcpy(yylval.nd_obj.name,(yytext)); return tBYTE2HEX; }
-"rts"                    { strcpy(yylval.nd_obj.name,(yytext)); return tRTS; }
 "peek"                    { strcpy(yylval.nd_obj.name,(yytext)); return tPEEK; }
 "getH"                    { strcpy(yylval.nd_obj.name,(yytext)); return tGETH; }
 "getL"                    { strcpy(yylval.nd_obj.name,(yytext)); return tGETL; }
@@ -134,6 +134,7 @@ frmt  [{\t}|{\n}]
 "-"                         { strcpy(yylval.nd_obj.name,(yytext)); return SUBTRACT; }
 "/"                         { strcpy(yylval.nd_obj.name,(yytext)); return DIVIDE; }
 "*"                         { strcpy(yylval.nd_obj.name,(yytext)); return MULTIPLY; }
+"**"                         { strcpy(yylval.nd_obj.name,(yytext)); return EXPONENT; }
 \/\/.*                      { ; }
 \/\*(.*\n)*.*\*\/           { ; } 
 [ \t]*                      { ; }
