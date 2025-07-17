@@ -3274,7 +3274,6 @@ parameterlist: /* empty */
 |
 | expression
 {
-  //addDebugComment(string("Parameter: ") + $1.name);
   addComment( string( "Param: " ) + $1.name );
   if( isUintID($1.name) || isIntID($1.name))
     {
@@ -3358,9 +3357,11 @@ parameterlist: /* empty */
     }
   else if( isFloatIMM($1.name) )
     {
-
-      inlineFloatPush( $1.name, 105 );
-      
+      // mkpellegrino = 2025 07 17
+      // I think that this might be more efficient
+      inlineFloat( $1.name );
+      pushFAC();
+      //inlineFloatPush( $1.name, 105 );      
     }
   else
     {
@@ -3422,7 +3423,7 @@ parameterlist: /* empty */
     {
       int tmp_v = atoi(stripFirst($3.name).c_str());
       addAsm( "// ------ ", 0, true );
-      addAsm( str_LDA + "#$" + toHex( tmp_v ), 2, false );
+      addAsm( str_LDA + "#$" + toHex( twos_complement(tmp_v)), 2, false );
       addAsm( str_PHA );
       addAsm( "// ------ ", 0, true );      
     }
@@ -5554,91 +5555,80 @@ body: WHILE
   addAsm( str_JSR + "CLS" + commentmarker + "deep cls()", 3, false );
 };
 // STATEMENT
-| tCLS '(' expression ')' ';'
-{
-  addDebugComment( "cls(expression)");
-  if( isUintIMM( $3.name ) )
-    {
-      addComment( "cls( UIntIMM )");
-      int v = atoi(stripFirst($3.name).c_str());
-      switch( v )
-	{
-	case 1:
-	case 2:
-	case 3:
-	  v*=4;
-	case 0:
-	case 4:
-	case 8:
-	case 12:
-	  addAsm( str_LDA + "#$20", 2, false ); // space
-	  addAsm( str_LDX + "#$00", 2, false ); // (essentially 256)
-	  //addAsm( "CLSLOOP:", 0, true );
-	  addComment( "top-of-cls-loop" );
-	  addAsm( "!:\t" + str_STA + "$" + toHex( v ) +  "400,X", 3, true );
-	  addAsm( str_STA + "$" + toHex( v ) +  "500,X", 3, false );
-	  addAsm( str_STA + "$" + toHex( v ) +  "600,X", 3, false );
-	  addAsm( str_STA + "$" + toHex( v ) +  "6E8,X", 3, false );
-	  addAsm( str_DEX );
-	  addAsm( str_BNE + "!-", 2, false );
-	  //addAsm( str_BYTE + "$D0, $F1" + commentmarker + "BNE -14", 2, false ); // BNE top-of-loop
-	  break;
-	default:
-	  addAsm( str_JSR + "$FF81" + commentmarker + "kernal cls()", 3, false );
-	  break;
-	}
-    }
-  else if( isUintID( $3.name ) )
-    {
-      addComment( "cls( UIntID )");
+/* | tCLS '(' expression ')' ';' */
+/* { */
+/*   addDebugComment( "cls(expression)"); */
+/*   if( isUintIMM( $3.name ) ) */
+/*     { */
+/*       addComment( "cls( UIntIMM )"); */
+/*       int v = atoi(stripFirst($3.name).c_str()); */
+/*       switch( v ) */
+/* 	{ */
+/* 	case 1: */
+/* 	case 2: */
+/* 	case 3: */
+/* 	  v*=4; */
+/* 	case 0: */
+/* 	case 4: */
+/* 	case 8: */
+/* 	case 12: */
+/* 	  addAsm( str_LDA + "#$20", 2, false ); // space */
+/* 	  addAsm( str_LDX + "#$00", 2, false ); // (essentially 256) */
+/* 	  addComment( "top-of-cls-loop" ); */
+/* 	  addAsm( "!:\t" + str_STA + "$" + toHex( v ) +  "400,X", 3, true ); */
+/* 	  addAsm( str_STA + "$" + toHex( v ) +  "500,X", 3, false ); */
+/* 	  addAsm( str_STA + "$" + toHex( v ) +  "600,X", 3, false ); */
+/* 	  addAsm( str_STA + "$" + toHex( v ) +  "6E8,X", 3, false ); */
+/* 	  addAsm( str_DEX ); */
+/* 	  addAsm( str_BNE + "!-", 2, false ); */
+/* 	  break; */
+/* 	default: */
+/* 	  addAsm( str_JSR + "$FF81" + commentmarker + "<-- kernal cls()", 3, false ); */
+/* 	  break; */
+/* 	} */
+/*     } */
+/*   else if( isUintID( $3.name ) ) */
+/*     { */
+/*       addComment( "cls( UIntID )"); */
 
-      int addr = getAddressOf( $3.name );
       
-      pushScope("CLS(ID)");
-      addAsm( str_LDA + "$" + toHex(addr), 3, false );
-      addAsm( str_CMP + "#$04", 2, false );
-      addAsm( str_BCS + "!+", 2, false );
-      //addAsm( str_BYTE + "$B0, $02" + commentmarker + "BCS +2", 2, false );
-      addAsm( str_ASL );
-      addAsm( str_ASL );
-      addAsm( "!:\t" + str_ASL, 1, true);
-      addAsm( str_ASL );
-      addAsm( str_ASL );
-      addAsm( str_ASL );
-      addAsm( str_ORA + "#$04", 2, false );
-      addAsm( str_TAX );
+/*       pushScope("CLS(ID)"); */
+/*       addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false ); */
+/*       addAsm( str_CMP + "#$04", 2, false ); */
+/*       addAsm( str_BCS + "!+", 2, false ); */
+/*       addAsm( str_ASL ); */
+/*       addAsm( str_ASL ); */
+/*       addAsm( "!:\t" + str_ASL, 1, true); */
+/*       addAsm( str_ASL ); */
+/*       addAsm( str_ASL ); */
+/*       addAsm( str_ASL ); */
+/*       addAsm( str_ORA + "#$04", 2, false ); */
+/*       addAsm( str_TAX ); */
       
-      addAsm( str_STX + getLabel( label_vector[label_major], false) + "+2", 3, false );
-      addAsm( str_INX );
-      addAsm( str_STX + getLabel( label_vector[label_major]+1, false) + "+2", 3, false );
-      addAsm( str_INX );
-      addAsm( str_STX + getLabel( label_vector[label_major]+2, false) + "+2", 3, false );
-      addAsm( str_STX + getLabel( label_vector[label_major]+3, false) + "+2", 3, false );
-     
-      addAsm( str_LDA + "#$20", 2, false );
-      addAsm( str_LDX + "#$00", 2, false );
-      
-      addComment( "top-of-cls-loop" );
-      addAsm( "!:", 0, true );
-      addAsm( generateNewLabel(), 0, true );
-      addAsm( str_STA + "$0000,X", 3, false );
-      addAsm( generateNewLabel(), 0, true );
-      addAsm( str_STA + "$0000,X", 3, false );
-      addAsm( generateNewLabel(), 0, true );
-      addAsm( str_STA + "$0000,X", 3, false );
-      addAsm( generateNewLabel(), 0, true );
-      addAsm( str_STA + "$00E8,X", 3, false );
-      addAsm( str_DEX );
-      addAsm( str_BNE + "!-", 2, false );
-      //addAsm( str_BYTE + "$D0, $F1" + commentmarker + "bnz top-of-cls-loop", 2, false );
-      popScope();
-    }
-  else
-    {
-      addCompilerMessage( "Unhandled argument type for cls( expression );", 3 );
-    }
+/*       addAsm( str_STX + "!+ +2", 3, false ); */
+/*       addAsm( str_INX ); */
+/*       addAsm( str_STX + "!+ +5", 3, false ); */
+/*       addAsm( str_INX ); */
+/*       addAsm( str_STX + "!+ +8", 3, false ); */
+/*       addAsm( str_STX + "!+ +11", 3, false ); */
 
-};
+/*       addAsm( str_LDA + "#$20", 2, false ); */
+/*       addAsm( str_LDX + "#$00", 2, false ); */
+      
+/*       addAsm( "!:\t" + str_STA + "$0000,X", 3, true ); */
+/*       addAsm( str_STA + "$0000,X", 3, false ); */
+/*       addAsm( str_STA + "$0000,X", 3, false ); */
+/*       addAsm( str_STA + "$00E8,X", 3, false ); */
+/*       addAsm( str_DEX ); */
+/*       addAsm( str_BNE + "!-", 2, false ); */
+/*       popScope(); */
+/*     } */
+/*   else */
+/*     { */
+/*       addCompilerMessage( "Unhandled argument type for cls( expression );", 3 ); */
+/*     } */
+
+/* }; */
 // STATEMENT
 | tROMOUT '(' expression ')' ';'
 {
@@ -15703,6 +15693,62 @@ arithmetic[MATHOP] expression[OP2]
 	  addCompilerMessage("Unknown Operation: IntIMM math FloatIMM", 3 );
 	}
     }
+  else if(isIntIMM($1.name) && isIntID($4.name) )
+    {
+      addComment( "IntIMM math IntID: TOC" );
+      // TODO: This is wicked incomplete
+      // it should be: IntIMM OP IntID --> XA
+      if( op==string( "+" ))
+	{
+	}
+      else if( op==string( "-" ))
+	{
+	}
+      else if( op==string( "*" ))
+	{
+	  int tmp_int = atoi(stripFirst($1.name).c_str() );
+	  string OP2 = getNameOf(getAddressOf($4.name));
+
+	  int tmp_int2 = atoi(stripFirst(stripFirst($1.name).c_str()).c_str() );
+	  switch( tmp_int )
+	    {
+	    case -1:
+	      addAsm( str_LDA + OP2, 3, false );
+	      addAsm( str_EOR + "#$FF", 2, false );
+	      addAsm( str_CLC, 1, false );
+	      addAsm( str_ADC + "#$01", 2, false );
+	      addAsm( str_LDX + "#$FF", 2, false );
+	      break;
+	    default:
+	      addAsm( str_LDX + "#$00", 2, false );
+	      addAsm( str_STX + "_MUL16_FE", 3, false );
+	      addAsm( str_DEX, 1, false );	      
+	      addAsm( str_STX + "_MUL16_FC", 3, false);
+	      addAsm( str_LDA + "#$" + toHex(twos_complement(tmp_int)), 2, false );
+	      addAsm( str_STA + "_MUL16_FB", 3, false);
+	      addAsm( str_LDA + OP2, 3, false );
+	      addAsm( str_STA + "_MUL16_FD", 3, false);
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_BCC + "!+", 2, false ); // it's positive
+	      addAsm( str_DEC + "_MUL16_FE", 3, false );	      
+	      addAsm( "!:", 0, true );
+	      mul16_is_needed = true;
+	      addAsm( str_JSR + "MUL16", 3, false );
+	      addAsm( str_LDA + "MUL16R", 3, false );
+	      addAsm( str_LDX + "MUL16R +1", 3, false );
+	    }
+	}
+      else if( op==string( "/" ))
+	{
+	}
+      else if( op==string( "**" ))
+	{
+	}
+      else
+	{
+	}
+      strcpy($$.name, "_XA" );
+    }
   else if(isIntIMM($1.name) && isWordID($4.name) )
     {
       addComment( "IntIMM math WordID: TOC" );
@@ -17560,7 +17606,7 @@ arithmetic[MATHOP] expression[OP2]
 	{
 	  // TODO: Preserve $02/$03
 	  addCompilerMessage( "UintIMM * IntID may produce unexpected results.", 1 );
-	  addComment( "UIntIMM * IntID --> A" );	  
+	  addComment( "UintIMM * IntID --> A" );	  
 	  int tmp_int = atoi(stripFirst($1.name).c_str());
 	  if( tmp_int < 0 )
 	    {
@@ -17844,7 +17890,7 @@ arithmetic[MATHOP] expression[OP2]
 
   else if( isUintIMM($1.name) && isUintIMM($4.name) )
     {
-      addComment( "UintIMM math UintIMM: TOC" );      
+      addComment( "UintIMM math UintIMM: TOC (compile-time operation)" );      
       int tmp_int1 = atoi( stripFirst($1.name).c_str() );
       int tmp_int2 = atoi( stripFirst($4.name).c_str() );
       int tmp_int3;
@@ -18271,8 +18317,6 @@ arithmetic[MATHOP] expression[OP2]
 	{
 	  addCompilerMessage(string( "`") + op + string("' is not yet implemented for WordID v. UintID or WordID v. IntID."), 3 );
 	}
-
-
     }
   else if( isWordID($1.name) && (isIntIMM($4.name)||isUintIMM($4.name)) )
     {
@@ -21115,7 +21159,7 @@ arithmetic[MATHOP] expression[OP2]
 	}
       strcpy( $$.name, "_A" );
     }
-  else if( (isUintIMM($1.name)||isIntIMM($1.name))  && isA($3.name) )
+  else if( (isUintIMM($1.name)||isIntIMM($1.name)) && isA($3.name) )
     {
       addComment( "UIntIMM | A" );
 
@@ -21251,7 +21295,7 @@ arithmetic[MATHOP] expression[OP2]
 
 
     }
-  else if( (isUintIMM($1.name)||isIntIMM($1.name))  && isA($3.name) )
+  else if( (isUintIMM($1.name)||isIntIMM($1.name)) && isA($3.name) )
     {
       addComment( "(U)intIMM & A" );
 
@@ -22987,7 +23031,6 @@ value: FLOAT_NUM
 }
 | STR
 {
-
   addString( string("STRLBL") + itos(string_number), string($1.name).substr(1,string($1.name).length()-2), 0   );
 
   addAsm( str_LDA + "#<STRLBL" + itos(string_number), 2, false );
