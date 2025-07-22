@@ -2797,7 +2797,7 @@
 
 //%parse-param { FILE* fp }
 %token VOID 
-%token <nd_obj> CHAR tFCLOSE tFOPEN tFCLRCHN tFCHROUT tFCHRIN tFREADST tFCHKOUT tFCHKIN tSETLFS tSETNAM tSAVE tLOAD tIMPORT tSPRPTR tPUSH tPOP tCOMMENT tDATA tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tSIN tCOS tTAN tMOB tSIDIRQ tSIDOFF tSTRTOFLOAT tSTRTOWORD tTOFLOAT tINTTOWORD tTOUINT tTOWORD tTOBIT tDEC tINC tROL tROR tLSR tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJUMP tSETSCR tJSR tIRQ tROMOUT tROMIN tLDA tASL tSPRITESET  tSPRITEOFF tSPRITETOGGLE tRND tXXX tINLINE tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tPEEK tPOKE NEWLINE CHARACTER tPRINTS PRINTFF SCANFF INT FLOAT   WHILE FOR IF ELSE   TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE EXPONENT tSQRT UNARY INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL tSCREEN tNULL tMEMCPY tSEED tNEEDS
+%token <nd_obj> CHAR tFCLOSE tFOPEN tFCLRCHN tFCHROUT tFCHRIN tFREADST tFCHKOUT tFCHKIN tSETLFS tSETNAM tSAVE tLOAD tIMPORT tSPRPTR tPUSH tPOP tCOMMENT tDATA tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tLN tSIN tCOS tTAN tMOB tSIDIRQ tSIDOFF tSTRTOFLOAT tSTRTOWORD tTOFLOAT tINTTOWORD tTOUINT tTOWORD tTOBIT tDEC tINC tROL tROR tLSR tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJUMP tSETSCR tJSR tIRQ tROMOUT tROMIN tLDA tASL tSPRITESET  tSPRITEOFF tSPRITETOGGLE tRND tXXX tINLINE tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tPEEK tPOKE NEWLINE CHARACTER tPRINTS PRINTFF SCANFF INT FLOAT WHILE FOR IF ELSE TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE EXPONENT tSQRT UNARY INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL tSCREEN tNULL tMEMCPY tSEED tNEEDS tPI tE
 %type <nd_obj> headers main body return function datatype statement arithmetic relop program else 
    %type <nd_obj2> init value expression /*charlist*/ numberlist parameterlist argumentlist
       %type <nd_obj3> condition
@@ -21882,25 +21882,63 @@ arithmetic[MATHOP] expression[OP2]
 };
 | tbwNOT expression
 {
-  addComment( "expression tbwNOT expression" );
+  addComment( "~ expression (bitwise not)" );
   if( isWordID($2.name) )
     {
-      addAsm( str_LDA + getNameOf(hexToDecimal($2.name))+"+1", 3, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($2.name))+" +1", 3, false );
       addAsm( str_EOR + "#$FF", 3, false );
       addAsm( str_TAX );
-      addAsm( str_LDA + getNameOf(hexToDecimal($2.name)), 3, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($2.name)), 3, false );
       addAsm( str_EOR + "#$FF", 2, false );
       strcpy( $$.name, "_XA" );
     }
-  else if( isUintID($2.name) )
+  else if( isIntID($2.name) )
     {
-      addAsm( str_LDA + getNameOf(hexToDecimal($2.name)), 3, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($2.name)), 3, false );
       addAsm( str_EOR + "#$FF", 2, false );
-      strcpy($$.name, "_A" );
+      addAsm( str_LDX + "#$FF", 2, false );
+      strcpy($$.name, "_XA" );
+    }
+  else if( isUintID($2.name) )
+    {      
+      addAsm( str_LDA + getNameOf(getAddressOf($2.name)), 3, false );
+      addAsm( str_LDX + "#$FF", 2, false );
+      addAsm( str_EOR + "#$FF", 2, false );
+      strcpy($$.name, "_XA" );
+    }
+  else if( isXA($2.name) )
+    {
+      addAsm( str_EOR + "#$FF", 2, false );
+      addAsm( str_TAY, 1, false );
+      addAsm( str_TXA, 1, false );
+      addAsm( str_EOR + "#$FF", 2, false );
+      addAsm( str_TAX, 1, false );
+      addAsm( str_TYA, 1, false );
+      strcpy($$.name, "_XA" );
+    }
+  else if( isA($2.name) )
+    {
+      addAsm( str_EOR + "#$FF", 2, false );
+      addAsm( str_LDX + "#$FF", 2, false );
+      strcpy($$.name, "_XA" );
+    }
+  else if( isWordIMM($2.name) )
+    {
+      int val = atoi(stripFirst($2.name).c_str());
+      addAsm( str_LDA + "#$" + toHex(get_word_L(val) ^ 255), 2, false  );
+      addAsm( str_LDX + "#$" + toHex(get_word_H(val) ^ 255), 2, false  );
+      strcpy($$.name, "_XA" );
+    }
+  else if( isIntIMM($2.name) || isUintIMM($2.name) )
+    {
+      int addr = atoi(stripFirst($2.name).c_str());
+      addAsm( str_LDA + "#$" + toHex(get_word_L(addr) ^ 255), 2, false  );
+      addAsm( str_LDX + "#$FF", 2, false  );
+      strcpy($$.name, "_XA" );
     }
   else
     {
-      addCompilerMessage( "Bitwise Not (~) not implemented for type yet.", 3 );
+      addCompilerMessage( "Bitwise Not (~): Unknown type.", 3 );
     }
 };
 | expression tbwOR expression
@@ -22961,6 +22999,128 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
       addCompilerMessage( "Type not implemented for twos(exp)", 3 );
     }
 };
+| tE
+{
+  //inlineFloat("2.71828183");
+  strcpy($$.name, "f2.71828183" );
+};
+| tPI
+{
+  //inlineFloat("3.14159265");
+  strcpy($$.name, "f3.14159265" );
+};
+| tLN '(' expression ')'
+{
+  if( isFloatIMM($3.name) )
+    {
+      addCompilerMessage( "ln(FloatIMM): compile-time operation", 0 );
+
+      if( atof(stripFirst($3.name).c_str()) <= 0 )
+	{
+	  addCompilerMessage( "Natural Log Domain Error", 3 );
+	}
+      float tmp_v = log(atof(stripFirst($3.name).c_str()));
+     
+      inlineFloat( string( "f" ) + to_string(tmp_v).c_str());
+      strcpy($$.name, "_FAC");
+    }
+  else if( isFAC($3.name) )
+    {
+      addComment( "ln( FAC )" );
+      addAsm( str_JSR + "$B9EA" + commentmarker + "ln(FAC) -> FAC", 3, false );
+      strcpy($$.name, "_FAC");
+    }
+  else if( isFloatID($3.name) )
+    {
+      addComment( "ln( FloatID )" );
+      addAsm( str_LDA + "#<" + getNameOf(getAddressOf($3.name)), 2, false  );
+      addAsm( str_LDY + "#>" + getNameOf(getAddressOf($3.name)), 2, false  );
+      addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false ); // FP ->FAC
+      addAsm( str_JSR + "$B9EA" + commentmarker + "ln(FAC) -> FAC", 3, false );
+      strcpy($$.name, "_FAC");
+    }
+  else if( isWordID($3.name) )
+    {
+      addComment( "ln( WordID )" );
+      addComment( "https://c64os.com/post/floatingpointmath" );
+      addAsm( str_LDY + getNameOf(getAddressOf($3.name)), 3, false  );
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)) + " +1", 3, false  );
+      addAsm( str_STY + "$63", 2, false );
+      addAsm( str_STA + "$62", 2, false );
+      addAsm( str_LDX + "#$90", 2, false );
+      addAsm( str_SEC, 1, false );
+      addAsm( str_JSR + "$BC49", 3, false );
+      addAsm( str_JSR + "$B9EA" + commentmarker + "ln(FAC) -> FAC", 3, false );
+      strcpy($$.name, "_FAC");
+    }
+  else if( isIntID($3.name) )
+    {
+      addComment( "ln( IntID )" );
+      addAsm( str_LDX + "#$00", 2, false );
+      addAsm( str_LDY + getNameOf(getAddressOf($3.name)), 3, false ); 
+      addAsm( str_TYA, 1, false );
+      addAsm( str_ASL, 1, false );
+      addAsm( str_BCC + "!pos+", 2, false );
+      // result is negative
+      addAsm( str_LDX + "#$FF", 2, false );
+      addAsm( "!pos:", 0, true );
+      addAsm( str_STY + "$63", 2, false );
+      addAsm( str_STX + "$62", 2, false );
+      addAsm( str_LDX + "#$90", 2, false );
+      addAsm( str_JSR + "$BC44" + commentmarker + "signed word16 -> FAC", 3, false );
+      addAsm( str_JSR + "$B9EA" + commentmarker + "ln(FAC) -> FAC", 3, false );
+      strcpy($$.name, "_FAC");
+    }
+  else if( isUintID($3.name) )
+    {
+      addComment( "ln(UintID)" );
+      addAsm( str_LDY + getNameOf(getAddressOf($3.name)), 3, false ); 
+      addAsm( str_LDA + "#$00", 2, false );
+      addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
+      addAsm( str_JSR + "$B9EA" + commentmarker + "ln(FAC) -> FAC", 3, false );
+      strcpy($$.name, "_FAC");
+    }
+  else if( isXA($3.name) )
+    {
+      addComment( "ln( XA )" );
+      addAsm( str_TAY, 1, false );
+      addAsm( str_TXA, 1, false );
+      addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
+      addAsm( str_JSR + "$B9EA" + commentmarker + "ln(FAC) -> FAC", 3, false );
+      strcpy($$.name, "_FAC");
+    }
+  else if( isA($3.name) )
+    {
+      addComment( "ln( A )" );
+      addAsm( str_TAY, 1, false );
+      addAsm( str_LDA + "#$00", 2, false );
+      addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
+      addAsm( str_JSR + "$B9EA" + commentmarker + "ln(FAC) -> FAC", 3, false );
+      strcpy($$.name, "_FAC");
+    }
+  else if( isUintIMM($3.name) )
+    {
+      addCompilerMessage( "ln(UintIMM): compile-time operation", 0 );
+      float tmp_v = log(atof(stripFirst($3.name).c_str()));
+      inlineFloat(string("f") + to_string(tmp_v).c_str());
+      strcpy($$.name, "_FAC");
+    }
+  else if( isIntIMM($3.name) )
+    {
+      addCompilerMessage( "Natural Log: Domain Error", 3 );
+    }
+  else if( isWordIMM($3.name) )
+    {
+      addCompilerMessage( "ln(WordIMM): compile-time operation", 0 );
+      float tmp_v = log(atof(stripFirst($3.name).c_str()));
+      inlineFloat(string("f") + to_string(tmp_v).c_str());
+      strcpy($$.name, "_FAC");
+    }
+  else
+    {
+      addCompilerMessage( "trying to calculate natural log of unknown type", 3);
+    }
+}
 | tSIN '(' expression ')'
 {
   if( isFloatIMM($3.name) )
