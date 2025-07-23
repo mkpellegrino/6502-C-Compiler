@@ -11857,6 +11857,7 @@ arithmetic[MATHOP] expression[OP2]
 	}      
       else if( op == string( "/" ) )
 	{
+	  // TODO: REDO THIS MESS!
 	  div16_is_needed = true;
 	  addComment( "2025 06 22 - This could _certainly_ be reworked as well.  The idea is that it compares the signs of the 2 Operands and if they are the same, it makes the result of unsigned division positive, otherwise negative." );
 	  addComment( "OPTIMIZE" );
@@ -11927,7 +11928,9 @@ arithmetic[MATHOP] expression[OP2]
 	}
       else if( op == string( "**" ) )
 	{
-	  addCompilerMessage( "A ** IntIMM: nyi", 3 );
+	  addComment( "A ** IntIMM" );
+	  addAsm( str_LDA + "#$00", 2, false );
+	  strcpy( $$.name, "_A" );
 	}
       else
 	{
@@ -11956,24 +11959,38 @@ arithmetic[MATHOP] expression[OP2]
 	}
       else if( op == string("*"))
 	{
+	  // TODO: This should be mul16
 	  addComment( "A * UintID --> A" );
-	  addAsm( str_TAX );
 	  umul_is_needed = true;
-	  addAsm( str_LDA + "$02", 2, false );
-	  addAsm( str_PHA );
-	  addAsm( str_LDA + "$03", 2, false );
-	  addAsm( str_PHA );
-	  
-	  addAsm( str_STX + "$02", 2, false );
+	  if( !arg_unsafe_math )
+	    {
+	      addAsm( str_TAX );
+	      addAsm( str_LDA + "$02", 2, false );
+	      addAsm( str_PHA );
+	      addAsm( str_LDA + "$03", 2, false );
+	      addAsm( str_PHA );
+	      addAsm( str_STX + "$02", 2, false );
+	    }
+	  else
+	    {
+	      addAsm( str_STA + "$02", 2, false );
+	    }
 	  addAsm( str_LDA + O2, sizeOP2A, false );
 	  addAsm( str_STA + "$03", 2, false );
 	  addAsm( str_JSR + "UMUL", 3, false );
-	  addAsm( str_LDX + "$03", 2, false );
-	  addAsm( str_PLA );
-	  addAsm( str_STA + "$03", 2, false );
-	  addAsm( str_PLA );
-	  addAsm( str_STA + "$02", 2, false );
-	  addAsm( str_TXA );
+	  if( !arg_unsafe_math )
+	    {
+	      addAsm( str_LDX + "$03", 2, false );  
+	      addAsm( str_PLA );
+	      addAsm( str_STA + "$03", 2, false );
+	      addAsm( str_PLA );
+	      addAsm( str_STA + "$02", 2, false );
+	      addAsm( str_TXA );
+	    }
+	  else
+	    {
+	      addAsm( str_LDA + "$03", 2, false );  
+	    }
 	  strcpy($$.name, "_A" );
 	}
       else if( op == string("/") )
@@ -12081,11 +12098,10 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_PLA, 1, false );
 	  strcpy($$.name, "_XA" );
-
 	}
       else
 	{
-	  addCompilerMessage("A ** UintIMM: Unknown operation", 3);
+	  addCompilerMessage("A math UintIMM: Unknown operation", 3);
 	}
     }
 
@@ -14932,10 +14948,10 @@ arithmetic[MATHOP] expression[OP2]
     {
       // TODO: These should return XA
       addComment( "IntID math IntID: TOC" );
-      addAsm( str_LDA + O1, sizeOP1A, false);
       if( op == string("+"))
 	{
 	  addComment( "IntID + IntID --> A" );
+	  addAsm( str_LDA + O1, sizeOP1A, false);
 	  addAsm( str_CLC, 1, false );
 	  addAsm( str_ADC + O2, sizeOP2A, false );
 	  strcpy($$.name, "_A" );
@@ -14943,6 +14959,7 @@ arithmetic[MATHOP] expression[OP2]
       else if( op == string("-"))
 	{
 	  addComment( "IntID - IntID --> A" );
+	  addAsm( str_LDA + O1, sizeOP1A, false);
 	  addAsm( str_SEC );
 	  addAsm( str_SBC + O2, sizeOP2A, false );
 	  strcpy($$.name, "_A" );
@@ -14955,36 +14972,113 @@ arithmetic[MATHOP] expression[OP2]
 	  // then set sign accordingly
 	  addComment( "IntID * IntID --> A" );
 	  umul_is_needed = true;
-	  addAsm( str_TAY );
-	  addAsm( str_LDA + "$02", 2, false );
-	  addAsm( str_PHA );
-	  addAsm( str_LDA + "$03", 2, false );
-	  addAsm( str_PHA );
+	  addAsm( str_LDA + O1, sizeOP1A, false);
 
-	  addAsm( str_STY + "$02", 2, false );
+	  if( !arg_unsafe_math )
+	    {
+	      addAsm( str_TAY );
+	      addAsm( str_LDA + "$02", 2, false );
+	      addAsm( str_PHA );
+	      addAsm( str_LDA + "$03", 2, false );
+	      addAsm( str_PHA );
+	      addAsm( str_STY + "$02", 2, false );
+	    }
+	  else
+	    {
+	      addAsm( str_STA + "$02", 2, false );
+	    }
 	  addAsm( str_LDA + O2, sizeOP2A, false);
 	  addAsm( str_STA + "$03", 2, false );
 	  addAsm( str_JSR + "UMUL", 3, false );
-	  addAsm( str_LDY + "$03", 2, false );
-	  addAsm( str_PLA );
-	  addAsm( str_STA + "$03", 2, false );
-	  addAsm( str_PLA );
-	  addAsm( str_STA + "$02", 2, false );
-	  addAsm( str_TYA );
+
+	  if( !arg_unsafe_math )
+	    {	      
+	      addAsm( str_LDY + "$03", 2, false );
+	      addAsm( str_PLA );
+	      addAsm( str_STA + "$03", 2, false );
+	      addAsm( str_PLA );
+	      addAsm( str_STA + "$02", 2, false );
+	      addAsm( str_TYA );
+	    }
+	  else
+	    {
+	      addAsm( str_LDY + "$03", 2, false );
+	    }
 	  strcpy($$.name, "_A" );
 	}
       else if( op == string("/") )
 	{
-	  addCompilerMessage( "IntID / IntID --> A nyi", 3 );
-	  // check the signs first.
-	  // if different... result is negaitive
-	  // make them positive..  divide..
-	  // then set sign accordingly
+	  div16_is_needed = true;
+	  addCompilerMessage( "IntID / IntID --> A", 0 );
 
+	  //if( !arg_unsafe_math )
+	  //  {
+	  //    addComment( "preserve $02/$03" );
+	  //    addAsm( str_LDA + "$02", 2, false );
+	  //    addAsm( str_PHA );
+	  //    addAsm( str_LDA + "$03", 2, false );
+	  //    addAsm( str_PHA );
+	  //  } 
+
+	  addComment( "Get the sign of the quotient" );
+	  addAsm( str_LDA + O1, sizeOP1A, false);
+	  addAsm( str_EOR + O2, sizeOP1A, false);
+	  addAsm( str_PHP, 1, false );
+
+	  addComment( "make both divisor and dividend positive" );
+	  addAsm( str_LDA + O1, sizeOP1A, false);
+	  addAsm( str_BPL + "!+", 2, false );
+	  addAsm( str_EOR + "#$FF", 2, false );
+	  addAsm( str_CLC, 1, false );
+	  addAsm( str_ADC + "#$01", 2, false );
+	  addAsm( "!:\t" + str_STA + "_DIV16_FB", 3, true );
+
+	  addAsm( str_LDA + O2, sizeOP2A, false);
+	  addAsm( str_BPL + "!+", 2, false );
+	  addAsm( str_EOR + "#$FF", 2, false );
+	  addAsm( str_CLC, 1, false );
+	  addAsm( str_ADC + "#$01", 2, false );
+	  addAsm( "!:\t" + str_STA + "_DIV16_FD", 3, true );
+
+	  addComment( "perform 16 bit division" );
+	  addAsm( str_LDA + "#$00", 2, false ); 
+	  addAsm( str_STA + "_DIV16_FC", 3, false ); 
+	  addAsm( str_STA + "_DIV16_FE", 3, false );
+
+	  addAsm( str_JSR + "DIV16", 3, false );
+
+	  addComment( "If Result is Negative - two's complement it" );
+	  addAsm( str_PLP, 1, false );
+	  addAsm( str_BPL + "!+", 2, false );
+
+	  addAsm( str_LDA + "_DIV16_FB", 3, false );
+	  addAsm( str_EOR + "#$FF", 2, false );
+	  addAsm( str_CLC, 1, false );
+	  addAsm( str_ADC + "#$01", 2, false );
+	  addAsm( str_STA + "_DIV16_FB", 3, false );
+	  addAsm( str_LDA + "_DIV16_FC", 3, false );
+	  addAsm( str_EOR + "#$FF", 2, false );
+	  addAsm( str_ADC + "#$00", 2, false );
+	  addAsm( str_STA + "_DIV16_FC", 3, false );
+	  addAsm( "!:", 0, true );
+	  //if( !arg_unsafe_math )
+	  //  {
+	  //    addComment( "restore $02/$03" );
+	  //    addAsm( str_PLA );
+	  //    addAsm( str_STA + "$03", 2, false );
+	  //    addAsm( str_PLA );
+	  //    addAsm( str_STA + "$02", 2, false );
+	  //  }
+
+	  addAsm( str_LDA + "_DIV16_FB", 3, false );
+	  addAsm( str_LDX + "_DIV16_FC" + commentmarker + "OPTIMIZE", 3, false );
+	  
+	  strcpy($$.name, "_XA" );
 	}
       else if( op == string("**") )
 	{
 	  addCompilerMessage( "IntID ** IntID --> XA nyi", 3 );
+	  addAsm( str_LDA + O1, sizeOP1A, false);
 	}
       else
 	{
@@ -15110,11 +15204,11 @@ arithmetic[MATHOP] expression[OP2]
 	      addAsm( str_STA + "_DIV16_FB", 3, false );
 	      addAsm( str_LDA + "#$00", 2, false ); 
 	      addAsm( str_STA + "_DIV16_FC", 3, false );
+	      addAsm( str_STA + "_DIV16_FE", 3, false );
 	      
 	      addAsm( str_LDA + "#$" + toHex(op2), 2, false );
 	      addAsm( str_STA + "_DIV16_FD", 3, false );
-	      addAsm( str_LDA + "#$00", 2, false ); 
-	      addAsm( str_STA + "_DIV16_FE", 3, false );
+
 	      
 	      addAsm( str_JSR + "DIV16", 3, false );
 	      addAsm( str_LDA + "_DIV16_FB", 3, false );
