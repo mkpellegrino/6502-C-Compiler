@@ -7922,9 +7922,9 @@ statement: datatype ID init
 {
   if( isUintIMM( $4.name ) || isIntIMM( $4.name ) )
     {
-      addParserComment( "RULE: statement: datatype ID '[' (U)INTIMM ']'  <== ARRAY" );
       int length = atoi(stripFirst($4.name).c_str());
       if( length > 255 || length < 1 ) addCompilerMessage( "Array index out of range 1-255",3);
+      addComment( string( "Array of size: " ) + itos(length) );
       
       current_variable_type = getDataTypeValue( $1.name );
       for( int i = 0; i < length; i++ )
@@ -10043,11 +10043,16 @@ statement: datatype ID init
   string arg1 = string($3.name);
   string arg2 = string($6.name);
 
+  char* ag0 = $1.name;
+  char* ag1 = $3.name;
+  char* ag2 = $6.name;
+
   if( isA(arg1.c_str() ) && !isXA(arg2.c_str() ) )
     {
       // remove last instruction
       // it should be a "pha"
-      deletePreviousAsm(); // pha
+      // deletePreviousAsm(); // pha
+      addAsm( str_PLA, 1, false );
     }
 
   //addCompilerMessage( arg0 + "[" + getNameOf(hexToDecimal(stripFirst(arg1).c_str())) + "]=" + arg2, 0 ); 
@@ -10057,15 +10062,22 @@ statement: datatype ID init
   current_variable_base_address = getAddressOf(arg0.c_str());
 
   
-  if( isUintID( arg0.c_str() ) && (isUintID(arg1.c_str()) || isIntID(arg1.c_str())) && isA(arg2.c_str()) )
+  //if( isUintID( arg0.c_str() ) && (isUintID(arg1.c_str()) || isIntID(arg1.c_str())) && isA(arg2.c_str()) )
+  if( isUintID( arg0.c_str() ) && (isUintID(ag1) || isIntID(arg1.c_str())) && isA(arg2.c_str()) )
     {
-      addComment( "UintID_array[(U)IntID] = A" );
-      
+      addComment( "UintID_array[(U)IntID] = A" );      
       int addr_of_index = getAddressOf(arg1.c_str());
-      //addComment( getNameOf( addr_of_index ) );
       addAsm( str_LDX + getNameOf( addr_of_index ), 3, false );
       addAsm( str_STA + getNameOf( current_variable_base_address ) + ",X", 3, false );
     }
+  else if( isIntID(ag0) && isUintIMM(ag1) && isXA(ag2))
+    {
+      int tmp_index = atoi(stripFirst(ag1).c_str());
+
+      addComment( "IntID_array[UintID] = XA" );      
+      //addAsm( str_LDX + toHex( tmp_index ), 3, false );
+      addAsm( str_STA + getNameOf(getAddressOf(arg0.c_str())) + "+" + stripFirst(arg1.c_str()), 3, false );
+    }      
   else if( isIntID(arg0.c_str()) && isUintIMM(arg1.c_str()) && isA( arg2.c_str() ))
     {
       addComment( "IntID_array[UIntIMM] = A" );
@@ -14966,10 +14978,6 @@ arithmetic[MATHOP] expression[OP2]
 	}
       else if( op == string("*"))
 	{
-	  // check the signs first.
-	  // if different... result is negative
-	  // make them positive..  multiply..
-	  // then set sign accordingly
 	  addComment( "IntID * IntID --> A" );
 	  umul_is_needed = true;
 	  addAsm( str_LDA + O1, sizeOP1A, false);
@@ -15088,10 +15096,11 @@ arithmetic[MATHOP] expression[OP2]
   else if( isIntID($1.name) && isIntIMM($4.name) )
     {
       addComment( "IntID math IntIMM: TOC" );
-      addAsm( str_LDA + getNameOf(getAddressOf($1.name)), 3, false); // 
+      
       if( op == string("+"))
 	{
 	  addComment( "IntID + IntIMM" );
+	  addAsm( str_LDA + getNameOf(getAddressOf($1.name)), 3, false);
 	  int tmp_int = atoi(stripFirst($4.name).c_str());
 	  if( tmp_int < 0 )
 	    {
@@ -15099,21 +15108,26 @@ arithmetic[MATHOP] expression[OP2]
 	    }
 	  addAsm( str_CLC, 1, false );
 	  addAsm( str_ADC + "#$" + toHex(tmp_int), 2, false );
+	  strcpy($$.name, "_A" );
 	}
       else if( op == string("-"))
 	{
 	  addComment( "IntID - IntIMM" );
+	  addAsm( str_LDA + getNameOf(getAddressOf($1.name)), 3, false);
 	  int tmp_int = atoi(stripFirst($4.name).c_str());
 	  if( tmp_int < 0 )
 	    {
 	      tmp_int = twos_complement( tmp_int );
 	    }
 	  addAsm( str_SEC );
-	  addAsm( str_SBC + "#$" +  toHex(tmp_int), 2, false );
+	  addAsm( str_SBC + "#$" + toHex(tmp_int), 2, false );
+	  strcpy($$.name, "_A" );
 	}
       else if( op == string("*"))
 	{
 	  addComment( "IntID * IntIMM" );
+	  addAsm( str_LDA + getNameOf(getAddressOf($1.name)), 3, false);
+	  
 	  addCompilerMessage( "IntID * IntIMM: nyi (try re-ordering)", 3 );
 	  umul_is_needed = true;
 	  int tmp_int = atoi(stripFirst($1.name).c_str());
@@ -15126,44 +15140,48 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_STA + "$03", 2, false );
 	  addAsm( str_JSR + "UMUL", 3, false );
 	  addAsm( str_LDA + "$03", 2, false );
+	  strcpy($$.name, "_A" );
 	}
       else if( op == string("/") )
 	{
-	  // TODO: Fix this... OP2 will NEVER be positive
-	  // so the "else-if's" are not going to trigger.
 	  addComment( "IntID / IntIMM" );
+	  addAsm( str_LDA + getNameOf(getAddressOf($1.name)), 3, false);
+	  addAsm( str_PHP, 1, false );  // N will be set in SR if negative
+	  addAsm( str_BPL + "!+", 2, false );
+	  addAsm( str_EOR + "#$FF", 2, false );
+	  addAsm( str_CLC, 1, false );
+	  addAsm( str_ADC + "#$01", 2, false );
+	  addAsm( "!:", 0, true );
+	  // take the negative sign off of OP2
+	  int op2 = atoi(stripFirst(stripFirst($4.name).c_str()).c_str() );
 
-	  int addr_op1 = hexToDecimal($1.name);
-	  int op2 = atoi(stripFirst($4.name).c_str());
+	  addComment( string( "OP2: " ) + itos( op2 ) );
 	  if( op2 == 0 )
 	    {
+	      addAsm( str_BRK, 1, false );
 	      addCompilerMessage( "division by zero error", 3 );
 	    }
 	  else if( op2 == 1 )
 	    {
-	      //addAsm( str_LDA + getNameOf(getAddressOf($1.name)), 3, false );
+	      addComment( "Divion by 1... do nothing!" );
 	    }
 	  else if( op2 == 2 )
 	    {
-	      //addAsm( str_LDA + getNameOf(getAddressOf($1.name)), 3, false );
 	      addAsm( str_LSR );
 	    }
 	  else if( op2 == 4 )
 	    {
-	      //addAsm( str_LDA + getNameOf(getAddressOf($1.name)), 3, false );
 	      addAsm( str_LSR );
 	      addAsm( str_LSR );
 	    }
 	  else if( op2 == 8 )
 	    {
-	      //addAsm( str_LDA + getNameOf(getAddressOf($1.name)), 3, false );
 	      addAsm( str_LSR );
 	      addAsm( str_LSR );
 	      addAsm( str_LSR );
 	    }
 	  else if( op2 == 16 )
 	    {
-	      //addAsm( str_LDA + getNameOf(getAddressOf($1.name)), 3, false );
 	      addAsm( str_LSR );
 	      addAsm( str_LSR );
 	      addAsm( str_LSR );
@@ -15171,7 +15189,6 @@ arithmetic[MATHOP] expression[OP2]
 	    }
 	  else if( op2 == 32 )
 	    {
-	      //addAsm( str_LDA + getNameOf(getAddressOf($1.name)), 3, false );
 	      addAsm( str_LSR );
 	      addAsm( str_LSR );
 	      addAsm( str_LSR );
@@ -15180,7 +15197,6 @@ arithmetic[MATHOP] expression[OP2]
 	    }
 	  else if( op2 == 64 )
 	    {
-	      //addAsm( str_LDA + getNameOf(getAddressOf($1.name)), 3, false );
 	      addAsm( str_LSR );
 	      addAsm( str_LSR );
 	      addAsm( str_LSR );
@@ -15190,7 +15206,6 @@ arithmetic[MATHOP] expression[OP2]
 	    }
 	  else if( op2 == 128 )
 	    {
-	      //addAsm( str_LDA + getNameOf(getAddressOf($1.name)), 3, false );
 	      addAsm( str_AND + "#$80", 2, false );
 	      addAsm( str_CLC );
 	      addAsm( str_ROL );
@@ -15198,9 +15213,7 @@ arithmetic[MATHOP] expression[OP2]
 	    }
 	  else
 	    {
-	      div16_is_needed = true;
-	      
-	      //addAsm( str_LDA + getNameOf(getAddressOf($1.name)), 3, false );
+	      div16_is_needed = true;	      
 	      addAsm( str_STA + "_DIV16_FB", 3, false );
 	      addAsm( str_LDA + "#$00", 2, false ); 
 	      addAsm( str_STA + "_DIV16_FC", 3, false );
@@ -15213,16 +15226,27 @@ arithmetic[MATHOP] expression[OP2]
 	      addAsm( str_JSR + "DIV16", 3, false );
 	      addAsm( str_LDA + "_DIV16_FB", 3, false );
 	    }
+	  // now fix the sign
+	  addAsm( str_LDX + "#$00", 3, false );
+	  addAsm( str_PLP, 1, false );
+	  addAsm( str_BMI + "!+", 2, false );	  
+	  addAsm( str_EOR + "#$FF", 2, false );
+	  addAsm( str_CLC, 1, false );
+	  addAsm( str_ADC + "#$01", 2, false );	  
+	  addAsm( str_LDX + "#$FF", 2, false );	  
+	  addAsm( "!:", 0, true );
+	  strcpy($$.name, "_XA" );
 	}
       else if( op == string("**") )
 	{
 	  addCompilerMessage( "IntID ** IntIMM: nyi", 3);
+	  addAsm( str_LDA + getNameOf(getAddressOf($1.name)), 3, false);
+	  strcpy($$.name, "_A" );
 	}
       else
 	{
 	  addCompilerMessage( "IntID math IntIMM: Unknown Operation", 3 );
 	}
-      strcpy($$.name, "_A" );
     }
   else if( isIntID($1.name) && isUintID($4.name) )
     {
@@ -15277,7 +15301,7 @@ arithmetic[MATHOP] expression[OP2]
 	}
       else if( op == string("-"))
 	{
-	  addComment( "IntID / UintIMM --> A" );
+	  addComment( "IntID - UintIMM --> A" );
 	  int tmp_int = atoi(stripFirst($4.name).c_str());
 	  addAsm( str_SEC );
 	  addAsm( str_SBC + "#$" + toHex(tmp_int), 2, false );
@@ -15298,9 +15322,21 @@ arithmetic[MATHOP] expression[OP2]
       else if( op == string("/") )
 	{
 	  int op2 = atoi(stripFirst($4.name).c_str());
-	  addComment( "IntID / UintIMM --> A" );
+	  if( op2 == 0 )
+	    {
+	      addCompilerMessage( "IntID / UintIMM: Division By Zero", 3 );
+	    }
+	  addComment( "IntID / UintIMM --> XA" );
+
 	  div16_is_needed = true;
 	  addAsm( str_LDA + O1, sizeOP1A, false );
+	  addAsm( str_PHP, 1, false );  // N will be set in SR if negative
+	  addAsm( str_BPL + "!+", 2, false );
+	  addAsm( str_EOR + "#$FF", 2, false );
+	  addAsm( str_CLC, 1, false );
+	  addAsm( str_ADC + "#$01", 2, false );
+	  addAsm( "!:", 0, true );
+
 	  addAsm( str_STA + "_DIV16_FB", 3, false );
 	  addAsm( str_LDA + "#$00", 2, false ); 
 	  addAsm( str_STA + "_DIV16_FC", 3, false );
@@ -15312,7 +15348,17 @@ arithmetic[MATHOP] expression[OP2]
 
 	  addAsm( str_JSR + "DIV16", 3, false );
 	  addAsm( str_LDA + "_DIV16_FB", 3, false );
-	  strcpy($$.name, "_A" );
+
+	  // now fix the sign
+	  addAsm( str_LDX + "#$00", 3, false );
+	  addAsm( str_PLP, 1, false );
+	  addAsm( str_BMI + "!+", 2, false );	  
+	  addAsm( str_EOR + "#$FF", 2, false );
+	  addAsm( str_CLC, 1, false );
+	  addAsm( str_ADC + "#$01", 2, false );	  
+	  addAsm( str_LDX + "#$FF", 2, false );	  
+	  addAsm( "!:", 0, true );
+	  strcpy($$.name, "_XA" );
 	}
       else
 	{
