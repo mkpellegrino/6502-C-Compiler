@@ -15085,8 +15085,33 @@ arithmetic[MATHOP] expression[OP2]
 	}
       else if( op == string("**") )
 	{
-	  addCompilerMessage( "IntID ** IntID --> XA nyi", 3 );
-	  addAsm( str_LDA + O1, sizeOP1A, false);
+	  mul16_is_needed = true;
+	  pow16_is_needed = true;
+	  addComment( "IntID ** IntID --> XA" );
+	  
+	  addAsm( str_LDA + O2, 3, false );
+	  addAsm( str_BPL + "!+", 2, false );
+	  addAsm( str_LAX + "#$00", 2, false );
+	  addAsm( str_JMP + "!++++", 3, false );
+	  addAsm( "!:\t" + str_LDA + "#$00", 2, true );
+	  addAsm( str_STA + "!++", 3, false );
+	  addAsm( str_LDA + O1, 3, false );
+	  addAsm( str_BPL + "!+", 2, false );
+	  addAsm( str_DEC + "!++", 3, false );
+	  addAsm( "!:\t" + str_PHA, 1, true );
+	  addAsm( str_LDA + "#$00", 2, false );
+	  addAsm( str_BYTE + "$A9" + commentmarker + "<-- LDA Imm", 1, false );
+	  addAsm( "!:\t" + str_BYTE + "$00", 1, true );
+	  addAsm( str_PHA, 1, false );
+	  addAsm( str_LDA + O2, 3, false );	  
+	  addAsm( str_PHA, 1, false );
+	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_PLA, 1, false );
+	  addAsm( str_TAX, 1, false );
+	  addAsm( str_PLA, 1, false );
+	  addAsm( "!:", 0, true );
+	  
+	  strcpy($$.name, "_XA" );
 	}
       else
 	{
@@ -15279,7 +15304,26 @@ arithmetic[MATHOP] expression[OP2]
 	}
       else if( op == string( "**" ) )
 	{
-	  addCompilerMessage( "IntID ** UintID: nyi", 3 );
+	  addCompilerMessage( "IntID ** UintID: testing", 1 );
+	  mul16_is_needed = true;
+	  pow16_is_needed = true;
+	  addAsm( str_LDA + "#$00", 2, true );
+	  addAsm( str_STA + "!++", 3, false );
+	  addAsm( str_LDA + O1, 3, false );
+	  addAsm( str_BPL + "!+", 2, false );
+	  addAsm( str_DEC + "!++", 3, false );
+	  addAsm( "!:\t" + str_PHA, 1, true );
+	  addAsm( str_LDA + "#$00", 2, false );
+	  addAsm( str_BYTE + "$A9" + commentmarker + "<-- LDA Imm", 1, false );
+	  addAsm( "!:\t" + str_BYTE + "$00", 1, true );
+	  addAsm( str_PHA, 1, false );
+	  addAsm( str_LDA + O2, 3, false );	  
+	  addAsm( str_PHA, 1, false );
+	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_PLA, 1, false );
+	  addAsm( str_TAX, 1, false );
+	  addAsm( str_PLA, 1, false );
+	  strcpy($$.name, "_XA" );
 	}
       else
 	{
@@ -15762,6 +15806,8 @@ arithmetic[MATHOP] expression[OP2]
 	  int op1 = atoi(stripFirst($1.name).c_str());
 	  op1 = -1 * op1;
 
+	  // TODO: this could be done faster like
+	  // IntID / UintIMM
 	  //addAsm( str_LDA + O2, 3, false );
 	  addAsm( str_ROR, 1, false );
 	  addAsm( str_PHP, 1, false );
