@@ -21107,13 +21107,27 @@ arithmetic[MATHOP] expression[OP2]
       addComment( "XA math IntID: TOC" );
       if( op == string( "+" ) )
 	{	  
-	  addCompilerMessage( "XA + IntID: nyi", 3 );
+	  addComment( "XA + IntID --> XA" );
+	  addAsm( str_PHA, 1, false );
+	  addAsm( str_LDA + "#$00", 2, false );
+	  addAsm( str_STA + "!++", 3, false );
+	  addAsm( str_LDA + O2, sizeOP2A, false );
+	  addAsm( str_BPL + "!+", 2, false );
+	  addAsm( str_DEC + "!++", 3, false );
+	  addAsm( "!:\t" + str_CLC );
+	  addAsm( str_PLA, 1, false );
+	  addAsm( str_ADC + O2, sizeOP2A, false );
+	  addAsm( str_TAY, 1, false );
+	  addAsm( str_TXA, 1, false );	  
+	  addAsm( str_BYTE + "$69" + commentmarker + "<-- ADC Immediate", 1, false );
+	  addAsm( "!:\t" + str_BYTE + "$00", 1, true ); // A
+	  addAsm( str_TAX, 1, false );
+	  addAsm( str_TYA, 1, false );
+	  strcpy($$.name, "_XA");
 	}
       else if( op == string( "-" ) )
 	{
 	  addComment( "XA - IntID --> XA" );
-	  addCompilerMessage( "XA - IntID: working on it", 1 );
-	  // figure out sign first
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_LDA + "#$00", 2, false );
 	  addAsm( str_STA + "!++", 3, false );
@@ -21124,12 +21138,9 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_SBC + O2, sizeOP2A, false );
 	  addAsm( str_TAY, 1, false );
-	  addAsm( str_TXA, 1, false );
-
-	  
+	  addAsm( str_TXA, 1, false );	  
 	  addAsm( str_BYTE + "$E9" + commentmarker + "<-- SBC Immediate", 1, false );
 	  addAsm( "!:\t" + str_BYTE + "$00", 1, true ); // A
-	  //addAsm( str_SBC + "#$00", 2, false );
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_TYA, 1, false );
 	  strcpy($$.name, "_XA");
