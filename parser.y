@@ -21147,15 +21147,82 @@ arithmetic[MATHOP] expression[OP2]
 	}
       else if( op == string( "*" ) )
 	{
-	  addCompilerMessage( "XA * IntID: nyi", 3 );
+	  addComment( "XA * IntID --> XA" );
+	  mul16_is_needed = true;
+	  addAsm( str_STA + "_MUL16_FB", 3, false);
+	  addAsm( str_STX + "_MUL16_FC", 3, false);
+	  addAsm( str_LDA + "#$00", 2, false );
+	  addAsm( str_STA + "_MUL16_FE", 3, false);
+	  addAsm( str_LDA + O2, sizeOP2A, false );
+	  addAsm( str_BPL + "!+", 2, false );
+	  addAsm( str_DEC + "_MUL16_FE", 3, false);
+	  addAsm( "!:\t" + str_STA + "_MUL16_FD", 3, false);
+	  addAsm( str_JSR + "MUL16", 3, false );
+	  addAsm( str_LDA + "MUL16R", 3, false );
+	  addAsm( str_LDX + "MUL16R+1", 3, false );
+	  strcpy($$.name, "_XA" );
 	}
       else if( op == string( "/" ) )
 	{
-	  addCompilerMessage( "XA / IntID: nyi", 3 );
+	  addComment( "XA / IntID --> XA" );
+	  div16_is_needed = true;
+	  addAsm( str_STA + "_DIV16_FB", 3, false);
+	  addAsm( str_STX + "_DIV16_FC", 3, false);
+	  addAsm( str_LDA + "#$00", 2, false );
+	  addAsm( str_STA + "_DIV16_FE", 3, false);
+	  // the sign of A here is the sign of quotient
+	  addAsm( str_LDA + O2, sizeOP2A, false);
+	  addAsm( str_PHP, 1, false );
+	  addAsm( str_BPL + "!+", 2, false );	  
+	  addAsm( str_EOR + "#$FF", 2, false );
+	  addAsm( str_CLC, 1, false );
+	  addAsm( str_ADC + "#$01", 2, false );
+	  addAsm( "!:\t" + str_STA + "_DIV16_FD", 3, true );
+	  
+	  addAsm( str_JSR + "DIV16", 3, false );
+
+	  addAsm( str_PLP, 1, false );
+	  addAsm( str_BPL + "!+", 2, false );
+
+	  addAsm( str_LDA + "_DIV16_FB", 3, false );
+	  addAsm( str_EOR + "#$FF", 2, false );
+	  addAsm( str_CLC, 1, false );
+	  addAsm( str_ADC + "#$01", 2, false );
+	  addAsm( str_STA + "_DIV16_FB", 3, false );
+	  
+	  addAsm( str_LDA + "_DIV16_FC", 3, false );
+	  addAsm( str_EOR + "#$FF", 2, false );
+	  addAsm( str_ADC + "#$00", 2, false );
+	  addAsm( str_STA + "_DIV16_FC", 3, false );
+	  
+	  addAsm( "!:", 0, true );
+	  addAsm( str_LDA + "_DIV16_FB", 3, false );
+	  addAsm( str_LDX + "_DIV16_FC" + commentmarker + "OPTIMIZE", 3, false );
+	  
+	  strcpy($$.name, "_XA" );
 	}
       else if( op == string( "**" ) )
 	{
-	  addCompilerMessage( "XA ** IntID: nyi", 3 );
+	  addComment( "XA ** IntID --> XA" );
+	  mul16_is_needed = true;
+	  pow16_is_needed = true;
+	  addAsm( str_PHA, 1, false );
+	  addAsm( str_TXA, 1, false );
+	  addAsm( str_PHA, 1, false );
+	  addAsm( str_LDA + O2, sizeOP2A, false);
+	  addAsm( str_BPL + "!+", 2, false );
+	  
+	  addAsm( str_PLA, 1, false );
+	  addAsm( str_PLA, 1, false );
+	  addAsm( str_LAX + "#$00", 2, false );
+	  addAsm( str_JMP + "!++", 3, false );
+
+	  addAsm( "!:\t" + str_PHA, 1, false );
+	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_PLA, 1, false );
+	  addAsm( str_TAX, 1, false );
+	  addAsm( str_PLA, 1, false );
+	  addAsm( "!:", 0, true );
 	}
       else
 	{
@@ -23080,8 +23147,11 @@ arithmetic[MATHOP] expression[OP2]
       int base_address =  getAddressOf($3.name);
       int inst_size = 3;
       if( base_address < 256 ) inst_size = 2;
-      addAsm( str_LDA + getNameOf(base_address), inst_size, false  );
       addAsm( str_LDX + "#$00", 2, false );
+      addAsm( str_LDA + getNameOf(base_address), inst_size, false  );
+      addAsm( str_BPL + "!+", 2, false );
+      addAsm( str_DEX, 1, false );
+      addAsm( "!:", 0, true );
       strcpy($$.name, "_XA" );
     }
   else if( isUintID($3.name)  )
@@ -23118,6 +23188,22 @@ arithmetic[MATHOP] expression[OP2]
       addAsm( str_LDX + "#$" + toHex( get_word_H(tmp_int) ), 2, false);
       strcpy($$.name, "_XA" );
 
+    }
+  else if( isUintIMM($3.name) )
+    {
+      addComment("toword(UintIMM) --> XA" );
+      int tmp_int = atoi( stripFirst($3.name).c_str() );
+      addAsm( str_LDA + "#$" + toHex( get_word_L(tmp_int) ), 2, false);
+      addAsm( str_LDX + "#$00", 2, false);
+      strcpy($$.name, "_XA" );
+    }
+  else if( isIntIMM($3.name) )
+    {
+      addComment("toword(IntIMM) --> XA" );
+      int tmp_int = atoi( stripFirst($3.name).c_str() );
+      addAsm( str_LDA + "#$" + toHex( get_word_L(tmp_int) ), 2, false);
+      addAsm( str_LDX + "#$FF", 2, false);
+      strcpy($$.name, "_XA" );
     }
   else
     {
