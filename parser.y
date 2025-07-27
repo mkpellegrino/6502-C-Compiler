@@ -19618,7 +19618,7 @@ arithmetic[MATHOP] expression[OP2]
       else if( op == string( "-" ) )
 	{
 	  // Does this _acutally_ work?
-	  addComment( "WordID - UIntIMM --> XA" );      
+	  addComment( "WordID - UintIMM --> XA" );      
 	  int size_of_instruction = 3;
 	  if( a < 256 ) size_of_instruction = 2;
 	  addAsm( str_SEC );
@@ -21111,7 +21111,28 @@ arithmetic[MATHOP] expression[OP2]
 	}
       else if( op == string( "-" ) )
 	{
-	  addCompilerMessage( "XA - IntID: nyi", 3 );
+	  addComment( "XA - IntID --> XA" );
+	  addCompilerMessage( "XA - IntID: working on it", 1 );
+	  // figure out sign first
+	  addAsm( str_PHA, 1, false );
+	  addAsm( str_LDA + "#$00", 2, false );
+	  addAsm( str_STA + "!++", 3, false );
+	  addAsm( str_LDA + O2, sizeOP2A, false );
+	  addAsm( str_BPL + "!+", 2, false );
+	  addAsm( str_DEC + "!++", 3, false );
+	  addAsm( "!:\t" + str_SEC );
+	  addAsm( str_PLA, 1, false );
+	  addAsm( str_SBC + O2, sizeOP2A, false );
+	  addAsm( str_TAY, 1, false );
+	  addAsm( str_TXA, 1, false );
+
+	  
+	  addAsm( str_BYTE + "$E9" + commentmarker + "<-- SBC Immediate", 1, false );
+	  addAsm( "!:\t" + str_BYTE + "$00", 1, true ); // A
+	  //addAsm( str_SBC + "#$00", 2, false );
+	  addAsm( str_TAX, 1, false );
+	  addAsm( str_TYA, 1, false );
+	  strcpy($$.name, "_XA");
 	}
       else if( op == string( "*" ) )
 	{
@@ -21177,6 +21198,7 @@ arithmetic[MATHOP] expression[OP2]
       else if( op == string("-") )
 	{
 	  addComment( "XA - UintID --> XA" );
+	  addCompilerMessage( "XA - UintID: working on it", 1 );
 	  addAsm( str_SEC );
 	  addAsm( str_SBC + O2, sizeOP2A, false );
 	  strcpy($$.name, "_XA");
