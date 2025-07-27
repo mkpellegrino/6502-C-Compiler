@@ -21234,23 +21234,79 @@ arithmetic[MATHOP] expression[OP2]
       addComment( "XA math IntIMM: TOC" );
       if( op == string( "+" ) )
 	{	  
-	  addCompilerMessage( "XA + IntIMM: nyi", 3 );
+	  addComment( "XA + IntIMM --> XA" );
+	  addCompilerMessage( "XA + IntIMM: testing", 1 );
+	  int tmp_v = atoi(stripFirst($4.name).c_str());
+	  addAsm( str_CLC, 1, false );
+	  addAsm( str_ADC + "#$" + toHex(twos_complement(tmp_v)), 2, false );
+	  addAsm( str_TAY, 1, false );
+	  addAsm( str_TXA, 1, false );
+	  addAsm( str_ADC + "#$FF", 2, false );	  
+	  addAsm( str_TAX, 1, false );
+	  addAsm( str_TYA, 1, false );
+	  strcpy($$.name, "_XA");
 	}
       else if( op == string( "-" ) )
 	{
-	  addCompilerMessage( "XA - IntIMM: nyi", 3 );
+	  addComment( "XA - IntIMM --> XA" );
+	  int tmp_v = atoi(stripFirst($4.name).c_str());
+	  addAsm( str_SEC, 1, false );
+	  addAsm( str_SBC + "#$" + toHex(twos_complement(tmp_v)), 2, false );
+	  addAsm( str_TAY, 1, false );
+	  addAsm( str_TXA, 1, false );
+	  addAsm( str_SBC + "#$FF", 2, false );	  
+	  addAsm( str_TAX, 1, false );
+	  addAsm( str_TYA, 1, false );
+	  strcpy($$.name, "_XA");
 	}
       else if( op == string( "*" ) )
 	{
-	  addCompilerMessage( "XA * IntIMM: nyi", 3 );
+	  addComment( "XA * IntIMM --> XA" );
+	  mul16_is_needed = true;
+	  int tmp_v = atoi(stripFirst($4.name).c_str());
+	  addAsm( str_STA + "_MUL16_FB", 3, false);
+	  addAsm( str_STX + "_MUL16_FC", 3, false);
+	  addAsm( str_LDA + "#$" + toHex(twos_complement(tmp_v)), 2, false );
+	  addAsm( str_STA + "_MUL16_FD", 3, false);
+	  addAsm( str_LDA + "#$FF", 2, false );
+	  addAsm( str_STA + "_MUL16_FE", 3, false);
+	  
+	  addAsm( str_JSR + "MUL16", 3, false );
+	  addAsm( str_LDA + "MUL16R", 3, false );
+	  addAsm( str_LDX + "MUL16R+1", 3, false );
+	  strcpy($$.name, "_XA" );
 	}
       else if( op == string( "/" ) )
 	{
-	  addCompilerMessage( "XA / IntIMM: nyi", 3 );
+	  addComment( "XA / IntIMM --> XA" );
+	  div16_is_needed = true;
+	  int tmp_v = atoi(stripFirst(stripFirst($4.name).c_str()).c_str());
+	  addAsm( str_STA + "_DIV16_FB", 3, false);
+	  addAsm( str_STX + "_DIV16_FC", 3, false);
+	  addAsm( str_LDA + "#$" + toHex(tmp_v), 2, false );
+	  addAsm( str_STA + "_DIV16_FD", 3, false);
+	  addAsm( str_LDA + "#$00", 2, false );
+	  addAsm( str_STA + "_DIV16_FE", 3, false);
+	  
+	  addAsm( str_JSR + "DIV16", 3, false );
+
+	  addAsm( str_LDA + "_DIV16_FB", 3, false );
+	  addAsm( str_EOR + "#$FF", 2, false );
+	  addAsm( str_CLC, 1, false );
+	  addAsm( str_ADC + "#$01", 2, false );
+	  addAsm( str_PHA, 1, false );
+	  addAsm( str_LDA + "_DIV16_FC", 3, false );
+	  addAsm( str_EOR + "#$FF", 2, false );
+	  addAsm( str_ADC + "#$00", 2, false );
+	  addAsm( str_TAX, 1, false );
+	  addAsm( str_PLA, 1, false );
+	  strcpy($$.name, "_XA" );
 	}
       else if( op == string( "**" ) )
 	{
-	  addCompilerMessage( "XA ** IntIMM: nyi", 3 );
+	  addComment( "XA / IntIMM --> XA (always will be zero)" );
+	  addAsm( str_LAX + "#$00", 2, false );
+	  strcpy($$.name, "_XA" );
 	}
       else
 	{
