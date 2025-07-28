@@ -18869,20 +18869,20 @@ arithmetic[MATHOP] expression[OP2]
 	  int tmp_int = atoi(stripFirst($1.name).c_str());
 	  if( tmp_int == 0 )
 	    {
-	      addComment( "Special Case: 0 * UIntID -> XA" );
+	      addComment( "Special Case: 0 * UintID -> XA" );
 	      addAsm( str_LAX + "#$00", 2, false );
 	    }	  
 	  else if( tmp_int == 1 )
 	    {
 	      
-	      addComment( "Special Case: 1 * UIntID -> XA" );
+	      addComment( "Special Case: 1 * UintID -> XA" );
 	      addAsm( str_LDX + "#$00", 2, false );
 	      addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false );
 	    }	  
 	  else if( tmp_int == 2 )
 	    {
 	      // tested for 0 - 254
-	      addComment( "Special Case: 2 * UIntID -> XA" );
+	      addComment( "Special Case: 2 * UintID -> XA" );
 	      addAsm( str_LDX + "#$00", 2, false );
 	      addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false );
 	      addAsm( str_ROL, 1, false );
@@ -18892,7 +18892,7 @@ arithmetic[MATHOP] expression[OP2]
 	    }
 	  else if( tmp_int == 4 )
 	    {
-	      addComment( "Special Case: 4 * UIntID -> XA" );
+	      addComment( "Special Case: 4 * UintID -> XA" );
 	      addAsm( str_LDX + "#$00", 2, false );
 	      addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false );
 	      
@@ -18912,7 +18912,7 @@ arithmetic[MATHOP] expression[OP2]
 	    }
 	  else if( tmp_int == 8 )
 	    {
-	      addComment( "Special Case: 8 * UIntID -> XA" );
+	      addComment( "Special Case: 8 * UintID -> XA" );
 	      addAsm( str_LDX + "#$00", 2, false );
 	      addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false );
 	      addAsm( str_LDY + "#$03" + commentmarker + "(2)", 2, false );
@@ -18927,7 +18927,7 @@ arithmetic[MATHOP] expression[OP2]
 	    }
 	  else if( tmp_int == 16 )
 	    {
-	      addComment( "Special Case: 16 * UIntID -> XA" );
+	      addComment( "Special Case: 16 * UintID -> XA" );
 	      addAsm( str_LDX + "#$00", 2, false );
 	      addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false );
 	      addAsm( str_LDY + "#$04" + commentmarker + "(2)", 2, false );
@@ -18943,7 +18943,7 @@ arithmetic[MATHOP] expression[OP2]
 	  else if( tmp_int == 32 )
 	    {
 	      // TODO: I think this could be optimized for both size and speed
-	      addComment( "Special Case: 32 * UIntID -> XA" );
+	      addComment( "Special Case: 32 * UintID -> XA" );
 	      addAsm( str_LDX + "#$00" + commentmarker + "(2 clock cycles)", 2, false );
 	      addAsm( str_LDA + getNameOf(getAddressOf($4.name)) + commentmarker + "(4)", 3, false );
 	      addAsm( str_TAY + commentmarker + "(2)", 1, false );
@@ -18967,7 +18967,7 @@ arithmetic[MATHOP] expression[OP2]
 	  else if( tmp_int == 64 )
 	    {
 	      // TODO: I think this could be optimized for both size and speed
-	      addComment( "Special Case: 64 * UIntID -> XA" );
+	      addComment( "Special Case: 64 * UintID -> XA" );
 	      addAsm( str_LDX + "#$00" + commentmarker + "(2 clock cycles)", 2, false );
 	      addAsm( str_LDA + getNameOf(getAddressOf($4.name)) + commentmarker + "(4)", 3, false );
 	      addAsm( str_TAY + commentmarker + "(2)", 1, false );
@@ -18992,7 +18992,7 @@ arithmetic[MATHOP] expression[OP2]
 	    {
 	      // TODO: I think this could be optimized for both size and speed
 	      // maybe AND #$01, the ROR, ROR
-	      addComment( "Special Case: 128 * UIntID -> XA (24 bytes - 43 clock cycles)" );
+	      addComment( "Special Case: 128 * UintID -> XA (24 bytes - 43 clock cycles)" );
 	      addAsm( str_LDX + "#$00" + commentmarker + "(2 clock cycles)", 2, false );
 	      addAsm( str_LDA + getNameOf(getAddressOf($4.name)) + commentmarker + "(4)", 3, false );
 	      addAsm( str_TAY + commentmarker + "(2)", 1, false );
@@ -19015,6 +19015,7 @@ arithmetic[MATHOP] expression[OP2]
 	    }
 	  else
 	    {
+	      addComment( "UintIMM * UintID --> XA" );
 	      mul16_is_needed = true;
 	      addAsm( str_LDX + "#$00", 2, false );
 	      addAsm( str_LDA + "#$" + toHex(tmp_int), 2, false );
@@ -19087,6 +19088,7 @@ arithmetic[MATHOP] expression[OP2]
 	      tmp_int3 =(abs(tmp_int3) ^ 65535) + 1;
 	    }	  
 	  addAsm( str_LDA + "#$" + toHex ( get_word_L(tmp_int3)  ), 2, false );
+	  addComment( "vvv OPTIMIZE? vvv" );
 	  addAsm( str_LDX + "#$" + toHex ( get_word_H(tmp_int3)  ), 2, false );
 	  strcpy($$.name, "_XA" );
 	}
@@ -19257,7 +19259,20 @@ arithmetic[MATHOP] expression[OP2]
 	}
       else if( op == string( "*" ) )
 	{
-	  addCompilerMessage( "UintIMM * XA: nyi", 3 );
+	  mul16_is_needed = true;
+	  addCompilerMessage( "UintIMM * XA: testing", 1 );
+	  addComment( "UintIMM * XA --> XA" );
+	  int IMMvalue = atoi(stripFirst($1.name).c_str());
+	  addAsm( str_STA + "_MUL16_FD", 3, false);
+	  addAsm( str_STX + "_MUL16_FE", 3, false);
+	  addAsm( str_LDA + "#$" + toHex(IMMvalue), 2, false );
+	  addAsm( str_STA + "_MUL16_FB", 3, false);
+	  addAsm( str_LDA + "#$00", 2, false );
+	  addAsm( str_STA + "_MUL16_FC", 3, false);
+	  addAsm( str_JSR + "MUL16", 3, false );
+	  addAsm( str_LDA + "MUL16R", 3, false );
+	  addAsm( str_LDX + "MUL16R+1", 3, false );
+	  strcpy($$.name, "_XA" );
 	}
       else if( op == string( "/" ) )
 	{
