@@ -19094,10 +19094,14 @@ arithmetic[MATHOP] expression[OP2]
       else if( op == "**" )
 	{
 	  tmp_int3 = pow(tmp_int1,tmp_int2);
-	  if( tmp_int3 < 0 )
+	  if( tmp_int3 > 65536 )
 	    {
-	      tmp_int3 =(abs(tmp_int3) ^ 65535) + 1;
-	    }	  
+	      addCompilerMessage( "Word Overflow (value greater than 65536)", 3 );
+	    }
+	  //if( tmp_int3 < 0 )
+	  //  {
+	  //    tmp_int3 =(abs(tmp_int3) ^ 65535) + 1;
+	  //  }	  
 	  addAsm( str_LDA + "#$" + toHex ( get_word_L(tmp_int3)  ), 2, false );
 	  addAsm( str_LDX + "#$" + toHex ( get_word_H(tmp_int3)  ), 2, false );
 	  strcpy($$.name, "_XA" );
@@ -21332,21 +21336,25 @@ arithmetic[MATHOP] expression[OP2]
       else if( op == string("-") )
 	{
 	  addComment( "XA - UintID --> XA" );
-	  addCompilerMessage( "XA - UintID: working on it", 1 );
 	  addAsm( str_SEC );
 	  addAsm( str_SBC + O2, sizeOP2A, false );
+	  addAsm( str_TAY );
+	  addAsm( str_TXA );
+	  addAsm( str_SBC + "#$00", 2, false );
+	  addAsm( str_TAX );
+	  addAsm( str_TYA );
 	  strcpy($$.name, "_XA");
 	}
       else if( op == string("*") )
 	{
 	  mul16_is_needed = true;
 	  addComment( "XA * UintID --> XA" );
-	  addAsm( str_STA + "_MUL16_FD", 3, false);
-	  addAsm( str_STX + "_MUL16_FE", 3, false);
-	  addAsm( str_LDA + O2, sizeOP2A, false );
 	  addAsm( str_STA + "_MUL16_FB", 3, false);
+	  addAsm( str_STX + "_MUL16_FC", 3, false);
+	  addAsm( str_LDA + O2, sizeOP2A, false );
+	  addAsm( str_STA + "_MUL16_FD", 3, false);
 	  addAsm( str_LDA + "#$00", 2, false );
-	  addAsm( str_STA + "_MUL16_FC", 3, false);
+	  addAsm( str_STA + "_MUL16_FE", 3, false);
 	  addAsm( str_JSR + "MUL16", 3, false );
 	  addAsm( str_LDA + "MUL16R", 3, false );
 	  addAsm( str_LDX + "MUL16R+1", 3, false );	  
@@ -21354,8 +21362,20 @@ arithmetic[MATHOP] expression[OP2]
 	}
       else if( op == string("/") )
 	{
-	  addCompilerMessage( "XA / UintID: nyi", 3);
+	  div16_is_needed = true;
+	  addCompilerMessage( "XA / UintID: testing", 1);
 	  addComment( "XA / UintID --> XA" );
+	  addAsm( str_STA + "_DIV16_FB", 3, false);
+	  addAsm( str_STX + "_DIV16_FC", 3, false);
+	  addAsm( str_LDA + O2, sizeOP2A, false );
+	  addAsm( str_STA + "_DIV16_FD", 3, false);
+	  addAsm( str_LDA + "#$00", 2, false );
+	  addAsm( str_STA + "_DIV16_FE", 3, false);
+	  addAsm( str_JSR + "DIV16", 3, false );
+
+	  addAsm( str_LDA + "_DIV16_FB", 3, false );
+	  addAsm( str_LDX + "_DIV16_FC" + commentmarker + "OPTIMIZE", 3, false );
+
 	  strcpy($$.name, "_XA");
 	}
       else if( op == string( "**" ) )
@@ -21415,48 +21435,60 @@ arithmetic[MATHOP] expression[OP2]
 	  switch(tmp_v)
 	    {
 	    case 0:
-	      //illegal_operations_are_needed = true;
-	      addAsm( str_LDA + "#$00", 2, false );
-	      addAsm( str_TAX );
+	      addComment( "XA * 0 --> XA" );
+	      addAsm( str_LAX + "#$00", 2, false );
 	      strcpy($$.name, "_XA");
 	      break;
 	    case 1:
+	      addComment( "XA * 1 --> XA" );
 	      strcpy($$.name, "_XA");
 	      break;
-	    case 256:
-	      addAsm( str_TAX );
-	      addAsm( str_LDA + "#$00", 2, false );
-	      break;
 	    case 128:
+	      addComment( "XA * 128 --> XA" );
+
 	    case 64:
-	      addAsm( str_TAY );
-	      addAsm( str_LDA + "$02", 2, false );
-	      addAsm( str_PHA );
-	      addAsm( str_LDA + "$03", 2, false );
-	      addAsm( str_PHA );
-	      addAsm( str_STY + "$02", 2, false );
-	      addAsm( str_STX + "$03", 2, false );
-	      addAsm( str_LDX + "#$" + toHex(log2(tmp_v)), 2, false );
-	      addAsm( "!:\t" + str_ASL + "$02", 2, true );
-	      addAsm( str_ROL + "$03", 2, false );
-	      addAsm( str_DEX );
-	      addAsm( str_BNE + "!-", 2, false );	      
-	      addAsm( str_LDY + "$02", 2, false );
-	      addAsm( str_LDX + "$03", 2, false );
-	      addAsm( str_PLA );
-	      addAsm( str_STA + "$03", 2, false );
-	      addAsm( str_PLA );
-	      addAsm( str_STA + "$02", 2, false );
+	      addComment( "XA * 64 --> XA" );
+	      // TODO: Check for unsafe math (arg_unsafe_math==true)
+	      if( !arg_unsafe_math )
+		{
+		  addAsm( str_TAY );
+		  addAsm( str_LDA + "$02", 2, false );
+		  addAsm( str_PHA );
+		  addAsm( str_LDA + "$03", 2, false );
+		  addAsm( str_PHA );
+		  addAsm( str_STY + "$02", 2, false );
+		}
+	      else
+		{
+		  addAsm( str_STA + "$02", 2, false );                 // 3 cyc
+		}
+	      addAsm( str_STX + "$03", 2, false );                     // 3 cyc
+	      addAsm( str_LDX + "#$" + toHex(log2(tmp_v)), 2, false ); // 2 cyc
+	      addAsm( "!:\t" + str_ASL + "$02", 2, true );                // 2 cyc
+	      addAsm( str_ROL + "$03", 2, false );                        // 2
+	      addAsm( str_DEX );                                          // 2
+	      addAsm( str_BNE + "!-", 2, false );	                  // 2
+	      addAsm( str_LDY + "$02", 2, false );                     // 3
+	      addAsm( str_LDX + "$03", 2, false );                     // 3
+	      if( !arg_unsafe_math )
+		{
+		  addAsm( str_PLA );
+		  addAsm( str_STA + "$03", 2, false );
+		  addAsm( str_PLA );
+		  addAsm( str_STA + "$02", 2, false );
+		}
 	      addAsm( str_TYA );
 	      break;
 	    case 32:
-	      addAsm( str_ASL );
-	      addAsm( str_TAY );
-	      addAsm( str_TXA );
-	      addAsm( str_ROL );
-	      addAsm( str_TAX );
-	      addAsm( str_TYA );
+	      addComment( "XA * 2 --> XA (12 cyc)" );
+	      addAsm( str_ASL ); // 2
+	      addAsm( str_TAY ); // 2
+	      addAsm( str_TXA ); // 2
+	      addAsm( str_ROL ); // 2
+	      addAsm( str_TAX ); // 2
+	      addAsm( str_TYA ); // 2
 	    case 16:
+	      addComment( "XA * 2 --> XA (12 cyc)" );
 	      addAsm( str_ASL );
 	      addAsm( str_TAY );
 	      addAsm( str_TXA );
@@ -21464,6 +21496,7 @@ arithmetic[MATHOP] expression[OP2]
 	      addAsm( str_TAX );
 	      addAsm( str_TYA );
 	    case 8:
+	      addComment( "XA * 2 --> XA (12 cyc)" );
 	      addAsm( str_ASL );
 	      addAsm( str_TAY );
 	      addAsm( str_TXA );
@@ -21471,6 +21504,7 @@ arithmetic[MATHOP] expression[OP2]
 	      addAsm( str_TAX );
 	      addAsm( str_TYA );
 	    case 4:
+	      addComment( "XA * 2 --> XA (12 cyc)" );
 	      addAsm( str_ASL );
 	      addAsm( str_TAY );
 	      addAsm( str_TXA );
@@ -21478,6 +21512,7 @@ arithmetic[MATHOP] expression[OP2]
 	      addAsm( str_TAX );
 	      addAsm( str_TYA );
 	    case 2:
+	      addComment( "XA * 2 --> XA (12 cyc)" );
 	      addAsm( str_ASL );
 	      addAsm( str_TAY );
 	      addAsm( str_TXA );
@@ -21487,15 +21522,23 @@ arithmetic[MATHOP] expression[OP2]
 	      strcpy($$.name, "_XA");
 	      break;
 	    case 5:
-	      addComment( "XA * WordIMM --> XA (5)" );
-	      addAsm( str_TAY );
-	      addAsm( str_LDA + "$02", 2, false );
-	      addAsm( str_PHA );
-	      addAsm( str_LDA + "$03", 2, false );
-	      addAsm( str_PHA );
+	      addComment( "XA * 5 --> XA" );
+	      // TODO: Check for unsafe math (arg_unsafe_math==true)
+	      if( !arg_unsafe_math )
+		{
+		  addAsm( str_TAY );
+		  addAsm( str_LDA + "$02", 2, false );
+		  addAsm( str_PHA );
+		  addAsm( str_LDA + "$03", 2, false );
+		  addAsm( str_PHA );
+		  addAsm( str_STY + "$02", 2, false );
+		  addAsm( str_TYA );
+		}
+	      else
+		{
+		  addAsm( str_STA + "$02", 2, false );                 // 3 cyc
+		}
 	      addAsm( str_STX + "$03", 2, false );
-	      addAsm( str_STY + "$02", 2, false );
-	      addAsm( str_TYA );
 	      addAsm( str_ASL );
 	      addAsm( str_TAY );
 	      addAsm( str_TXA );
@@ -21514,24 +21557,36 @@ arithmetic[MATHOP] expression[OP2]
 	      addAsm( str_TXA );
 	      addAsm( str_ADC + "$03", 2, false );
 	      addAsm( str_TAX );
-	      addAsm( str_PLA );
-	      addAsm( str_STA + "$03", 2, false );
-	      addAsm( str_PLA );
-	      addAsm( str_STA + "$02", 2, false );
+	      if( !arg_unsafe_math )
+		{
+		  addAsm( str_PLA );
+		  addAsm( str_STA + "$03", 2, false );
+		  addAsm( str_PLA );
+		  addAsm( str_STA + "$02", 2, false );
+		}
 	      addAsm( str_TYA );
 	      strcpy($$.name, "_XA");
 	      break;
 
 	    case 3:
-	      addComment( "XA * UintIMM --> XA" );
-	      addAsm( str_TAY );
-	      addAsm( str_LDA + "$02", 2, false );
-	      addAsm( str_PHA );
-	      addAsm( str_LDA + "$03", 2, false );
-	      addAsm( str_PHA );
+	      // TODO: check for unsafe math
+	      addComment( "XA * 3 --> XA" );
+	      if( !arg_unsafe_math )
+		{
+		  addAsm( str_TAY );
+		  addAsm( str_LDA + "$02", 2, false );
+		  addAsm( str_PHA );
+		  addAsm( str_LDA + "$03", 2, false );
+		  addAsm( str_PHA );
+		  addAsm( str_STY + "$02", 2, false );
+		  addAsm( str_TYA );
+		}
+	      else
+		{
+		  addAsm( str_STA + "$02", 2, false );
+		}
 	      addAsm( str_STX + "$03", 2, false );
-	      addAsm( str_STY + "$02", 2, false );
-	      addAsm( str_TYA );
+	      //addAsm( str_TYA );
 	      addAsm( str_ASL );
 	      addAsm( str_TAY );
 	      addAsm( str_TXA );
@@ -21544,23 +21599,34 @@ arithmetic[MATHOP] expression[OP2]
 	      addAsm( str_TXA );
 	      addAsm( str_ADC + "$03", 2, false );
 	      addAsm( str_TAX );
-	      addAsm( str_PLA );
-	      addAsm( str_STA + "$03", 2, false );
-	      addAsm( str_PLA );
-	      addAsm( str_STA + "$02", 2, false );
+
+	      if( !arg_unsafe_math )
+		{
+		  addAsm( str_PLA );
+		  addAsm( str_STA + "$03", 2, false );
+		  addAsm( str_PLA );
+		  addAsm( str_STA + "$02", 2, false );
+		}
 	      addAsm( str_TYA );
 	      strcpy($$.name, "_XA");
 	      break;
 	    case 10:
-	      addComment( "XA * UintIMM --> XA" );
-	      addAsm( str_TAY );
-	      addAsm( str_LDA + "$02", 2, false );
-	      addAsm( str_PHA );
-	      addAsm( str_LDA + "$03", 2, false );
-	      addAsm( str_PHA );
+	      addComment( "XA * 10 --> XA" );
+	      if( !arg_unsafe_math )
+		{
+		  addAsm( str_TAY );
+		  addAsm( str_LDA + "$02", 2, false );
+		  addAsm( str_PHA );
+		  addAsm( str_LDA + "$03", 2, false );
+		  addAsm( str_PHA );
+		  addAsm( str_STY + "$02", 2, false );
+		  addAsm( str_TYA );
+		}
+	      else
+		{
+		  addAsm( str_STA + "$02", 2, false );
+		}
 	      addAsm( str_STX + "$03", 2, false );
-	      addAsm( str_STY + "$02", 2, false );
-	      addAsm( str_TYA );
 	      addAsm( str_ASL );
 	      addAsm( str_TAY );
 	      addAsm( str_TXA );
@@ -21579,10 +21645,13 @@ arithmetic[MATHOP] expression[OP2]
 	      addAsm( str_TXA );
 	      addAsm( str_ADC + "$03", 2, false );
 	      addAsm( str_TAX );
-	      addAsm( str_PLA );
-	      addAsm( str_STA + "$03", 2, false );
-	      addAsm( str_PLA );
-	      addAsm( str_STA + "$02", 2, false );
+	      if( !arg_unsafe_math )
+		{
+		  addAsm( str_PLA );
+		  addAsm( str_STA + "$03", 2, false );
+		  addAsm( str_PLA );
+		  addAsm( str_STA + "$02", 2, false );
+		}
 	      addAsm( str_TYA );
 	      addAsm( str_ASL );
 	      addAsm( str_TAY );
@@ -21609,12 +21678,78 @@ arithmetic[MATHOP] expression[OP2]
 	}
       else if( op == string("/" ) )
 	{
-	  addComment( "XA / UintIMM" );
-	  addCompilerMessage( "XA / UintIMM: nyi", 3 );
+	  // TODO: Add more special cases
+	  addComment( "XA / UintIMM --> XA" );
+	  int tmp_v = atoi(stripFirst($4.name).c_str());
+	  switch(tmp_v)
+	    {
+	    case 0:
+	      addCompilerMessage( "Division by Zero is forbidden!", 3 );
+	      break;
+	    case 1:
+	      strcpy($$.name, "_XA" );
+	      break;
+	    case 2:
+	      addComment( "XA / 2 --> XA" );
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_LSR, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );
+	      addAsm( str_ROR, 1, false );
+	      strcpy($$.name, "_XA" );
+	      break;
+	    case 4:
+	      addComment( "XA / 4 --> XA" );
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_LSR, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );
+	      addAsm( str_ROR, 1, false );
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_LSR, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );
+	      addAsm( str_ROR, 1, false );
+	      strcpy($$.name, "_XA" );
+	      break;
+
+	      
+	    default:
+	      div16_is_needed = true;
+	      addComment( "XA / UintIMM --> XA" );
+	      addAsm( str_STA + "_DIV16_FB", 3, false);
+	      addAsm( str_STX + "_DIV16_FC", 3, false);
+	      addAsm( str_LDA + "#$" + toHex(tmp_v), 2, false );
+	      addAsm( str_STA + "_DIV16_FD", 3, false);
+	      addAsm( str_LDA + "#$00", 2, false );
+	      addAsm( str_STA + "_DIV16_FE", 3, false);
+	      addAsm( str_JSR + "DIV16", 3, false );
+	      addAsm( str_LDA + "_DIV16_FB", 3, false );
+	      addAsm( str_LDX + "_DIV16_FC", 3, false );
+
+	      strcpy($$.name, "_XA" );
+	      break;
+	    }
 	}
       else if( op == string( "**" ) )
 	{
-	  addCompilerMessage( "XA ** UintIMM: nyi", 3 );
+	  int tmp_v = atoi(stripFirst($4.name).c_str());
+	  addComment( "XA ** UintIMM --> XA" );
+	  mul16_is_needed = true;
+	  pow16_is_needed = true;
+	  addAsm( str_PHA, 1, false );
+	  addAsm( str_TXA, 1, false );
+	  addAsm( str_PHA, 1, false );
+	  addAsm( str_LDA + "#$" + toHex(tmp_v), 2, false );
+	  addAsm( str_PHA, 1, false );
+	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_PLA, 1, false );
+	  addAsm( str_TAX, 1, false );
+	  addAsm( str_PLA, 1, false );
+	  strcpy($$.name, "_XA" );	  
 	}
       else
 	{
