@@ -19710,6 +19710,222 @@ arithmetic[MATHOP] expression[OP2]
 	  addCompilerMessage("WordID * IntID: Unknown Operation", 3 );
 	}
     }
+  else if( isWordID($1.name) && isUintIMM($4.name) )
+    {
+      addComment( "WordID math UintIMM: TOC" );
+      int a = getAddressOf($1.name);
+      int IMMvalue = atoi(stripFirst($4.name).c_str());
+      if( op == string( "+" ) )
+	{
+	  addAsm( str_CLC, 1, false );
+	  addComment( "vvv OPTIMIZE vvv" );
+	  addComment( "WordID + UIntIMM --> XA" );      
+	  int size_of_instruction = 3;
+	  if( a < 256 ) size_of_instruction = 2;
+	  addAsm( str_LDA + "#$" + toHex(IMMvalue), 2, false );
+	  addAsm( str_ADC + getNameOf(a), size_of_instruction, false );
+	  addAsm( str_TAY );
+	  a++;
+	  if( a < 256 )
+	    {
+	      size_of_instruction = 2;
+	    }
+	  else
+	    {
+	      size_of_instruction = 3;
+	    }
+	  addAsm( str_LDA + "#$00", 2, false );
+	  addAsm( str_ADC + getNameOf(a-1) + " +1", size_of_instruction, false );
+	  addAsm( str_TAX );
+	  addAsm( str_TYA );
+	  strcpy($$.name, "_XA" );
+	}
+      else if( op == string( "-" ) )
+	{
+	  // Does this _acutally_ work?
+	  addComment( "WordID - UintIMM --> XA" );      
+	  int size_of_instruction = 3;
+	  if( a < 256 ) size_of_instruction = 2;
+	  addAsm( str_SEC );
+	  addAsm( str_LDA + getNameOf(a), size_of_instruction, false );
+	  addAsm( str_SBC + "#$" + toHex(IMMvalue), 2, false );
+	  addAsm( str_PHA );
+	  a++;
+	  if( a < 256 )
+	    {
+	      size_of_instruction = 2;
+	    }
+	  else
+	    {
+	      size_of_instruction = 3;
+	    }
+	  addAsm( str_LDA + getNameOf(a-1) + " +1", size_of_instruction, false );
+	  addAsm( str_SBC + "#$00", 2, false );
+	  addAsm( str_TAX );
+	  addAsm( str_PLA );
+	  strcpy($$.name, "_XA" );
+
+	}
+      else if( op == string("*") )
+	{
+	  addComment( "WordID * UIntIMM --> XA" );
+	  
+	  if( IMMvalue == 40 )
+	    {
+	      addComment( "multiply by 40" );
+	      if( !arg_unsafe_math )
+		{
+		  addComment( "save ZP $02/$03/$04/$05" );
+		  addAsm( str_LDA + "$02", 2, false );
+		  addAsm( str_PHA, 1, false );
+		  addAsm( str_LDA + "$03", 2, false );
+		  addAsm( str_PHA, 1, false );
+		  addAsm( str_LDA + "$04", 2, false );
+		  addAsm( str_PHA, 1, false );
+		  addAsm( str_LDA + "$05", 2, false );
+		  addAsm( str_PHA, 1, false );
+		  addComment( "----------------------" );
+		}
+	      addAsm( str_LDA + O1, sizeOP1A, false );
+	      addAsm( str_STA + "$02", 2, false );
+	      addAsm( str_STA + "$04", 2, false );
+	      addAsm( str_LDA + O1 + " +1", sizeOP1A, false );
+	      addAsm( str_STA + "$03", 2, false );
+	      addAsm( str_STA + "$05", 2, false );
+
+	      addAsm( str_ASL + "$02", 2, false );
+	      addAsm( str_ROL + "$03", 2, false );	      
+	      addAsm( str_ASL + "$02", 2, false );
+	      addAsm( str_ROL + "$03", 2, false );
+	      addAsm( str_ASL + "$02", 2, false );
+	      addAsm( str_ROL + "$03", 2, false );
+	      
+	      addAsm( str_ASL + "$04", 2, false );
+	      addAsm( str_ROL + "$05", 2, false );
+	      
+	      addAsm( str_CLC, 1, false );
+	      addAsm( str_LDA + "$02", 2, false );
+	      addAsm( str_ADC + "$04", 2, false );
+	      addAsm( str_STA + "$02", 2, false );
+	      
+	      addAsm( str_LDA + "$03", 2, false );	      
+	      addAsm( str_ADC + "$05", 2, false );
+	      addAsm( str_STA + "$03", 2, false );
+	      
+	      addAsm( str_ASL + "$02", 2, false );
+	      addAsm( str_ROL + "$03", 2, false );
+	      addAsm( str_ASL + "$02", 2, false );	      
+	      addAsm( str_ROL + "$03", 2, false );
+	      
+	      addAsm( str_LDA + "$03", 2, false );
+	      addAsm( str_TAX, 1, false );
+	      if( !arg_unsafe_math )
+		{
+		  addAsm( str_LDY + "$02", 2, false );
+		  addComment( "-------------------" );
+		  addAsm( str_PLA, 1, false );
+		  addAsm( str_STA + "$05", 2, false );
+		  addAsm( str_PLA, 1, false );
+		  addAsm( str_STA + "$04", 2, false );
+		  addAsm( str_PLA, 1, false );
+		  addAsm( str_STA + "$03", 2, false );
+		  addAsm( str_PLA, 1, false );
+		  addAsm( str_STA + "$02", 2, false );
+		  addAsm( str_TYA, 1, false );
+		}
+	      else
+		{
+		  addAsm( str_LDA + "$02", 2, false );
+		}
+	      strcpy($$.name, "_XA" );
+	    }
+	  else if( IMMvalue == 8 )
+	    {
+	      addComment( "multiply by 8" );
+	      addComment( "save ZP $02/$03" );
+	      addAsm( str_LDA + "$02", 2, false );
+	      addAsm( str_PHA, 1, false );
+	      addAsm( str_LDA + "$03", 2, false );
+	      addAsm( str_PHA, 1, false );
+	      addComment( "-------------------" );
+	      addAsm( str_LDA + O1, sizeOP1A, false );
+	      addAsm( str_STA + "$02", 2, false );
+	      addAsm( str_LDA + "#$00", 2, false );
+	      addAsm( str_STA + "$03", 2, false );
+	      addAsm( str_ASL + "$02", 2, false );
+	      addAsm( str_ROL + "$03", 2, false );
+	      addAsm( str_ASL + "$02", 2, false );
+	      addAsm( str_ROL + "$03", 2, false );
+	      addAsm( str_ASL + "$02", 2, false );
+	      addAsm( str_ROL + "$03", 2, false );
+	      addComment( "-------------------" );
+	      addAsm( str_PLA, 1, false );
+	      addAsm( str_STA + "$03", 2, false );
+	      addAsm( str_PLA, 1, false );
+	      addAsm( str_STA + "$02", 2, false );
+	      addAsm( str_LDX + "$03", 2, false );
+	      addAsm( str_LDA + "$02", 2, false );
+	      strcpy($$.name, "_XA" );
+	    }
+	  else
+	    {
+	      mul16_is_needed = true;
+	      addAsm( str_LDA + O1, sizeOP1A, false );
+	      addAsm( str_STA + "_MUL16_FB", 3, false);
+	      addAsm( str_LDA + O1 +"+1", sizeOP1B, false );
+	      addAsm( str_STA + "_MUL16_FC", 3, false);
+	      addAsm( str_LDA + "#$" + toHex(atoi(stripFirst($4.name).c_str())), 2, false );
+	      addAsm( str_STA + "_MUL16_FD", 3, false);
+	      addAsm( str_LDA + "#$00", 2, false );
+	      addAsm( str_STA + "_MUL16_FE", 3, false);
+	      addAsm( str_JSR + "MUL16", 3, false );
+	      addAsm( str_LDA + "MUL16R", 3, false );
+	      addAsm( str_LDX + "MUL16R+1", 3, false );
+	      strcpy($$.name, "_XA" );
+	    }
+	}
+      else if( op == string("/") )
+	{
+	  addComment( "WordID / UIntIMM" );
+	  int addr_op1 = getAddressOf($1.name);
+	  div16_is_needed = true;
+	  addAsm( str_LDA + getNameOf(addr_op1), 3, false );
+	  addAsm( str_STA + "_DIV16_FB", 3, false );
+	  addAsm( str_LDA + getNameOf(addr_op1) + "+1", 3, false );
+	  addAsm( str_STA + "_DIV16_FC", 3, false );
+	  addAsm( str_LDA + "#$" + toHex(atoi(stripFirst($4.name).c_str())), 2, false );
+	  addAsm( str_STA + "_DIV16_FD", 3, false );
+	  addAsm( str_LDA + "#$00", 2, false );
+	  addAsm( str_STA + "_DIV16_FE", 3, false );
+
+	  addAsm( str_JSR + "DIV16", 3, false );
+	  addAsm( str_LDA + "_DIV16_FB", 3, false );
+	  addAsm( str_LDX + "_DIV16_FC", 3, false );
+	  strcpy($$.name, "_XA" );
+	}
+      else if( op == string( "**" ) )
+	{
+	  int addr_op1 = getAddressOf($1.name);
+	  mul16_is_needed = true;
+	  pow16_is_needed = true;
+	  addCompilerMessage( "WordID ** UintIMM: exponent restricted to < 0x0F", 1);
+	  addAsm( str_LDA + getNameOf(addr_op1), 3, false );
+	  addAsm( str_PHA, 1, false );
+	  addAsm( str_LDA + getNameOf(addr_op1) + "+1", 3, false );
+	  addAsm( str_PHA, 1, false );
+	  addAsm( str_LDA + "#$" + toHex(atoi(stripFirst($4.name).c_str())), 2, false );
+	  addAsm( str_PHA, 1, false );
+	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_PLA, 1, false );
+	  addAsm( str_TAX, 1, false );
+	  addAsm( str_PLA, 1, false );
+	  strcpy($$.name, "_XA" );
+	}
+      else 
+	{
+	  addCompilerMessage( "WordID math UintIMM: unknown operation", 3 );
+	}
+    }
   else if( isWordID($1.name) && (isIntIMM($4.name)||isUintIMM($4.name)) )
     {
       addComment( "WordID math IntIMM && WordID math UintIMM: TOC" );
@@ -20307,7 +20523,7 @@ arithmetic[MATHOP] expression[OP2]
 	      addAsm( str_STA + "_MUL16_FE", 3, false);
 	      addAsm( str_LDA + O1, sizeOP1A, false  );
 	      addAsm( str_STA + "_MUL16_FC", 3, false);
-	      addAsm( str_LDA + O1 + "+1", sizeOP1B, false  );
+	      addAsm( str_LDA + O1 + " +1", sizeOP1B, false  );
 	      addAsm( str_STA + "_MUL16_FB", 3, false);
 	      addAsm( str_JSR + "MUL16", 3, false );
 	      addAsm( str_LDA + "MUL16R", 3, false );
@@ -20317,7 +20533,22 @@ arithmetic[MATHOP] expression[OP2]
 	}
       else if( op == string( "**" ) )
 	{
-	  addCompilerMessage( "WordID ** WordIMM: nyi", 3 );
+	  mul16_is_needed = true;
+	  pow16_is_needed = true;
+	  int op2 = atoi(stripFirst($4.name).c_str());
+	  addComment( "WordID ** WordIMM --> XA" );
+	  addCompilerMessage( "WordID ** WordIMM: exponent restricted to low byte and < 0x0F", 1 );
+	  addAsm( str_LDA + O1, sizeOP1A, false  );
+	  addAsm( str_PHA, 1, false );
+	  addAsm( str_LDA + O1 + " +1", sizeOP1B, false  );
+	  addAsm( str_PHA, 1, false );
+	  addAsm( str_LDA + "#$" + toHex(get_word_L(op2)), 2, false  );      
+	  addAsm( str_PHA, 1, false );
+	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_PLA, 1, false );
+	  addAsm( str_TAX, 1, false );
+	  addAsm( str_PLA, 1, false );
+	  strcpy($$.name, "_XA" );
 	}
       else
 	{
