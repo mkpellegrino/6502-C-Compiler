@@ -20353,16 +20353,16 @@ arithmetic[MATHOP] expression[OP2]
 	{
 	  int tmp_op1 = getAddressOf( $1.name );
 	  int op2 = atoi(stripFirst($4.name).c_str());
-
+	  addComment( "WordID * WordIMM --> XA" );
 	  // Special Cases
 	  if( op2 == 0 )
 	    {
-	      addComment( "Special Case: WordID * $0000 -> XA" );
+	      addComment( "Special Case: WordID * 0x0000 -> XA" );
 	      addAsm( str_LAX + "#$00", 2, false );
 	    }
 	  else if( op2 == 1 )
 	    {
-	      addComment( "Special Case: WordID * $0001 -> XA" );
+	      addComment( "Special Case: WordID * 0x0001 -> XA" );
 	      addAsm( str_LDA + getNameOf(tmp_op1), 3, false );
 	      addAsm( str_LDX + getNameOf(tmp_op1) + " +1", 3, false );
 	    }
@@ -20380,7 +20380,7 @@ arithmetic[MATHOP] expression[OP2]
 	    }
 	  else if( op2 == 4 )
 	    {
-	      addComment( "Special Case: WordID * $0004 -> XA" );
+	      addComment( "Special Case: WordID * 0x0004 -> XA" );
 	      addAsm( str_LDA + getNameOf(tmp_op1) + commentmarker + "(4)", 3, false );
 	      addAsm( str_LDX + getNameOf(tmp_op1) + " +1" + commentmarker + "(4)", 3, false );
 	      addAsm( str_CLC + commentmarker + "(2)", 1, false );
@@ -20401,7 +20401,7 @@ arithmetic[MATHOP] expression[OP2]
 	    }
 	  else if( op2 == 8 )
 	    {
-	      addComment( "Special Case: WordID * $0008 -> XA" );
+	      addComment( "Special Case: WordID * 0x0008 -> XA" );
 	      addAsm( str_LDA + getNameOf(tmp_op1) + commentmarker + "(4)", 3, false );
 	      addAsm( str_LDX + getNameOf(tmp_op1) + " +1" + commentmarker + "(4)", 3, false );
 	      addAsm( str_CLC + commentmarker + "(2)", 1, false );
@@ -20417,7 +20417,7 @@ arithmetic[MATHOP] expression[OP2]
 	    }
 	  else if( op2 == 16 )
 	    {
-	      addComment( "Special Case: WordID * $0010 -> XA" );
+	      addComment( "Special Case: WordID * 0x0010 -> XA" );
 	      addAsm( str_LDA + getNameOf(tmp_op1) + commentmarker + "(4)", 3, false );
 	      addAsm( str_LDX + getNameOf(tmp_op1) + " +1" + commentmarker + "(4)", 3, false );
 	      addAsm( str_CLC + commentmarker + "(2)", 1, false );
@@ -20433,7 +20433,7 @@ arithmetic[MATHOP] expression[OP2]
 	    }
 	  else if( op2 == 32 )
 	    {
-	      addComment( "Special Case: WordID * $0020 -> XA" );
+	      addComment( "Special Case: WordID * 0x0020 -> XA" );
 	      addAsm( str_LDA + getNameOf(tmp_op1) + commentmarker + "(4)", 3, false );
 	      addAsm( str_LDX + getNameOf(tmp_op1) + " +1" + commentmarker + "(4)", 3, false );
 	      addAsm( str_TAY + commentmarker + "(2)", 1, false );
@@ -20457,7 +20457,7 @@ arithmetic[MATHOP] expression[OP2]
 	    }
 	  else if( op2 == 64 )
 	    {
-	      addComment( "Special Case: WordID * $0040 -> XA" );
+	      addComment( "Special Case: WordID * 0x0040 -> XA" );
 	      addAsm( str_LDA + getNameOf(tmp_op1) + commentmarker + "(4)", 3, false );
 	      addAsm( str_LDX + getNameOf(tmp_op1) + " +1" + commentmarker + "(4)", 3, false );
 	      addAsm( str_TAY + commentmarker + "(2)", 1, false );
@@ -20481,7 +20481,7 @@ arithmetic[MATHOP] expression[OP2]
 	    }
 	  else if( op2 == 128 )
 	    {
-	      addComment( "Special Case: WordID * $0080 -> XA" );
+	      addComment( "Special Case: WordID * 0x0080 -> XA" );
 	      addAsm( str_LDA + getNameOf(tmp_op1) + commentmarker + "(4)", 3, false );
 	      addAsm( str_LDX + getNameOf(tmp_op1) + " +1" + commentmarker + "(4)", 3, false );
 	      addAsm( str_TAY + commentmarker + "(2)", 1, false );
@@ -20505,13 +20505,13 @@ arithmetic[MATHOP] expression[OP2]
 	    }
 	  else if( op2 == 256 )
 	    {
-	      addComment( "Special Case: WordID * $0100 -> XA" );
+	      addComment( "Special Case: WordID * 0x0100 -> XA" );
 	      addAsm( str_LDX + getNameOf(tmp_op1) + commentmarker + "(4)", 3, false );
 	      addAsm( str_LDA + "#$00" + commentmarker + "(2)", 3, false );
 	    }
 	  else if( op2 == 512 )
 	    {
-	      addComment( "Special Case: WordID * $0200 -> XA" );
+	      addComment( "Special Case: WordID * 0x0200 -> XA" );
 	      addAsm( str_LDA + getNameOf(tmp_op1) + commentmarker + "(4)", 3, false );
 	      addAsm( str_ASL + commentmarker + "(2)", 1, false );
 	      addAsm( str_TAX + commentmarker + "(2)", 1, false );
@@ -20519,7 +20519,7 @@ arithmetic[MATHOP] expression[OP2]
 	    }
 	  else if( op2 == 1024 )
 	    {
-	      addComment( "Special Case: WordID * $0400 -> XA" );
+	      addComment( "Special Case: WordID * 0x0400 -> XA" );
 	      addAsm( str_LDA + getNameOf(tmp_op1) + commentmarker + "(4)", 3, false );
 	      addAsm( str_ASL + commentmarker + "(2)", 1, false );
 	      addAsm( str_ASL + commentmarker + "(2)", 1, false );
@@ -20528,7 +20528,7 @@ arithmetic[MATHOP] expression[OP2]
 	    }
 	  else if( op2 == 2048 )
 	    {
-	      addComment( "Special Case: WordID * $0800 -> XA" );
+	      addComment( "Special Case: WordID * 0x0800 -> XA" );
 	      addAsm( str_LDA + getNameOf(tmp_op1) + commentmarker + "(4)", 3, false );
 	      addAsm( str_ASL + commentmarker + "(2)", 1, false );
 	      addAsm( str_ASL + commentmarker + "(2)", 1, false );
@@ -20538,7 +20538,7 @@ arithmetic[MATHOP] expression[OP2]
 	    }
 	  else if( op2 == 4096 )
 	    {
-	      addComment( "Special Case: WordID * $1000 -> XA" );
+	      addComment( "Special Case: WordID * 0x1000 -> XA" );
 	      addAsm( str_LDA + getNameOf(tmp_op1) + commentmarker + "(4)", 3, false );
 	      addAsm( str_ASL + commentmarker + "(2)", 1, false );
 	      addAsm( str_ASL + commentmarker + "(2)", 1, false );
@@ -20549,7 +20549,7 @@ arithmetic[MATHOP] expression[OP2]
 	    }
 	  else if( op2 == 8192 )
 	    {
-	      addComment( "Special Case: WordID * $2000 -> XA" );
+	      addComment( "Special Case: WordID * 0x2000 -> XA" );
 	      addAsm( str_LDA + getNameOf(tmp_op1) + commentmarker + "(4)", 3, false );
 	      addAsm( str_ASL + commentmarker + "(2)", 1, false );
 	      addAsm( str_ASL + commentmarker + "(2)", 1, false );
@@ -20561,7 +20561,7 @@ arithmetic[MATHOP] expression[OP2]
 	    }
 	  else if( op2 == 16384 )
 	    {
-	      addComment( "Special Case: WordID * $4000 -> XA" );
+	      addComment( "Special Case: WordID * 0x4000 -> XA" );
 	      addAsm( str_LDA + getNameOf(tmp_op1) + commentmarker + "(4)", 3, false );
 	      addAsm( str_ASL + commentmarker + "(2)", 1, false );
 	      addAsm( str_ASL + commentmarker + "(2)", 1, false );
@@ -20574,7 +20574,7 @@ arithmetic[MATHOP] expression[OP2]
 	    }
 	  else if( op2 == 32768 )
 	    {
-	      addComment( "Special Case: WordID * $8000 -> XA" );
+	      addComment( "Special Case: WordID * 0x8000 -> XA" );
 	      addAsm( str_LDA + getNameOf(tmp_op1) + commentmarker + "(4)", 3, false );
 	      addAsm( str_CLC + commentmarker + "(2)", 1, false );
 	      addAsm( str_ROR + commentmarker + "(2)", 1, false );
@@ -20940,32 +20940,54 @@ arithmetic[MATHOP] expression[OP2]
     }
   else if( isWordIMM($1.name) && isFloatIMM($4.name) )
     {
-      addComment( "WordIMM math FloatIMM: TOC" );
-      if( op == string( "+" ) )
-	{	  
-	  addCompilerMessage( "WordIMM + FloatIMM: nyi", 3 );
-	}
-      else if( op == string( "-" ) )
+      addComment( "WordIMM math FloatIMM: TOC (compile-time operation)" );
+      float tmp_int1 = atof( stripFirst($1.name).c_str() );
+      float tmp_int2 = atof( stripFirst($4.name).c_str() );
+      float tmp_int3;
+      if( op == "+" )
 	{
-	  addCompilerMessage( "WordIMM - FloatIMM: nyi", 3 );
+	  tmp_int3 = tmp_int1 + tmp_int2;
+	  addAsm( str_LDA + "#$" + toHex( get_word_L(tmp_int3)  ), 2, false );
+	  addAsm( str_LDX + "#$" + toHex( get_word_H(tmp_int3)  ), 2, false );
+	  strcpy($$.name, "_XA" );
 	}
-      else if( op == string( "*" ) )
+      else if( op == "-" )
 	{
-	  addCompilerMessage( "WordIMM * FloatIMM: nyi", 3 );
+	  tmp_int3 = tmp_int1 - tmp_int2;
+	  addAsm( str_LDA + "#$" + toHex( get_word_L(tmp_int3)  ), 2, false );
+	  addAsm( str_LDX + "#$" + toHex( get_word_H(tmp_int3)  ), 2, false );
+	  strcpy($$.name, "_XA" );
 	}
-      else if( op == string( "/" ) )
+      else if( op == "*" )
 	{
-	  addCompilerMessage( "WordIMM / FloatIMM: nyi", 3 );
+	  tmp_int3 = tmp_int1 * tmp_int2;
+	  addAsm( str_LDA + "#$" + toHex ( get_word_L(tmp_int3)  ), 2, false );
+	  addAsm( str_LDX + "#$" + toHex ( get_word_H(tmp_int3)  ), 2, false );
+	  strcpy($$.name, "_XA" );
 	}
-      else if( op == string( "**" ) )
+      else if( op == "/" )
 	{
-	  addCompilerMessage( "WordIMM ** FloatIMM: nyi", 3 );
+	  tmp_int3 = tmp_int1 /tmp_int2;
+	  addAsm( str_LDA + "#$" + toHex ( get_word_L(tmp_int3)  ), 2, false );
+	  addAsm( str_LDX + "#$" + toHex ( get_word_H(tmp_int3)  ), 2, false );
+	  strcpy($$.name, "_XA" );
+	}
+      else if( op == "**" )
+	{
+	  if( tmp_int2 >= 2 )
+	    {
+	      addCompilerMessage( "value too large for type", 3 );
+	    }
+	  tmp_int3 = pow(tmp_int1,tmp_int2);
+	  cerr << "##" << tmp_int1 << "##" << tmp_int2 << "##" << tmp_int3 << endl;
+	  addAsm( str_LDA + "#$" + toHex ( get_word_L(tmp_int3)  ), 2, false );
+	  addAsm( str_LDX + "#$" + toHex ( get_word_H(tmp_int3)  ), 2, false );
+	  strcpy($$.name, "_XA" );
 	}
       else
 	{
-	  addCompilerMessage( "WordIMM math FloatIMM: Unknown Operation", 3 );
+	  addCompilerMessage( "WordIMM math FloatIMM: unknown operation", 3 );
 	}
-
     }
   else if( isWordIMM($1.name) && isIntID($4.name) )
     {
@@ -24015,8 +24037,6 @@ arithmetic[MATHOP] expression[OP2]
       addComment("toword(WordIMM) --> XA" );
 
       int tmp_int = atoi( stripFirst($3.name).c_str() );
-      //int tmp_L = get_word_L(tmp_int);
-      //int tmp_H = get_word_H(tmp_int);
       addAsm( str_LDA + "#$" + toHex( get_word_L(tmp_int) ), 2, false);
       addAsm( str_LDX + "#$" + toHex( get_word_H(tmp_int) ), 2, false);
       strcpy($$.name, "_XA" );
