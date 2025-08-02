@@ -19139,23 +19139,88 @@ arithmetic[MATHOP] expression[OP2]
       addComment( "UintIMM math WordID: TOC" );
       if( op == string( "+" ) )
 	{	  
-	  addCompilerMessage( "UintIMM + WordID: nyi", 3 );
+	  addComment( "UintIMM + WordID --> XA" );
+	  addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false);
+	  addAsm( str_LDX + getNameOf(getAddressOf($4.name)) + " +1", 3, false);
+	  int tmp_int = atoi(stripFirst($1.name).c_str());
+	  addAsm( str_CLC, 1, false );
+	  addAsm( str_ADC + "#$" + toHex(tmp_int), 2, false );
+	  addAsm( str_TAY, 1, false );
+	  addAsm( str_TXA, 1, false );
+	  addAsm( str_ADC + "#$00", 2, false );
+	  addAsm( str_TAX, 1, false );
+	  addAsm( str_TYA, 1, false );
+	  strcpy($$.name, "_XA" );
 	}
       else if( op == string( "-" ) )
 	{
-	  addCompilerMessage( "UintIMM - WordID: nyi", 3 );
+	  addComment( "UintIMM - WordID --> XA" );
+	  int tmp_int = atoi(stripFirst($1.name).c_str());
+	  addAsm( str_SEC );
+	  addAsm( str_LDA + "#$" + toHex(tmp_int), 2, false );
+	  addAsm( str_SBC + getNameOf(getAddressOf($4.name)), 3, false );
+	  addAsm( str_TAY, 1, false );
+	  addAsm( str_LDA + "#$00", 2, false );
+	  addAsm( str_SBC + getNameOf(getAddressOf($4.name)) + " +1", 3, false );
+	  addAsm( str_TAX, 1, false );
+	  addAsm( str_TYA, 1, false );
+	  strcpy($$.name, "_XA" );
 	}
       else if( op == string( "*" ) )
 	{
-	  addCompilerMessage( "UintIMM * WordID: nyi", 3 );
+	  mul16_is_needed = true;
+	  int tmp_int = atoi(stripFirst($1.name).c_str());
+	  addComment( "UintIMM * WordID --> XA" );
+	  addAsm( str_LDA + "#$" + toHex(tmp_int), 2, false );
+	  addAsm( str_LDX + "#$00", 2, false );
+	  addAsm( str_STA + "_MUL16_FB", 3, false);
+	  addAsm( str_STX + "_MUL16_FC", 3, false);
+	  addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false );
+	  addAsm( str_LDX + getNameOf(getAddressOf($4.name)) + " +1", 3, false );
+	  addAsm( str_STA + "_MUL16_FD", 3, false);
+	  addAsm( str_STX + "_MUL16_FE", 3, false);
+	  addAsm( str_JSR + "MUL16", 3, false );
+	  addAsm( str_LDA + "MUL16R", 3, false );
+	  addAsm( str_LDX + "MUL16R+1", 3, false );
+	  strcpy($$.name, "_XA" );
 	}
       else if( op == string( "/" ) )
 	{
-	  addCompilerMessage( "UintIMM / WordID: nyi", 3 );
+	  div16_is_needed = true;
+	  int tmp_int = atoi(stripFirst($1.name).c_str());
+	  addComment( "UintIMM / WordID --> XA" );
+	  addAsm( str_LDA + "#$" + toHex(tmp_int), 2, false );
+	  addAsm( str_LDX + "#$00", 2, false );
+	  addAsm( str_STA + "_DIV16_FB", 3, false);
+	  addAsm( str_STX + "_DIV16_FC", 3, false);
+	  addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false );
+	  addAsm( str_LDX + getNameOf(getAddressOf($4.name)) + " +1", 3, false );
+	  addAsm( str_STA + "_DIV16_FD", 3, false);
+	  addAsm( str_STX + "_DIV16_FE", 3, false);
+	  addAsm( str_JSR + "DIV16", 3, false );
+	  addAsm( str_LDA + "_DIV16_FB", 3, false);
+	  addAsm( str_LDX + "_DIV16_FC", 3, false);
+	  strcpy($$.name, "_XA" );
 	}
       else if( op == string( "**" ) )
 	{
-	  addCompilerMessage( "UintIMM ** WordID: nyi", 3 );
+	  addComment( "UintIMM ** WordID --> XA" );
+	  int tmp_int = atoi(stripFirst($1.name).c_str());
+	  mul16_is_needed = true;
+	  pow16_is_needed = true;
+
+	  addCompilerMessage( "UintIMM ** WordID: exponent restricted to Low-Byte of WordID", 1 );
+	  addAsm( str_LDA + "#$" + toHex(tmp_int), 2, false );
+	  addAsm( str_PHA, 1, false );
+	  addAsm( str_LDA + "#$00", 2, false );
+	  addAsm( str_PHA, 1, false );
+	  addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false );
+	  addAsm( str_PHA, 1, false );
+	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_PLA, 1, false );
+	  addAsm( str_TAX, 1, false );
+	  addAsm( str_PLA, 1, false );
+	  strcpy($$.name, "_XA");
 	}
       else
 	{
