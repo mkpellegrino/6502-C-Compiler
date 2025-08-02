@@ -14444,58 +14444,40 @@ arithmetic[MATHOP] expression[OP2]
       addComment( "IntID math FAC: TOC" );
       if( op == string( "+" ))
 	{
-	  addCompilerMessage( "This could probably be reworked", 0);
+	  addComment( "IntID + FAC --> FAC" );
 	  float_swap_space_is_needed = true;
-	  addAsm( str_PHA, 1, false );
-	  
 	  addAsm( str_LDX + "#<!fp1+", 2, false );
 	  addAsm( str_LDY + "#>!fp1+", 2, false );
 	  addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );
-
-	  
-	  addAsm( str_PLA, 1, false );
-	  addAsm( str_LDX + "#$00", 2, false );
-	  addAsm( str_LDA + O1, 3, false );
-	  addAsm( str_TAY, 1, false );
-	  addAsm( str_ASL, 1, false );
-	  addAsm( str_BCC + "!skip+", 2, false );
-	  addAsm( str_LDX + "#$FF", 2, false );
-	  addAsm( "!skip:\t", 0, true );
-	  addAsm( str_TXA, 1, false );
+	  addAsm( str_LDA + "#$00", 2, false );
+	  addAsm( str_LDY + O1, 3, false );
+	  addAsm( str_BPL + "!+", 2, false );
+	  addAsm( str_LDA + "#$FF", 2, false );
+	  addAsm( "!:\t", 0, true );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
-
-
 	  addAsm( str_LDX + "#<!fp0+", 2, false );
 	  addAsm( str_LDY + "#>!fp0+", 2, false );
 	  addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );
-	  
 	  addAsm( str_LDA + "#<!fp1+", 2, false );
 	  addAsm( str_LDY + "#>!fp1+", 2, false );
 	  addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
-	  
 	  addAsm( str_LDA + "#<!fp0+", 2, false );
 	  addAsm( str_LDY + "#>!fp0+", 2, false );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
-
 	  fAddT();
 	}
       else if( op == string( "-" ))
 	{
-	  addCompilerMessage( "This could probably be reworked", 0);
+	  addComment( "IntID - FAC --> FAC" );
 	  float_swap_space_is_needed = true;
-	  addAsm( str_PHA, 1, false );
 	  addAsm( str_LDX + "#<!fp1+", 2, false );
 	  addAsm( str_LDY + "#>!fp1+", 2, false );
 	  addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );
-	  addAsm( str_PLA, 1, false );
-	  addAsm( str_LDX + "#$00", 2, false );
-	  addAsm( str_LDA + O1, 3, false );
-	  addAsm( str_TAY, 1, false );
-	  addAsm( str_ASL, 1, false );
-	  addAsm( str_BCC + "!skip+", 2, false );
-	  addAsm( str_LDX + "#$FF", 2, false );
-	  addAsm( "!skip:\t", 0, true );
-	  addAsm( str_TXA, 1, false );	  
+	  addAsm( str_LDA + "#$00", 2, false );
+	  addAsm( str_LDY + O1, 3, false );
+	  addAsm( str_BPL + "!+", 2, false );
+	  addAsm( str_LDA + "#$FF", 2, false );
+	  addAsm( "!:\t", 0, true );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  addAsm( str_LDX + "#<!fp0+", 2, false );
 	  addAsm( str_LDY + "#>!fp0+", 2, false );
@@ -14506,50 +14488,37 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_LDA + "#<!fp0+", 2, false );
 	  addAsm( str_LDY + "#>!fp0+", 2, false );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
-
 	  fSubT();
 	}
       else if( op == string( "*" ))
 	{
-	  addAsm( str_PHA, 1, false );
+	  addComment( "IntID * FAC --> FAC" );
 	  addAsm( str_LDX + "#<!fp1+", 2, false );
 	  addAsm( str_LDY + "#>!fp1+", 2, false );
 	  addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );
-	  
-	  addAsm( str_PLA, 1, false );
-	  addAsm( str_LDX + "#$00", 2, false );
-	  addAsm( str_LDA + O1, 3, false );
-	  addAsm( str_TAY, 1, false );
-	  addAsm( str_ASL, 1, false );
-	  addAsm( str_BCC + "!skip+", 2, false );
-	  addAsm( str_LDX + "#$FF", 2, false );
-	  addAsm( "!skip:\t", 0, true );
-	  addAsm( str_TXA, 1, false );	  
+	  addAsm( str_LDA + "#$00", 2, false );
+	  addAsm( str_LDY + O1, 3, false );
+	  addAsm( str_BPL + "!+", 2, false );
+	  addAsm( str_LDA + "#$FF", 2, false );
+	  addAsm( "!:\t", 0, true );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
-	  
 	  addAsm( str_LDA + "#<!fp1+", 2, false );
 	  addAsm( str_LDY + "#>!fp1+", 2, false );
-
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fMultT();
 	}
       else if( op == string( "/" ))
 	{
-	  addCompilerMessage( "This could probably be reworked", 0);
+	  addComment( "IntID / FAC --> FAC" );
 	  float_swap_space_is_needed = true;
-	  addAsm( str_PHA, 1, false );
 	  addAsm( str_LDX + "#<!fp1+", 2, false );
 	  addAsm( str_LDY + "#>!fp1+", 2, false );
 	  addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );
-	  addAsm( str_PLA, 1, false );
-	  addAsm( str_LDX + "#$00", 2, false );
-	  addAsm( str_LDA + O1, 3, false );
-	  addAsm( str_TAY, 1, false );
-	  addAsm( str_ASL, 1, false );
-	  addAsm( str_BCC + "!skip+", 2, false );
-	  addAsm( str_LDX + "#$FF", 2, false );
-	  addAsm( "!skip:\t", 0, true );
-	  addAsm( str_TXA, 1, false );	  
+	  addAsm( str_LDA + "#$00", 2, false );
+	  addAsm( str_LDY + O1, 3, false );
+	  addAsm( str_BPL + "!+", 2, false );
+	  addAsm( str_LDA + "#$FF", 2, false );
+	  addAsm( "!:\t", 0, true );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  addAsm( str_LDX + "#<!fp0+", 2, false );
 	  addAsm( str_LDY + "#>!fp0+", 2, false );
@@ -14565,37 +14534,26 @@ arithmetic[MATHOP] expression[OP2]
 	}
       else if( op == string( "**" ))
 	{
-	  addCompilerMessage( "If Integer is < 0, an error could occur", 1 );
-	  addCompilerMessage( "This could probably be reworked", 0);
+	  addComment( "IntID ** FAC --> FAC" );
 	  float_swap_space_is_needed = true;
-	  addAsm( str_PHA, 1, false );
-
 	  addAsm( str_LDX + "#<!fp1+", 2, false );
 	  addAsm( str_LDY + "#>!fp1+", 2, false );
-	  addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );
-	  
-	  addAsm( str_PLA, 1, false );
-	  addAsm( str_LDX + "#$00", 2, false );
-	  addAsm( str_LDA + O1, 3, false );
-	  addAsm( str_TAY, 1, false );
-	  addAsm( str_ASL, 1, false );
-	  addAsm( str_BCC + "!skip+", 2, false );
-	  addAsm( str_LDX + "#$FF", 2, false );
-	  addAsm( "!skip:\t", 0, true );
-	  addAsm( str_TXA, 1, false );	  
+	  addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );	  
+	  addAsm( str_LDA + "#$00", 2, false );
+	  addAsm( str_LDY + O1, 3, false );
+	  addAsm( str_BPL + "!+", 2, false );
+	  addAsm( str_LDA + "#$FF", 2, false );
+	  addAsm( "!:\t", 0, true );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
-
 	  addAsm( str_LDX + "#<!fp0+", 2, false );
 	  addAsm( str_LDY + "#>!fp0+", 2, false );
 	  addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );
-	  
 	  addAsm( str_LDA + "#<!fp1+", 2, false );
 	  addAsm( str_LDY + "#>!fp1+", 2, false );
 	  addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
 	  addAsm( str_LDA + "#<!fp0+", 2, false );
 	  addAsm( str_LDY + "#>!fp0+", 2, false );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
-
 	  fPwrT();
 	}
       else
@@ -14610,14 +14568,11 @@ arithmetic[MATHOP] expression[OP2]
       if( op == string("+"))
 	{
 	  // OP1 -> FAC
-	  addAsm( str_LDX + "#$00", 2, false );
-	  addAsm( str_LDA + O1, 3, false );
-	  addAsm( str_TAY, 1, false );
-	  addAsm( str_ASL, 1, false );
-	  addAsm( str_BCC + "!skip+", 2, false );
-	  addAsm( str_LDX + "#$FF", 2, false );
-	  addAsm( "!skip:\t", 0, true );
-	  addAsm( str_TXA, 1, false );	  
+	  addAsm( str_LDA + "#$00", 2, false );
+	  addAsm( str_LDY + O1, 3, false );
+	  addAsm( str_BPL + "!+", 2, false );
+	  addAsm( str_LDA + "#$FF", 2, false );
+	  addAsm( "!:\t", 0, true );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 
 	  // OP2 -> FAC
@@ -14630,14 +14585,11 @@ arithmetic[MATHOP] expression[OP2]
 	{
 	  float_swap_space_is_needed = true;
 	  // OP1 -> FAC
-	  addAsm( str_LDX + "#$00", 2, false );
-	  addAsm( str_LDA + O1, 3, false );
-	  addAsm( str_TAY, 1, false );
-	  addAsm( str_ASL, 1, false );
-	  addAsm( str_BCC + "!skip+", 2, false );
-	  addAsm( str_LDX + "#$FF", 2, false );
-	  addAsm( "!skip:\t", 0, true );
-	  addAsm( str_TXA, 1, false );	  
+	  addAsm( str_LDA + "#$00", 2, false );
+	  addAsm( str_LDY + O1, 3, false );
+	  addAsm( str_BPL + "!+", 2, false );
+	  addAsm( str_LDA + "#$FF", 2, false );
+	  addAsm( "!:\t", 0, true );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 
 	  // FAC -> MEM (fp1)
@@ -14659,14 +14611,11 @@ arithmetic[MATHOP] expression[OP2]
       else if( op == string( "*" ))
 	{
 	  // OP1 -> FAC
-	  addAsm( str_LDX + "#$00", 2, false );
-	  addAsm( str_LDA + O1, 3, false );
-	  addAsm( str_TAY, 1, false );
-	  addAsm( str_ASL, 1, false );
-	  addAsm( str_BCC + "!skip+", 2, false );
-	  addAsm( str_LDX + "#$FF", 2, false );
-	  addAsm( "!skip:\t", 0, true );
-	  addAsm( str_TXA, 1, false );	  
+	  addAsm( str_LDA + "#$00", 2, false );
+	  addAsm( str_LDY + O1, 3, false );
+	  addAsm( str_BPL + "!+", 2, false );
+	  addAsm( str_LDA + "#$FF", 2, false );
+	  addAsm( "!:\t", 0, true );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 
 	  // OP2 -> FAC
@@ -14679,14 +14628,11 @@ arithmetic[MATHOP] expression[OP2]
 	{
 	  float_swap_space_is_needed = true;
 	  // OP1 -> FAC
-	  addAsm( str_LDX + "#$00", 2, false );
-	  addAsm( str_LDA + O1, 3, false );
-	  addAsm( str_TAY, 1, false );
-	  addAsm( str_ASL, 1, false );
-	  addAsm( str_BCC + "!skip+", 2, false );
-	  addAsm( str_LDX + "#$FF", 2, false );
-	  addAsm( "!skip:\t", 0, true );
-	  addAsm( str_TXA, 1, false );	  
+	  addAsm( str_LDA + "#$00", 2, false );
+	  addAsm( str_LDY + O1, 3, false );
+	  addAsm( str_BPL + "!+", 2, false );
+	  addAsm( str_LDA + "#$FF", 2, false );
+	  addAsm( "!:\t", 0, true );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 
 	  // FAC -> MEM (fp1)
@@ -14709,14 +14655,11 @@ arithmetic[MATHOP] expression[OP2]
 	{
 	  float_swap_space_is_needed = true;
 	  // OP1 -> FAC
-	  addAsm( str_LDX + "#$00", 2, false );
-	  addAsm( str_LDA + O1, 3, false );
-	  addAsm( str_TAY, 1, false );
-	  addAsm( str_ASL, 1, false );
-	  addAsm( str_BCC + "!skip+", 2, false );
-	  addAsm( str_LDX + "#$FF", 2, false );
-	  addAsm( "!skip:\t", 0, true );
-	  addAsm( str_TXA, 1, false );	  
+	  addAsm( str_LDA + "#$00", 2, false );
+	  addAsm( str_LDY + O1, 3, false );
+	  addAsm( str_BPL + "!+", 2, false );
+	  addAsm( str_LDA + "#$FF", 2, false );
+	  addAsm( "!:\t", 0, true );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 
 	  // FAC -> MEM (fp1)
@@ -14749,14 +14692,11 @@ arithmetic[MATHOP] expression[OP2]
       if( op == string("+"))
 	{
 	  // OP1 -> FAC
-	  addAsm( str_LDX + "#$00", 2, false );
-	  addAsm( str_LDA + O1, 3, false );
-	  addAsm( str_TAY, 1, false );
-	  addAsm( str_ASL, 1, false );
-	  addAsm( str_BCC + "!skip+", 2, false );
-	  addAsm( str_LDX + "#$FF", 2, false );
-	  addAsm( "!skip:\t", 0, true );
-	  addAsm( str_TXA, 1, false );	  
+	  addAsm( str_LDA + "#$00", 2, false );
+	  addAsm( str_LDY + O1, 3, false );
+	  addAsm( str_BPL + "!+", 2, false );
+	  addAsm( str_LDA + "#$FF", 2, false );
+	  addAsm( "!:\t", 0, true );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  
 	  // FAC -> MEM (fp0)
@@ -14777,16 +14717,13 @@ arithmetic[MATHOP] expression[OP2]
       else if( op == string( "-" ))
 	{
 	  // OP1 -> FAC
-	  addAsm( str_LDX + "#$00", 2, false );
-	  addAsm( str_LDA + O1, 3, false );
-	  addAsm( str_TAY, 1, false );
-	  addAsm( str_ASL, 1, false );
-	  addAsm( str_BCC + "!skip+", 2, false );
-	  addAsm( str_LDX + "#$FF", 2, false );
-	  addAsm( "!skip:\t", 0, true );
-	  addAsm( str_TXA, 1, false );	  
+	  addAsm( str_LDA + "#$00", 2, false );
+	  addAsm( str_LDY + O1, 3, false );
+	  addAsm( str_BPL + "!+", 2, false );
+	  addAsm( str_LDA + "#$FF", 2, false );
+	  addAsm( "!:\t", 0, true );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
-	  
+ 
 	  // FAC -> MEM (fp0)
 	  addAsm( str_LDX + "#<!fp0+", 2, false );
 	  addAsm( str_LDY + "#>!fp0+", 2, false );
@@ -14805,14 +14742,11 @@ arithmetic[MATHOP] expression[OP2]
       else if( op == string( "*" ))
 	{
 	  // OP1 -> FAC
-	  addAsm( str_LDX + "#$00", 2, false );
-	  addAsm( str_LDA + O1, 3, false );
-	  addAsm( str_TAY, 1, false );
-	  addAsm( str_ASL, 1, false );
-	  addAsm( str_BCC + "!skip+", 2, false );
-	  addAsm( str_LDX + "#$FF", 2, false );
-	  addAsm( "!skip:\t", 0, true );
-	  addAsm( str_TXA, 1, false );	  
+	  addAsm( str_LDA + "#$00", 2, false );
+	  addAsm( str_LDY + O1, 3, false );
+	  addAsm( str_BPL + "!+", 2, false );
+	  addAsm( str_LDA + "#$FF", 2, false );
+	  addAsm( "!:\t", 0, true );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  
 	  // FAC -> MEM (fp0)
@@ -14832,14 +14766,11 @@ arithmetic[MATHOP] expression[OP2]
       else if( op == string( "/" ))
 	{
 	  // OP1 -> FAC
-	  addAsm( str_LDX + "#$00", 2, false );
-	  addAsm( str_LDA + O1, 3, false );
-	  addAsm( str_TAY, 1, false );
-	  addAsm( str_ASL, 1, false );
-	  addAsm( str_BCC + "!skip+", 2, false );
-	  addAsm( str_LDX + "#$FF", 2, false );
-	  addAsm( "!skip:\t", 0, true );
-	  addAsm( str_TXA, 1, false );	  
+	  addAsm( str_LDA + "#$00", 2, false );
+	  addAsm( str_LDY + O1, 3, false );
+	  addAsm( str_BPL + "!+", 2, false );
+	  addAsm( str_LDA + "#$FF", 2, false );
+	  addAsm( "!:\t", 0, true );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  
 	  // FAC -> MEM (fp0)
@@ -14859,14 +14790,11 @@ arithmetic[MATHOP] expression[OP2]
       else if( op == string( "**" ))
 	{
 	  // OP1 -> FAC
-	  addAsm( str_LDX + "#$00", 2, false );
-	  addAsm( str_LDA + O1, 3, false );
-	  addAsm( str_TAY, 1, false );
-	  addAsm( str_ASL, 1, false );
-	  addAsm( str_BCC + "!skip+", 2, false );
-	  addAsm( str_LDX + "#$FF", 2, false );
-	  addAsm( "!skip:\t", 0, true );
-	  addAsm( str_TXA, 1, false );	  
+	  addAsm( str_LDA + "#$00", 2, false );
+	  addAsm( str_LDY + O1, 3, false );
+	  addAsm( str_BPL + "!+", 2, false );
+	  addAsm( str_LDA + "#$FF", 2, false );
+	  addAsm( "!:\t", 0, true );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  
 	  // FAC -> MEM (fp0)
