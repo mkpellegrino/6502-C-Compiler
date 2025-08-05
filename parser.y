@@ -295,6 +295,7 @@
   int label_major=0;
 
   // command line arguments
+  bool arg_show_opt=false;
   bool arg_memory_locations=false;
   bool arg_unsafe_ifs=false;
   bool arg_unsafe_math=false;
@@ -563,16 +564,16 @@
     switch( level )
       {
       case 0:
-	cerr << "*** message *** asm instruction number: " << linen << " *** " << msg << " ***" << endl;
+	if( arg_show_opt ) cerr << "\e[2m*** message *** asm instruction number: " << linen << " *** " << msg << " ***\e[22m" << endl;
 	break;
       case 1:
-	cerr << "*** warning *** asm instruction number: " << linen << " *** " << msg << " ***" << endl;
+	if( arg_show_opt ) cerr << "*** warning *** asm instruction number: " << linen << " *** " << msg << " ***" << endl;
 	break;
       case 2:
-	cerr << "*** ERROR *** asm instruction number: " << linen << " *** " << msg << " ***" << endl;
+	if( arg_show_opt ) cerr << "\e[1m*** ERROR *** asm instruction number: " << linen << " *** " << msg << " ***\e[22m" << endl;
 	break;
       case 3:
-	cerr << "***  C R I T I C A L   E R R O R  *** asm instruction number: " << linen << " *** " << msg << " ***" << endl;
+	if( arg_show_opt ) cerr << "\e[1m***  C R I T I C A L   E R R O R  *** asm instruction number: " << linen << " *** " << msg << " ***\e[22m" << endl;
 	exit(-1);
 	break;
       }
@@ -1781,7 +1782,7 @@
     if(debug_flag_is_on)
       {
 	string s = string("deleting " + asm_instr[asm_instr.size()-1]->getString() );
-	addCompilerMessage( s, 0 );
+	if( arg_show_opt ) addCompilerMessage( s, 0 );
       }
     byte_count -= asm_instr[asm_instr.size()-1]->getSize();
     asm_instr.erase( asm_instr.end()-1 );
@@ -1797,7 +1798,7 @@
 	if(debug_flag_is_on)
 	  {
 	    string s = string("deleting " + asm_instr[asm_instr.size()-1]->getString() );
-	    addCompilerMessage( s, 0 );
+	    if( arg_show_opt ) addCompilerMessage( s, 0 );
 	  }
 	byte_count -= asm_instr[asm_instr.size()-1]->getSize();
 	asm_instr.erase( asm_instr.end()-1 );
@@ -1879,7 +1880,7 @@
 
   void Optimize()
   {
-    addCompilerMessage( "*** *** OPTIMIZATION PHASE *** ***", 0 );
+    if( arg_show_opt ) addCompilerMessage( "*** *** OPTIMIZATION PHASE *** ***", 0 );
     string plp = string("plp");
     string pla = string("pla");
     string sta03 = string("sta $03");
@@ -1920,7 +1921,7 @@
 	if( cmpstr( asm_instr[i]->getString(), txa ) &&
 	    cmpstr( asm_instr[i+1]->getString(), sand ) )
 	  {
-	    addCompilerMessage( "found txa, and.  replace txa, and IMM with xaa IMM for more efficiency.", 0);
+	    addOptimizationMessage( "found txa, and.  replace txa, and IMM with xaa IMM for more efficiency.", i);
 	  }
       }
 
@@ -3696,7 +3697,7 @@ body: WHILE
       asm_instr.push_back( iterator_stack.top() );
       s = iterator_stack.top()->getString();
       string s2 = string( "replacing: " ) + s;
-      addCompilerMessage( s2, 0 );
+      if( arg_show_opt ) addCompilerMessage( s2, 0 );
       iterator_stack.pop();
     }
   // delete the TAG
@@ -3792,7 +3793,7 @@ body: WHILE
 	 //deletePreviousAsm();
 	 
 	 addComment( "Removed previous JMP instruction & a label" );
-	 addCompilerMessage( "Removed an unneccessary JMP instruction and Label", 0 );
+	 if( arg_show_opt ) addCompilerMessage( "Removed an unneccessary JMP instruction and Label", 0 );
 
 	 if( (byte_count - jump_start) <= 255 )
 	   {
@@ -4341,7 +4342,7 @@ body: WHILE
   else if( isWordIMM($3.name) )
     {
       addComment( "printf(WordIMM);" );
-      addCompilerMessage( "This is VERY inefficient.  You could just print the value as a string", 1 );
+      if( arg_show_opt ) addCompilerMessage( "This is VERY inefficient.  You could just print the value as a string", 1 );
       int tmp = atoi( stripFirst($3.name).c_str() );
       word2dec_is_needed = true;
       byte2hex_is_needed = true;
@@ -4373,7 +4374,7 @@ body: WHILE
   else if( isUintIMM($3.name) || isIntIMM($3.name) )
     {
       addComment( "printf(UIntIMM);" );
-      addCompilerMessage( "This is VERY inefficient.  You could just print the value as a string", 1 );
+      if( arg_show_opt ) addCompilerMessage( "This is VERY inefficient.  You could just print the value as a string", 1 );
       int tmp = atoi( stripFirst($3.name).c_str() );
       word2dec_is_needed = true;
       byte2hex_is_needed = true;
@@ -6429,7 +6430,7 @@ body: WHILE
   else if( isWordID($3.name) && isWordID($6.name) && isUintIMM($9.name) )
     {
       //pushScope("memcpy");
-      addCompilerMessage( "memcpy(wordid,wordid,uintimm): Not Yet Implemented", 3 );
+      addCompilerMessage( "memcpy(wordid,wordid,uintimm): nyi", 3 );
       //popScope();
     }
   else if( isXA( $3.name ) && isWordIMM($6.name) && isUintIMM($9.name) )
@@ -6857,7 +6858,7 @@ condition: expression[LHS] relop[OP] expression[RHS]
   else if( isWordID($1.name) && isXA($3.name))  // mismatch
     {
       addComment( "WordID relop XA" );
-      addCompilerMessage("Swapping WordID and XA in comparison would be more efficient", 1);
+      if( arg_show_opt ) addCompilerMessage("Swapping WordID and XA in comparison would be more efficient", 1);
       int tmp_v = getAddressOf( $1.name );
       addAsm( str_STA + "!++", 3, false );
       addAsm( str_STX + "!+", 3, false );
@@ -7490,7 +7491,7 @@ condition: expression[LHS] relop[OP] expression[RHS]
     }
   else if( _tmpCond == "exp <= exp lb" )
     {
-      addCompilerMessage( "you could save 3 bytes by swapping operands in condition and changing it to: '>'", 0 );
+      if( arg_show_opt ) addCompilerMessage( "you could save 3 bytes by swapping operands in condition and changing it to: '>'", 0 );
       // 17 bytes
       if( arg_asm_comments )
 	{
@@ -7692,7 +7693,7 @@ statement: datatype ID init
       // I have no idea WTF I was thinking here... Slipstream?!?
       if( (isIntDT(_dt) || isUintDT(_dt)) && (isIntID(_id) || isUintID(_id)) )
 	{
-	  addCompilerMessage( "slipstreaming " + _id, 0 );
+	  if( arg_show_opt ) addCompilerMessage( "slipstreaming " + _id, 0 );
 	  int addr1 = getAddressOf(_id);
 	  int instr_size = 3;
 	  if( addr1 < 256 ) instr_size = 2;
@@ -7700,7 +7701,7 @@ statement: datatype ID init
 	}
       else if( isWordDT(_dt) && isWordID(_id) )
 	{
-	  addCompilerMessage( "slipstreaming " + _id, 0 );
+	  if( arg_show_opt ) addCompilerMessage( "slipstreaming " + _id, 0 );
 	  int addr1 = getAddressOf(_id);
 	  int addr2 = getAddressOf(_id)+1;
 	  int instr_size = 3;
@@ -7768,7 +7769,7 @@ statement: datatype ID init
   else if((isUintDT(_dt)||isIntDT(_dt)) && (isUintID(_id)||isIntID(_id)) && isXA(_init))
     {
       addComment( "Uint/Int UintID/IntID = XA " );
-      addCompilerMessage("Initialising a 1 byte memory location with a 2 byte value; losing High Byte",0);
+      addCompilerMessage("Initialising a 1 byte memory location with a 2 byte value; losing High Byte", 1);
       int instr_size = 3;
       if( current_variable_base_address < 256 ) instr_size = 2;
       addAsm( str_STA + _id, instr_size, false );
@@ -8045,8 +8046,8 @@ statement: datatype ID init
       int n = atoi(stripFirst($5.name).c_str());
       if( n > 2 )
 	{
-	  addCompilerMessage( "inc(" + getNameOf(getAddressOf($3.name)) + ", " + itos(n) + ") uses " + itos(6*n) + " clock cycles in " + itos(n) + " bytes", 1 );
-	  addCompilerMessage( "consider just adding " + itos(n) + " to " + getNameOf(getAddressOf($3.name)) + " for 12 cycles in 9 bytes", 1 );
+	  if( arg_show_opt ) addCompilerMessage( "inc(" + getNameOf(getAddressOf($3.name)) + ", " + itos(n) + ") uses " + itos(6*n) + " clock cycles in " + itos(n) + " bytes", 1 );
+	  if( arg_show_opt ) addCompilerMessage( "consider just adding " + itos(n) + " to " + getNameOf(getAddressOf($3.name)) + " for 12 cycles in 9 bytes", 1 );
 	}
       for( int i = 0; i < n; i++ )
 	{
@@ -8566,7 +8567,7 @@ statement: datatype ID init
       addComment( "spritex( XA/A, WordID );" );
       if( isXA($3.name) )
 	{
-	  addCompilerMessage( "spritex cannot take XA as first parameter... losing High Byte", 0 );
+	  addCompilerMessage( "spritex cannot take XA as first parameter... losing High Byte", 1 );
 	}
       int value_addr = getAddressOf( $5.name );
       
@@ -10379,7 +10380,7 @@ statement: datatype ID init
   else if( isIntID && isXA(_init) )
     {
       addComment( "IntID = XA" );
-      addCompilerMessage("setting a 1 byte memory location to a 2 byte value... losing High Byte",0);
+      addCompilerMessage("setting a 1 byte memory location to a 2 byte value... losing High Byte", 1);
 
       int instr_size = 3;
       if( current_variable_base_address < 256 ) instr_size=2; 
@@ -10391,15 +10392,15 @@ statement: datatype ID init
       // something specific
       addAsm( "// ^^^ OPTIMIZE (maybe) ^^^", 0, false );
       addComment( "UintID init with XA" );
-      addCompilerMessage("setting a 1 byte memory location to a 2 byte value... losing High Byte",0);
+      addCompilerMessage("setting a 1 byte memory location to a 2 byte value... losing High Byte", 1);
       int instr_size = 3;
       if( current_variable_base_address < 256 ) instr_size = 2;
       addAsm( str_STA + getNameOf(current_variable_base_address), instr_size, false );
     }
   else if( (isUintID(_id)||isIntID(_id)) && isFAC(_init) )
     {
-      addComment("UIntID = FAC" );
-      addCompilerMessage("setting a 1 byte memory location to a Floating Point byte value... losing Sign and Fidelity",0);
+      addComment("UintID = FAC" );
+      addCompilerMessage("setting a 1 byte memory location to a Floating Point byte value... losing Sign and Fidelity" ,1);
       addAsm( str_JSR + "$B1AA" + commentmarker + "FAC -> WORD", 3, false );
       addAsm( str_STY + getNameOf(getAddressOf(_id)), 3, false );
     }
@@ -22565,7 +22566,7 @@ arithmetic[MATHOP] expression[OP2]
 	      addAsm( str_TAX );                 // 2 cycles
 	      addAsm( str_LDA + "#$00", 2, false );  // 2 cycles
 	      strcpy($$.name, "_XA");
-	      addCompilerMessage( "Multiplying a Word by # >= 256... Losing some fidelity (and you may be eaten by a grue).", 0 );
+	      addCompilerMessage( "Multiplying a Word by # >= 256... Losing some fidelity (and you may be eaten by a grue).", 1 );
 	      break;
 	    case 128:
 	      addComment( "XA * WordIMM (128) --> XA" );
@@ -25698,6 +25699,7 @@ int main(int argc, char *argv[])
       //if( a == "--symbol-table" ) symbol_table_is_needed = true;
       if( a == "--no-labels" ) arg_show_labels = false;
       if( a == "--short-branches" ) long_branches = false;
+      if( a == "--show-opt" ) arg_show_opt = true; 
       if( a == "--debug" ) { debug_flag_is_on = true; arg_debug_comments = true; }
       if( a == "--basic" || a == "--basicupstart" ) basic_upstart = true;
       if( a == "--scanf-buffer-size" )
@@ -25748,10 +25750,11 @@ int main(int argc, char *argv[])
 	       << "\t--unsafe-math\tcompile with math operations that are potentially destructive to ZP\n" 
 	    // << "\t--no-labels\t\twill supress the labels (and turn them into memory addresses)\n" 
 	       << "\t--no-asm-comments\twill supress most comments pertaining to flow of control\n" 
-	       << "\t--no-optimize\twill generate code with NO optimizations\n" 
+	       << "\t--no-optimize\twill generate code with no post-compilation optimizations\n" 
 	       << "\t--parser-comments\twill show the comments intended to help debug the parser\n"
 	       << "\t--kick\t\t\tcreate .asm file that is compatible with Kick Assembler\n"
 	       << "\t--basic\t\t\tput BASIC Upstart code at $0801\n"
+	       << "\t--show-opt\t\t\twill show the optimisations that the compiler is performing (and also suggest some)\n"
 	       << "\t--help\t\t\tthis message\n" 
 	       << "\t--code-segment address\tsets the start of code segment to a memory address (default is 49152)\n"
 	       << "\t--data-segment address\tsets the start of data segment to a memory address (default is 828)\n"
