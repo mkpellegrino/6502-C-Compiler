@@ -934,21 +934,52 @@
     addAsm( str_JSR + "$BF7B" + commentmarker + "ARG ** FAC -> FAC", 3, false );
   }
 
+  void pushA()
+  {
+    addComment( "A -> Stack" );
+    addAsm( str_PHA, 1, false );
+    return;
+  }
+  void pushXA()
+  {
+    addComment( "XA -> Stack" );
+    addAsm( str_PHA, 1, false );
+    addAsm( str_TXA, 1, false );
+    addAsm( str_PHA, 1, false );
+    return;
+  }
+  void popA()
+  {
+    addComment( "Stack -> A" );
+    addAsm( str_PLA, 1, false );
+    return;
+  }
+  void popXA()
+  {
+    addComment( "Stack -> XA" );
+    addAsm( str_PLA, 1, false );
+    addAsm( str_TAX, 1, false );
+    addAsm( str_PLA, 1, false );
+    return;
+  }
 
 
   void pushFAC()
   {
+    // TODO: Find out why this needs to
+    // be #$07 and not #$05
     addComment( "FAC -> Stack" );
     addAsm( str_TSX, 1, false );
     addAsm( str_TXA, 1, false );
     addAsm( str_SEC, 1, false );
-    addAsm( str_SBC + "#$06", 2, false );
+    addAsm( str_SBC + "#$07", 2, false );
     addAsm( str_TAX, 1, false );
     addAsm( str_TXS, 1, false );
     addAsm( str_INX, 1, false );
     //addAsm( str_TXA, 1, false );
     addAsm( str_LDY + "#$01", 2, false );
-    addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );
+    //addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );
+    addAsm( str_JSR + "$BBD7" + commentmarker + "FAC -> MEM", 3, false );
   }
 
   /* void pushARG() */
@@ -977,17 +1008,19 @@
     addAsm( str_INX, 1, false );
     addAsm( str_INX, 1, false );
     addAsm( str_INX, 1, false );
+    addAsm( str_INX, 1, false );
     addAsm( str_TXS, 1, false );	  
     addAsm( str_LDY + "#$01", 2, false );
-    addAsm( str_JSR + "$BBA2" + commentmarker + "STACK -> FAC", 3, false );
+    addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
   }
 
-  void unstack6()
+  void unstack7()
   {
-    addComment( "unstack 6 bytes" );
+    addComment( "unstack 7 bytes" );
     addAsm( str_TSX, 1, false ); // 2	  
     addAsm( str_INX, 1, false ); // 2
-    addAsm( str_TXA, 1, false ); // 2
+    //addAsm( str_TXA, 1, false ); // 2
+    addAsm( str_INX, 1, false ); // 2
     addAsm( str_INX, 1, false ); // 2
     addAsm( str_INX, 1, false ); // 2
     addAsm( str_INX, 1, false ); // 2
@@ -1054,13 +1087,19 @@
       {
 	addAsm( str_LDA + "#$69" + commentmarker + "OPTIMIZE?", 2, false );
 	addAsm( str_LDY + "#$00", 2, false );
-	addAsm( str_JSR + "$BBA2" + commentmarker + "RAM -> FAC", 3, false );
+	addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
       }
     else if( addr == 25 )
       {
 	addAsm( str_LDA + "#$19" + commentmarker + "OPTIMIZE?", 2, false );
 	addAsm( str_LDY + "#$00", 2, false );
-	addAsm( str_JSR + "$BBA2" + commentmarker + "RAM -> FAC", 3, false );
+	addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
+      }
+    else if( addr == 2 )
+      {
+	addAsm( str_LDA + "#$02" + commentmarker + "OPTIMIZE?", 2, false );
+	addAsm( str_LDY + "#$00", 2, false );
+	addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
       }
     return;
   }
@@ -2710,28 +2749,7 @@
     addAsm( str_PHA );
     return;
   }
-  
-  void compareFloatVsFloat( string OP1, string OP2 )
-  {
-    addCommentSection( "FLOAT IMM vs. FLOAT MEM" );
-    addDebugComment(  OP1 + string( " rwlop " ) + OP2 );
-    // FP Operations
-    inlineFloat( OP1, 105);
-    current_variable_base_address = getAddressOf( OP2 );
-    //addAsm( str_LDA+"#$"+ toHex( get_word_L( current_variable_base_address )), 2, false );
-    addAsm( str_LDA + "#<" + getNameOf(getAddressOf(OP2)), 2, false );
-
-    //addAsm( str_LDY+"#$"+toHex( get_word_H( current_variable_base_address )), 2, false );
-    addAsm( str_LDY + "#>" + getNameOf(getAddressOf(OP2)), 2, false );
-
-    addAsm( str_JSR+ "$BBA2" +commentmarker+"RAM -> FAC", 3, false );
-    addAsm( str_LDA+ "#$69", 2, false );
-    addAsm( str_LDY+ "#$00", 2, false );
-    addAsm( str_JSR+ "$BC5B" +commentmarker+"CMP(FAC, RAM)", 3, false );
-    addAsm( str_PHA );
-    return;
-  }
-  
+    
   void yyerror(const char *s);
   int yylex();
   int yywrap();
@@ -6706,67 +6724,86 @@ body: WHILE
 // which would make $2.name -> $3.name and $3.name -> $4.name
 // then, when comparing anything with an A as OP1, it will need to be
 // popped off of the processor stack
-condition: expression[LHS] relop[OP] expression[RHS]
+condition: expression[LHS]
+{
+  // MRA for A, XA, and FAC
+  addAsm( "// MARKED_FOR_DELETION",0,true);
+  if(isXA($LHS.name))
+    {pushXA();}
+  else if(isA($LHS.name))
+    {pushA();}
+  else if(isFAC($LHS.name))
+    {pushFAC();}
+} relop[OP] expression[RHS]
+{
+  if(  !isXA($RHS.name) &&
+       !isA($RHS.name) &&
+       !isFAC($RHS.name)
+       &&
+       (isA($LHS.name) || isXA($LHS.name) || isFAC($LHS.name))
+       )
+    {
+      deletePreviousAsmUntil("// MARKED_FOR_DELETION");
+      addComment( "Deleted Mnemonics");
+    }
+}
 {
   addDebugComment( "=========================================================");
   addDebugComment( string( "condition in ") + scope_stack.top() );
-  addParserComment( scope_stack.top() + " " + $1.name + $2.name + $3.name);
+  addParserComment( scope_stack.top() + " " + $LHS.name + $OP.name + $RHS.name);
   addDebugComment( "=========================================================");
   string tc;
-  //if( isXA($1.name ) ) tc+=string( "XA" );
   if( isXA($LHS.name) ) tc+=string( "XA" );
-  if( isA($1.name ) ) tc+=string( "A" );
-  if( isUintID($1.name) ) tc+=string( "UintID" );
-  if( isIntID($1.name) ) tc+=string( "IntID" );
-  if( isWordID($1.name) ) tc+=string( "WordID" );
-  if( isDoubleID($1.name) ) tc+=string( "DoubleID" );
-  if( isFloatID($1.name) ) tc+=string( "FloatID" );
-  if( isUintIMM($1.name) ) tc+=string( "UintIMM" );
-  if( isIntIMM($1.name) ) tc+=string( "IntIMM" );
-  if( isWordIMM($1.name) ) tc+=string( "WordIMM" );
-  if( isDoubleIMM($1.name) ) tc+=string( "DoubleIMM" );
-  if( isFloatIMM($1.name) ) tc+=string( "FloatIMM" );
+  if( isA($LHS.name ) ) tc+=string( "A" );
+  if( isUintID($LHS.name) ) tc+=string( "UintID" );
+  if( isIntID($LHS.name) ) tc+=string( "IntID" );
+  if( isWordID($LHS.name) ) tc+=string( "WordID" );
+  if( isFAC($LHS.name) ) tc+=string( "FAC" );
+  if( isFloatID($LHS.name) ) tc+=string( "FloatID" );
+  if( isUintIMM($LHS.name) ) tc+=string( "UintIMM" );
+  if( isIntIMM($LHS.name) ) tc+=string( "IntIMM" );
+  if( isWordIMM($LHS.name) ) tc+=string( "WordIMM" );
+  if( isFloatIMM($LHS.name) ) tc+=string( "FloatIMM" );
   tc+=string( " " );
-  if( getAddressOf($1.name) == 0 )
+  if( getAddressOf($LHS.name) == 0 )
     {
-      tc+=$1.name;
+      tc+=$LHS.name;
     }
   else
     {
-      tc+=string(getNameOf(getAddressOf($1.name)));
+      tc+=string(getNameOf(getAddressOf($LHS.name)));
     }
-  tc+=string( " vs. " );
-  if( isA($3.name ) )
+  tc+=string( " relop " );
+  if( isA($RHS.name ) )
     {
       tc+=string( "A" );
+      addComment( "Why is this here?" );
       addAsm( str_STA + "$02", 2, false );
     }
-  //if( isXA($3.name ) ) tc+=string( "XA" );
   if( isXA($RHS.name) ) tc+=string( "XA" );
-  if( isUintID($3.name) ) tc+=string( "UintID" );
-  if( isIntID($3.name) ) tc+=string( "IntID" );
-  if( isWordID($3.name) ) tc+=string( "WordID" );
-  if( isDoubleID($3.name) ) tc+=string( "DoubleID" );
-  if( isFloatID($3.name) ) tc+=string( "FloatID" );
-  if( isUintIMM($3.name) ) tc+=string( "UintIMM" );
-  if( isIntIMM($3.name) ) addComment( "IntIMM" );
-  if( isWordIMM($3.name) ) tc+=string( "WordIMM" );
-  if( isDoubleIMM($3.name) ) tc+=string( "DoubleIMM" );
-  if( isFloatIMM($3.name) ) tc+=string( "FloatIMM" );
+  if( isUintID($RHS.name) ) tc+=string( "UintID" );
+  if( isIntID($RHS.name) ) tc+=string( "IntID" );
+  if( isWordID($RHS.name) ) tc+=string( "WordID" );
+  if( isFAC($RHS.name) ) tc+=string( "FAC" );
+  if( isFloatID($RHS.name) ) tc+=string( "FloatID" );
+  if( isUintIMM($RHS.name) ) tc+=string( "UintIMM" );
+  if( isIntIMM($RHS.name) ) tc+=string( "IntIMM" );
+  if( isWordIMM($RHS.name) ) tc+=string( "WordIMM" );
+  if( isFloatIMM($RHS.name) ) tc+=string( "FloatIMM" );
   tc+=string( " " );
 
-  if( getAddressOf($3.name) <= 0 )
+  if( getAddressOf($RHS.name) <= 0 )
     {
-      tc+=$3.name;
+      tc+=$RHS.name;
     }
   else
     {
-      tc+=string(getNameOf(getAddressOf($3.name)));
+      tc+=string(getNameOf(getAddressOf($RHS.name)));
     }
   
   //tc+=string($3.name);
   
-  addComment( tc );
+  //addComment( tc );
   
   if( scope_stack.top() == "FOR" ) addAsm( generateNewLabel() + commentmarker + "Top of FOR Loop", 0, true );  
   if( scope_stack.top() == "WHILE" ) addAsm( generateNewLabel() + commentmarker + "Top of WHILE Loop", 0, true );  
@@ -6776,51 +6813,87 @@ condition: expression[LHS] relop[OP] expression[RHS]
   // at this point, we need to look at the type of the variable that is located
   // at the $1.name address, so we know how to compare it with another number
 
-  if( isUintID($1.name) && string($2.name) == string( ">=" ) && (!isA($3.name)) &&  atoi(stripFirst($3.name).c_str()) == 0 )
+  if( isUintID($LHS.name) && string($OP.name) == string( ">=" ) && (!isA($RHS.name)) &&  atoi(stripFirst($RHS.name).c_str()) == 0 )
     {
       addCompilerMessage( "UINTs can ONLY be >= 0... this line of code will lead to an infinite loop", 3 );
     }
 
-  if( isUintID($1.name) && string($2.name) == string( "<" ) && (isUintIMM($3.name) || isIntIMM($3.name) ) &&  atoi(stripFirst($3.name).c_str()) == 0 )
+  if( isUintID($LHS.name) && string($OP.name) == string( "<" ) && (isUintIMM($RHS.name) || isIntIMM($RHS.name) ) &&  atoi(stripFirst($RHS.name).c_str()) == 0 )
     {
       addCompilerMessage( "UINTs can ONLY be >= 0... this line of code will lead to an infinite loop", 3 );
     }
 
-  if( isIntID($1.name) && string($2.name) == string( ">" ) && (isUintIMM($3.name) || isIntIMM($3.name) ) && atoi(stripFirst($3.name).c_str()) == 128 )
+  if( isIntID($LHS.name) && string($OP.name) == string( ">" ) && (isUintIMM($RHS.name) || isIntIMM($RHS.name) ) && atoi(stripFirst($RHS.name).c_str()) == 128 )
     {
       addCompilerMessage( "INTs can ONLY be between -127 and +128... this line of code will lead to an infinite loop", 3 );
     }
  
 
-  if( isIntID($1.name) && string($2.name) == string( "<=" ) && (isUintIMM($3.name) || isIntIMM($3.name) ) && atoi(stripFirst($3.name).c_str()) == 128 ) 
+  if( isIntID($LHS.name) && string($OP.name) == string( "<=" ) && (isUintIMM($RHS.name) || isIntIMM($RHS.name) ) && atoi(stripFirst($RHS.name).c_str()) == 128 ) 
     {
       addCompilerMessage( "INTs can ONLY be between -127 and +128... this line of code will lead to an infinite loop", 3 );
     }
 
   // ====================================================================================================================
-  //                 COMPARISONS START HERE
+  //                 COMPARISONS START HERE START OF COMPARISONS START OF RELOPS
   // ====================================================================================================================
-  if( isFloatIMM($1.name) && isFloatID($3.name)) 
+  if( isFloatIMM($LHS.name) && isFloatID($RHS.name)) 
     {
-      addComment( "FloatIMM relop FloatID" );
+      addComment( "FloatIMM relop FloatID: TOC" );
 		  
       // FP Operations
-      inlineFloat( $1.name, 105);
-      current_variable_base_address = getAddressOf($3.name);
+      inlineFloat( $LHS.name, 105);
+      current_variable_base_address = getAddressOf($RHS.name);
       string tmp_name = getNameOf(current_variable_base_address);
 
-      addAsm( str_LDA + "#<" + getNameOf(getAddressOf($3.name)), 2, false );
-      addAsm( str_LDY + "#>" + getNameOf(getAddressOf($3.name)), 2, false );
-
+      addAsm( str_LDA + "#<" + getNameOf(getAddressOf($RHS.name)), 2, false );
+      addAsm( str_LDY + "#>" + getNameOf(getAddressOf($RHS.name)), 2, false );
       addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
       addAsm( str_LDA + "#$69", 2, false );
       addAsm( str_LDY + "#$00", 2, false );
-      addAsm( str_JSR + "$BC5B" + commentmarker + "CMP(FAC, RAM)", 3, false );
+      addAsm( str_JSR + "$BC5B" + commentmarker + "CMP(FAC, MEM)", 3, false );
     }
-  else if( isXA($1.name) && isWordIMM($3.name))  // mismatch
+  else if( isFloatID($LHS.name) && isFAC($RHS.name) )
     {
-      addComment( "XA relop WordIMM" );
-      int tmp_v = atoi(stripFirst($3.name).c_str());
+      addComment( "FloatID relop FAC: TOC" );
+      
+      addAsm( str_LDA + "#<" + getNameOf(getAddressOf($LHS.name)), 2, false );
+      addAsm( str_LDY + "#>" + getNameOf(getAddressOf($LHS.name)), 2, false );
+      addAsm( str_JSR + "$BC5B" + commentmarker + "CMP(FAC, MEM)", 3, false );
+
+      addAsm( str_TAX, 1, false );
+      addAsm( str_LDA + "#$00", 2, false );
+      addAsm( str_PHA, 1, false );
+      addAsm( str_TXA, 1, false );
+      addAsm( str_PHA, 1, false );
+
+      signed_comparison_is_needed = true;
+      addAsm( str_JSR + "SIGNEDCMP", 3, false );
+      addAsm( str_PLP );
+    }
+  else if( isFAC($LHS.name) && isFAC($RHS.name) )
+    {
+      addComment( "FAC relop FAC: TOC" );
+      float_swap_space_is_needed = true;
+      addAsm( str_LDX + "#<!fp1+", 2, false );
+      addAsm( str_LDY + "#>!fp1+", 2, false );
+      addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );      
+      popFAC();
+      addAsm( str_LDA + "#<!fp1+", 2, false );
+      addAsm( str_LDY + "#>!fp1+", 2, false );
+      addAsm( str_JSR + "$BC5B" + commentmarker + "CMP(FAC, MEM)", 3, false );
+
+      addAsm( str_PHA );
+      addAsm( str_LDA + "#$00", 2, false );
+      addAsm( str_PHA );
+      signed_comparison_is_needed = true;
+      addAsm( str_JSR + "SIGNEDCMP", 3, false );
+      addAsm( str_PLP );
+    }
+  else if( isXA($LHS.name) && isWordIMM($RHS.name))  // mismatch
+    {
+      addComment( "XA relop WordIMM: TOC" );
+      int tmp_v = atoi(stripFirst($RHS.name).c_str());
       int tmp_L = get_word_L(tmp_v);
       int tmp_H = get_word_H(tmp_v);
       addAsm( str_TAY );
@@ -6831,11 +6904,11 @@ condition: expression[LHS] relop[OP] expression[RHS]
       addAsm( str_CMP + "#$" + toHex( tmp_L ), 2, false );
       addAsm( "!:", 0, true );
     }
-  else if( isXA($1.name) && isUintIMM($3.name))  // mismatch
+  else if( isXA($LHS.name) && isUintIMM($RHS.name))  // mismatch
     {
       // This should be more like XA relop WordIMM
-      addComment( "XA relop UintIMM" );
-      int tmp_v = atoi(stripFirst($3.name).c_str());
+      addComment( "XA relop UintIMM: TOC" );
+      int tmp_v = atoi(stripFirst($RHS.name).c_str());
 
       // save A in Y
       addAsm( str_TAY );
@@ -6846,20 +6919,20 @@ condition: expression[LHS] relop[OP] expression[RHS]
       addAsm( str_CMP + "#$" + toHex( tmp_v ), 2, false );
       addAsm( "!:", 0, true );
     }
-  else if( isXA($1.name) && isWordID($3.name))  // mismatch
+  else if( isXA($LHS.name) && isWordID($RHS.name))  // mismatch
     {
-      addComment( "XA relop WordID" );
-      int tmp_v = getAddressOf( $3.name );
-      addAsm( str_CPX + getNameOf( tmp_v ) + "+1", 3, false );
+      addComment( "XA relop WordID: TOC" );
+      int tmp_v = getAddressOf( $RHS.name );
+      addAsm( str_CPX + getNameOf( tmp_v ) + " +1", 3, false );
       addAsm( str_BNE + "!+", 2, false );
       addAsm( str_CMP + getNameOf( tmp_v ), 3, false );
       addAsm( "!:", 0, true );
     }
-  else if( isWordID($1.name) && isXA($3.name))  // mismatch
+  else if( isWordID($LHS.name) && isXA($RHS.name))  // mismatch
     {
-      addComment( "WordID relop XA" );
+      addComment( "WordID relop XA: TOC" );
       if( arg_show_opt ) addCompilerMessage("Swapping WordID and XA in comparison would be more efficient", 1);
-      int tmp_v = getAddressOf( $1.name );
+      int tmp_v = getAddressOf( $LHS.name );
       addAsm( str_STA + "!++", 3, false );
       addAsm( str_STX + "!+", 3, false );
       addAsm( str_LDX + getNameOf( tmp_v ) + " +1", 3, false );
@@ -6873,11 +6946,10 @@ condition: expression[LHS] relop[OP] expression[RHS]
       addAsm( "!:\t" + str_BYTE + "$00", 1, true );
       addAsm( "!:", 0, true );
     }
-  else if( isA($1.name) && isWordID($3.name))  // mismatch
+  else if( isA($LHS.name) && isWordID($RHS.name))  // mismatch
     {
-      addCompilerMessage( "A relop WordID (type mismatch)", 1 );
-      addComment( "A relop WordID" );
-      int tmp_v = getAddressOf( $3.name );
+      addComment( "A relop WordID: TOC" );
+      int tmp_v = getAddressOf( $RHS.name );
       addAsm( str_TAY );
       addAsm( str_LDA + "#$00", 2, false );
       addAsm( str_CMP + getNameOf( tmp_v ) + " +1", 3, false );
@@ -6886,23 +6958,23 @@ condition: expression[LHS] relop[OP] expression[RHS]
       addAsm( str_CMP + getNameOf( tmp_v ), 3, false );
       addAsm( "!:", 0, true );
     }
-  else if( isA($1.name) && isUintID($3.name))
+  else if( isA($LHS.name) && isUintID($RHS.name))
     {
-      addComment( "A relop UintID" );
-      int tmp_v = getAddressOf($3.name);
+      addComment( "A relop UintID: TOC" );
+      int tmp_v = getAddressOf($RHS.name);
       addAsm( str_CMP + getNameOf( tmp_v ), 3, false );
     }
-  else if( isA($1.name) && isUintIMM($3.name))
+  else if( isA($LHS.name) && isUintIMM($RHS.name))
     {
-      addComment( "A relop UintIMM" );
-      int tmp_v = atoi(stripFirst($3.name).c_str());
+      addComment( "A relop UintIMM: TOC" );
+      int tmp_v = atoi(stripFirst($RHS.name).c_str());
       addAsm( str_CMP + "#$" + toHex( tmp_v ), 2, false );
     }
-  else if( isA($1.name) && isIntIMM($3.name))  // mismatch
+  else if( isA($LHS.name) && isIntIMM($RHS.name))  // mismatch
     {
       addCompilerMessage( "comparing A with IntIMM (type mismatch)", 1 );
-      addComment( "A relop IntIMM (mismatch)" );
-      int tmp_v = atoi(stripFirst($3.name).c_str());
+      addComment( "A relop IntIMM: TOC" );
+      int tmp_v = atoi(stripFirst($RHS.name).c_str());
 
       if( tmp_v < 0 )
 	{
@@ -6912,44 +6984,44 @@ condition: expression[LHS] relop[OP] expression[RHS]
       
       addAsm( str_CMP + "#$" + toHex( tmp_v ), 2, false );
     }
-  else if( isUintID($1.name) && isIntID($3.name))  // mismatch
+  else if( isUintID($LHS.name) && isIntID($RHS.name))  // mismatch
     {
       addCompilerMessage( "UintID relop IntID (type mismatch)", 1 );
-      addComment( "UintID relop IntID (mismatch)" );
+      addComment( "UintID relop IntID: TOC" );
       // if the address of $1 or $3 < 256... change instr size to 2
       unsigned_signed_cmp_is_needed = true;
-      addAsm( str_LDA + getNameOf(getAddressOf($1.name)), 3, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
       addAsm( str_PHA );
-      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($RHS.name)), 3, false );
       addAsm( str_PHA );
       addAsm( str_JSR + "USCMP" + commentmarker + "unsigned comparison", 3, false );
       addAsm( str_PLP );
     }
-  else if( isUintIMM($1.name) && isIntID($3.name) )  // mismatch
+  else if( isUintIMM($LHS.name) && isIntID($RHS.name) )  // mismatch
     {
       addCompilerMessage( "UintIMM relop IntID (type mismatch)", 1 );
-      addComment( "UintIMM relop IntID (mismatch)" );
+      addComment( "UintIMM relop IntID: TOC" );
 
       unsigned_signed_cmp_is_needed = true;
-      int i = atoi(stripFirst($1.name).c_str());
+      int i = atoi(stripFirst($LHS.name).c_str());
       if( i > 255 ) addCompilerMessage( "uint out of range (0-255)", 2 );
       addAsm( str_LDA + "#$" + toHex(i), 3, false );
       addAsm( str_PHA );
-      addAsm( str_LDA + $3.name, 3, false );
+      addAsm( str_LDA + $RHS.name, 3, false );
       addAsm( str_PHA );
       addAsm( str_JSR + "USCMP" + commentmarker + "unsigned comparison", 3, false );
       addAsm( str_PLP );
     }
-  else if( isUintID($1.name) && isIntIMM($3.name) )  // mismatch
+  else if( isUintID($LHS.name) && isIntIMM($RHS.name) )  // mismatch
     {
       addCompilerMessage( "UintID relop IntIMM (type mismatch)", 1 );
-      addComment( "UintID relop IntIMM (mismatch)" );
+      addComment( "UintID relop IntIMM: TOC" );
 
       unsigned_signed_cmp_is_needed = true;
 
-      addAsm( str_LDA + getNameOf(getAddressOf($1.name)), 3, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
       addAsm( str_PHA );
-      int i = atoi(stripFirst($3.name).c_str());
+      int i = atoi(stripFirst($RHS.name).c_str());
       if( i < 0 )
 	{
 	  i = twos_complement(i);
@@ -6959,124 +7031,163 @@ condition: expression[LHS] relop[OP] expression[RHS]
       addAsm( str_JSR + "USCMP" + commentmarker + "unsigned comparison", 3, false );
       addAsm( str_PLP );
     }
-  else if( isIntIMM($1.name) && isUintID($3.name) )  // mismatch
+  else if( isIntIMM($LHS.name) && isUintID($RHS.name) )  // mismatch
     {
       addCompilerMessage( "IntIMM relop UIntID (type mismatch)", 1 );
 
-      addComment( "IntIMM relop UIntID (mismatch)" );
+      addComment( "IntIMM relop UIntID: TOC" );
 
       unsigned_signed_cmp_is_needed = true;
 
-      int i = atoi(stripFirst($1.name).c_str());
+      int i = atoi(stripFirst($LHS.name).c_str());
       if( i < 0 )
 	{
 	  i = twos_complement(i);
 	}
       addAsm( str_LDA + "#$" + toHex(i), 3, false );
       addAsm( str_PHA );
-      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($RHS.name)), 3, false );
       addAsm( str_PHA );
       addAsm( str_JSR + "USCMP" + commentmarker + "unsigned comparison", 3, false );
       addAsm( str_PLP );
     }
-  else if( isUintID($1.name) && isA($3.name) )
+  else if( isUintID($LHS.name) && isA($RHS.name) )
     {
-      addComment( "UIntID relop A (mismatch)" );
-      addDebugComment( "swap A and UintID before comparison (also preserve $02)" );
+      addComment( "UintID relop A: TOC" );
+      addDebugComment( "Swap A and UintID before comparison (also preserve $02)" );
       addAsm( str_TAX );
       addAsm( str_LDA + "$02", 2, false );
       addAsm( str_TAY );
       addAsm( str_STX + "$02", 2, false );
-      addAsm( str_LDA + getNameOf(getAddressOf($1.name)), 3, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
       addAsm( str_CMP + "$02", 2, false );
       addAsm( str_STY + "$02", 2, false );
     }
-  else if( isIntID($1.name) && isA($3.name) )  // mismatch
+  else if( isIntID($LHS.name) && isA($RHS.name) )  // mismatch
     {
       // 2024 05 10 - mkpellegrino
       addCompilerMessage( "IntID relop A (type mismatch)", 1 );
-      addComment( "IntID relop A (mismatch)" );
+      addComment( "IntID relop A: TOC" );
       addAsm( str_PHA );
-      addAsm( str_LDA + getNameOf(getAddressOf($1.name)), 3, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
       addAsm( str_PHA );
       addAsm( str_JSR + "SIGNEDCMP", 3, false );
       addAsm( str_PLP );
     }
-  else if( isA($1.name) && isXA($3.name) )
+  else if( isA($LHS.name) && isXA($RHS.name) )
     {
-      addCompilerMessage( "A relop XA: nyi", 3 );
+      addCompilerMessage( "A relop XA: testing", 1 );
+      addComment( "A relop XA: TOC" );
+      addAsm( str_STA + "$04", 2, false );
+      addAsm( str_STX + "$05", 2, false );
+      addAsm( str_PLA, 1, false );
+      addAsm( str_STA + "$02", 2, false );
+      addAsm( str_LDA + "#$00", 2, false );
+      addAsm( str_CMP + "$05", 2, false );
+      addAsm( str_BNE + "!+", 2, false );
+      addAsm( str_LDA + "$02", 2, false );
+      addAsm( str_CMP + "$04", 2, false );
+      addAsm( "!:", 0, true );
     }
-  else if( isXA($1.name) && isA($3.name) )
+  else if( isXA($LHS.name) && isA($RHS.name) )
     {
-      addCompilerMessage( "XA relop A: nyi", 3 );
+      addCompilerMessage( "XA relop A: testing", 1 );
+      addComment( "XA relop A: TOC" );
+      addAsm( str_STA + "$04", 2, false );
+      addAsm( str_LDX + "#$00", 2, false );
+      addAsm( str_STX + "$05", 2, false );
+
+      addAsm( str_PLA, 1, false );
+      addAsm( str_STA + "$03", 2, false );
+      addAsm( str_PLA, 1, false );
+      addAsm( str_STA + "$02", 2, false );
+
+      addAsm( str_LDA + "$03", 2, false );
+      addAsm( str_CMP + "$05", 2, false );
+      addAsm( str_BNE + "!+", 2, false );
+      addAsm( str_LDA + "$02", 2, false );
+      addAsm( str_CMP + "$04", 2, false );
+      addAsm( "!:", 0, true );
     }
-  else if( isXA($1.name) && isXA($3.name) )
+  else if( isXA($LHS.name) && isXA($RHS.name) )
     {
-      addCompilerMessage( "XA relop XA: nyi", 3 );
-      addComment( "XA relop XA" );
-      // TODO: Fix THIS using a mid-rule action (by pushing one of the A's onto stack)
-      addComment( "both values to compare are in XA... FIX THIS!!!" );
-      addCompilerMessage( "illegal compare; LHS and RHS are both in XA", 2  );
+      addCompilerMessage( "XA relop XA: testing", 1 );
+      addComment( "XA relop XA: TOC" );
+      addAsm( str_STX + "$05", 2, false );
+      addAsm( str_STA + "$04", 2, false );
+      addAsm( str_PLA, 1, false );
+      addAsm( str_STA + "$03", 2, false );
+      addAsm( str_PLA, 1, false );
+      addAsm( str_STA + "$02", 2, false );
+
+      addAsm( str_LDA + "$03", 2, false );
+      addAsm( str_CMP + "$05", 2, false );
+      
+      addAsm( str_BNE + "!+", 2, false );
+      addAsm( str_LDA + "$02", 2, false );
+      addAsm( str_CMP + "$04", 2, false );
+      addAsm( "!:", 0, true );
+      
     }
-  else if( isA($1.name) && isA($3.name) )
+  else if( isA($LHS.name) && isA($RHS.name) )
     {
-      addCompilerMessage( "A relop A: nyi", 3 );
-      addComment( "A relop A" );
-      // TODO: Fix THIS using a mid-rule action (by pushing one of the A's onto stack)
-      addComment( "both values to compare are in A... FIX THIS!!!" );
-      addCompilerMessage( "illegal compare; LHS and RHS are both in A", 2  );
+      addCompilerMessage( "A relop A: testing", 1 );
+      addComment( "A relop A: TOC" );
+      addAsm( str_STA + "$02", 2, false );
+      addAsm( str_PLA, 1, false );
+      addAsm( str_CMP + "$02", 2, false );      
     }
-  else if( isUintID($1.name) && isUintID($3.name))
+  else if( isUintID($LHS.name) && isUintID($RHS.name))
     {
-      addComment("UintID relop UintID");
-      addAsm( str_LDA + getNameOf(getAddressOf($1.name)), 3, false );
-      addAsm( str_CMP + getNameOf(getAddressOf($3.name)), 3, false );
+      addComment("UintID relop UintID: TOC");
+      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
+      addAsm( str_CMP + getNameOf(getAddressOf($RHS.name)), 3, false );
     }
-  else if( isUintID($1.name) && isUintIMM($3.name))
+  else if( isUintID($LHS.name) && isUintIMM($RHS.name))
     {
-      int tmp_addr = getAddressOf($1.name);
+      int tmp_addr = getAddressOf($LHS.name);
       string tmp_name = getNameOf(tmp_addr);
-      addComment("UintID relop UintIMM");
+      addComment("UintID relop UintIMM: TOC");
       // Done
       addAsm( str_LDA + tmp_name, 3, false );
-      addAsm( str_CMP + "#$"  + toHex( atoi(stripFirst($3.name).c_str() )), 2, false );
+      addAsm( str_CMP + "#$"  + toHex( atoi(stripFirst($RHS.name).c_str() )), 2, false );
     }
-  else if( isUintIMM($1.name) && isUintID($3.name))
+  else if( isUintIMM($LHS.name) && isUintID($RHS.name))
     {
       addCompilerMessage( "UintIMM relop UintID (type mismatch)", 1 );
-      addComment("UintIMM relop UintID");
-      addAsm( str_LDA + "#$" + toHex( atoi(stripFirst($1.name).c_str() )), 2, false );
-      addAsm( str_CMP + getNameOf(getAddressOf($3.name)), 3, false );
+      addComment("UintIMM relop UintID: TOC");
+      addAsm( str_LDA + "#$" + toHex( atoi(stripFirst($LHS.name).c_str() )), 2, false );
+      addAsm( str_CMP + getNameOf(getAddressOf($RHS.name)), 3, false );
     }
-  else if( isUintIMM($1.name) && isUintIMM($3.name))
+  else if( isUintIMM($LHS.name) && isUintIMM($RHS.name))
     {
-      addComment("UintIMM relop UintIMM");
+      addComment("UintIMM relop UintIMM: TOC");
       addCompilerMessage( "Comparing of 2 Immediate values (just hard code it)", 1 );
-      addAsm( str_LDA + "#$" + toHex( atoi(stripFirst($1.name).c_str() )), 2, false );
-      addAsm( str_CMP + "#$" + toHex( atoi(stripFirst($3.name).c_str() )), 2, false );
+      addAsm( str_LDA + "#$" + toHex( atoi(stripFirst($LHS.name).c_str() )), 2, false );
+      addAsm( str_CMP + "#$" + toHex( atoi(stripFirst($RHS.name).c_str() )), 2, false );
     }
-  else if( isIntID($1.name) && isIntID($3.name) )
+  else if( isIntID($LHS.name) && isIntID($RHS.name) )
     {
-      addComment("IntID relop IntID");
+      addComment("IntID relop IntID: TOC");
 
       signed_comparison_is_needed = true;
-      addAsm( str_LDA + getNameOf(getAddressOf($1.name)), 3, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
       addAsm( str_PHA );
-      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($RHS.name)), 3, false );
       addAsm( str_PHA );
       addAsm( str_JSR + "SIGNEDCMP", 3, false );
       addAsm( str_PLP );
     }
-  else if( isIntID($1.name) && isIntIMM($3.name) )
+  else if( isIntID($LHS.name) && isIntIMM($RHS.name) )
     {
-      addComment("IntID relop IntIMM");
+      addComment("IntID relop IntIMM: TOC");
 
       signed_comparison_is_needed = true;
-      addAsm( str_LDA + getNameOf(getAddressOf($1.name)), 3, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
 
       addAsm( str_PHA );
       
-      int i = atoi(stripFirst($3.name).c_str() );
+      int i = atoi(stripFirst($RHS.name).c_str() );
       if( i < 0 )
 	{
 	  i = twos_complement( i );
@@ -7087,52 +7198,52 @@ condition: expression[LHS] relop[OP] expression[RHS]
       addAsm( str_JSR + "SIGNEDCMP", 3, false );
       addAsm( str_PLP );
     }
-  else if( isIntID($1.name) && isUintIMM($3.name) )
+  else if( isIntID($LHS.name) && isUintIMM($RHS.name) )
     {
       addCompilerMessage( "IntID relop UintIMM (type mismatch)", 1 );
-      addComment("IntID relop UIntIMM");
+      addComment("IntID relop UIntIMM: TOC");
 
-      if( atoi($3.name) > 127 || atoi($3.name) < -127 )
+      if( atoi($RHS.name) > 127 || atoi($RHS.name) < -127 )
 	addCompilerMessage( "value out of range for INT comparison", 3 );
 	
       signed_comparison_is_needed = true;
       
-      addAsm( str_LDA + getNameOf(getAddressOf($1.name)), 3, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
       addAsm( str_PHA );
-      addAsm( str_LDA + "#$" + toHex( atoi(stripFirst($3.name).c_str() )), 2, false );
+      addAsm( str_LDA + "#$" + toHex( atoi(stripFirst($RHS.name).c_str() )), 2, false );
       addAsm( str_PHA );
       addAsm( str_JSR + "SIGNEDCMP", 3, false );
       addAsm( str_PLP );
     }
-  else if( isIntIMM($1.name) && isIntID($3.name) )
+  else if( isIntIMM($LHS.name) && isIntID($RHS.name) )
     {
       addCompilerMessage( "IntIMM relop IntID (type mismatch)", 1 );
-      addComment("IntIMM relop IntID");
+      addComment("IntIMM relop IntID: TOC");
 
       signed_comparison_is_needed = true;
-      int OP1 = atoi(stripFirst($1.name).c_str());
+      int OP1 = atoi(stripFirst($LHS.name).c_str());
       if( OP1 < 0 )
 	{
 	  OP1 = twos_complement( OP1 );
 	}
       addAsm( str_LDA + "#$" + toHex( OP1 ), 2, false );
       addAsm( str_PHA );
-      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($RHS.name)), 3, false );
       addAsm( str_PHA );
       addAsm( str_JSR + "SIGNEDCMP", 3, false );
       addAsm( str_PLP );
     }
-  else if( isIntIMM($1.name) && isIntIMM($3.name) )
+  else if( isIntIMM($LHS.name) && isIntIMM($RHS.name) )
     {
-      addComment("IntIMM relop IntIMM");
+      addComment("IntIMM relop IntIMM: TOC");
       addCompilerMessage( "comparing 2 Immediate values... just hardcode it!", 1 );
       signed_comparison_is_needed = true;
-      int OP1 = atoi(stripFirst($1.name).c_str());
+      int OP1 = atoi(stripFirst($LHS.name).c_str());
       if( OP1 < 0 )
 	{
 	  OP1 = twos_complement( OP1 );
 	}
-      int OP2 = atoi(stripFirst($3.name).c_str());
+      int OP2 = atoi(stripFirst($RHS.name).c_str());
       if( OP2 < 0 )
 	{
 	  OP2 = twos_complement( OP2 );
@@ -7144,16 +7255,16 @@ condition: expression[LHS] relop[OP] expression[RHS]
       addAsm( str_JSR + "SIGNEDCMP", 3, false );
       addAsm( str_PLP );
     }
-  else if( isFloatID($1.name) && isFloatIMM($3.name))
+  else if( isFloatID($LHS.name) && isFloatIMM($RHS.name))
     {
-      addComment("FloatID relop FloatIMM");
-      inlineFloat($3.name, 105 );
-      addAsm( str_LDA + "#<" + getNameOf(getAddressOf($1.name)), 2, false ); 
-      addAsm( str_LDY + "#>" + getNameOf(getAddressOf($1.name)), 2, false );
+      addComment("FloatID relop FloatIMM: TOC");
+      inlineFloat($RHS.name, 105 );
+      addAsm( str_LDA + "#<" + getNameOf(getAddressOf($LHS.name)), 2, false ); 
+      addAsm( str_LDY + "#>" + getNameOf(getAddressOf($LHS.name)), 2, false );
       addAsm( str_JSR + "$BBA2" + commentmarker + "RAM -> FAC", 3, false );
       addAsm( str_LDA + "#$69", 2, false );
       addAsm( str_LDY + "#$00", 2, false );
-      addAsm( str_JSR + "$BC5B" + commentmarker + "CMP(FAC, RAM)", 3, false );
+      addAsm( str_JSR + "$BC5B" + commentmarker + "CMP(FAC, MEM)", 3, false );
       addAsm( str_PHA );
       addAsm( str_LDA + "#$00", 2, false );
       addAsm( str_PHA );
@@ -7161,29 +7272,29 @@ condition: expression[LHS] relop[OP] expression[RHS]
       addAsm( str_JSR + "SIGNEDCMP", 3, false );
       addAsm( str_PLP );
     }
-  else if( isWordID($1.name) && isUintID($3.name) )
+  else if( isWordID($LHS.name) && isUintID($RHS.name) )
     {
       addCompilerMessage( "WordID relop UintID (type mismatch)", 1 );
-      addComment("WordID relop UintID");
+      addComment("WordID relop UintID: TOC");
 
       addAsm( str_LDX + "#$01", 2, false );
-      addAsm( str_LDA + getNameOf(getAddressOf($1.name)) + ",X",3, false ); 
+      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)) + ",X",3, false ); 
       addAsm( str_CMP + "#$00", 2, false );
       addDebugComment( "if A is NOT 0, then WORD > UINT" );
       addAsm( str_BNE + "!+", 2, false );
       addCompilerMessage( "If address of OP1 or OP2 is in Zero Page, instruction size may vary", 0);
-      addAsm( str_LDA + getNameOf(getAddressOf($1.name)), 3, false );
-      addAsm( str_CMP + getNameOf(getAddressOf($3.name)), 3, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
+      addAsm( str_CMP + getNameOf(getAddressOf($RHS.name)), 3, false );
       addAsm( "!:", 0, true );
     }
-  else if( isFloatID($1.name) && isFloatID($3.name) )
+  else if( isFloatID($LHS.name) && isFloatID($RHS.name) )
     {
-      addComment("FloatID relop FloatID");
-      addAsm( str_LDA + "#<" + getNameOf(getAddressOf($1.name)), 2, false ); 
-      addAsm( str_LDY + "#>" + getNameOf(getAddressOf($1.name)), 2, false );
+      addComment("FloatID relop FloatID: TOC");
+      addAsm( str_LDA + "#<" + getNameOf(getAddressOf($LHS.name)), 2, false ); 
+      addAsm( str_LDY + "#>" + getNameOf(getAddressOf($LHS.name)), 2, false );
       addAsm( str_JSR + "$BBA2" + commentmarker + "FP -> FAC", 3, false ); // FP ->FAC
-      addAsm( str_LDA + "#<" + getNameOf(getAddressOf($3.name)), 2, false ); 
-      addAsm( str_LDY + "#>" + getNameOf(getAddressOf($3.name)), 2, false );
+      addAsm( str_LDA + "#<" + getNameOf(getAddressOf($RHS.name)), 2, false ); 
+      addAsm( str_LDY + "#>" + getNameOf(getAddressOf($RHS.name)), 2, false );
       addAsm( str_JSR + "$BC5B", 3, false );
       addAsm( str_PHA );
       addAsm( str_LDA + "#$00", 2, false );
@@ -7192,36 +7303,37 @@ condition: expression[LHS] relop[OP] expression[RHS]
       addAsm( str_JSR + "SIGNEDCMP", 3, false );
       addAsm( str_PLP );
     }
-  else if( isWordID($1.name) && isWordID($3.name))
+  else if( isWordID($LHS.name) && isWordID($RHS.name))
     {
-      addComment("WordID relop WordID");
-      addAsm(str_LDA + getNameOf(getAddressOf($1.name)) + "+1", 3, false );
-      addAsm(str_CMP + getNameOf(getAddressOf($3.name)) + "+1", 3, false );
-      addAsm( str_BNE + "!+", 2, false );
-      addAsm(str_LDA + getNameOf(getAddressOf($1.name)), 3, false );
-      addAsm(str_CMP + getNameOf(getAddressOf($3.name)), 3, false );
+      addComment("WordID relop WordID: TOC");
+      addAsm(str_LDA + getNameOf(getAddressOf($LHS.name)) + " +1", 3, false );
+      addAsm(str_CMP + getNameOf(getAddressOf($RHS.name)) + " +1", 3, false );
+      addAsm(str_BNE + "!+", 2, false );
+      addAsm(str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
+      addAsm(str_CMP + getNameOf(getAddressOf($RHS.name)), 3, false );
       addAsm( "!:", 0, true );
     }
-  else if( isWordID($1.name) && isWordIMM($3.name))
+  else if( isWordID($LHS.name) && isWordIMM($RHS.name))
     {
-      addComment("WordID relop WordIMM");
-      addComment( getNameOf(getAddressOf($1.name)) + " relop " + $3.name );
-      addAsm( str_LDA + getNameOf(getAddressOf($1.name)) + "+1", 3, false );
-      addAsm( str_CMP + "#$" + toHex(get_word_H(atoi(stripFirst($3.name).c_str()))), 2, false );
+      addComment("WordID relop WordIMM: TOC");
+      //addComment( getNameOf(getAddressOf($LHS.name)) + " relop " + $RHS.name );
+      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)) + " +1", 3, false );
+      addAsm( str_CMP + "#$" + toHex(get_word_H(atoi(stripFirst($RHS.name).c_str()))), 2, false );
       addAsm( str_BNE + "!+", 2, false );
-      addAsm( str_LDA + getNameOf(getAddressOf($1.name)), 3, false );
-      addAsm( str_CMP + "#$" + toHex(get_word_L(atoi(stripFirst($3.name).c_str()))), 2, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
+      addAsm( str_CMP + "#$" + toHex(get_word_L(atoi(stripFirst($RHS.name).c_str()))), 2, false );
       addAsm( "!:", 0, true );
     }
   else
     {
       addCompilerMessage( "Comparing of these two types is not yet handled", 3 );
     }
-  
+
+
   // ====================================================================================================================
   if( scope_stack.top() == "FOR" ) 
     {
-      if( string($2.name) == string( "<=" ) )
+      if( string($OP.name) == string( "<=" ) )
 	{
 	  if( long_branches == false )
 	    {
@@ -7240,7 +7352,7 @@ condition: expression[LHS] relop[OP] expression[RHS]
 	      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR (OPTIMIZE)", 3, false );
 	    }
 	}
-      else if( string($2.name) == string( "==" ) )
+      else if( string($OP.name) == string( "==" ) )
 	{
 	  if( long_branches == false )
 	    {
@@ -7255,7 +7367,7 @@ condition: expression[LHS] relop[OP] expression[RHS]
 	      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR (OPTIMIZE)", 3, false );
 	    }
 	}
-      else if( string($2.name) == string( ">" ) )
+      else if( string($OP.name) == string( ">" ) )
 	{
 	  if( long_branches == false )
 	    {
@@ -7274,7 +7386,7 @@ condition: expression[LHS] relop[OP] expression[RHS]
 	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to body of FOR", 3, false );
 	    }
 	}
-      else if( string($2.name) == string( "<" ) )
+      else if( string($OP.name) == string( "<" ) )
 	{
 	  if( long_branches == false )
 	    {
@@ -7289,7 +7401,7 @@ condition: expression[LHS] relop[OP] expression[RHS]
 	      addAsm(str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR (OPTIMIZE)" , 3, false );
 	    }
 	}
-      else if( string($2.name) == string( ">=" ) )
+      else if( string($OP.name) == string( ">=" ) )
 	{
 	  if( long_branches == false )
 	    {
@@ -7321,7 +7433,7 @@ condition: expression[LHS] relop[OP] expression[RHS]
     }
   else if( scope_stack.top() == "IF" || scope_stack.top() == "WHILE" )
     {
-      if( string($2.name) == string( "<=" ) )
+      if( string($OP.name) == string( "<=" ) )
 	{
 	  if( long_branches == false )
 	    {
@@ -7343,7 +7455,7 @@ condition: expression[LHS] relop[OP] expression[RHS]
 	      strcpy($$.name, "exp <= exp lb" );
 	    }
 	}   
-      else if( string($2.name) == string( "==" ) )
+      else if( string($OP.name) == string( "==" ) )
 	{
 	  
 	  addAsm( str_BEQ + "!_skip+", 2, false );
@@ -7351,7 +7463,7 @@ condition: expression[LHS] relop[OP] expression[RHS]
 	  addAsm( "!_skip:", 0, true );
 	  strcpy($$.name, "exp == exp" );
 	}
-      else if( string($2.name) == string( ">" ) )
+      else if( string($OP.name) == string( ">" ) )
 	{
 	  if( long_branches == false )
 	    {
@@ -7371,7 +7483,7 @@ condition: expression[LHS] relop[OP] expression[RHS]
 	      strcpy($$.name, "exp > exp lb" ); // longbranches
 	    }
 	}
-      else if( string($2.name) == string( "<" ) )
+      else if( string($OP.name) == string( "<" ) )
 	{
 	  if( long_branches == false )
 	    {
@@ -7387,7 +7499,7 @@ condition: expression[LHS] relop[OP] expression[RHS]
 	      strcpy($$.name, "exp < exp lb" ); // longbranches
 	    }
 	}
-      else if( string($2.name) == string( ">=" ) )
+      else if( string($OP.name) == string( ">=" ) )
 	{
 	  if( long_branches == false )
 	    {
@@ -7424,6 +7536,7 @@ condition: expression[LHS] relop[OP] expression[RHS]
     }
 
   addComment( "=========================================================");  
+  //  $1.name $1.name $1.name  $2.name $2.name $2.name   $3.name $3.name $3.name
       
 }
 | condition
@@ -7710,7 +7823,7 @@ statement: datatype ID init
 
 	  instr_size = 3;
 	  if( addr2 < 256 ) instr_size = 2;
-	  addAsm( str_STX + _id + "+1" + commentmarker + "$" + toHex(addr1+1), instr_size, false );
+	  addAsm( str_STX + _id + " +1" + commentmarker + "$" + toHex(addr1+1), instr_size, false );
 	}
       else if( isFloatDT(_dt) && isFloatID(_id)  )
 	{
@@ -7785,7 +7898,7 @@ statement: datatype ID init
       addAsm(str_STA + _id, instr_size, false );	    
       instr_size = 3;
       if( current_variable_base_address+1 < 256 ) instr_size = 2;
-      addAsm(str_STX + _id + "+1", instr_size, false );
+      addAsm(str_STX + _id + " +1", instr_size, false );
     }
   else if( isWordDT(_dt) && isWordID(_id) && isXA(_init))
     {
@@ -7818,7 +7931,7 @@ statement: datatype ID init
       // if the bit 15 == 1 then it's negative... otherwise it's positive
       addCompilerMessage( "16-bit word is signed", 0 );
 
-      addAsm( str_JSR + "$B1AA" + commentmarker + "FAC -> WORD", 3, false );
+      addAsm( str_JSR + "$B1AA" + commentmarker + "FAC -> WORD (ylo ahi)", 3, false );
       addAsm( str_STY + getNameOf(getAddressOf($2.name)), 3, false );
     }
 
@@ -7846,7 +7959,7 @@ statement: datatype ID init
       addAsm( str_LDA + "#$F8", 2, false );
       addAsm( str_STA + getLabel( ((int)label_vector[label_major]), false ), 3, false );
       addAsm( str_LDA + "#$03", 2, false );
-      addAsm( str_STA + getLabel( ((int)label_vector[label_major]), false )+ "+1", 3, false );
+      addAsm( str_STA + getLabel( ((int)label_vector[label_major]), false )+ " +1", 3, false );
       
       // Add the Sprite Number to Address
       addAsm( str_LDA + "#$" + toHex( sprite_number ) + commentmarker + "<- Sprite #", 2, false );
@@ -7857,7 +7970,7 @@ statement: datatype ID init
       // in case the value in Label overflows, we need to carry the 1 into Label+1
       // actually .. we don't!  because the greatest sprite # is 7... #$F7 + #$07 < #$100
       //addAsm( str_LDA + "#$00", 2, false );
-      //addAsm( str_ADC + getLabel( ((int)label_vector[label_major]), false )+ "+1", 3, false );
+      //addAsm( str_ADC + getLabel( ((int)label_vector[label_major]), false )+ " +1", 3, false );
 
       // get the location of the screen memory -> A
       // I checked the value in "A" after the pop off the stack
@@ -7867,8 +7980,8 @@ statement: datatype ID init
       addAsm( str_PLA );
 
       // add the location of screen memory to the address
-      addAsm( str_ADC + getLabel( ((int)label_vector[label_major]), false ) + "+1", 3, false );
-      addAsm( str_STA + getLabel( ((int)label_vector[label_major]), false ) + "+1", 3, false );
+      addAsm( str_ADC + getLabel( ((int)label_vector[label_major]), false ) + " +1", 3, false );
+      addAsm( str_STA + getLabel( ((int)label_vector[label_major]), false ) + " +1", 3, false );
 
       // get the location of the bank
       bnkmem_is_needed=true;
@@ -7876,8 +7989,8 @@ statement: datatype ID init
       addAsm( str_PLA );
 
       // add the location of the bank to the address
-      addAsm( str_ADC + getLabel( ((int)label_vector[label_major]), false ) + "+1", 3, false );
-      addAsm( str_STA + getLabel( ((int)label_vector[label_major]), false ) + "+1", 3, false );
+      addAsm( str_ADC + getLabel( ((int)label_vector[label_major]), false ) + " +1", 3, false );
+      addAsm( str_STA + getLabel( ((int)label_vector[label_major]), false ) + " +1", 3, false );
 
       // Load the sprite area and store it at the address
       addAsm( str_LDA + "#$" + toHex( mob_vector[1] ) + commentmarker + "sprite pointer", 2, false );
@@ -7973,9 +8086,9 @@ statement: datatype ID init
       addAsm( str_LDA + getNameOf(a), size_of_instruction, false );
       addAsm( str_SBC + "#$01", 2, false );
       addAsm( str_STA + getNameOf(a), size_of_instruction, false );
-      addAsm( str_LDA + getNameOf(a) + "+1", size_of_instruction, false );
+      addAsm( str_LDA + getNameOf(a) + " +1", size_of_instruction, false );
       addAsm( str_SBC + "#$00", 2, false );
-      addAsm( str_STA + getNameOf(a) + "+1", size_of_instruction, false );
+      addAsm( str_STA + getNameOf(a) + " +1", size_of_instruction, false );
     }
   else if( isUintID($1.name) || isIntID($1.name) )
     {
@@ -10330,8 +10443,8 @@ statement: datatype ID init
   else if( isWordID(_id) && isFAC(_init) )
     {
       addComment("WordID = FAC" );
-      addAsm( str_JSR + "$B1AA" + commentmarker + "FAC -> WORD", 3, false );
-      addAsm( str_STY + getNameOf(getAddressOf(_id)), 3, false );
+      addAsm( str_JSR + "$B1AA" + commentmarker + "FAC -> WORD (ylo ahi)", 3, false );
+addAsm( str_STY + getNameOf(getAddressOf(_id)), 3, false );
       addAsm( str_STA + getNameOf(getAddressOf(_id)) + " +1", 3, false );
     }  
   else if( isFloatID(_id) && isXA(_init) )
@@ -10401,7 +10514,7 @@ statement: datatype ID init
     {
       addComment("UintID = FAC" );
       addCompilerMessage("setting a 1 byte memory location to a Floating Point byte value... losing Sign and Fidelity" ,1);
-      addAsm( str_JSR + "$B1AA" + commentmarker + "FAC -> WORD", 3, false );
+      addAsm( str_JSR + "$B1AA" + commentmarker + "FAC -> WORD (ylo ahi)", 3, false );
       addAsm( str_STY + getNameOf(getAddressOf(_id)), 3, false );
     }
   else
@@ -24080,7 +24193,7 @@ arithmetic[MATHOP] expression[OP2]
       addAsm( str_LDA + "#<" + getNameOf(getAddressOf($3.name)), 2, false  );
       addAsm( str_LDY + "#>" + getNameOf(getAddressOf($3.name)), 2, false  );
       addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false ); // MEM ->FAC
-      addAsm( str_JSR + "$B1AA" + commentmarker + "FAC -> WORD", 3, false ); // FAC -> WORD
+      addAsm( str_JSR + "$B1AA" + commentmarker + "FAC -> WORD (ylo ahi)", 3, false );
       addAsm( str_TAX );
       addAsm( str_TYA );      
       strcpy($$.name, "_XA" );
@@ -24088,7 +24201,7 @@ arithmetic[MATHOP] expression[OP2]
   else if( isFAC($3.name) )
     {
       addComment( "toword(FAC) --> XA");
-      addAsm( str_JSR + "$B1AA" + commentmarker + "FAC -> WORD", 3, false);
+      addAsm( str_JSR + "$B1AA" + commentmarker + "FAC -> WORD (ylo ahi)", 3, false );
       addAsm( str_TAX, 1, false );
       addAsm( str_TYA, 1, false );
       strcpy($$.name, "_XA" );
@@ -24098,7 +24211,7 @@ arithmetic[MATHOP] expression[OP2]
       addComment( "toword(FloatIMM) --> XA");
       addCompilerMessage( "Just hard-code the value as a word, please.", 1 );
       inlineFloat( $3.name );
-      addAsm( str_JSR + "$B1AA" + commentmarker + "FAC -> WORD", 3, false);
+      addAsm( str_JSR + "$B1AA" + commentmarker + "FAC -> WORD (ylo ahi)", 3, false );
       addAsm( str_TAX, 1, false );
       addAsm( str_TYA, 1, false );      
       strcpy($$.name, "_XA" );
@@ -24189,7 +24302,7 @@ arithmetic[MATHOP] expression[OP2]
       addAsm( str_LDA + "#<" + getNameOf(getAddressOf($3.name)), 2, false  );
       addAsm( str_LDY + "#>" + getNameOf(getAddressOf($3.name)), 2, false  );
       addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
-      addAsm( str_JSR + "$B1AA" + commentmarker + "FAC -> WORD", 3, false );
+      addAsm( str_JSR + "$B1AA" + commentmarker + "FAC -> WORD (ylo ahi)", 3, false );
       addAsm( str_TYA );
     }
   else if( isFAC($3.name) )
@@ -24293,7 +24406,7 @@ arithmetic[MATHOP] expression[OP2]
       addAsm( str_STA + "$7A", 2, false );
 
       // Now turn the FAC -> Word
-      addAsm( str_JSR + "$B1AA" + commentmarker + "FAC -> WORD", 3, false );
+      addAsm( str_JSR + "$B1AA" + commentmarker + "FAC -> WORD (ylo ahi)", 3, false );
       addAsm( str_TAX );
       addAsm( str_TYA );
       //addAsm( str_JSR + "$AABC" + commentmarker + "FAC -> CRT (for debugging purposes)", 3, false );
@@ -25545,9 +25658,9 @@ return: RETURN ';'
   if( !isXA($3.name) )
     {
       deletePreviousAsmUntil( "// MARKED_FOR_DELETION");
-      addCompilerMessage( "Deleted Mneumonics", 0 );
+      addCompilerMessage( "Deleted Mnemonics", 0 );
     }
-  addComment( "Deleted Mneumonics" );
+  addComment( "Deleted Mnemonics" );
   addComment( "Save return address locally" );
   addAsm( str_PLA, 1, false );
   addAsm( str_STA + "!rx-", 3, false );
@@ -26038,12 +26151,14 @@ int main(int argc, char *argv[])
       saveReturnAddress();
       // ==================================================================================
 
-      // save $02/$03 in software stack (pretty slow!)
-      addAsm( str_LDA + "$02", 2, false );
-      addAsm( str_JSR + "PUSH", 3, false );
-      addAsm( str_LDA + "$03", 2, false );
-      addAsm( str_JSR + "PUSH", 3, false );
-      
+      if( !arg_unsafe_math )
+	{
+	  // save $02/$03 in software stack (pretty slow!)
+	  addAsm( str_LDA + "$02", 2, false );
+	  addAsm( str_JSR + "PUSH", 3, false );
+	  addAsm( str_LDA + "$03", 2, false );
+	  addAsm( str_JSR + "PUSH", 3, false );
+	}
       
       addAsm( str_PLA );
       addAsm( str_STA + "$02", 2, false ); 
@@ -26053,6 +26168,7 @@ int main(int argc, char *argv[])
       
       addAsm( str_EOR + "$02", 2, false);
       addAsm( str_ROL ); // C is now set (if warrented)
+      
       addAsm( str_BCS + "!+", 2, false );
       addAsm( str_LDA + "$02", 2, false );
       addAsm( str_PHA );
@@ -26060,17 +26176,18 @@ int main(int argc, char *argv[])
       addAsm( str_STA + "$02", 2, false );
       addAsm( str_PLA );
       addAsm( str_STA + "$03", 2, false );
-      addComment( "SGNCMPSKIP" );
       addAsm( "!:\t" + str_LDA + "$02", 2, true );
       addAsm( str_CMP + "$03", 2, false );
-      addAsm( str_PHP );// push the status register to the stack with the correct values after cmp
+      addAsm( str_PHP );// push the status register onto the stack with the correct values after cmp
 
-      // restore $02/$03
-      addAsm( str_JSR + "POP", 3, false );
-      addAsm( str_STA + "$03", 2, false );
-      addAsm( str_JSR + "POP", 3, false );
-      addAsm( str_STA + "$02", 2, false );
-
+      if( !arg_unsafe_math )
+	{
+	  // restore $02/$03
+	  addAsm( str_JSR + "POP", 3, false );
+	  addAsm( str_STA + "$03", 2, false );
+	  addAsm( str_JSR + "POP", 3, false );
+	  addAsm( str_STA + "$02", 2, false );
+	}
       
       // ==================================================================================
       restoreReturnAddress();
@@ -26216,8 +26333,8 @@ int main(int argc, char *argv[])
   if( float_swap_space_is_needed )
     {
       addComment( "Floating Point Swap Space" );
-      addAsm( "!fp0:\t .byte $00, $00, $00, $00, $00", 5, true );
-      addAsm( "!fp1:\t .byte $00, $00, $00, $00, $00", 5, true );
+      addAsm( "!fp0:\t .byte $00, $00, $00, $00, $00, $00", 6, true );
+      addAsm( "!fp1:\t .byte $00, $00, $00, $00, $00, $00", 6, true );
     }
   if( div16_is_needed )
     {
