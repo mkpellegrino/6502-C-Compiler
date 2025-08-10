@@ -862,20 +862,57 @@
     return retval;
   }
 
-  void inlineFloatPush( string s, int addr=105)
+  void inlineFloatFP0( string s )
   {
-    addDebugComment( "FloatIMM -> Stack" );
+    float_swap_space_is_needed = true;
+    addComment( "FloatIMM -> fp_swap0" );
     string sign;
-    addDebugComment( string("Base address: ") + toHex(addr)  );
     string stripped_float= stripFirst( s.c_str() );
     string fp_in_hex = toBinaryFloat( atof( stripped_float.c_str() ) );
     if( atof( stripped_float.c_str() ) == 0 ) fp_in_hex=string("0000000000");
     int size_of_instruction=3;
-    if( addr < 255 ) size_of_instruction-=1;
     int v=0;
     for( int i=0; i<5; i++ )
       {
-	addAsm( str_LDA + "#$" + fp_in_hex[v] + fp_in_hex[v+1], 2, false );
+	addAsm( str_LDA + "#$" + fp_in_hex[v] + fp_in_hex[v+1], size_of_instruction, false );
+	addAsm( str_STA + "!fp0+ +" + toString(i), 2, false );
+	v+=2;
+      }
+    return;
+  }
+
+  void inlineFloatFP1( string s )
+  {
+    float_swap_space_is_needed = true;
+    addComment( "FloatIMM -> fp_swap1" );
+    string sign;
+    string stripped_float= stripFirst( s.c_str() );
+    string fp_in_hex = toBinaryFloat( atof( stripped_float.c_str() ) );
+    if( atof( stripped_float.c_str() ) == 0 ) fp_in_hex=string("0000000000");
+    int size_of_instruction=3;
+    int v=0;
+    for( int i=0; i<5; i++ )
+      {
+	addAsm( str_LDA + "#$" + fp_in_hex[v] + fp_in_hex[v+1], size_of_instruction, false );
+	addAsm( str_STA + "!fp1+ +" + toString(i), 2, false );
+	v+=2;
+      }
+    return;
+  }
+
+   
+  void inlineFloatPush( string s )
+  {
+    addComment( "FloatIMM -> Stack" );
+    string sign;
+    string stripped_float= stripFirst( s.c_str() );
+    string fp_in_hex = toBinaryFloat( atof( stripped_float.c_str() ) );
+    if( atof( stripped_float.c_str() ) == 0 ) fp_in_hex=string("0000000000");
+    int size_of_instruction=3;
+    int v=0;
+    for( int i=0; i<5; i++ )
+      {
+	addAsm( str_LDA + "#$" + fp_in_hex[v] + fp_in_hex[v+1], size_of_instruction, false );
 	addAsm( str_PHA, 1, false );
 	v+=2;
       }
@@ -934,6 +971,17 @@
     addAsm( str_JSR + "$BF7B" + commentmarker + "ARG ** FAC -> FAC", 3, false );
   }
 
+  void cmpFACMEM( string L, string H )
+  {
+    // L is MemAddress Low-Byte
+    // H is MemAddress High-Byte
+    addComment( "OP1: MEM, OP2: FAC" );
+    addAsm( str_LDA + L, 2, false );
+    addAsm( str_LDY + H, 2, false );
+    addAsm( str_JSR + "$BC5B" + commentmarker + "CMP(FAC, MEM)", 3, false );
+    return;
+  }
+  
   void pushA()
   {
     addComment( "A -> Stack" );
@@ -966,83 +1014,129 @@
 
   void pushFAC()
   {
-    // TODO: Find out why this needs to
-    // be #$07 and not #$05
-    addComment( "FAC -> Stack" );
+    addComment( "FAC -> Stack (pushFAC())" );
     addAsm( str_TSX, 1, false );
     addAsm( str_TXA, 1, false );
     addAsm( str_SEC, 1, false );
-    addAsm( str_SBC + "#$07", 2, false );
+    addAsm( str_SBC + "#$05", 2, false );
     addAsm( str_TAX, 1, false );
     addAsm( str_TXS, 1, false );
     addAsm( str_INX, 1, false );
-    //addAsm( str_TXA, 1, false );
     addAsm( str_LDY + "#$01", 2, false );
-    //addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );
-    addAsm( str_JSR + "$BBD7" + commentmarker + "FAC -> MEM", 3, false );
+    addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );
+    //addAsm( str_JSR + "$BBD7" + commentmarker + "FAC -> MEM", 3, false );
   }
-
-  /* void pushARG() */
-  /* { */
-  /*   addComment( "ARG -> Stack" ); */
-  /*   addAsm( str_TSX, 1, false ); */
-  /*   addAsm( str_TXA, 1, false ); */
-  /*   addAsm( str_SEC, 1, false ); */
-  /*   addAsm( str_SBC + "#$06", 2, false ); */
-  /*   addAsm( str_TAX, 1, false ); */
-  /*   addAsm( str_TXS, 1, false ); */
-  /*   addAsm( str_INX, 1, false ); */
-  /*   //addAsm( str_TXA, 1, false ); */
-  /*   addAsm( str_LDY + "#$01", 2, false ); */
-  /*   addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false ); */
-  /* } */
 
   void popFAC()
   {
-    addComment( "Stack -> FAC" );
-    addAsm( str_TSX, 1, false );	  
+    addComment( "Stack -> FAC (popFAC())" );
+    addAsm( str_TSX, 1, false );
     addAsm( str_INX, 1, false );
     addAsm( str_TXA, 1, false );
-    addAsm( str_INX, 1, false );
-    addAsm( str_INX, 1, false );
-    addAsm( str_INX, 1, false );
-    addAsm( str_INX, 1, false );
-    addAsm( str_INX, 1, false );
-    addAsm( str_INX, 1, false );
-    addAsm( str_TXS, 1, false );	  
     addAsm( str_LDY + "#$01", 2, false );
     addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
+    addAsm( str_PLA, 1, false );
+    addAsm( str_PLA, 1, false );
+    addAsm( str_PLA, 1, false );
+    addAsm( str_PLA, 1, false );
+    addAsm( str_PLA, 1, false );
   }
 
-  void unstack7()
+  void popARG()
   {
-    addComment( "unstack 7 bytes" );
+    addComment( "Stack -> ARG (popARG())" );
+    addAsm( str_TSX, 1, false );
+    addAsm( str_INX, 1, false );
+    addAsm( str_TXA, 1, false );
+    addAsm( str_LDY + "#$01", 2, false );
+    addAsm( str_JSR + "$BA8C" + commentmarker + "STACK -> ARG (+)", 3, false );
+    addAsm( str_PLA, 1, false );
+    addAsm( str_PLA, 1, false );
+    addAsm( str_PLA, 1, false );
+    addAsm( str_PLA, 1, false );
+    addAsm( str_PLA, 1, false );
+  }
+
+  
+  //void popARG()
+  //{
+  // addComment( "Stack -> ARG" );
+  //addAsm( str_TSX, 1, false );	  
+  //addAsm( str_INX, 1, false );
+  //addAsm( str_TXA, 1, false );
+  //addAsm( str_INX, 1, false );
+  //addAsm( str_INX, 1, false );
+  //addAsm( str_INX, 1, false );
+  //addAsm( str_INX, 1, false );
+  //addAsm( str_INX, 1, false );
+  //addAsm( str_TXS, 1, false );	  
+  //addAsm( str_LDY + "#$01", 2, false );
+  //addAsm( str_JSR + "$BA8C" + commentmarker + "STACK -> ARG (+)", 3, false );
+  //}
+
+
+  void FACToSwap0()
+  {
+    float_swap_space_is_needed = true;
+    addAsm( str_LDX + "#<!fp0+", 2, false );
+    addAsm( str_LDY + "#>!fp0+", 2, false );
+    addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );
+    return;
+  }
+
+  void FACToSwap1()
+  {
+    float_swap_space_is_needed = true;
+    addAsm( str_LDX + "#<!fp1+", 2, false );
+    addAsm( str_LDY + "#>!fp1+", 2, false );
+    addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );
+    return;
+  }
+  
+  void stackToSwap0()
+  {
+    addComment( "Stack -> fpswap0 (slow!)" );
+    float_swap_space_is_needed = true;
+    addAsm( str_PLA, 1, false );
+    addAsm( str_STA + "!fp0+", 3, false );
+    addAsm( str_PLA, 1, false );
+    addAsm( str_STA + "!fp0+ +1", 3, false );
+    addAsm( str_PLA, 1, false );
+    addAsm( str_STA + "!fp0+ +2", 3, false );
+    addAsm( str_PLA, 1, false );
+    addAsm( str_STA + "!fp0+ +3", 3, false );
+    addAsm( str_PLA, 1, false );
+    addAsm( str_STA + "!fp0+ +4", 3, false );
+    return;
+  }
+  
+  void stackToSwap1()
+  {
+    addComment( "Stack -> fpswap1 (slow!)" );
+    float_swap_space_is_needed = true;
+    addAsm( str_PLA, 1, false );
+    addAsm( str_STA + "!fp1+", 3, false );
+    addAsm( str_PLA, 1, false );
+    addAsm( str_STA + "!fp1+ +1", 3, false );
+    addAsm( str_PLA, 1, false );
+    addAsm( str_STA + "!fp1+ +2", 3, false );
+    addAsm( str_PLA, 1, false );
+    addAsm( str_STA + "!fp1+ +3", 3, false );
+    addAsm( str_PLA, 1, false );
+    addAsm( str_STA + "!fp1+ +4", 3, false );
+    return;
+  }
+  
+  void unstack5()
+  {
+    addComment( "unstack 5 bytes" );
     addAsm( str_TSX, 1, false ); // 2	  
-    addAsm( str_INX, 1, false ); // 2
-    //addAsm( str_TXA, 1, false ); // 2
-    addAsm( str_INX, 1, false ); // 2
     addAsm( str_INX, 1, false ); // 2
     addAsm( str_INX, 1, false ); // 2
     addAsm( str_INX, 1, false ); // 2
     addAsm( str_INX, 1, false ); // 2
     addAsm( str_INX, 1, false ); // 2
     addAsm( str_TXS, 1, false ); // 2
-  }
-  
-  void popARG()
-  {
-    addComment( "Stack -> ARG" );
-    addAsm( str_TSX, 1, false );	  
-    addAsm( str_INX, 1, false );
-    addAsm( str_TXA, 1, false );
-    addAsm( str_INX, 1, false );
-    addAsm( str_INX, 1, false );
-    addAsm( str_INX, 1, false );
-    addAsm( str_INX, 1, false );
-    addAsm( str_INX, 1, false );
-    addAsm( str_TXS, 1, false );	  
-    addAsm( str_LDY + "#$01", 2, false );
-    addAsm( str_JSR + "$BA8C" + commentmarker + "STACK -> ARG (+)", 3, false );
   }
 
   // convert a string to an inline-float
@@ -3485,7 +3579,8 @@ parameterlist: /* empty */
   else if( isFloatIMM($3.name) )
     {
 
-      inlineFloatPush( $3.name, 105 );
+      //inlineFloatPush( $3.name, 105 );
+      inlineFloatPush( $3.name );
       
     }
   else
@@ -6777,8 +6872,8 @@ condition: expression[LHS]
   if( isA($RHS.name ) )
     {
       tc+=string( "A" );
-      addComment( "Why is this here?" );
-      addAsm( str_STA + "$02", 2, false );
+      //addComment( "Why is this here?" );
+      //addAsm( str_STA + "$02", 2, false );
     }
   if( isXA($RHS.name) ) tc+=string( "XA" );
   if( isUintID($RHS.name) ) tc+=string( "UintID" );
@@ -6849,47 +6944,179 @@ condition: expression[LHS]
       addAsm( str_LDA + "#<" + getNameOf(getAddressOf($RHS.name)), 2, false );
       addAsm( str_LDY + "#>" + getNameOf(getAddressOf($RHS.name)), 2, false );
       addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
-      addAsm( str_LDA + "#$69", 2, false );
-      addAsm( str_LDY + "#$00", 2, false );
-      addAsm( str_JSR + "$BC5B" + commentmarker + "CMP(FAC, MEM)", 3, false );
+      cmpFACMEM( "#$69", "#$00" );
+
+      addAsm( str_TXA, 1, false );
+      addAsm( str_LDA + "#$00", 2, false );
+      addAsm( str_PHA, 1, false );
+      addAsm( str_TAX, 1, false );
+      addAsm( str_PHA, 1, false );
+      addAsm( str_JSR + "SIGNEDCMP", 3, false );
+      addAsm( str_PLP );
+
     }
   else if( isFloatID($LHS.name) && isFAC($RHS.name) )
     {
       addComment( "FloatID relop FAC: TOC" );
-      
-      addAsm( str_LDA + "#<" + getNameOf(getAddressOf($LHS.name)), 2, false );
-      addAsm( str_LDY + "#>" + getNameOf(getAddressOf($LHS.name)), 2, false );
-      addAsm( str_JSR + "$BC5B" + commentmarker + "CMP(FAC, MEM)", 3, false );
+      cmpFACMEM( "#<" + getNameOf(getAddressOf($LHS.name)), "#>" + getNameOf(getAddressOf($LHS.name)) );
 
-      addAsm( str_TAX, 1, false );
-      addAsm( str_LDA + "#$00", 2, false );
+      addComment( "/--- Is this necessary? ---\\" );
       addAsm( str_PHA, 1, false );
-      addAsm( str_TXA, 1, false );
+      addAsm( str_LDA + "#$00", 2, false );
       addAsm( str_PHA, 1, false );
 
       signed_comparison_is_needed = true;
       addAsm( str_JSR + "SIGNEDCMP", 3, false );
       addAsm( str_PLP );
+      addComment( "\\--- Is this necessary? ---/" );
     }
+  else if( isFAC($LHS.name) && isA($RHS.name) )
+    {
+      addComment( "FAC relop A: TOC" );
+      
+      // XA -> FAC      
+      addAsm( str_TAY, 1, false );
+      addAsm( str_LDA + "#$00", 2, false );
+      addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
+      
+      // POP FAC -> Swap0
+      stackToSwap0();
+            
+      // CMP(FAC, MEM)
+      cmpFACMEM("#<!fp0+", "#>!fp0+");
+     }  
   else if( isFAC($LHS.name) && isFAC($RHS.name) )
     {
       addComment( "FAC relop FAC: TOC" );
-      float_swap_space_is_needed = true;
-      addAsm( str_LDX + "#<!fp1+", 2, false );
-      addAsm( str_LDY + "#>!fp1+", 2, false );
-      addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );      
-      popFAC();
-      addAsm( str_LDA + "#<!fp1+", 2, false );
-      addAsm( str_LDY + "#>!fp1+", 2, false );
-      addAsm( str_JSR + "$BC5B" + commentmarker + "CMP(FAC, MEM)", 3, false );
-
-      addAsm( str_PHA );
-      addAsm( str_LDA + "#$00", 2, false );
-      addAsm( str_PHA );
-      signed_comparison_is_needed = true;
-      addAsm( str_JSR + "SIGNEDCMP", 3, false );
-      addAsm( str_PLP );
+      stackToSwap0();
+      cmpFACMEM( "#<!fp0+", "#>!fp0+" );
     }
+  else if( isFAC($LHS.name) && isFloatID($RHS.name) )
+    {
+      addComment( "FAC relop FloatID: TOC (testing)" );
+
+      FACToSwap0();
+
+      addAsm( str_LDA + "#<" + getNameOf(getAddressOf($RHS.name)), 2, false );
+      addAsm( str_LDY + "#>" + getNameOf(getAddressOf($RHS.name)), 2, false );
+      addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
+      
+      cmpFACMEM( "#<!fp0+", "#>!fp0+" );
+    }
+  else if( isFAC($LHS.name) && isFloatIMM($RHS.name) )
+    {
+      addComment( "FAC relop FloatIMM: testing" );
+
+      FACToSwap0();
+
+      inlineFloat( $RHS.name );
+      
+      cmpFACMEM( "#<!fp0+", "#>!fp0+" );
+    }
+  else if( isFAC($LHS.name) && isIntID($RHS.name) )
+    {
+      addComment( "FAC relop IntID: TOC" );
+
+      FACToSwap0();
+      
+      // Word -> FAC      
+      addAsm( str_LDX + "#$00", 2, false );
+      addAsm( str_LDY + getNameOf(getAddressOf($RHS.name)), 3, false );      
+      addAsm( str_BPL + "!+", 2, false );
+      addAsm( str_DEX, 1, false );
+      addAsm( "!:\t" + str_TXA, 1, true );
+      addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
+
+      // CMP(FAC, MEM)
+      cmpFACMEM( "#<!fp0+", "#>!fp0+" );
+     }
+  else if( isFAC($LHS.name) && isIntIMM($RHS.name) )
+    {
+      addComment( "FAC relop IntIMM: TOC" );
+
+      FACToSwap0();
+      
+      int tmp_v = atoi(stripFirst(stripFirst($RHS.name).c_str()).c_str());
+      // Word -> FAC      
+      addAsm( str_LDA + "#$FF", 2, false );
+      addAsm( str_LDY + "#$" + toHex(twos_complement(tmp_v)), 2, false );
+      addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
+
+      // CMP(FAC, MEM)
+      cmpFACMEM( "#<!fp0+", "#>!fp0+" );
+     }
+  else if( isFAC($LHS.name) && isUintID($RHS.name) )
+    {
+      addComment( "FAC relop UintID: TOC" );
+
+      FACToSwap0();
+
+      // Word -> FAC      
+      addAsm( str_LDA + "#$00", 2, false );
+      addAsm( str_LDY + getNameOf(getAddressOf($RHS.name)), 3, false );      
+      addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
+
+      // CMP(FAC, MEM)
+      cmpFACMEM( "#<!fp0+", "#>!fp0+" );
+     }
+  else if( isFAC($LHS.name) && isUintIMM($RHS.name) )
+    {
+      addComment( "FAC relop UintIMM: TOC" );
+
+      FACToSwap0();
+      
+      int tmp_v = atoi(stripFirst($RHS.name).c_str());
+      // Word -> FAC      
+      addAsm( str_LDA + "#$00", 2, false );
+      addAsm( str_LDY + "#$" + toHex(tmp_v), 2, false );
+      addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
+
+      // CMP(FAC, MEM)
+      cmpFACMEM( "#<!fp0+", "#>!fp0+" );
+     }
+  else if( isFAC($LHS.name) && isWordID($RHS.name) )
+    {
+      addComment( "FAC relop WordID: TOC" );
+      addCompilerMessage( "WordID will be treated as a SIGNED 16-Bit word (-32767 -> +32768)", 1 );
+
+      FACToSwap0();
+
+      // Word -> FAC      
+      addAsm( str_LDA + getNameOf(getAddressOf($RHS.name)) + " +1", 3, false );      
+      addAsm( str_LDY + getNameOf(getAddressOf($RHS.name)), 3, false );      
+      addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
+
+      // CMP(FAC, MEM)
+      cmpFACMEM( "#<!fp0+", "#>!fp0+" );
+     }
+  else if( isFAC($LHS.name) && isWordIMM($RHS.name) )
+    {
+      addComment( "FAC relop WordIMM: TOC" );
+
+      FACToSwap0();
+      
+      int tmp_v = atoi(stripFirst($RHS.name).c_str());
+      // Word -> FAC      
+      addAsm( str_LDA + "#$" + toHex(get_word_H(tmp_v)), 2, false );      
+      addAsm( str_LDY + "#$" + toHex(get_word_L(tmp_v)), 2, false );      
+      addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
+
+      // CMP(FAC, MEM)
+      cmpFACMEM( "#<!fp0+", "#>!fp0+" );
+     }
+  else if( isFAC($LHS.name) && isXA($RHS.name) )
+    {
+      addComment( "FAC relop XA: TOC" );
+      // Word -> FAC
+      addAsm( str_TAY, 1, false );
+      addAsm( str_TXA, 1, false );
+      addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC (Y-Lo A-Hi)", 3, false );
+
+      stackToSwap0();
+
+      // CMP(FAC, MEM)
+      cmpFACMEM( "#<!fp0+", "#>!fp0+" );
+     }
   else if( isXA($LHS.name) && isWordIMM($RHS.name))  // mismatch
     {
       addComment( "XA relop WordIMM: TOC" );
@@ -7261,10 +7488,9 @@ condition: expression[LHS]
       inlineFloat($RHS.name, 105 );
       addAsm( str_LDA + "#<" + getNameOf(getAddressOf($LHS.name)), 2, false ); 
       addAsm( str_LDY + "#>" + getNameOf(getAddressOf($LHS.name)), 2, false );
-      addAsm( str_JSR + "$BBA2" + commentmarker + "RAM -> FAC", 3, false );
-      addAsm( str_LDA + "#$69", 2, false );
-      addAsm( str_LDY + "#$00", 2, false );
-      addAsm( str_JSR + "$BC5B" + commentmarker + "CMP(FAC, MEM)", 3, false );
+      addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
+      cmpFACMEM( "#$69", "#$00" );
+
       addAsm( str_PHA );
       addAsm( str_LDA + "#$00", 2, false );
       addAsm( str_PHA );
@@ -7292,10 +7518,10 @@ condition: expression[LHS]
       addComment("FloatID relop FloatID: TOC");
       addAsm( str_LDA + "#<" + getNameOf(getAddressOf($LHS.name)), 2, false ); 
       addAsm( str_LDY + "#>" + getNameOf(getAddressOf($LHS.name)), 2, false );
-      addAsm( str_JSR + "$BBA2" + commentmarker + "FP -> FAC", 3, false ); // FP ->FAC
-      addAsm( str_LDA + "#<" + getNameOf(getAddressOf($RHS.name)), 2, false ); 
-      addAsm( str_LDY + "#>" + getNameOf(getAddressOf($RHS.name)), 2, false );
-      addAsm( str_JSR + "$BC5B", 3, false );
+      addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
+      cmpFACMEM( "#<" + getNameOf(getAddressOf($RHS.name)), "#>" + getNameOf(getAddressOf($RHS.name)));
+
+      // TODO: ? necessary?
       addAsm( str_PHA );
       addAsm( str_LDA + "#$00", 2, false );
       addAsm( str_PHA );
@@ -13918,6 +14144,9 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
 	  inlineFloat($1.name);
 	  deletePreviousAsm();
+
+	  // TODO: What goes here?
+	  
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fMultT();
 	}
@@ -16151,8 +16380,6 @@ arithmetic[MATHOP] expression[OP2]
   else if(isIntIMM($1.name) && isFloatID($4.name) )
     {
       addComment( "IntIMM math FloatID: TOC" );
-      //int tmpValue = atoi( stripFirst($1.name).c_str() );
-      //cout << tmpValue << endl;
       string OP1hex = toHex( twos_complement(atoi(stripFirst($1.name).c_str() )));
 
       addAsm( str_LDY + "#$" + OP1hex, 2, false );
@@ -23488,7 +23715,7 @@ arithmetic[MATHOP] expression[OP2]
     }
   else if((isUintID($1.name)||isIntID($1.name)) && isA($3.name))
     {
-      addComment( "UIntID[A] -> A" );
+      addComment( "UintID[A] -> A" );
       addAsm( str_TAX );
       addAsm( str_LDA + getNameOf(getAddressOf($1.name)) + ",X", 3, false );
       strcpy($$.name, "_A" );
