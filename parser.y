@@ -1012,9 +1012,24 @@
   }
 
 
+
+
   void pushFAC()
   {
     addComment( "FAC -> Stack (pushFAC())" );
+    /* addAsm( str_LDA + "$66", 2, false ); */
+    /* addAsm( str_PHA, 1, false ); */
+    /* addAsm( str_LDA + "$65", 2, false ); */
+    /* addAsm( str_PHA, 1, false ); */
+    /* addAsm( str_LDA + "$64", 2, false ); */
+    /* addAsm( str_PHA, 1, false ); */
+    /* addAsm( str_LDA + "$63", 2, false ); */
+    /* addAsm( str_PHA, 1, false ); */
+    /* addAsm( str_LDA + "$62", 2, false ); */
+    /* addAsm( str_PHA, 1, false ); */
+    /* addAsm( str_LDA + "$61", 2, false ); */
+    /* addAsm( str_PHA, 1, false ); */
+    
     addAsm( str_TSX, 1, false );
     addAsm( str_TXA, 1, false );
     addAsm( str_SEC, 1, false );
@@ -1029,7 +1044,24 @@
 
   void popFAC()
   {
-    addComment( "Stack -> FAC (popFAC())" );
+    /* addComment( "Stack -> FAC (popFAC())" ); */
+    /* addAsm( str_PLA, 1, false ); */
+    /* addAsm( str_STA + "$61", 2, false ); */
+    /* addAsm( str_PLA, 1, false ); */
+    /* addAsm( str_STA + "$62", 2, false ); */
+    /* addAsm( str_PLA, 1, false ); */
+    /* addAsm( str_STA + "$63", 2, false ); */
+    /* addAsm( str_PLA, 1, false ); */
+    /* addAsm( str_STA + "$64", 2, false ); */
+    /* addAsm( str_PLA, 1, false ); */
+    /* addAsm( str_STA + "$65", 2, false ); */
+    /* addAsm( str_PLA, 1, false ); */
+    /* addAsm( str_STA + "$66", 2, false ); */
+    //addAsm( str_LDA + "#$00", 2, false );
+    //addAsm( str_STA + "$70", 2, false ); // rounding bits
+
+
+    
     addAsm( str_TSX, 1, false );
     addAsm( str_INX, 1, false );
     addAsm( str_TXA, 1, false );
@@ -1040,16 +1072,35 @@
     addAsm( str_PLA, 1, false );
     addAsm( str_PLA, 1, false );
     addAsm( str_PLA, 1, false );
+    addAsm( str_PLA, 1, false );
   }
 
   void popARG()
   {
     addComment( "Stack -> ARG (popARG())" );
+
+    /* addAsm( str_PLA, 1, false ); */
+    /* addAsm( str_STA + "$69", 2, false ); */
+    /* addAsm( str_PLA, 1, false ); */
+    /* addAsm( str_STA + "$6A", 2, false ); */
+    /* addAsm( str_PLA, 1, false ); */
+    /* addAsm( str_STA + "$6B", 2, false ); */
+    /* addAsm( str_PLA, 1, false ); */
+    /* addAsm( str_STA + "$6C", 2, false ); */
+    /* addAsm( str_PLA, 1, false ); */
+    /* addAsm( str_STA + "$6D", 2, false ); */
+    /* addAsm( str_PLA, 1, false ); */
+    /* addAsm( str_STA + "$6E", 2, false ); */
+    
+
+    
     addAsm( str_TSX, 1, false );
     addAsm( str_INX, 1, false );
     addAsm( str_TXA, 1, false );
     addAsm( str_LDY + "#$01", 2, false );
     addAsm( str_JSR + "$BA8C" + commentmarker + "STACK -> ARG (+)", 3, false );
+    
+    addAsm( str_PLA, 1, false );
     addAsm( str_PLA, 1, false );
     addAsm( str_PLA, 1, false );
     addAsm( str_PLA, 1, false );
@@ -1107,6 +1158,8 @@
     addAsm( str_STA + "!fp0+ +3", 3, false );
     addAsm( str_PLA, 1, false );
     addAsm( str_STA + "!fp0+ +4", 3, false );
+    addAsm( str_PLA, 1, false );
+    addAsm( str_STA + "!fp0+ +5", 3, false );
     return;
   }
   
@@ -1124,6 +1177,8 @@
     addAsm( str_STA + "!fp1+ +3", 3, false );
     addAsm( str_PLA, 1, false );
     addAsm( str_STA + "!fp1+ +4", 3, false );
+    addAsm( str_PLA, 1, false );
+    addAsm( str_STA + "!fp1+ +5", 3, false );
     return;
   }
   
@@ -1141,7 +1196,72 @@
 
   // convert a string to an inline-float
   //  void inlineFloat( string s, int addr=105)
-  void inlineFloat( string s, int addr=25)
+  /* void inlineFloat( string s, int addr=25) */
+  /* { */
+  /*   addComment( "inline float: " + stripFirst(s) ); */
+  /*   string sign; */
+  /*   string stripped_float= stripFirst( s.c_str() ); */
+  /*   float tmp_v = atof( stripped_float.c_str() ); */
+    
+  /*   string fp_in_hex = toBinaryFloat( atof( stripped_float.c_str() ) ); */
+  /*   if( atof( stripped_float.c_str() ) == 0 ) fp_in_hex=string("0000000000"); */
+  /*   int size_of_instruction=3; */
+  /*   if( addr < 255 ) size_of_instruction-=1; */
+  /*   int v=0; */
+  /*   int L = 5; */
+  /*   for( int i=0; i<5; i++ ) */
+  /*     { */
+  /* 	if( addr <= 255 ) { size_of_instruction = 2; } */
+  /* 	else { size_of_instruction = 3; } */
+
+	
+  /* 	addAsm( str_LDA + "#$" + fp_in_hex[v] + fp_in_hex[v+1], 2, false ); */
+	
+  /* 	if( getNameOf(addr) != ""  ) */
+  /* 	  { */
+  /* 	    if( i == 0 ) */
+  /* 	      { */
+  /* 		addAsm( str_STA + getNameOf(addr), size_of_instruction, false ); */
+  /* 	      } */
+  /* 	    else */
+  /* 	      { */
+  /* 		addAsm( str_STA + getNameOf(addr) + "+" + itos(i), size_of_instruction, false ); */
+  /* 	      } */
+  /* 	  } */
+  /* 	else */
+  /* 	  { */
+  /* 	    addAsm( str_STA + "$" + toHex(addr+i), size_of_instruction, false ); */
+  /* 	  } */
+  /* 	v+=2; */
+  /*     } */
+
+  /*   if( addr == 105 ) */
+  /*     { */
+  /* 	addAsm( str_LDA + "#$69" + commentmarker + "OPTIMIZE?", 2, false ); */
+  /* 	addAsm( str_LDY + "#$00", 2, false ); */
+  /* 	addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false ); */
+  /*     } */
+  /*   else if( addr == 97 ) */
+  /*     { */
+  /* 	addAsm( str_LDA + "#$61" + commentmarker + "OPTIMIZE?", 2, false ); */
+  /* 	addAsm( str_LDY + "#$00", 2, false ); */
+  /* 	addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false ); */
+  /*     } */
+  /*   else if( addr == 25 ) */
+  /*     { */
+  /* 	addAsm( str_LDA + "#$19" + commentmarker + "OPTIMIZE?", 2, false ); */
+  /* 	addAsm( str_LDY + "#$00", 2, false ); */
+  /* 	addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false ); */
+  /*     } */
+  /*   else if( addr == 2 ) */
+  /*     { */
+  /* 	addAsm( str_LDA + "#$02" + commentmarker + "OPTIMIZE?", 2, false ); */
+  /* 	addAsm( str_LDY + "#$00", 2, false ); */
+  /* 	addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false ); */
+  /*     } */
+  /*   return; */
+  /* } */
+void inlineFloat( string s, int addr=25)
   {
     addComment( "inline float: " + stripFirst(s) );
     string sign;
@@ -1186,6 +1306,12 @@
     else if( addr == 25 )
       {
 	addAsm( str_LDA + "#$19" + commentmarker + "OPTIMIZE?", 2, false );
+	addAsm( str_LDY + "#$00", 2, false );
+	addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
+      }
+    else if( addr == 97 )
+      {
+	addAsm( str_LDA + "#$61" + commentmarker + "OPTIMIZE?", 2, false );
 	addAsm( str_LDY + "#$00", 2, false );
 	addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
       }
@@ -4331,22 +4457,22 @@ body: WHILE
       addAsm( str_JMP + "!---", 2, false );
       addAsm( "!:", 0, true );
     }
-  else if( isARG($3.name) )
-    {
-      addComment( "printf(ARG);" );
+  /* else if( isARG($3.name) ) */
+  /*   { */
+  /*     addComment( "printf(ARG);" ); */
 
-      addAsm( str_LDA + "#$69" + commentmarker + "ARG_L", 2, false );
-      addAsm( str_LDY + "#$00" + commentmarker + "ARG_H", 2, false );
-      addAsm( str_JSR + "$BBA2" + commentmarker + "RAM -> FAC", 3, false ); // FP ->FAC
-      addAsm( str_JSR + "$BDDD" + commentmarker + "FAC -> PETSCII ($0100)", 3, false );
+  /*     addAsm( str_LDA + "#$69" + commentmarker + "ARG_L", 2, false ); */
+  /*     addAsm( str_LDY + "#$00" + commentmarker + "ARG_H", 2, false ); */
+  /*     addAsm( str_JSR + "$BBA2" + commentmarker + "RAM -> FAC", 3, false ); // FP ->FAC */
+  /*     addAsm( str_JSR + "$BDDD" + commentmarker + "FAC -> PETSCII ($0100)", 3, false ); */
       
-      addAsm( str_LDA + "#$00", 2, false );
-      addAsm( str_STA + "$02", 2, false );
-      addAsm( str_LDA + "#$01", 2, false );
-      addAsm( str_STA + "$03", 2, false );
-      addAsm( str_JSR + "PRN", 3, false);
-      printf_is_needed = true;
-    }
+  /*     addAsm( str_LDA + "#$00", 2, false ); */
+  /*     addAsm( str_STA + "$02", 2, false ); */
+  /*     addAsm( str_LDA + "#$01", 2, false ); */
+  /*     addAsm( str_STA + "$03", 2, false ); */
+  /*     addAsm( str_JSR + "PRN", 3, false); */
+  /*     printf_is_needed = true; */
+  /*   } */
   else if( isFAC($3.name) )
     {
       addComment( "printf(FAC);" );
@@ -4370,7 +4496,7 @@ body: WHILE
       addAsm( str_LDY + "#>" + getNameOf(getAddressOf($3.name)), 2, false );
       
       // load it into FAC
-      addAsm( str_JSR + "$BBA2" + commentmarker + "RAM -> FAC", 3, false ); // FP ->FAC
+      addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false ); // FP ->FAC
       // call the FOUT
       
       addAsm( str_JSR + "$BDDD" + commentmarker + "FAC -> PETSCII ($0100)", 3, false );
@@ -13474,7 +13600,6 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_LDA + "#<" + OP2, 2, false );
 	  addAsm( str_LDY + "#>" + OP2, 2, false );
 	  addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
-	  addAsm( str_JSR + "$BC0F" + commentmarker + "FAC -> ARG", 3, false );
 	  
 	  addAsm( str_LDA + "#<" + OP1, 2, false );
 	  addAsm( str_LDY + "#>" + OP1, 2, false );
