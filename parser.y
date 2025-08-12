@@ -8149,10 +8149,6 @@ statement: datatype ID init
       addAsm( str_LDY + "#>" + getNameOf(getAddressOf(_id)), 2, false ); 
       addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );
     }
-  else if( isNULL(_init) )
-    {
-      addCompilerMessage( "Uninitialised variable may contain garbage", 0 );
-    }
   else if( _init == string("Slipstream"))
     {
       // I have no idea WTF I was thinking here... Slipstream?!?
@@ -8189,8 +8185,8 @@ statement: datatype ID init
       addAsm( str_TAY, 1, false );
       addAsm( str_TXA, 1, false );
       addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
-      addAsm( str_LDX + "#<" + getNameOf(getAddressOf( _id )), 3, false );
-      addAsm( str_LDY + "#>" + getNameOf(getAddressOf( _id )), 3, false );
+      addAsm( str_LDX + "#<" + getNameOf(getAddressOf( _id )), 2, false );
+      addAsm( str_LDY + "#>" + getNameOf(getAddressOf( _id )), 2, false );
       addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );
     }
   else if(isFloatDT(_dt) && isFloatID(_id) && isA(_init))
@@ -8200,8 +8196,8 @@ statement: datatype ID init
       addAsm( str_TAY, 1, false );
       addAsm( str_LDA + "#$00", 2, false );
       addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
-      addAsm( str_LDX + "#<" + getNameOf(getAddressOf( _id )), 3, false );
-      addAsm( str_LDY + "#>" + getNameOf(getAddressOf( _id )), 3, false );
+      addAsm( str_LDX + "#<" + getNameOf(getAddressOf( _id )), 2, false );
+      addAsm( str_LDY + "#>" + getNameOf(getAddressOf( _id )), 2, false );
       addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );
     }
   else if(isFloatDT(_dt) && isFloatID(_id) && isFAC(_init))
@@ -8286,109 +8282,13 @@ statement: datatype ID init
       addAsm( str_JSR + "$B1AA" + commentmarker + "FAC -> WORD (ylo ahi)", 3, false );
       addAsm( str_STY + getNameOf(getAddressOf($2.name)), 3, false );
     }
-
   else if(isMOB(_init))
     {
-      addCompilerMessage( "MOB type has been removed (for now)", 3 );
-      if( mob_vector[1] > 255 || mob_vector[1] < 0 ) addCompilerMessage( "MOB Pointer out of range", 3 );
-      pushScope("MOB");
-      addAsm( str_LDA + "#$" + toHex(mob_vector[1]), 2, false );
-      addAsm( str_STA + _id, 3, false );
-      int sprite_number = mob_vector[0]; // 0-7
-      int sprite_area = mob_vector[1]; // 192, 193... etc
-
-
-      // calculate where the pointer is so we can store the 192, 193, 194...
-      // sprite pointer = bank_mem + screen_mem + 0x07F8 + sprite_number
-      // 0x07f8 is the screen size (2040);
-      
-      // when using the default VIC bank it's the last 8 bytes of screen memory -- 2040 through 2047
-
-      // sprite pointer = bank_mem + screen_mem + 0x03F7 + sprite_number
-      // mkpellegrino - 2023 06 14
-      // 0x03F8 -> into Address  
-      //addAsm( str_LDA + "#$F7", 2, false ); -- should be 0xF8
-      addAsm( str_LDA + "#$F8", 2, false );
-      addAsm( str_STA + getLabel( ((int)label_vector[label_major]), false ), 3, false );
-      addAsm( str_LDA + "#$03", 2, false );
-      addAsm( str_STA + getLabel( ((int)label_vector[label_major]), false )+ " +1", 3, false );
-      
-      // Add the Sprite Number to Address
-      addAsm( str_LDA + "#$" + toHex( sprite_number ) + commentmarker + "<- Sprite #", 2, false );
-      addAsm( str_CLC );
-      addAsm( str_ADC + getLabel( ((int)label_vector[label_major]), false ), 3, false );
-      addAsm( str_STA + getLabel( ((int)label_vector[label_major]), false ), 3, false );
-
-      // in case the value in Label overflows, we need to carry the 1 into Label+1
-      // actually .. we don't!  because the greatest sprite # is 7... #$F7 + #$07 < #$100
-      //addAsm( str_LDA + "#$00", 2, false );
-      //addAsm( str_ADC + getLabel( ((int)label_vector[label_major]), false )+ " +1", 3, false );
-
-      // get the location of the screen memory -> A
-      // I checked the value in "A" after the pop off the stack
-      // and it is correct for (at least) bank 1
-      scrmem_is_needed=true;
-      addAsm( str_JSR + "SCRMEM", 3, false );
-      addAsm( str_PLA );
-
-      // add the location of screen memory to the address
-      addAsm( str_ADC + getLabel( ((int)label_vector[label_major]), false ) + " +1", 3, false );
-      addAsm( str_STA + getLabel( ((int)label_vector[label_major]), false ) + " +1", 3, false );
-
-      // get the location of the bank
-      bnkmem_is_needed=true;
-      addAsm( str_JSR + "BNKMEM", 3, false );   
-      addAsm( str_PLA );
-
-      // add the location of the bank to the address
-      addAsm( str_ADC + getLabel( ((int)label_vector[label_major]), false ) + " +1", 3, false );
-      addAsm( str_STA + getLabel( ((int)label_vector[label_major]), false ) + " +1", 3, false );
-
-      // Load the sprite area and store it at the address
-      addAsm( str_LDA + "#$" + toHex( mob_vector[1] ) + commentmarker + "sprite pointer", 2, false );
-      addAsm( str_BYTE + "$8D" + commentmarker + "STA Absolute", 1, false ); // STA
-      addAsm( generateNewLabel(), 0, true );
-      addAsm( str_BYTE + "$00, $00", 2, false );
-      
-      int sprite_base_address = sprite_area*64;
-
-      string BA_L = toHex(get_word_L(sprite_base_address)); 
-      string BA_H = toHex(get_word_H(sprite_base_address));
-      string byte_string = string(_id) + "_data:\n\t" + str_BYTE;
-      for( int i=2; i<mob_vector.size(); i++ )
-	{
-	  byte_string += string( "$" ) + toHex( mob_vector[i]);
-	  if( i<(mob_vector.size()-1) ) byte_string+=string(", ");
-	}
-      mobs.push_back( byte_string );
-      mob_vector.erase(mob_vector.begin(),mob_vector.end());
-      addAsm( str_JMP + getLabel( ((int)label_vector[label_major]), false ), 3, false );
-      addAsm( byte_string, 63, true );
-      addAsm( generateNewLabel(), 0, true );
-      addAsm( str_LDA + "#<" + _id + "_data", 2, false ); /// _id is the name of the MOB
-      addAsm( str_STA + "$FB", 2, false );
-      addAsm( str_LDA + "#>" + _id + "_data", 2, false );
-      addAsm( str_STA + "$FC", 2, false );
-      
-      addAsm( str_LDA + "#$" + BA_L, 2, false );
-      addAsm( str_STA + "$FD", 2, false );
-      
-      // Load the (sprite area)*64 and store it at the address
-      addAsm( str_LDA+"#$" + BA_H, 2, false );
-      
-      addAsm( str_STA + "$FE", 2, false );
-
-      // this will get the bank offset
-      bnkmem_is_needed=true;
-      addAsm( str_JSR + "BNKMEM", 3, false );
-      addAsm( str_PLA ); // <<- A should now be #$00, #$20, #$40, 
-      addAsm( str_CLC );
-      addAsm( str_ADC + "$FE", 2, false );
-      addAsm( str_STA + "$FE", 2, false );
-      
-      addAsm( str_JSR + "MOBCPY", 3, false );
-      mobcpy_is_needed = true;
-      popScope();
+      addCompilerMessage( "MOB type has been removed", 3 );
+    }
+  else if( isNULL(_init) )
+    {
+      addCompilerMessage( "Uninitialised variable may contain garbage", 0 );
     }
   else
     {
@@ -10764,6 +10664,7 @@ statement: datatype ID init
   
   addParserComment( "RULE: statement: ID init" );
 
+  // TODO: add more variable initalisations with different types
   if( isWordID(_id) && isA(_init) )
     {
       addComment("WordID = A" );
@@ -10806,8 +10707,8 @@ addAsm( str_STY + getNameOf(getAddressOf(_id)), 3, false );
       addAsm( str_TAY, 1, false );
       addAsm( str_TXA, 1, false );
       addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
-      addAsm( str_LDX + "#<" + getNameOf(getAddressOf(_id)), 3, false );
-      addAsm( str_LDY + "#>" + getNameOf(getAddressOf(_id)), 3, false );
+      addAsm( str_LDX + "#<" + getNameOf(getAddressOf(_id)), 2, false );
+      addAsm( str_LDY + "#>" + getNameOf(getAddressOf(_id)), 2, false );
       addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );
     }
   else if( isFloatID(_id) && isA(_init) )
@@ -10817,15 +10718,15 @@ addAsm( str_STY + getNameOf(getAddressOf(_id)), 3, false );
       addAsm( str_TAY, 1, false );
       addAsm( str_LDA + "#$00", 2, false );
       addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
-      addAsm( str_LDX + "#<" + getNameOf(getAddressOf(_id)), 3, false );
-      addAsm( str_LDY + "#>" + getNameOf(getAddressOf(_id)), 3, false );
+      addAsm( str_LDX + "#<" + getNameOf(getAddressOf(_id)), 2, false );
+      addAsm( str_LDY + "#>" + getNameOf(getAddressOf(_id)), 2, false );
       addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );
     }
   else if( isFloatID(_id) && isFAC(_init) )
     {
       addComment("FloatID = FAC" );
-      addAsm( str_LDX + "#<" + getNameOf(getAddressOf(_id)), 3, false );
-      addAsm( str_LDY + "#>" + getNameOf(getAddressOf(_id)), 3, false );
+      addAsm( str_LDX + "#<" + getNameOf(getAddressOf(_id)), 2, false );
+      addAsm( str_LDY + "#>" + getNameOf(getAddressOf(_id)), 2, false );
       addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );
     }
   else if( isIntID(_id) && isA(_init) )
@@ -10866,7 +10767,7 @@ addAsm( str_STY + getNameOf(getAddressOf(_id)), 3, false );
     {
       addComment("UintID = FAC" );
       addCompilerMessage("setting a 1 byte memory location to a Floating Point byte value... losing Sign and Fidelity" ,1);
-      addAsm( str_JSR + "$B1AA" + commentmarker + "FAC -> WORD (ylo ahi)", 3, false );
+      addAsm( str_JSR + "$B1AA" + commentmarker + "FAC -> WORD (y-lo a-hi)", 3, false );
       addAsm( str_STY + getNameOf(getAddressOf(_id)), 3, false );
     }
   else
@@ -11058,7 +10959,7 @@ addAsm( str_STY + getNameOf(getAddressOf(_id)), 3, false );
       //addAsm( str_NOP );
 
       addAsm( str_LDA + "#<" + getNameOf(getAddressOf($3.name)), 2, false );
-      addAsm( str_LDX + "#>" + getNameOf(getAddressOf($3.name)) + "+1", 2, false );
+      addAsm( str_LDX + "#>" + getNameOf(getAddressOf($3.name)) + " +1", 2, false );
       
       // find the length of the string first
       addAsm( str_STA + "!++", 3, false );
@@ -11214,156 +11115,9 @@ addAsm( str_STY + getNameOf(getAddressOf(_id)), 3, false );
     }
   addAsm( str_JSR + "$FFBA", 3, false );  
 };
-/* | tSAVE '(' STR ',' expression ',' expression ')' */
-/* { */
-/*   pushScope("SAVE"); */
-/*   save_is_needed = true; */
-/*   addAsm( str_SEI ); */
-
-
-/*   addString( string("STRLBL") + itos(string_number), string($3.name).substr(1,string($3.name).length()-2), asm_instr.size() ); */
-
-
-/*   int datasize; */
-/*   int memoryloc; */
-/*   if( isUintIMM($7.name) ) */
-/*     { */
-/*       datasize = atoi(stripFirst($7.name).c_str()); */
-/*     } */
-/*   else */
-/*     { */
-/*       addCompilerMessage( "Size must be a UintIMM", 3 ); */
-/*     } */
-/*   if( isWordIMM($5.name) ) */
-/*     { */
-/*       memoryloc = atoi(stripFirst($5.name).c_str()); */
-/*       addAsm( str_LDA + "#>$" + toHex(memoryloc), 2, false ); */
-/*       addAsm( str_PHA ); */
-      
-/*       addAsm( str_LDA + "#<$" + toHex(memoryloc), 2, false ); */
-/*       addAsm( str_PHA ); */
-/*     } */
-/*   else if( isWordID($5.name) ) */
-/*     { */
-/*       memoryloc = atoi(stripFirst($5.name).c_str()); */
-/*       addAsm( str_LDA + "$" + toHex(memoryloc), 3, false ); */
-/*       addAsm( str_PHA ); */
-/*       addAsm( str_LDA + "$" + toHex(memoryloc+1), 3, false ); */
-/*       addAsm( str_PHA ); */
-/*     } */
-/*   else */
-/*     { */
-/*       addCompilerMessage( "Memory Location must be a WordIMM or WordID", 3 ); */
-/*     } */
-  
-
-
-/*   addAsm( str_LDA + "#$" + toHex( string($3.name).length()-2), 2, false ); */
-/*   addAsm( str_PHA ); */
-  
-/*   addAsm( str_LDA + "#>STRLBL" + itos(string_number), 2, false ); */
-/*   addAsm( str_PHA ); */
-
-/*   addAsm( str_LDA + "#<STRLBL" + itos(string_number++), 2, false ); */
-/*   addAsm( str_PHA ); */
-  
-/*   addAsm( str_LDA + "#$" + toHex(datasize), 2, false ); */
-/*   addAsm( str_PHA ); */
-
-/*   addAsm( str_JSR + "SAVE", 3, false ); */
-/*   addAsm( str_CLI ); */
-
-/*   popScope(); */
-/* }; */
-/* | tLOAD '(' STR ',' expression ',' expression ')' */
-/* { */
-/*   pushScope("LOAD"); */
-/*   addAsm( str_SEI ); */
-
-/*   //load16_is_needed = true; */
-/*   //load_is_needed = true; */
-
-/*   addString( string("STRLBL") + itos(string_number), string($3.name).substr(1,string($3.name).length()-2), asm_instr.size() ); */
-
-/*   // attached Disk Filename, memorylocation, size (in bytes) */
-/*   int datasize; */
-/*   int memoryloc; */
-  
-/*   if( isUintIMM($7.name) || isWordIMM($7.name) ) */
-/*     { */
-/*       datasize = atoi(stripFirst($7.name).c_str()); */
-/*     } */
-/*   else  */
-/*     { */
-/*       addCompilerMessage( "Size must be a UintIMM/WordIMM", 3 ); */
-/*     } */
-
-/*   if( datasize > 255 ) */
-/*     { */
-/*       load16_is_needed = true; */
-/*     } */
-/*   else */
-/*     { */
-/*       load_is_needed = true; */
-/*     } */
-
-  
-/*   if( isWordIMM($5.name) ) */
-/*     { */
-/*       memoryloc = atoi(stripFirst($5.name).c_str()); */
-/*       addAsm( str_LDA + "#>$" + toHex(memoryloc), 2, false ); */
-/*       addAsm( str_PHA ); */
-      
-/*       addAsm( str_LDA + "#<$" + toHex(memoryloc), 2, false ); */
-/*       addAsm( str_PHA ); */
-      
-/*     } */
-/*   else if( isWordID($5.name) ) */
-/*     { */
-/*       memoryloc = atoi(stripFirst($5.name).c_str()); */
-
-/*       addAsm( str_LDA + "$" + toHex(memoryloc), 3, false ); */
-/*       addAsm( str_PHA ); */
-      
-/*       addAsm( str_LDA + "$" + toHex(memoryloc+1), 3, false ); */
-/*       addAsm( str_PHA ); */
-/*     } */
-/*   else */
-/*     { */
-/*       addCompilerMessage( "Memory Location must be a WordIMM or WordID", 3 ); */
-/*     } */
-
-/*   addComment( "push the address of the filename onto the stack" ); */
-/*   addAsm( str_LDA + "#$" + toHex( string($3.name).length()-2), 2, false ); */
-/*   addAsm( str_PHA ); */
-  
-/*   addAsm( str_LDA + "#>STRLBL" + itos(string_number), 2, false ); */
-/*   addAsm( str_PHA ); */
-
-/*   addAsm( str_LDA + "#<STRLBL" + itos(string_number++), 2, false ); */
-/*   addAsm( str_PHA ); */
-
-/*   addComment( "push the number of bytes onto the stack" ); */
-/*   addAsm( str_LDA + "#$" + toHex(datasize), 2, false ); */
-/*   addAsm( str_PHA ); */
-
-/*   if( datasize > 255 ) */
-/*     { */
-/*       addAsm( str_JSR + "LOAD16", 3, false ); */
-/*     } */
-/*   else */
-/*     { */
-/*       addAsm( str_JSR + "LOAD", 3, false ); */
-/*     } */
-/*   addAsm( str_CLI ); */
-    
-/*   popScope(); */
-/* }; */
 | tIMPORT '(' STR ',' STR ',' expression ')' 
 {
-
   string arg0 = stripQuotes($3.name);
-  //cerr << $7.name << endl;
   string arg1 = string($5.name);
   if( arg0 == string("BIN") || arg0 == string("bin") )
     {
@@ -11472,9 +11226,7 @@ init: '=' expression
     }  
   else if( isMOB($2.name)  )
     {
-      addCompilerMessage( "MOB type has been removed (for now)", 3 );
-      addComment( "initialising a sprite with MOB" );
-      strcpy($$.name, "_MOB" );
+      addCompilerMessage( "MOB type has been removed", 3 );
     }  
   else if( isA($2.name) )
     {
@@ -11493,10 +11245,9 @@ init: '=' expression
   else if( isFloatID($2.name) )
     {
       addComment( "initialising with FloatID" );
-      addAsm( str_LDA + "#<" + getNameOf(getAddressOf($2.name)), 3, false );
-      addAsm( str_LDY + "#>" + getNameOf(getAddressOf($2.name)), 3, false );
-      addComment( "RAM -> FAC" );
-      addAsm( str_JSR + "$BBA2", 3, false );
+      addAsm( str_LDA + "#<" + getNameOf(getAddressOf($2.name)), 2, false );
+      addAsm( str_LDY + "#>" + getNameOf(getAddressOf($2.name)), 2, false );
+      addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
       strcpy($$.name, "_FAC" );
     }
   else if( isWordID( $2.name ) )
@@ -11550,7 +11301,7 @@ init: '=' expression
     }
   else if( isIntIMM($2.name) )
     {
-      addComment( string("initialising with IntIMM: ") + $2.name );
+      addComment( "initialising with IntIMM" );
       int v = atoi( stripFirst($2.name).c_str() );
       if( v < 0 )
 	{
@@ -11563,7 +11314,7 @@ init: '=' expression
     }
   else if( isWordIMM($2.name) )
     {
-      addComment( string("initialising with WordIMM: ") + $2.name );
+      addComment( "initialising with WordIMM" );
 
       int tmp_int = atoi( stripFirst($2.name).c_str() );
       if( get_word_L(tmp_int) ==  get_word_H(tmp_int) )
@@ -13871,56 +13622,56 @@ arithmetic[MATHOP] expression[OP2]
       string OP2 = toHex( atoi( stripFirst($4.name).c_str() ) );
       if( op == string("*") )
 	{
-	  addAsm( str_LDY + "#$" + OP2, 3, false );
+	  addAsm( str_LDY + "#$" + OP2, 2, false );
 	  addAsm( str_LDA + "#$00", 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
-	  addAsm( str_LDA + "#<" + OP1, 3, false );
-	  addAsm( str_LDY + "#>" + OP1, 3, false );
+	  addAsm( str_LDA + "#<" + OP1, 2, false );
+	  addAsm( str_LDY + "#>" + OP1, 2, false );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fMultT();
 	  strcpy($$.name, "_FAC" );
 	}
       else if( op == string( "/" ) )
 	{
-	  addAsm( str_LDY + "#$" + OP2, 3, false );
+	  addAsm( str_LDY + "#$" + OP2, 2, false );
 	  addAsm( str_LDA + "#$00", 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
-	  addAsm( str_LDA + "#<" + OP1, 3, false );
-	  addAsm( str_LDY + "#>" + OP1, 3, false );
+	  addAsm( str_LDA + "#<" + OP1, 2, false );
+	  addAsm( str_LDY + "#>" + OP1, 2, false );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fDivT();
 	  strcpy($$.name, "_FAC" );
 	}
       else if( op == string( "+" ) )
 	{
-	  addAsm( str_LDY + "#$" + OP2, 3, false );
+	  addAsm( str_LDY + "#$" + OP2, 2, false );
 	  addAsm( str_LDA + "#$00", 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
-	  addAsm( str_LDA + "#<" + OP1, 3, false );
-	  addAsm( str_LDY + "#>" + OP1, 3, false );
+	  addAsm( str_LDA + "#<" + OP1, 2, false );
+	  addAsm( str_LDY + "#>" + OP1, 2, false );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fAddT();
 	  strcpy($$.name, "_FAC" );
 	}
       else if( op == string( "-" ) )
 	{
-	  addAsm( str_LDY + "#$" + OP2, 3, false );
+	  addAsm( str_LDY + "#$" + OP2, 2, false );
 	  addAsm( str_LDA + "#$00", 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
-	  addAsm( str_LDA + "#<" + OP1, 3, false );
-	  addAsm( str_LDY + "#>" + OP1, 3, false );
+	  addAsm( str_LDA + "#<" + OP1, 2, false );
+	  addAsm( str_LDY + "#>" + OP1, 2, false );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fSubT();
 	  strcpy($$.name, "_FAC" );
 	}
       else if( op == string( "**" ) )
 	{
-	  addAsm( str_LDY + "#$" + OP2, 3, false );
+	  addAsm( str_LDY + "#$" + OP2, 2, false );
 	  addAsm( str_LDA + "#$00", 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 
-	  addAsm( str_LDA + "#<" + OP1, 3, false );
-	  addAsm( str_LDY + "#>" + OP1, 3, false );
+	  addAsm( str_LDA + "#<" + OP1, 2, false );
+	  addAsm( str_LDY + "#>" + OP1, 2, false );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fPwrT();
 	  strcpy($$.name, "_FAC" );
