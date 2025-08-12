@@ -1106,8 +1106,8 @@
     addAsm( str_STA + "!fp0+ +3", 3, false );
     addAsm( str_PLA, 1, false );
     addAsm( str_STA + "!fp0+ +4", 3, false );
-    addAsm( str_PLA, 1, false );
-    addAsm( str_STA + "!fp0+ +5", 3, false );
+    //addAsm( str_PLA, 1, false );
+    //addAsm( str_STA + "!fp0+ +5", 3, false );
     return;
   }
   
@@ -1125,8 +1125,8 @@
     addAsm( str_STA + "!fp1+ +3", 3, false );
     addAsm( str_PLA, 1, false );
     addAsm( str_STA + "!fp1+ +4", 3, false );
-    addAsm( str_PLA, 1, false );
-    addAsm( str_STA + "!fp1+ +5", 3, false );
+    //addAsm( str_PLA, 1, false );
+    //addAsm( str_STA + "!fp1+ +5", 3, false );
     return;
   }
   
@@ -2989,7 +2989,7 @@ void inlineFloat( string s, int addr=25)
 
 //%parse-param { FILE* fp }
 %token VOID 
-%token <nd_obj> CHAR tFCLOSE tFOPEN tFCLRCHN tFCHROUT tFCHRIN tFREADST tFCHKOUT tFCHKIN tSETLFS tSETNAM tSAVE tLOAD tIMPORT tSPRPTR tPUSH tPOP tCOMMENT tDATA tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tLN tSIN tCOS tTAN tMOB tSIDIRQ tSIDOFF tSTRTOFLOAT tSTRTOWORD tTOFLOAT tINTTOWORD tTOUINT tTOWORD tTOBIT tDEC tINC tROL tROR tLSR tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJUMP tSETSCR tJSR tIRQ tROMOUT tROMIN tLDA tASL tSPRITESET  tSPRITEOFF tSPRITETOGGLE tRND tXXX tINLINE tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tPEEK tPOKE NEWLINE CHARACTER tPRINTS PRINTFF SCANFF INT FLOAT WHILE FOR IF ELSE TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE EXPONENT tSQRT UNARY INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL tSCREEN tNULL tMEMCPY tSEED tNEEDS tPI tE
+%token <nd_obj> CHAR tFCLOSE tFOPEN tFCLRCHN tFCHROUT tFCHRIN tFREADST tFCHKOUT tFCHKIN tSETLFS tSETNAM tSAVE tLOAD tIMPORT tSPRPTR tPUSH tPOP tCOMMENT tDATA tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tLN tABS tSIN tCOS tTAN tMOB tSIDIRQ tSIDOFF tSTRTOFLOAT tSTRTOWORD tTOFLOAT tINTTOWORD tTOUINT tTOWORD tTOBIT tDEC tINC tROL tROR tLSR tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJUMP tSETSCR tJSR tIRQ tROMOUT tROMIN tLDA tASL tSPRITESET  tSPRITEOFF tSPRITETOGGLE tRND tXXX tINLINE tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tPEEK tPOKE NEWLINE CHARACTER tPRINTS PRINTFF SCANFF INT FLOAT WHILE FOR IF ELSE TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE EXPONENT tSQRT UNARY INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL tSCREEN tNULL tMEMCPY tSEED tNEEDS tPI tE
 %type <nd_obj> headers main body return function datatype statement arithmetic relop program else 
    %type <nd_obj2> init value expression /*charlist*/ numberlist parameterlist argumentlist
       %type <nd_obj3> condition
@@ -13963,9 +13963,6 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
 	  inlineFloat($1.name);
 	  deletePreviousAsm();
-
-	  // TODO: What goes here?
-	  
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fMultT();
 	}
@@ -14065,8 +14062,6 @@ arithmetic[MATHOP] expression[OP2]
 	{
 	  addAsm( str_LDX + "#$00", 2, false );
 	  addAsm( str_LDY + O2, 3, false );
-	  //addAsm( str_TAY, 1, false );
-	  //addAsm( str_ASL, 1, false );
 	  addAsm( str_BPL + "!+", 2, false );
 	  addAsm( str_DEX, 1, false );
 	  addAsm( "!:\t", 0, true );
@@ -14233,8 +14228,6 @@ arithmetic[MATHOP] expression[OP2]
 	{
 	  addCompilerMessage( "FloatIMM math UintIMM: Unknown Operation", 3 );
 	}
-
-      
     }
   else if( isFloatIMM($1.name) && isUintID($4.name) )
     {
@@ -14561,7 +14554,6 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_STY + "$03", 2, false );
 	  addAsm( str_JSR + "UMUL", 3, false );
 	  
-
 	  if( !arg_unsafe_math )
 	    {
 	      addAsm( str_LDY + "$03", 2, false );
@@ -24899,6 +24891,61 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
   else
     {
       addCompilerMessage( "trying to calculate natural log of unknown type", 3);
+    }
+}
+| tABS '(' expression ')'
+{
+  
+  if( isFAC($3.name) )
+    {
+      addCompilerMessage( "abs(FAC) is a ROM routine", 1 );
+      addAsm( str_JSR + "$BC58" + commentmarker + "abs(FAC) -> FAC", 3, false ); // sine
+      strcpy($$.name, "_FAC");
+    }
+  else if( isA($3.name) )
+    {
+      // nothing to do here
+      addCompilerMessage( "A is always >= 0, abs(A) is not necessary", 1 );
+      strcpy($$.name, "_A");
+    }
+  else if( isUintID($3.name) )
+    {
+      // nothing to do here
+      addCompilerMessage( "UintID is always >= 0, abs(UintID) is not necessary", 1 );
+      strcpy($$.name, "_A");
+    }
+  else if( isWordID($3.name) )
+    {
+      // nothing to do here
+      addCompilerMessage( "WordID is always >= 0, abs(WordID) is not necessary", 1 );
+      strcpy($$.name, "_XA");
+    }
+  else if( isXA($3.name) )
+    {
+      // nothing to do here
+      addCompilerMessage( "XA is always >= 0, abs(XA) is not necessary", 1 );
+      strcpy($$.name, "_XA");
+    }
+  else if( isIntID($3.name) )
+    {
+      addCompilerMessage( "abs(IntID): nyi", 3 );
+    }
+  else if( isFloatID($3.name) )
+    {
+      addCompilerMessage( "abs(FloatID) is a ROM routine", 1 );
+      addAsm( str_LDA + "#<" + getNameOf(getAddressOf($3.name)), 2, false  );
+      addAsm( str_LDY + "#>" + getNameOf(getAddressOf($3.name)), 2, false  );
+      addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false ); // FP ->FAC
+      addAsm( str_JSR + "$BC58" + commentmarker + "abs(FAC) -> FAC", 3, false );
+      strcpy($$.name, "_FAC");
+    }
+  else if( isFloatIMM($3.name) || isWordIMM($3.name) || isUintIMM($3.name) || isIntIMM($3.name) )
+    {
+      addCompilerMessage( "For the love of might... just hard-code the value!", 3 );
+    }
+  else
+    {
+      addCompilerMessage( "trying to calculate absolute value of unknown type", 3);
     }
 }
 | tSIN '(' expression ')'
