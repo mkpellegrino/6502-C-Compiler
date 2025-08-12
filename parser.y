@@ -13406,14 +13406,9 @@ arithmetic[MATHOP] expression[OP2]
       addComment( "FloatID math IntIMM: TOC");
       
       // get OP2 as a word
-      string hi_byte = "00";
-      int tmp_int = atoi(stripFirst($4.name).c_str());
-      if( tmp_int < 0 )
-	{
-	  tmp_int = twos_complement( tmp_int );
-	  hi_byte = "FF";
-	}
-      string low_byte = toHex(tmp_int);
+      int tmp_int = atoi(stripFirst(stripFirst($4.name).c_str()).c_str());
+
+      string low_byte = toHex(twos_complement(tmp_int));
       
       int base_address_op1 = hexToDecimal($1.name); 
       string OP1 = getNameOf( base_address_op1 );
@@ -13421,7 +13416,7 @@ arithmetic[MATHOP] expression[OP2]
       if( op == string("*") )
 	{
 	  addAsm( str_LDY + "#$" + low_byte, 2, false );
-	  addAsm( str_LDA + "#$" + hi_byte, 2, false );
+	  addAsm( str_LDA + "#$FF", 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  
 	  addAsm( str_LDA + "#<" + OP1, 3, false );
@@ -13433,7 +13428,7 @@ arithmetic[MATHOP] expression[OP2]
       else if( op == string( "/" ) )
 	{
 	  addAsm( str_LDY + "#$" + low_byte, 2, false );
-	  addAsm( str_LDA + "#$" + hi_byte, 2, false );
+	  addAsm( str_LDA + "#$FF", 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  addAsm( str_LDA + "#<" + OP1, 3, false );
 	  addAsm( str_LDY + "#>" + OP1, 3, false );
@@ -13444,7 +13439,7 @@ arithmetic[MATHOP] expression[OP2]
       else if( op == string( "+" ) )
 	{
 	  addAsm( str_LDY + "#$" + low_byte, 2, false );
-	  addAsm( str_LDA + "#$" + hi_byte, 2, false );
+	  addAsm( str_LDA + "#$FF", 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  addAsm( str_LDA + "#<" + OP1, 3, false );
 	  addAsm( str_LDY + "#>" + OP1, 3, false );
@@ -13455,7 +13450,7 @@ arithmetic[MATHOP] expression[OP2]
       else if( op == string( "-" ) )
 	{
 	  addAsm( str_LDY + "#$" + low_byte, 2, false );
-	  addAsm( str_LDA + "#$" + hi_byte, 2, false );
+	  addAsm( str_LDA + "#$FF", 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  addAsm( str_LDA + "#<" + OP1, 3, false );
 	  addAsm( str_LDY + "#>" + OP1, 3, false );
@@ -13466,7 +13461,7 @@ arithmetic[MATHOP] expression[OP2]
       else if( op == string( "**" ) )
 	{
 	  addAsm( str_LDY + "#$" + low_byte, 2, false );
-	  addAsm( str_LDA + "#$" + hi_byte, 2, false );
+	  addAsm( str_LDA + "#$FF", 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  addAsm( str_LDA + "#<" + OP1, 3, false );
 	  addAsm( str_LDY + "#>" + OP1, 3, false );
@@ -13710,63 +13705,63 @@ arithmetic[MATHOP] expression[OP2]
       addComment( "FloatID math WordIMM: TOC" );
       int base_address_op1 = hexToDecimal($1.name);
       string OP1 = getNameOf( base_address_op1 );
-      string OP2H = toHex(get_word_H(atoi(stripFirst($3.name).c_str())));
-      string OP2L = toHex(get_word_L(atoi(stripFirst($3.name).c_str())));
+      string OP2H = toHex(get_word_H(atoi(stripFirst($4.name).c_str())));
+      string OP2L = toHex(get_word_L(atoi(stripFirst($4.name).c_str())));
       
       string OP2 = toHex( atoi( stripFirst($4.name).c_str() ) );
       addCompilerMessage( "16-bit word is SIGNED", 1 );
 
       if( op == string( "+" ) )
 	{
-	  addAsm( str_LDY + "#$" + OP2L, 3, false );
+	  addAsm( str_LDY + "#$" + OP2L, 2, false );
 	  addAsm( str_LDA + "#$" + OP2H, 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
-	  addAsm( str_LDA + "#<" + OP1, 3, false );
-	  addAsm( str_LDY + "#>" + OP1, 3, false );
+	  addAsm( str_LDA + "#<" + OP1, 2, false );
+	  addAsm( str_LDY + "#>" + OP1, 2, false );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fAddT();
 	  strcpy($$.name, "_FAC" );
 	}
       else if( op == string( "-" ) )
 	{
-	  addAsm( str_LDY + "#$" + OP2L, 3, false );
+	  addAsm( str_LDY + "#$" + OP2L, 2, false );
 	  addAsm( str_LDA + "#$" + OP2H, 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
-	  addAsm( str_LDA + "#<" + OP1, 3, false );
-	  addAsm( str_LDY + "#>" + OP1, 3, false );
+	  addAsm( str_LDA + "#<" + OP1, 2, false );
+	  addAsm( str_LDY + "#>" + OP1, 2, false );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fSubT();
 	  strcpy($$.name, "_FAC" );
 	}
       else if( op == string("*") )
 	{
-	  addAsm( str_LDY + "#$" + OP2L, 3, false );
+	  addAsm( str_LDY + "#$" + OP2L, 2, false );
 	  addAsm( str_LDA + "#$" + OP2H, 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
-	  addAsm( str_LDA + "#<" + OP1, 3, false );
-	  addAsm( str_LDY + "#>" + OP1, 3, false );
+	  addAsm( str_LDA + "#<" + OP1, 2, false );
+	  addAsm( str_LDY + "#>" + OP1, 2, false );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fMultT();
 	  strcpy($$.name, "_FAC" );
 	}
       else if( op == string( "/" ) )
 	{
-	  addAsm( str_LDY + "#$" + OP2L, 3, false );
+	  addAsm( str_LDY + "#$" + OP2L, 2, false );
 	  addAsm( str_LDA + "#$" + OP2H, 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
-	  addAsm( str_LDA + "#<" + OP1, 3, false );
-	  addAsm( str_LDY + "#>" + OP1, 3, false );
+	  addAsm( str_LDA + "#<" + OP1, 2, false );
+	  addAsm( str_LDY + "#>" + OP1, 2, false );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fDivT();
 	  strcpy($$.name, "_FAC" );
 	}
       else if( op == string( "**" ) )
 	{
-	  addAsm( str_LDY + "#$" + OP2L, 3, false );
+	  addAsm( str_LDY + "#$" + OP2L, 2, false );
 	  addAsm( str_LDA + "#$" + OP2H, 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
-	  addAsm( str_LDA + "#<" + OP1, 3, false );
-	  addAsm( str_LDY + "#>" + OP1, 3, false );
+	  addAsm( str_LDA + "#<" + OP1, 2, false );
+	  addAsm( str_LDY + "#>" + OP1, 2, false );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fPwrT();
 	  strcpy($$.name, "_FAC" );
