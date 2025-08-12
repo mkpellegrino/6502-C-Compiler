@@ -14,7 +14,7 @@ X64=/Applications/Vice64/x64.app/Contents/MacOS/x64
 all:	clean lexer parser compiler
 
 parser: parser.y
-	$(YACC) -d -v  parser.y
+	$(YACC) -d -v parser.y
 #	$(YACC) -d -v -Wcounterexamples parser.y
 
 lexer:	lexer.l
@@ -297,14 +297,28 @@ AmathA:	AmathA.c
 	java -jar KickAss.jar AmathA.asm
 
 facmath: facmath.c
-	./compiler --kick --basic --code-segment 2100 --data-segment 8192 --unsafe-math < ./facmath.c > facmath.asm
+	./compiler --kick --basic --code-segment 2100 --data-segment 49152 --unsafe-math --memory-locations < ./facmath.c > facmath.asm
 	cat pause.inc.asm >> facmath.asm
 	java -jar KickAss.jar facmath.asm
 
+city:   city.c
+	./compiler --kick --basic --code-segment 2100 --data-segment 8192 --unsafe-math < ./city.c > city.asm
+	java -jar KickAss.jar city.asm
+	java -jar KickAss.jar city.op.asm
+
+fixfp:  fixfpbug.c
+	./compiler --kick --code-segment 49152 --data-segment 8192 --unsafe-math < ./fixfpbug.c > fixfpbug.asm
+	cleanup < fixfpbug.asm > fixfp.asm
+	java -jar KickAss.jar fixfp.asm
+
+myasm:	myasm.asm
+	java -jar KickAss.jar myasm.asm
+
 test:	test.c
-	./compiler --kick --basic --code-segment 2100 --data-segment 8192 --unsafe-math < ./test.c > test.asm
+	./compiler --kick --basic --code-segment 2100 --data-segment 49152 --unsafe-math < ./test.c > test.asm
 	cat pause.inc.asm >> test.asm
-	java -jar KickAss.jar test.asm
+	cleanup < test.asm > test.clean.asm
+	java -jar KickAss.jar test.clean.asm
 
 bmprint.op: bmprint.op.asm
 	java -jar KickAss.jar bmprint.op.asm
@@ -319,7 +333,7 @@ bmprint-test: bmprint-test.c
 	java -jar KickAss.jar bmprint-test.asm
 
 bmprint: bmprint.c registers.inc.asm memory.inc.asm pause.inc.asm
-	./compiler --kick --basic --no-optimize --code-segment 2100 --data-segment 21000 --no-asm-comments < ./bmprint.c > bmprint.asm
+	./compiler --kick --basic --code-segment 2100 --data-segment 21000 --no-asm-comments < ./bmprint.c > bmprint.asm
 	cat registers.inc.asm >> bmprint.asm
 	cat memory.inc.asm >> bmprint.asm
 	cat pause.inc.asm >> bmprint.asm
@@ -399,13 +413,14 @@ common:
 	./compiler --unsafe-ifs --kick < ./common.c > common.asm
 
 conway:
-#	./compiler --unsafe-ifs --kick --basic --code-segment 2100 --data-segment 820 --no-asm-comments < ./conway.c > conway.asm
+	./compiler --unsafe-ifs --unsafe-math --kick --basic --code-segment 2100 --data-segment 820 --no-asm-comments < ./conway.c > conway.asm
+	java -jar KickAss.jar conway.asm
 #	./nocomment < conway.asm > conway.nc.asm
 #	./cleanup < conway.asm > conway.clean.asm
-	java -jar KickAss.jar conway.clean.asm
+#	java -jar KickAss.jar conway.clean2.asm
 
-conwayop:
-	java -jar KickAss.jar conway.op3.asm
+conwayopt:
+	java -jar KickAss.jar conway.opt.asm
 
 newlabels:
 	./compiler --kick --basic --code-segment 2061 --data-segment 820  < ./newlabels.c > newlabels.asm

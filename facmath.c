@@ -1,8 +1,9 @@
 void main()
 {
   data PAK = { "\n\nPRESS ANY KEY\n\n" };
+  float expected = 0.0;
+  
   float x = 1.234;
-
   uint y = 2;
   float yFloat = 2.0;
   word yWord = 0x0002;
@@ -10,201 +11,264 @@ void main()
 
   printf( "FAC MATH A\n" );
   float z = ( x ** 2 ) + touint(y);
-  disp(3.52276);
+  expected = 3.522756;
+  disp();
+  
+  z = ( x ** 2 ) - touint(y);
+  expected = -0.477244;
+  disp();
 
-  z = ( x ** 2 ) -  touint(y);
-  disp(-0.477244);
+  z = ( x ** 2 ) * touint(y);
+  expected = 3.045512;
+  disp();
 
-  z = ( x ** 2 ) *  touint(y);
-  disp(3.04551);
-
-  z = ( x ** 2 ) /  touint(y);
-  disp(0.761378);
+  z = ( x ** 2 ) / touint(y);
+  expected = 0.761378;
+  disp();
 
   z = ( x ** 2 ) ** touint(y);
-  disp(2.31878);
+  expected = 2.318785;
+  disp();
 
-  printf( "\nFAC MATH FAC\n" );
-  z = ( x ** 2 ) + (1.0*y);
-  disp(3.52276);
-
-  z = ( x ** 2 ) - (1.0*y);
-  disp(-0.477244);
-
-  z = ( x ** 2 ) * (1.0*y);
-  disp(3.04551);
-
-  z = ( x ** 2 ) / (1.0*y);
-  disp(0.761378);
-
-  z = ( x ** 2 ) ** (1.0*y);
-  disp(2.31878);
-
+  myPause();
 
   
+  printf( "\nFAC MATH FAC\n" );
+  z = ( x ** 2 ) + (1.0 * y);
+  expected = 3.522756;
+  disp();
+  
+  z = ( x ** 2 ) - (1.0 * y);
+  expected = -0.477244;
+  disp();
+
+  z = ( x ** 2 ) * (1.0 * y);
+  expected = 3.045512;
+  disp();
+
+  z = ( x ** 2 ) / (1.0 * y);
+  expected = 0.761378;
+  disp();
+
+  z = ( x ** 2 ) ** (1.0 * y);
+  expected = 2.318785;
+  disp();
+
+  myPause();
+
   printf( "\nFAC MATH FLOATID\n" );
 
   z = ( x ** 2 ) + yFloat;
-  disp(3.52276);
+  expected = 3.522756;
+  disp();
 
   z = ( x ** 2 ) - yFloat;
-  disp(-0.477244);
+  expected = -0.477244;
+  disp();
 
   z = ( x ** 2 ) * yFloat;
-  disp(3.04551);
+  expected = 3.045512;
+  disp();
 
   z = ( x ** 2 ) / yFloat;
-  disp(0.761378);
+  expected = 0.761378;
+  disp();
 
   z = ( x ** 2 ) ** yFloat;
-  disp(2.31878);
+  expected = 2.318785;
+  disp();
 
   myPause();
 
 
   printf( "\nFAC MATH FLOATIMM\n" );
-
   z = ( x ** 2 ) + 2.0;
-  disp(3.52276);
+  expected = 3.522756;
+  disp();
 
   z = ( x ** 2 ) - 2.0;
-  disp(-0.477244);
+  expected = -0.477244;
+  disp();
 
   z = ( x ** 2 ) * 2.0;
-  disp(3.04551);
+  expected = 3.045512;
+  disp();
 
   z = ( x ** 2 ) / 2.0;
-  disp(0.761378);
+  expected = 0.761378;
+  disp();
 
   z = ( x ** 2 ) ** 2.0;
-  disp(2.31878);
+  expected = 2.318785;
+  disp();
 
+  myPause();
   
   printf( "\nFAC MATH XA\n" );
-
   z = ( x ** 2 ) + toword(yWord);
-  disp(3.52276);
+  expected = 3.522756;
+  disp();
 
   z = ( x ** 2 ) - toword(yWord);
-  disp(-0.477244);
+  expected = -0.477244;
+  disp();
 
   z = ( x ** 2 ) * toword(yWord);
-  disp(3.04551);
+  expected = 3.045512;
+  disp();
 
   z = ( x ** 2 ) / toword(yWord);
-  disp(0.761378);
+  expected = 0.761378;
+  disp();
 
   z = ( x ** 2 ) ** toword(yWord);
-  disp(2.31878);
+  expected = 2.318785;
+  disp();
 
+  myPause();
 
   printf( "\nFAC MATH INTIMM\n" );
-
   z = ( x ** 2 ) + -2;
-  disp(-0.477244);
+  expected = -0.477244;
+  disp();
 
   z = ( x ** 2 ) - -2;
-  disp(3.522756);
+  expected = 3.522756;
+  disp();
 
   z = ( x ** 2 ) * -2;
-  disp(-3.045512);
+  expected = -3.045512;
+  disp();
 
   z = ( x ** 2 ) / -2;
-  disp(-0.761378);
+  expected = -0.761378;
+  disp();
 
   z = ( x ** 2 ) ** -2;
-  disp(0.43126);
+  expected = 0.43126;
+  disp();
 
   myPause();
   
   printf( "\nFAC MATH UINTIMM\n" );
 
   z = ( x ** 2 ) + 2;
-  disp(3.52276);
+  expected = 3.522756;
+  disp();
 
-  z = ( x ** 2 ) - 2;
-  disp(-0.477244);
+  z = ( x ** 2 ) - 2;  
+  expected = -0.477244;
+  disp();
 
   z = ( x ** 2 ) * 2;
-  disp(3.04551);
+  expected = 3.04551;
+  disp();
 
   z = ( x ** 2 ) / 2;
-  disp(0.761378);
+  expected = 0.761378;
+  disp();
 
   z = ( x ** 2 ) ** 2;
-  disp(2.31878);
+  expected = 2.31878;
+  disp();
+
+  myPause();
 
   printf( "\nFAC MATH WORDIMM\n" );
 
   z = ( ( x ** 2 ) + 0x0004 ) - 2;
-  disp(3.52276);
+  expected = 3.522756;
+  disp();
 
   z = ( x ** 2 ) - 0x0002;
-  disp(-0.477244);
+  expected = -0.477244;
+  disp();
 
   z = ( x ** 2 ) * 0x0002;
-  disp(3.04551);
+  expected = 3.04551;
+  disp();
 
   z = ( x ** 2 ) / 0x0002;
-  disp(0.761378);
+  expected = 0.761378;
+  disp();
 
   z = ( x ** 2 ) ** 0x0002;
-  disp(2.31878);
+  expected = 2.31878;
+  disp();
+
+  myPause();
 
   printf( "\nFAC MATH UINTID\n" );
 
   z = ( x ** 2 ) + y;
-  disp(3.52276);
-
+  expected = 3.522756;
+  disp();
+  
   z = ( x ** 2 ) - y;
-  disp(-0.477244);
-
+  expected = -0.477244;
+  disp();
+  
   z = ( x ** 2 ) * y;
-  disp(3.04551);
+  expected = 3.04551;
+  disp();
 
   z = ( x ** 2 ) / y;
-  disp(0.761378);
+  expected = 0.761378;
+  disp();
 
   z = ( x ** 2 ) ** y;
-  disp(2.31878);
+  expected = 2.31878;
+  disp();
 
   myPause();
 
   printf( "\nFAC MATH WORDID\n" );
 
   z = ( x ** 2 ) + yWord;
-  disp(3.52276);
+  expected = 3.522756;
+  disp();
 
   z = ( x ** 2 ) - yWord;
-  disp(-0.477244);
+  expected = -0.477244;
+  disp();
 
   z = ( x ** 2 ) * yWord;
-  disp(3.04551);
+  expected = 3.04551;
+  disp();
 
   z = ( x ** 2 ) / yWord;
-  disp(0.761378);
+  expected = 0.761378;
+  disp();
 
   z = ( x ** 2 ) ** yWord;
-  disp(2.31878);
+  expected = 2.31878;
+  disp();
 
-  
+  myPause();
+
   printf( "\nFAC MATH INTID\n" );
 
   z = ( x ** 2 ) + yInt;
-  disp(3.522756);
+  expected = 3.522756;
+  disp();
 
   z = ( x ** 2 ) - yInt;
-  disp(-0.477244);
+  expected = -0.477244;
+  disp();
 
   z = ( x ** 2 ) * yInt;
-  disp(3.045512);
+  expected = 3.045512;
+  disp();
 
   z = ( x ** 2 ) / yInt;
-  disp(0.761378);
+  expected = 0.761378;
+  disp();
 
   z = ( x ** 2 ) ** yInt;
-  disp(2.3187858355);
+  expected = 2.3187858355;
+  disp();
 
+  printf( "\n\nDONE TESTING FACMATH.\n" );
   return;
 }
 
@@ -216,14 +280,15 @@ void myPause()
 }
 
 // argument is the expected value
-void disp( float R )
+void disp()
 {
-  printf( R );
+  printf( expected );
   sp();
   printf( z );
   cr();
   return;
 }
+
 void sp()
 {
  lda( 0x20 );

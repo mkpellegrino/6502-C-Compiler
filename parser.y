@@ -1044,24 +1044,6 @@
 
   void popFAC()
   {
-    /* addComment( "Stack -> FAC (popFAC())" ); */
-    /* addAsm( str_PLA, 1, false ); */
-    /* addAsm( str_STA + "$61", 2, false ); */
-    /* addAsm( str_PLA, 1, false ); */
-    /* addAsm( str_STA + "$62", 2, false ); */
-    /* addAsm( str_PLA, 1, false ); */
-    /* addAsm( str_STA + "$63", 2, false ); */
-    /* addAsm( str_PLA, 1, false ); */
-    /* addAsm( str_STA + "$64", 2, false ); */
-    /* addAsm( str_PLA, 1, false ); */
-    /* addAsm( str_STA + "$65", 2, false ); */
-    /* addAsm( str_PLA, 1, false ); */
-    /* addAsm( str_STA + "$66", 2, false ); */
-    //addAsm( str_LDA + "#$00", 2, false );
-    //addAsm( str_STA + "$70", 2, false ); // rounding bits
-
-
-    
     addAsm( str_TSX, 1, false );
     addAsm( str_INX, 1, false );
     addAsm( str_TXA, 1, false );
@@ -1072,58 +1054,24 @@
     addAsm( str_PLA, 1, false );
     addAsm( str_PLA, 1, false );
     addAsm( str_PLA, 1, false );
-    addAsm( str_PLA, 1, false );
+    //addAsm( str_PLA, 1, false );
   }
 
   void popARG()
   {
     addComment( "Stack -> ARG (popARG())" );
-
-    /* addAsm( str_PLA, 1, false ); */
-    /* addAsm( str_STA + "$69", 2, false ); */
-    /* addAsm( str_PLA, 1, false ); */
-    /* addAsm( str_STA + "$6A", 2, false ); */
-    /* addAsm( str_PLA, 1, false ); */
-    /* addAsm( str_STA + "$6B", 2, false ); */
-    /* addAsm( str_PLA, 1, false ); */
-    /* addAsm( str_STA + "$6C", 2, false ); */
-    /* addAsm( str_PLA, 1, false ); */
-    /* addAsm( str_STA + "$6D", 2, false ); */
-    /* addAsm( str_PLA, 1, false ); */
-    /* addAsm( str_STA + "$6E", 2, false ); */
-    
-
-    
     addAsm( str_TSX, 1, false );
     addAsm( str_INX, 1, false );
     addAsm( str_TXA, 1, false );
     addAsm( str_LDY + "#$01", 2, false );
     addAsm( str_JSR + "$BA8C" + commentmarker + "STACK -> ARG (+)", 3, false );
-    
     addAsm( str_PLA, 1, false );
     addAsm( str_PLA, 1, false );
     addAsm( str_PLA, 1, false );
     addAsm( str_PLA, 1, false );
     addAsm( str_PLA, 1, false );
-    addAsm( str_PLA, 1, false );
+    //addAsm( str_PLA, 1, false );
   }
-
-  
-  //void popARG()
-  //{
-  // addComment( "Stack -> ARG" );
-  //addAsm( str_TSX, 1, false );	  
-  //addAsm( str_INX, 1, false );
-  //addAsm( str_TXA, 1, false );
-  //addAsm( str_INX, 1, false );
-  //addAsm( str_INX, 1, false );
-  //addAsm( str_INX, 1, false );
-  //addAsm( str_INX, 1, false );
-  //addAsm( str_INX, 1, false );
-  //addAsm( str_TXS, 1, false );	  
-  //addAsm( str_LDY + "#$01", 2, false );
-  //addAsm( str_JSR + "$BA8C" + commentmarker + "STACK -> ARG (+)", 3, false );
-  //}
 
 
   void FACToSwap0()
