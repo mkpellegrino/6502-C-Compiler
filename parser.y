@@ -1142,73 +1142,6 @@
     addAsm( str_TXS, 1, false ); // 2
   }
 
-  // convert a string to an inline-float
-  //  void inlineFloat( string s, int addr=105)
-  /* void inlineFloat( string s, int addr=25) */
-  /* { */
-  /*   addComment( "inline float: " + stripFirst(s) ); */
-  /*   string sign; */
-  /*   string stripped_float= stripFirst( s.c_str() ); */
-  /*   float tmp_v = atof( stripped_float.c_str() ); */
-    
-  /*   string fp_in_hex = toBinaryFloat( atof( stripped_float.c_str() ) ); */
-  /*   if( atof( stripped_float.c_str() ) == 0 ) fp_in_hex=string("0000000000"); */
-  /*   int size_of_instruction=3; */
-  /*   if( addr < 255 ) size_of_instruction-=1; */
-  /*   int v=0; */
-  /*   int L = 5; */
-  /*   for( int i=0; i<5; i++ ) */
-  /*     { */
-  /* 	if( addr <= 255 ) { size_of_instruction = 2; } */
-  /* 	else { size_of_instruction = 3; } */
-
-	
-  /* 	addAsm( str_LDA + "#$" + fp_in_hex[v] + fp_in_hex[v+1], 2, false ); */
-	
-  /* 	if( getNameOf(addr) != ""  ) */
-  /* 	  { */
-  /* 	    if( i == 0 ) */
-  /* 	      { */
-  /* 		addAsm( str_STA + getNameOf(addr), size_of_instruction, false ); */
-  /* 	      } */
-  /* 	    else */
-  /* 	      { */
-  /* 		addAsm( str_STA + getNameOf(addr) + "+" + itos(i), size_of_instruction, false ); */
-  /* 	      } */
-  /* 	  } */
-  /* 	else */
-  /* 	  { */
-  /* 	    addAsm( str_STA + "$" + toHex(addr+i), size_of_instruction, false ); */
-  /* 	  } */
-  /* 	v+=2; */
-  /*     } */
-
-  /*   if( addr == 105 ) */
-  /*     { */
-  /* 	addAsm( str_LDA + "#$69" + commentmarker + "OPTIMIZE?", 2, false ); */
-  /* 	addAsm( str_LDY + "#$00", 2, false ); */
-  /* 	addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false ); */
-  /*     } */
-  /*   else if( addr == 97 ) */
-  /*     { */
-  /* 	addAsm( str_LDA + "#$61" + commentmarker + "OPTIMIZE?", 2, false ); */
-  /* 	addAsm( str_LDY + "#$00", 2, false ); */
-  /* 	addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false ); */
-  /*     } */
-  /*   else if( addr == 25 ) */
-  /*     { */
-  /* 	addAsm( str_LDA + "#$19" + commentmarker + "OPTIMIZE?", 2, false ); */
-  /* 	addAsm( str_LDY + "#$00", 2, false ); */
-  /* 	addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false ); */
-  /*     } */
-  /*   else if( addr == 2 ) */
-  /*     { */
-  /* 	addAsm( str_LDA + "#$02" + commentmarker + "OPTIMIZE?", 2, false ); */
-  /* 	addAsm( str_LDY + "#$00", 2, false ); */
-  /* 	addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false ); */
-  /*     } */
-  /*   return; */
-  /* } */
 void inlineFloat( string s, int addr=25)
   {
     addComment( "inline float: " + stripFirst(s) );
@@ -1291,7 +1224,6 @@ void inlineFloat( string s, int addr=25)
 
   vector <id_and_line*> proposed_ids_vector;
   vector <id_and_line*> defined_ids_vector;
-
   
   class asm_function
   {
@@ -19523,21 +19455,26 @@ arithmetic[MATHOP] expression[OP2]
 	  int addr_op1 = hexToDecimal($1.name);
 	  int addr_op2 = hexToDecimal($4.name);
 	  addComment( "WordID + IntID --> XA" );
-	  addAsm( str_CLC, 1, false );
-
+	  
 	  int size_op1=2;
 	  int size_op2=2;
 	  if( addr_op1 > 255 ) size_op1=3;
 	  if( addr_op2 > 255 ) size_op2=3;
-	  
-	  addAsm( str_LDA +  getNameOf(getAddressOf($1.name)), size_op1, false );
-	  addAsm( str_ADC +  getNameOf(getAddressOf($4.name)), size_op2, false );
-	  addAsm( str_TAY );
-	  addAsm( str_LDA + "#$00", 2, false );
 
+	  
+
+	  addAsm( str_CLC, 1, false );
+	  addAsm( str_LDX + "#$00", 2, false );
+	  addAsm( str_LDA + getNameOf(getAddressOf($4.name)), size_op2, false );
+	  addAsm( str_BPL + "!+", 2, false );
+	  addAsm( str_DEX, 1, false );
+	  addAsm( "!:\t" + str_ADC + getNameOf(getAddressOf($1.name)), size_op1, true );
+	  
+	  addAsm( str_TAY, 1, false );
+	  addAsm( str_TXA, 1, false );
 	  size_op1=2;
 	  if( addr_op1+1 > 255 ) size_op1=3;
-	  addAsm( str_ADC + getNameOf(getAddressOf($1.name)) + "+1", size_op1, false );
+	  addAsm( str_ADC + getNameOf(getAddressOf($1.name)) + " +1", size_op1, false );
 	  addAsm( str_TAX );
 	  addAsm( str_TYA );
 	  strcpy($$.name, "_XA" );
@@ -19547,12 +19484,19 @@ arithmetic[MATHOP] expression[OP2]
 	  int addr_op1 = hexToDecimal($1.name);
 	  int addr_op2 = hexToDecimal($4.name);
 	  addComment( "WordID - IntID --> XA" );
-	  addAsm( str_SEC );
+	  addAsm( str_SEC, 1, true );
+	  addAsm( str_LDX + "#$00", 2, false );
+	  addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false );
+	  addAsm( str_BPL + "!+", 2, false );
+	  addAsm( str_DEX, 1, false );
+	  addAsm( "!:\t" + str_STX + "!+", 3, true );
 	  addAsm( str_LDA + getNameOf(getAddressOf($1.name)), 3, false );
 	  addAsm( str_SBC + getNameOf(getAddressOf($4.name)), 3, false );
 	  addAsm( str_TAY );
-	  addAsm( str_LDA + getNameOf(getAddressOf($1.name)) + "+1", 3, false );
-	  addAsm( str_SBC + "#$00", 2, false );
+	  addAsm( str_LDA + getNameOf(getAddressOf($1.name)) + " +1", 3, false );
+	  addAsm( str_BYTE + "$E9" + commentmarker + "<-- SBC Immediate", 1, false );
+	  addAsm( "!:\t" + str_BYTE + "$00", 1, true );
+	  //addAsm( str_SBC + "#$00", 2, false );
 	  addAsm( str_TAX );
 	  addAsm( str_TYA );
 
@@ -20334,7 +20278,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_LDA + O1, sizeOP1A, false );
 	  addAsm( str_ADC + "#$" + toHex(get_word_L( OP2 )), 2, false );	  
 	  addAsm( str_TAY );
-	  addAsm( str_LDA + O1 + "+1", sizeOP1B, false );
+	  addAsm( str_LDA + O1 + " +1", sizeOP1B, false );
 	  addAsm( str_ADC + "#$" + toHex(get_word_H( OP2 )), 2, false );
 	  addAsm( str_TAX );
 	  addAsm( str_TYA );
@@ -20348,7 +20292,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_LDA + O1, sizeOP1A, false );
 	  addAsm( str_SBC + "#$" + toHex(get_word_L( OP2 )), 2, false );	  
 	  addAsm( str_TAY );
-	  addAsm( str_LDA + O1 + "+1", sizeOP1B, false );
+	  addAsm( str_LDA + O1 + " +1", sizeOP1B, false );
 	  addAsm( str_SBC + "#$" + toHex(get_word_H( OP2 )), 2, false );
 	  addAsm( str_TAX );
 	  addAsm( str_TYA );
