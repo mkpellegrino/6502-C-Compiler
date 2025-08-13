@@ -15079,7 +15079,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_DEC + "!++", 3, false );
 	  addAsm( "!:\t" + str_PHA, 1, true );
 	  addAsm( str_LDA + "#$00", 2, false );
-	  addAsm( str_BYTE + "$A9" + commentmarker + "<-- LDA Imm", 1, false );
+	  addAsm( str_BYTE + "$A9" + commentmarker + "<-- LDA Immediate", 1, false );
 	  addAsm( "!:\t" + str_BYTE + "$00", 1, true );
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_LDA + O2, 3, false );	  
@@ -15352,7 +15352,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_DEC + "!++", 3, false );
 	  addAsm( "!:\t" + str_PHA, 1, true );
 	  addAsm( str_LDA + "#$00", 2, false );
-	  addAsm( str_BYTE + "$A9" + commentmarker + "<-- LDA Imm", 1, false );
+	  addAsm( str_BYTE + "$A9" + commentmarker + "<-- LDA Immediate", 1, false );
 	  addAsm( "!:\t" + str_BYTE + "$00", 1, true );
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_LDA + O2, 3, false );	  
@@ -15629,7 +15629,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_DEC + "!++", 3, false );
 	  addAsm( "!:\t" + str_PHA, 1, true );
 	  addAsm( str_LDA + "#$00", 2, false );
-	  addAsm( str_BYTE + "$A9" + commentmarker + "<-- LDA Imm", 1, false );
+	  addAsm( str_BYTE + "$A9" + commentmarker + "<-- LDA Immediate", 1, false );
 	  addAsm( "!:\t" + str_BYTE + "$00", 1, true );
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_LDA + O2, 3, false );	  
@@ -15756,7 +15756,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_DEC + "!++", 3, false );
 	  addAsm( "!:\t" + str_PHA, 1, true );
 	  addAsm( str_LDA + "#$00", 2, false );
-	  addAsm( str_BYTE + "$A9" + commentmarker + "<-- LDA Imm", 1, false );
+	  addAsm( str_BYTE + "$A9" + commentmarker + "<-- LDA Immediate", 1, false );
 	  addAsm( "!:\t" + str_BYTE + "$00", 1, true );
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_LDA + "#$" + IMM2L, 3, false );	  
@@ -16913,7 +16913,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_STA + "!+", 3, false );
 	  addAsm( str_LDA + O1, sizeOP1A, false );
 	  addAsm( str_SEC );
-	  addAsm( str_BYTE + "$E9" + commentmarker + "<-- SBC Imm", 1, false );
+	  addAsm( str_BYTE + "$E9" + commentmarker + "<-- SBC Immediate", 1, false );
 	  addAsm( "!:\t" + str_BYTE + "$00", true );
 	  strcpy($$.name, "_A" );
 	}
@@ -18086,7 +18086,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_STA + "!+", 3, false );
 
 	  addAsm( str_LDA + "#$" + toHex( tmp_i ), 2);
-	  addAsm( str_BYTE + "$E9" + commentmarker + "<-- SBC Imm", 1, false ); 
+	  addAsm( str_BYTE + "$E9" + commentmarker + "<-- SBC Immediate", 1, false ); 
 	  addAsm( "!:\t" + str_BYTE + "$00", 1, true );
 
 	  strcpy($$.name, "_A" );
@@ -18526,7 +18526,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_LDA + "#$" + toHex(tmp_int), 2, false );
 
 	  addAsm( str_SEC );
-	  addAsm( str_BYTE + "$E9" + commentmarker + "<-- SBC Imm", 1, false );
+	  addAsm( str_BYTE + "$E9" + commentmarker + "<-- SBC Immediate", 1, false );
 	  addAsm( "!:\t" + str_BYTE + "$00", 1, true );
 	  
 	  strcpy($$.name, "_A" );
@@ -21051,7 +21051,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_SBC + getNameOf(getAddressOf($4.name)), 3, false );
 	  addAsm( str_TAY, 1, false );
 	  addAsm( str_TXA, 1, false );
-	  addAsm( str_BYTE + "$E9", 1, false );
+	  addAsm( str_BYTE + "$E9" + commentmarker + "<-- SBC Immediate", 1, false );
 	  addAsm( "!:\t" + str_BYTE + "$00", 1, false );
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_TYA, 1, false );
@@ -21643,7 +21643,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_TAX );
 	  addAsm( str_PLA );
 	  addAsm( str_CLC, 1, false );
-	  addAsm( str_BYTE + "$69" + commentmarker + "ADC Imm", 1, false );
+	  addAsm( str_BYTE + "$69" + commentmarker + "ADC Immediate", 1, false );
 	  addAsm( "!:\t" + str_BYTE + "$00", 1, true );
 	  addAsm( str_TAY );
 	  addAsm( str_TXA );
@@ -21661,7 +21661,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_PLA );
 	  addAsm( str_TAX );
 	  addAsm( str_PLA );
-	  addAsm( str_BYTE + "$E9" + commentmarker + "SBC Imm", 1, false );
+	  addAsm( str_BYTE + "$E9" + commentmarker + "SBC Immediate", 1, false );
 	  addAsm( "!:\t" + str_BYTE + "$00", 1, true );
 	  addAsm( str_TAY );
 	  addAsm( str_TXA );
@@ -21867,7 +21867,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_ADC + O2, sizeOP2A, false );
 	  addAsm( str_TAY, 1, false );
 	  addAsm( str_TXA, 1, false );	  
-	  addAsm( str_BYTE + "$69" + commentmarker + "<-- ADC Imm", 1, false );
+	  addAsm( str_BYTE + "$69" + commentmarker + "<-- ADC Immediate", 1, false );
 	  addAsm( "!:\t" + str_BYTE + "$00", 1, true ); // A
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_TYA, 1, false );
@@ -21887,7 +21887,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_SBC + O2, sizeOP2A, false );
 	  addAsm( str_TAY, 1, false );
 	  addAsm( str_TXA, 1, false );	  
-	  addAsm( str_BYTE + "$E9" + commentmarker + "<-- SBC Imm", 1, false );
+	  addAsm( str_BYTE + "$E9" + commentmarker + "<-- SBC Immediate", 1, false );
 	  addAsm( "!:\t" + str_BYTE + "$00", 1, true ); // A
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_TYA, 1, false );
@@ -23412,7 +23412,7 @@ arithmetic[MATHOP] expression[OP2]
       //addAsm( str_STA + getLabel( label_vector[label_major], false) + "+1", 3, false );
       addAsm( str_STA + "!++", 3, false );
       addAsm( str_LDX + "#$" + toHex(atoi(stripFirst($5.name).c_str())), 2, false );
-      addAsm( str_BYTE + "$BD"+ commentmarker + "LDA Absolute,X", 1, false );
+      addAsm( str_BYTE + "$BD"+ commentmarker + "<-- LDA Absolute,X", 1, false );
       //addAsm( generateNewLabel(), 0, true );
       addAsm( "!:\t" + str_BYTE + "$00", 1, true );
       addAsm( "!:\t" + str_BYTE + "$00", 1, true );
@@ -23432,7 +23432,7 @@ arithmetic[MATHOP] expression[OP2]
       //addAsm( str_STA + getLabel( label_vector[label_major], false) + "+1", 3, false );   
       addAsm( str_STA + "!++", 3, false );
       addAsm( str_LDX + getNameOf(index_addr), 3, false );
-      addAsm( str_BYTE + "$BD"+ commentmarker + "LDA Absolute, X", 1, false );
+      addAsm( str_BYTE + "$BD"+ commentmarker + "<-- LDA Absolute, X", 1, false );
       addAsm( "!:\t" + str_BYTE + "$00", 1, true );
       addAsm( "!:\t" + str_BYTE + "$00", 1, true );
     }
@@ -25465,7 +25465,7 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
       addComment( "peek( (U)IntID );" );
       addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
       addAsm( str_STA + "!+", 3, false );
-      addAsm( str_BYTE + "$A9" + commentmarker + "LDA immediate", 1, false );
+      addAsm( str_BYTE + "$A9" + commentmarker + "<-- LDA immediate", 1, false );
       addAsm( "!:\t"+str_BYTE + "$00", 1, true );
     }
   else if( isIntIMM($3.name) || isUintIMM($3.name) )

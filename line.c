@@ -30,9 +30,9 @@ void main()
   uint byte0 = NULL;
   uint byte1 = NULL;
   uint byte2 = NULL; 
-  word bulletx = NULL;
-  uint bullety = NULL;
-  word bulletDirection = 0x0000;
+  //word bulletx = NULL;
+  //uint bullety = NULL;
+  //word bulletDirection = 0x0000;
   
   uint prizeDirection = 0x01;
   uint fireInProgress = 0x00;
@@ -222,7 +222,7 @@ void main()
 
   spritexy( 0x00, playerx, playery );
   spritexy( 0x01, prizex, prizey );
-  spritexy( 0x02, bulletx, bullety );
+  //spritexy( 0x02, bulletx, bullety );
   spriteset( 0x07 );
 
   data floorplan = {
@@ -251,11 +251,6 @@ void main()
     {
       line( peek( j ), peek( j + 0x0001 ), peek( j + 0x0002 ), peek( j + 0x0003 ), 0x03 );
     }
-
-  bmPrint( 0x0A, 0x0A, rung, 0x09, 0x23 );
-  bmPrint( 0x0A, 0x0B, rung, 0x09, 0x23 );
-  bmPrint( 0x0A, 0x0C, rung, 0x09, 0x23 );
-  bmPrint( 0x0A, 0x0D, rung, 0x09, 0x23 );
 
 
   //uint movingFlag = 0x00;
@@ -381,15 +376,7 @@ void main()
 	  inc(jumpIndex);
 	  jumpIndex = jumpIndex & 0x0F;
 	  midJump = jumpIndex;
-
-	  if( direction == -1 )
-	    {
-	      playerx = playerx - 0x0001;
-	    }
-	  else
-	    {
-	      playerx = playerx + 0x0001;
-	    }
+	  playerx = playerx + direction;
 	  limitxposition();
 	}
       
@@ -407,32 +394,32 @@ void main()
 	  nop();
 	}
       
-      if( playery == prizey && fireInProgress == 0x00)
-	{
-       spriteset( 0x07 );
-       fireInProgress = 0x01;
-       bulletx = prizex;
-       bullety = prizey;
-       if( prizex > playerx )
-         {
-           bulletDirection = 0xFFFF;
-         }
-       else
-         {
-           bulletDirection = 0x0001;
-         }
-      }
+      //if( playery == prizey && fireInProgress == 0x00)
+      //{
+      //  spriteset( 0x07 );
+      //  fireInProgress = 0x01;
+      //  bulletx = prizex;
+      //  bullety = prizey;
+      //  if( prizex > playerx )
+      //    {
+      //      bulletDirection = 0xFFFF;
+      //    }
+      //  else
+      //    {
+      //      bulletDirection = 0x0001;
+      //    }
+      //	}
 
-      if( fireInProgress == 0x01 )
-      {
-       if( bulletx < 0x0014 || bulletx > 0x0160 )
-         {
-           fireInProgress = 0x00;
-           spriteset( 0x03 );
-         }
-       bulletx = bulletx + bulletDirection;
+      //if( fireInProgress == 0x01 )
+      //	{
+      //  if( bulletx < 0x0014 || bulletx > 0x0160 )
+      //    {
+      //      fireInProgress = 0x00;
+      //      spriteset( 0x03 );
+      //    }
+      //  bulletx = bulletx + bulletDirection;
        
-      }
+      //}
       positionMOBS();
       c = getin();	    
     }
@@ -479,10 +466,10 @@ void positionMOBS()
   positionBug();
   spritexy( 0x00, playerx, playery );
   spritexy( 0x01, prizex, prizey );
-  if( fireInProgress == 0x01 )
-  {
-    spritexy( 0x02, bulletx, bullety );      
-  }
+  //if( fireInProgress == 0x01 )
+  //{
+  //  spritexy( 0x02, bulletx, bullety );      
+  //}
   return;
 }
 
@@ -492,14 +479,15 @@ void gravity()
     {
       inc( playery );
 
-      if( direction == 1 )
-	{
-	  playerx = playerx + 1;
-	}
-      else
-	{
-	  playerx = playerx - 1;
-	}
+      playerx = playerx + direction;
+      //if( direction == 1 )
+      //{
+      //  playerx = playerx + 1;
+      //}
+      //else
+      //{
+      //  playerx = playerx - 1;
+      //}
       limitxposition();
     }
       
@@ -700,10 +688,10 @@ void positionBug()
 	  prizex = prizex + 0xFFFF;
 	}
     }
-  else
-  {
-    bulletx = bulletx + bulletDirection;
-  }
+  //else
+  //{
+  //  bulletx = bulletx + bulletDirection;
+  //}
 
   
   return;
