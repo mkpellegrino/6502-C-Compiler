@@ -1,4 +1,4 @@
-needs("mcplot");
+//needs("mcplot");
 needs("mul16");
 needs("div16");
 void main()
@@ -9,102 +9,119 @@ void main()
   uint JSsouth = NULL;
   uint JSwest = NULL;
   uint JSeast = NULL;
-  word clock = NULL;
-  word playerx = 80;
-  uint playery = 100;
-  uint thrust = 0x00;
   uint rtn8bit = NULL;
-
-  word direction = NULL;
-
+  uint midJump = NULL;
+  uint jumpIndex = NULL;
+  word clock = NULL;
+  int direction = 0x00;
+  uint playerHitCeiling = NULL;
   uint playerOnFloor = NULL;
+  uint prizeOnFloor = NULL;
   uint toTheRight = NULL;
   uint toTheLeft = NULL;
-  uint onFloorRET;
-  word xtocheck;
-  uint ytocheck;
-  uint byte0;
-  uint byte1;
-  uint byte2;
-
-  asmcomment( "LETTER/DIGIT DEFINITIONS" );
-  // digits
-  data digits =
-    {
-      0, 48, 204, 204, 204, 204, 204, 48,
-      0, 48, 48, 48, 48, 48, 48, 48,
-      0, 48, 204, 12, 48, 192, 192, 252,
-      0, 48, 204, 12, 48, 12, 204, 48,
-      0, 12, 204, 204, 252, 12, 12, 12,
-      0, 252, 192, 240, 12, 12, 204, 48,
-      0, 48, 204, 192, 240, 204, 204, 48,
-      0, 252, 12, 12, 48, 48, 48, 48,
-      0, 48, 204, 204, 48, 204, 204, 48,
-      0, 252, 204, 204, 252, 12, 12, 12,
-      // space
-      0, 0, 0, 0, 0, 0, 0, 0
-    };
-  // letters
-  data letters =
-    {
-      0, 48, 252, 204, 252, 204, 204, 204,
-      0, 240, 204, 204, 240, 204, 204, 240,
-      0, 48, 204, 192, 192, 192, 204, 48,
-      0, 240, 204, 204, 204, 204, 204, 240,
-      0, 252, 192, 192, 240, 192, 192, 252,
-
-      0, 252, 192, 192, 240, 192, 192, 192,
-      0, 48, 204, 192, 252, 204, 204, 48,
-      0, 204, 204, 204, 252, 204, 204, 204,
-      0, 252, 48, 48, 48, 48, 48, 252,
-      0, 252, 12, 12, 12, 204, 204, 48,
-
-      0, 204, 204, 204, 240, 204, 204, 204,
-      0, 192, 192, 192, 192, 192, 192, 252,
-      0, 204, 252, 252, 204, 204, 204, 204,
-      0, 0, 0, 192, 252, 204, 204, 204,
-      0, 252, 204, 204, 204, 204, 204, 252,
-
-      0, 240, 204, 204, 240, 192, 192, 192,
-      0, 48, 204, 204, 204, 204, 240, 60,
-      0, 240, 204, 204, 240, 204, 204, 204,
-      0, 48, 204, 192, 48, 12, 204, 48,
-      0, 252, 48, 48, 48, 48, 48, 48,
-
-      0, 204, 204, 204, 204, 204, 204, 252,
-      0, 204, 204, 204, 204, 48, 48, 48,
-      0, 204, 204, 204, 252, 252, 252, 204,
-      0, 204, 204, 204, 48, 204, 204, 204,
-      0, 204, 204, 204, 60, 12, 204, 48,
-      
-      0, 252, 12, 12, 48, 192, 192, 252,
-      // space
-      0, 0, 0, 0, 0, 0, 0, 0,
-      // colon
-      0, 0, 0, 60, 0, 60, 0, 0,
-      // period
-      0,0,0,0,0,0,192,192,
-      // (
-      12, 48, 48, 48, 48, 48, 48, 12, 
-      // )
-      192, 48, 48, 48, 48, 48, 48, 192,
-      // ,
-      0, 0, 0, 0, 0, 0, 48, 192
-    };
-
-  data zeroText = {'0'};
-
-
-  word plotDigitAddr = digits;
-  word wordToPrint;
-  word plotNum;
-  word general16bit;
+  word playerx = 0x0050;
+  uint playery = 0x64;
+  word prizex = 0x64;
+  uint prizey = 0x64;
+  uint thrust = 0x00;
+  uint onFloorRET = NULL;
+  word xtocheck = NULL;
+  uint ytocheck = NULL;
+  uint byte0 = NULL;
+  uint byte1 = NULL;
+  uint byte2 = NULL; 
+  word bulletx = NULL;
+  uint bullety = NULL;
+  word bulletDirection = 0x0000;
   
-  uint plotDigitBindex;
-  uint plotDigitX;
-  uint plotDigitY;
-  uint wordSize;
-  uint general8bit;
+  uint prizeDirection = 0x01;
+  uint fireInProgress = 0x00;
+  data characterset = {
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // space
+    0x00, 0x30, 0x30, 0x30, 0x30, 0x00, 0x30, 0x30, // !
+    0x00, 0xCC, 0xCC, 0x00, 0x00, 0x00, 0x00, 0x00, // "
+    0x00, 0x3C, 0x30, 0x30, 0xFC, 0x30, 0x33, 0xFF, // Lb
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // $
+    0x00, 0x30, 0xF0, 0xF0, 0x30, 0x3C, 0x3C, 0x30, // %
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // &
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // '
+    0x0C, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x0C, // (
+    0xC0, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0xC0, // )
+
+    0xFF, 0xFF, 0xC0, 0xC0, 0xD5, 0xD5, 0xEA, 0xEA, // *
+    0xFF, 0xFF, 0x00, 0x00, 0x55, 0x55, 0xAA, 0xAA, // +
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x30, 0xC0, // ,
+    0x00, 0x00, 0x00, 0x3C, 0x3C, 0x00, 0x00, 0x00, // -
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xC0, 0xC0, // .
+    0x03, 0x03, 0x0C, 0x0C, 0x30, 0x30, 0xC0, 0xC0, // /
+    0x00, 0x30, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0x30, // 0
+    0x00, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, // 1
+    0x00, 0x30, 0xCC, 0x0C, 0x30, 0xC0, 0xC0, 0xFC, // 2
+    0x00, 0x30, 0xCC, 0x0C, 0x30, 0x0C, 0xCC, 0x30, // 3
+
+    0x00, 0x0C, 0xCC, 0xCC, 0xFC, 0x0C, 0x0C, 0x0C, // 4
+    0x00, 0xFC, 0xC0, 0xF0, 0x0C, 0x0C, 0xCC, 0x30, // 5
+    0x00, 0x30, 0xCC, 0xC0, 0xF0, 0xCC, 0xCC, 0x30, // 6
+    0x00, 0xFC, 0x0C, 0x0C, 0x30, 0x30, 0x30, 0x30, // 7
+    0x00, 0x30, 0xCC, 0xCC, 0x30, 0xCC, 0xCC, 0x30, // 8
+    0x00, 0xFC, 0xCC, 0xCC, 0xFC, 0x0C, 0x0C, 0x0C, // 9
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // :
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // ;
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // <
+    0x00, 0x00, 0x3C, 0x00, 0x3C, 0x00, 0x00, 0x00, // =
+
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // >
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // ?
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // @
+    0x00, 0x30, 0xFC, 0xCC, 0xFC, 0xCC, 0xCC, 0xCC,  //  A
+    0x00, 0xF0, 0xCC, 0xCC, 0xF0, 0xCC, 0xCC, 0xF0, // B
+    0x00, 0x30, 0xCC, 0xC0, 0xC0, 0xC0, 0xCC, 0x30, // C
+    0x00, 0xF0, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xF0, // D
+    0x00, 0xFC, 0xC0, 0xC0, 0xF0, 0xC0, 0xC0, 0xFC, // E
+    0x00, 0xFC, 0xC0, 0xC0, 0xF0, 0xC0, 0xC0, 0xC0, // F
+    0x00, 0x30, 0xCC, 0xC0, 0xFC, 0xCC, 0xCC, 0x30, // G
+
+    0x00, 0xCC, 0xCC, 0xCC, 0xFC, 0xCC, 0xCC, 0xCC, // H
+    0x00, 0xFC, 0x30, 0x30, 0x30, 0x30, 0x30, 0xFC, // I
+    0x00, 0xFC, 0x0C, 0x0C, 0x0C, 0xCC, 0xCC, 0x30,  // J
+    0x00, 0xCC, 0xCC, 0xCC, 0xF0, 0xCC, 0xCC, 0xCC, // K
+    0x00, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xFC,  // L
+    0x00, 0xCC, 0xFC, 0xFC, 0xCC, 0xCC, 0xCC, 0xCC,  // M
+    0x00, 0x00, 0x00, 0xC0, 0xFC, 0xCC, 0xCC, 0xCC, // N
+    0x00, 0xFC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xFC,  // O
+    0x00, 0xF0, 0xCC, 0xCC, 0xF0, 0xC0, 0xC0, 0xC0, // P
+    0x00, 0x30, 0xCC, 0xCC, 0xCC, 0xCC, 0xF0, 0x3C, // Q
+
+    0x00, 0xF0, 0xCC, 0xCC, 0xF0, 0xCC, 0xCC, 0xCC, // R
+    0x00, 0x30, 0xCC, 0xC0, 0x30, 0x0C, 0xCC, 0x30, // S
+    0x00, 0xFC, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, // T
+    0x00, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xFC, // U
+    0x00, 0xCC, 0xCC, 0xCC, 0xCC, 0x30, 0x30, 0x30, // V
+    0x00, 0xCC, 0xCC, 0xCC, 0xFC, 0xFC, 0xFC, 0xCC, // W
+    0x00, 0xCC, 0xCC, 0xCC, 0x30, 0xCC, 0xCC, 0xCC, // X
+    0x00, 0xCC, 0xCC, 0xCC, 0x3C, 0x0C, 0xCC, 0x30, // Y
+    0x00, 0xFC, 0x0C, 0x0C, 0x30, 0xC0, 0xC0, 0xFC, // Z
+    //0x0F, 0x35, 0xD5, 0xD5, 0xEA, 0xEA, 0x3A, 0x0F, // [
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0F, 0x0F, // ladder0
+
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Lb
+    //0xF0, 0x5C, 0x57, 0x57, 0xAB, 0xAB, 0xAC, 0xF0, // ]
+    0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xFF, 0xFF, // ladder 1
+    //0x00, 0x3C, 0xC3, 0x00, 0x00, 0x00, 0x00, 0x00, // ^
+    0x03, 0x00, 0x03, 0x03, 0x03, 0x03, 0xFF, 0xFF, // ladder2
+    //0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // <-- (~)
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF0, 0xF0,  // ladder3
+    0x00, 0x00, 0x00, 0x00, 0xFF, 0x00, 0x00, 0x00 // -
+  };
+
+  data ladder = {
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0F, 0x0F, 
+    0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xFF, 0xFF, 
+    0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0xFF, 0xFF, 
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF0, 0xF0 
+  };
+  word general16bit = NULL;
+  uint general8bit = NULL;
   // Blue and Red
   uint plotshapeColourValue0110;
   // White
@@ -113,60 +130,147 @@ void main()
   uint textColour;
   inc( textColour );
 
+  data titleText = { "PLATFORMER:  MICHAEL K. PELLEGRINO" };
+  data rung = { "[]^~" };
 
-  data spritedata = { 0x00, 0x3C, 0x00,0x01, 0xC3, 0x80,0x06, 0x00, 0x60,0x08, 0x00, 0x10,0x10, 0x00, 0x08,0x10, 0x00, 0x08,0x20, 0x00, 0x04,0x20, 0x00, 0x04,0x20, 0x00, 0x04,0x40, 0x00, 0x02,0x40, 0x00, 0x02,0x40, 0x00, 0x02,0x20, 0x00, 0x04,0x20, 0x00, 0x04,0x20, 0x00, 0x04,0x10, 0x00, 0x08,0x10, 0x00, 0x08,0x08, 0x00, 0x10,0x06, 0x00, 0x60,0x01, 0xC3, 0x80,0x00, 0x3C, 0x00, 0x00 };
   
   saveregs();
   bank( 2 );
 
-  poke( 0xD018, 0x18 );
+  poke( 0xD020, 0x05 );
+  poke( 0xD021, 0x00 );
+  
+  asmcomment( "multicolour bitmap mode" );
   setScreenMode(3);
+  poke( 0xD018, 0x18 );
   
   romout(6);
     
   word bmpaddr = getbmp_addr();
-  word bmpaddrX = bmpaddr + 0x1FF8;
   word scraddr = getscr_addr();
-  word scraddrX = scraddr + 0x03EF;
+  
+  bmPrintInit( 0xA0, 0x84, characterset );
+  
+  // colour
+  // 11 - green
+  fillmem( 0xD8, 0x05, 0x04 );
 
-  fillmem( 0xA0, 0x00, 0x20 );
+  // 01 - 07
+  // 10 - 0D
+  fillmem( 0x84, 0x7D, 0x12 );
 
-  asmcomment( "all sprites mono" );
-  poke( 0xD01C, 0x00 );
+  // bitmap
+  clearmem( 0xA0, 0x20 );
 
-  asmcomment( "universal sprite colours" );
-  //poke( 0xD025, 0x00 );
-  //poke( 0xD026, 0x01 );
+  bmPrint( 0x03, 0x00, titleText, 0x01, 0x23 );
 
-  word saddr = 0x8800;
-  for( uint i = 0x00; i<0x40; inc(i) )
+  // almost all sprites MC
+  poke( 0xD01C, 0xFB );
+  
+  data playerFramesR = { 0x20, 0x21, 0x22, 0x23, 0x22, 0x21 };
+  data playerFramesL = { 0x24, 0x25, 0x26, 0x27, 0x26, 0x25 };
+  data playerFramesUD = { 0x28, 0x29, 0x2A, 0x2B, 0x2A, 0x29 };
+
+  data bugFramesLR = { 0x2C, 0x2D, 0x2E, 0x2F, 0x2E, 0x2D };
+  
+  uint playerFrameR[6];
+  uint playerFrameL[6];
+  uint playerFrameUD[6];
+  uint bugFrameLR[6];
+  
+  for( uint i = 0x00; i < 0x06; inc( i ) )
     {
-      poke( saddr, peek( spritedata+i) );
-      inc( saddr );
+      playerFrameR[i] = peek(playerFramesR + i);
+      playerFrameL[i] = peek(playerFramesL + i);
+      playerFrameUD[i] = peek(playerFramesUD + i);
+      bugFrameLR[i] = peek(bugFramesLR + i);
     }
 
+  uint status = 0x00;
+
+  setfilename( "WALKER4,S,R" );
+  setlfs( 3, 8, 3 );
+  fopen();
+  fchkin( 3 );
+
+  word saddr = 0x8800;
+  while( status == 0x00 )
+    {    
+      poke( saddr, fchrin() );
+      saddr = saddr + 0x0001;
+      status = peek( 0x0090 );
+    }
+  fclose(3);
+  fclrchn();
+  
+
   word sprptr0 = scraddr + 0x03F8;
-  poke( sprptr0, 0x20 );
+  word sprptr1 = scraddr + 0x03F9;
+  word sprptr2 = scraddr + 0x03FA;
+
+  asmcomment( "universal sprite colours" );
+  poke( 0xD025, 0x01 );
+  poke( 0xD026, 0x0B );
+
+  poke( sprptr0, playerFrameR[0] );
+  poke( sprptr1, bugFrameLR[0] );
+  poke( sprptr2, 0x30 );
   
-  spritecolour( 0x00, 0x01 );
+  spritecolour( 0x00, 0x09 );
+  spritecolour( 0x01, 0x0C );
+  spritecolour( 0x02, 0x02 );
+
   spritexy( 0x00, playerx, playery );
-  spriteset( 0x01 );
+  spritexy( 0x01, prizex, prizey );
+  spritexy( 0x02, bulletx, bullety );
+  spriteset( 0x07 );
 
+  data floorplan = {
+    1, 20, 159, 20,
+      
+    1, 48, 72, 48,
+    96, 48, 159, 48,
 
-  line( 30, 60, 100, 50 );
-  line( 1, 90, 130, 100 );
-  line( 30, 120, 160, 130 );
-  line( 1, 180, 130, 170 );
-  line( 1, 200, 150, 200 );
+    24, 76, 136, 76,
+
+    1, 104, 64, 104,
+
+    24, 132, 136, 120,
+
+    1, 160, 72, 160,
+    96, 160, 159, 160,
+
+    1, 188, 159, 195
+  };
+
+  word floorplanptr = floorplan;
+  word floorplanptrX = floorplan + 0x0024;
+
   
+  for( word j = floorplanptr; j < floorplanptrX; j = j + 0x0004  )
+    {
+      line( peek( j ), peek( j + 0x0001 ), peek( j + 0x0002 ), peek( j + 0x0003 ), 0x03 );
+    }
+
+  bmPrint( 0x0A, 0x0A, rung, 0x09, 0x23 );
+  bmPrint( 0x0A, 0x0B, rung, 0x09, 0x23 );
+  bmPrint( 0x0A, 0x0C, rung, 0x09, 0x23 );
+  bmPrint( 0x0A, 0x0D, rung, 0x09, 0x23 );
+
+
+  //uint movingFlag = 0x00;
+  uint frame = 0x00;
+  uint bugFrame = 0x00;
   uint keepPlaying = 0x00;
   uint c = getin();
   while( keepPlaying != 0x01 )
     {
       getJS();
       playerOnFloor = onFloor();
-      toTheRight = whatsToTheRight();
-      toTheLeft = whatsToTheLeft();
+      playerHitCeiling = hitCeiling();
+      
+      prizeOnFloor = prizeOnFloorFunc();
+      
       if( c == 60 )
 	{
 	  JSbtnPressA = 0x00;
@@ -190,55 +294,106 @@ void main()
 	{
 	  // RIGHT
 	  JSeast = 0x00;
-	}	  
-      if( JSbtnPressA == 0x00 )
+	}
+      if( c == 62 )
 	{
+	  // Q for QUIT
 	  keepPlaying = 0x01;
 	}
-
+      
+      if( JSbtnPressA == 0x00 && playerOnFloor != 0x00 )
+	{
+	  if( playerHitCeiling == 0x00 )
+	    {
+	      // initiate jump sequence
+	      midJump = 0x01;
+	      jumpIndex = 0x00;
+	    }
+	}
+            
+      if( playerHitCeiling != 0x00 )
+	{
+	  midJump = 0x00;
+	  thrust = 0x00;
+	}
+	  
       if( JSsouth == 0x00 && playerOnFloor == 0x00 )
 	{
 	  inc(playery);
 	}
-      if( JSnorth == 0x00 && playery > 0x32 )
+
+      if( playerOnFloor != 0x00 )
 	{
-	  inc( thrust );
-	  inc( thrust );
-	  if( thrust > 0x03 )
+	  if( JSeast == 0x00 && playerx < 0x0140)
 	    {
-	      thrust = 0x03;
+	      toTheRight = whatsToTheRight();
+	      
+	      if( toTheRight == 0x01 )
+		{
+		  playery = playery - 0x01;
+		}
+	      if( toTheRight != 0xFF )
+		{
+		  direction = 1;
+		  playerx = playerx + 0x0001;
+		}
+	      //movingFlag = 0x01;
+	      poke( sprptr0, playerFrameR[frame] );
+	      inc( frame );
+	      if( frame > 0x05 )
+		{
+		  frame = 0x00;	  
+		}	  
+
+	      
 	    }
-	}
-      if( JSeast == 0x00 && playerx < 0x0140)
-	{
-	  if( toTheRight == 0x01 )
+	  if( JSwest == 0x00 && playerx > 0x0018 )
 	    {
-	      playery = playery - 0x01;
-	    }
-	  if( toTheRight != 0xFF )
-	    {
-	      direction = 0x0001;
-	      playerx = playerx + 0x0001;
-	    }
-	}
-      if( JSwest == 0x00 && playerx > 0x0018 )
-	{
-	  if( toTheLeft == 0x01 )
-	    {
-	      playery = playery - 0x01;
-	    }
-	  if( toTheLeft != 0xFF )
-	    {
-	      direction = 0xFFFF;
-	      playerx = playerx - 0x0001;
+	      toTheLeft = whatsToTheLeft();
+	      if( toTheLeft == 0x01 )
+		{
+		  playery = playery - 0x01;
+		}
+	      if( toTheLeft != 0xFF )
+		{
+		  direction = -1;
+		  playerx = playerx - 0x0001;
+		}
+	      //movingFlag = 0x01;
+	      poke( sprptr0, playerFrameL[frame] );
+	      inc( frame );
+	      if( frame > 0x05 )
+		{
+		  frame = 0x00;	  
+		}	  
 	    }
 	}
 
-      // gravity
-      if( playerOnFloor == 0x00 )
+      //if( movingFlag == 0x00 )
+      //{
+      //  poke( sprptr0, 0x28 );
+      //}
+      //movingFlag = 0x00;
+
+      if( midJump != 0x00 )
 	{
-	  inc( playery );
+	  playery = playery + 0xFD;
+	  inc(jumpIndex);
+	  jumpIndex = jumpIndex & 0x0F;
+	  midJump = jumpIndex;
+
+	  if( direction == -1 )
+	    {
+	      playerx = playerx - 0x0001;
+	    }
+	  else
+	    {
+	      playerx = playerx + 0x0001;
+	    }
+	  limitxposition();
 	}
+      
+      gravity();
 
       
       if( thrust != 0x00 )
@@ -246,19 +401,112 @@ void main()
 	  playery = playery - thrust;
 	  dec( thrust );
 	}
-      spritexy( 0x00, playerx, playery );	    
+
+      for( word DELAY = 0x0000; DELAY < 0x00AF; DELAY = DELAY + 0x0001 )
+	{
+	  nop();
+	}
+      
+      if( playery == prizey && fireInProgress == 0x00)
+	{
+       spriteset( 0x07 );
+       fireInProgress = 0x01;
+       bulletx = prizex;
+       bullety = prizey;
+       if( prizex > playerx )
+         {
+           bulletDirection = 0xFFFF;
+         }
+       else
+         {
+           bulletDirection = 0x0001;
+         }
+      }
+
+      if( fireInProgress == 0x01 )
+      {
+       if( bulletx < 0x0014 || bulletx > 0x0160 )
+         {
+           fireInProgress = 0x00;
+           spriteset( 0x03 );
+         }
+       bulletx = bulletx + bulletDirection;
+       
+      }
+      positionMOBS();
       c = getin();	    
     }
   
   clearkb();
-
-  //segment( 0x10, 0x10, 0x20, 0x20, 0x03 );
 
   romin();
 
   bank(0);
   restoreregs();
   
+  return;
+}
+
+void limityposition()
+{
+  if( playery < 0x32 )
+    {
+      playery = 0x32;
+    }
+  if( playery > 0xC8 )
+    {
+      playery = 0xC8;
+    }
+
+
+  return;
+}
+void limitxposition()
+{
+  if( playerx > 0x0140 )
+    {
+      playerx = 0x0140;
+    }
+  if( playerx < 0x0018 )
+    {
+      playerx = 0x0018;
+    }
+  return;
+}
+
+void positionMOBS()
+{  
+  positionBug();
+  spritexy( 0x00, playerx, playery );
+  spritexy( 0x01, prizex, prizey );
+  if( fireInProgress == 0x01 )
+  {
+    spritexy( 0x02, bulletx, bullety );      
+  }
+  return;
+}
+
+void gravity()
+{
+  if( playerOnFloor == 0x00 )
+    {
+      inc( playery );
+
+      if( direction == 1 )
+	{
+	  playerx = playerx + 1;
+	}
+      else
+	{
+	  playerx = playerx - 1;
+	}
+      limitxposition();
+    }
+      
+  if( prizeOnFloor == 0x00 )
+    {
+      inc( prizey );
+    }
   return;
 }
 
@@ -275,15 +523,57 @@ uint whatsToTheRight()
     {
       if( byte1 == 0x00 )
 	{
-	  // player can climb
 	  inc( rtn8bit );
-	  //rtn8bit = 0x01;
 	}
       else
 	{
-	  // wall is to the right
 	  dec( rtn8bit );
-	  //rtn8bit = 0xFF;
+	}
+    }
+  return rtn8bit;
+}
+
+uint whatsToTheRight2()
+{
+  rtn8bit = 0x00;
+  xtocheck = prizex - 0x0004;
+  ytocheck = prizey - 0x1E;
+  
+  byte0 = peek(getpixel( xtocheck, ytocheck  ));
+  byte1 = peek(getpixel( xtocheck, ytocheck - 0x01  ));
+
+  if( byte0 != 0x00 || byte1 != 0x00 )
+    {
+      if( byte1 == 0x00 )
+	{
+	  inc( rtn8bit );
+	}
+      else
+	{
+	  dec( rtn8bit );
+	}
+    }
+  return rtn8bit;
+}
+
+uint whatsToTheLeft2()
+{
+  rtn8bit = 0x00;
+  xtocheck = prizex - 0x000C;
+  ytocheck = prizey - 0x1E;
+  
+  byte0 = peek(getpixel( xtocheck, ytocheck  ));
+  byte1 = peek(getpixel( xtocheck, ytocheck - 0x01  ));
+
+  if( byte0 != 0x00 || byte1 != 0x00 )
+    {
+      if( byte1 == 0x00 )
+	{
+	  inc( rtn8bit );
+	}
+      else
+	{
+	  dec( rtn8bit );
 	}
     }
   return rtn8bit;
@@ -302,12 +592,10 @@ uint whatsToTheLeft()
     {
       if( byte1 == 0x00 )
 	{
-	  // player can climb
 	  inc( rtn8bit );
 	}
       else
 	{
-	  // wall is to the right
 	  dec( rtn8bit );
 	}
     }
@@ -316,7 +604,29 @@ uint whatsToTheLeft()
 
 uint onFloor()
 {
-  word RIGHT = getpixel( playerx - 0x0004, playery  - 0x1D );
+  word RIGHT = getpixel( playerx - 0x0004, playery - 0x1D );
+  byte0 = peek( RIGHT );
+  byte1 = peek( RIGHT - 0x0008 );
+  byte2 = peek( RIGHT - 0x0010 );
+  rtn8bit = byte0 | byte1;
+  rtn8bit = rtn8bit | byte2;
+  return rtn8bit;
+}
+
+uint hitCeiling()
+{
+  RIGHT = getpixel( playerx - 0x0004, playery - 0x32 );
+  byte0 = peek( RIGHT );
+  byte1 = peek( RIGHT - 0x0008 );
+  byte2 = peek( RIGHT - 0x0010 );
+  rtn8bit = byte0 | byte1;
+  rtn8bit = rtn8bit | byte2;
+  return rtn8bit;
+}
+
+uint prizeOnFloorFunc()
+{
+  RIGHT = getpixel( prizex - 0x0004, prizey - 0x1D );
   byte0 = peek( RIGHT );
   byte1 = peek( RIGHT - 0x0008 );
   byte2 = peek( RIGHT - 0x0010 );
@@ -343,139 +653,66 @@ void getJS()
   return;
 }
 
-void line( uint X1, uint Y1, uint X2, uint Y2 )
+void line( uint X1, uint Y1, uint X2, uint Y2, uint C0)
 {
   //dec( X1);
-  segment( X1, Y1, X2, Y2, 0x03 );
+  segment( X1, Y1, X2, Y2, C0 );
   inc( Y1 );
   inc( Y2 );
-  segment( X1, Y1, X2, Y2, 0x03 );
+  segment( X1, Y1, X2, Y2, C0 );
   return;
 }
 
-void plotshape(word plotshapeAddr, uint plotshapeX, uint plotshapeY, uint plotshapeSize)
+void positionBug()
 {
-  uint plotshapeBindex = 0;
-  word plotshapeOffset = plotshapeX + plotshapeY * 40;
-  word plotshapeColor1 = plotshapeOffset + 0xD800;
-  word plotshapeColors2And3 = plotshapeOffset + scraddr;
-  word plotshapePixels = asl(asl(asl(plotshapeOffset))) + bmpaddr;
-  
-  for( uint plotshapeJ = 0; plotshapeJ < plotshapeSize; inc(plotshapeJ) )
-    {
-      poke( plotshapeColor1, plotshapeColourValue11 );
-      poke( plotshapeColors2And3, plotshapeColourValue0110 );
-      plotshapeColor1 = plotshapeColor1 + 1;
-      plotshapeColors2And3 = plotshapeColors2And3 + 1;
-      for( uint plotshapeI = 0; plotshapeI < 8; inc( plotshapeI ) )
-	{
-	  poke( plotshapePixels, (plotshapeAddr)[plotshapeBindex] );
-	  plotshapePixels = plotshapePixels + 1;
-	  inc( plotshapeBindex );
-	}
-    }
-  return;
-}
+  prizeOnFloor = prizeOnFloorFunc();
 
-void plotNumber()
-{
-  if( plotNum == 0x0000 )
+  if( prizex < 0x0046 || prizex > 0x0112 )
     {
-      wordToPrint = zeroText;
-      wordSize = 0x01;
-      printWord();
-      dec( plotDigitX );
-      plotDigitBindex = 0;
-      plotDigit();
+      inline( "lda #$FF", 2 );
+      inline( "eor prizeDirection", 3 );
+      inline( "sta prizeDirection", 3 );
     }
-  else
+  if( fireInProgress == 0x00 )
     {
-      while( plotNum > 0x0000 )
+      poke( sprptr1, bugFrameLR[bugFrame] );
+      inc( bugFrame );
+      if( bugFrame > 0x05 )
 	{
-	  plotNum = plotNum / 0x0A;
-	  plotDigitBindex = asl(asl(asl(peek(0x02))));
-	  plotDigit();
-	  dec(plotDigitX);
+	  bugFrame = 0x00;
 	}
-    }
-  return;
-}
-void printWord()
-{
-  plotDigitAddr= letters;
-  for( uint printWordI = 0x00; printWordI < wordSize; inc(printWordI) )
-    {
-      uint currentChar = (wordToPrint)[printWordI];
-      if( currentChar == ',' )
+      if( prizeDirection == 0x01 )
 	{
-	  currentChar = 31;
+	  // to climb slopes
+	  if( whatsToTheRight2() != 0x00 )
+	    {
+	      dec(prizey);
+	    }
+	  prizex = prizex + 0x0001;
 	}
       else
 	{
-	  if( currentChar == ')' )
+	  // to climb slopes
+	  if( whatsToTheLeft2() != 0x00 )
 	    {
-	      currentChar = 30;
-	    }
-	  else
-	    {
-	      if( currentChar == '(' )
-		{
-		  currentChar = 29;
-		}
-	      else
-		{
-		  if( currentChar == '.' )
-		    {
-		      currentChar = 28;
-		    }
-		  else
-		    {
-		      if( currentChar == 58 )
-			{
-			  currentChar = 27;
-			}
-		      else
-			{
-			  if( currentChar == 32 )
-			    {
-			      currentChar = 26;
-			    }
-			  else
-			    {
-			      currentChar = currentChar - 65;
-			    }
-			}
-		    }
-		}
-	    }
+	      dec(prizey);
+	    }      
+	  prizex = prizex + 0xFFFF;
 	}
-      plotDigitBindex = asl(asl(asl(currentChar)));
-      plotDigit();
-      
-      inc(plotDigitX);
     }
-  plotDigitAddr= digits;
+  else
+  {
+    bulletx = bulletx + bulletDirection;
+  }
+
+  
   return;
 }
-void plotDigit()
+
+void switchPrizeDirections()
 {
-  word plotDigitOffset = plotDigitY * 40;
-  plotDigitOffset = plotDigitOffset + plotDigitX;
-  
-  word plotDigitColor1 = plotDigitOffset + 0xD800;
-  word plotDigitColors2And3 = plotDigitOffset + scraddr;
-  poke( plotDigitColor1, textColour );
-  poke( plotDigitColors2And3, 0x00 );
-
-  word plotDigitPixels = asl(asl(asl(plotDigitOffset))) + bmpaddr;
-
-  for( uint plotDigitI = 0; plotDigitI < 8; inc( plotDigitI ) )
-    {
-      poke( plotDigitPixels, (plotDigitAddr)[plotDigitBindex] );
-      plotDigitPixels = plotDigitPixels + 1;
-      inc( plotDigitBindex );
-    }
+  inline( "lda #$FF", 2 );
+  inline( "eor prizeDirection", 3 );
+  inline( "sta prizeDirection", 3 );
   return;
 }
-
-  
