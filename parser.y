@@ -7170,7 +7170,7 @@ condition: expression[LHS]
     }
   else if( isFAC($LHS.name) && isFloatID($RHS.name) )
     {
-      addComment( "FAC relop FloatID: TOC (testing)" );
+      addComment( "FAC relop FloatID: TOC" );
 
       FACToSwap0();
 
@@ -7182,7 +7182,7 @@ condition: expression[LHS]
     }
   else if( isFAC($LHS.name) && isFloatIMM($RHS.name) )
     {
-      addComment( "FAC relop FloatIMM: testing" );
+      addComment( "FAC relop FloatIMM: TOC" );
 
       FACToSwap0();
 
@@ -7212,14 +7212,7 @@ condition: expression[LHS]
       addComment( "FAC relop IntIMM: TOC" );
 
       FACToSwap0();
-      
-      int tmp_v = atoi(stripFirst(stripFirst($RHS.name).c_str()).c_str());
-      // Word -> FAC      
-      addAsm( str_LDA + "#$FF", 2, false );
-      addAsm( str_LDY + "#$" + toHex(twos_complement(tmp_v)), 2, false );
-      addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
-
-      // CMP(FAC, MEM)
+      inlineFloat( $RHS.name );
       cmpFACMEM( "#<!fp0+", "#>!fp0+" );
     }
   else if( isFAC($LHS.name) && isUintID($RHS.name) )
@@ -7243,11 +7236,12 @@ condition: expression[LHS]
       FACToSwap0();
       
       int tmp_v = atoi(stripFirst($RHS.name).c_str());
-      // Word -> FAC      
-      addAsm( str_LDA + "#$00", 2, false );
-      addAsm( str_LDY + "#$" + toHex(tmp_v), 2, false );
-      addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
-
+      // Word -> FAC
+      inlineFloat( $RHS.name );
+      //addAsm( str_LDA + "#$00", 2, false );
+      //addAsm( str_LDY + "#$" + toHex(tmp_v), 2, false );
+      //addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
+      
       // CMP(FAC, MEM)
       cmpFACMEM( "#<!fp0+", "#>!fp0+" );
     }
@@ -7278,7 +7272,6 @@ condition: expression[LHS]
       addAsm( str_LDY + "#$" + toHex(get_word_L(tmp_v)), 2, false );      
       addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 
-      // CMP(FAC, MEM)
       cmpFACMEM( "#<!fp0+", "#>!fp0+" );
     }
   else if( isFAC($LHS.name) && isXA($RHS.name) )
@@ -7319,13 +7312,9 @@ condition: expression[LHS]
     }
   else if( isFloatID($LHS.name) && isFloatIMM($RHS.name))
     {
-      // TODO: This uses ARG... 105... I d'nt lk ths!
       addComment( "FloatID relop FloatIMM: TOC");
-      inlineFloat($RHS.name, 105 );
-      addAsm( str_LDA + "#<" + getNameOf(getAddressOf($LHS.name)), 2, false ); 
-      addAsm( str_LDY + "#>" + getNameOf(getAddressOf($LHS.name)), 2, false );
-      addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
-      cmpFACMEM( "#$69", "#$00" );
+      inlineFloat($RHS.name);
+      cmpFACMEM( "#<" + getNameOf(getAddressOf($LHS.name)), "#>" + getNameOf(getAddressOf($LHS.name)) );
     }    
   else if( isFloatID($LHS.name) && isIntID($RHS.name) )
     {
@@ -7343,40 +7332,54 @@ condition: expression[LHS]
     }
   else if( isFloatID($LHS.name) && isIntIMM($RHS.name) )
     {
-      addCompilerMessage( "FloatID relop IntIMM: nyi", 3 );
-      addComment( "FloatID relop IntIMM: TOC (nyi)" );
+      addComment( "FloatID relop IntIMM: TOC" );
+      inlineFloat($RHS.name);
+      cmpFACMEM( "#<" + getNameOf(getAddressOf($LHS.name)), "#>" + getNameOf(getAddressOf($LHS.name)) );
      
     }
   else if( isFloatID($LHS.name) && isUintID($RHS.name) )
     {
-      addCompilerMessage( "FloatID relop UintID: nyi", 3 );
-      addComment( "FloatID relop UintID: TOC (nyi)" );
+      addComment( "FloatID relop UintID: TOC" );
+      addAsm( str_LDY + getNameOf(getAddressOf($RHS.name)), 3, false );
+      addAsm( str_LDA + "#$00", 2, false );
+      addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
+
+      cmpFACMEM( "#<" + getNameOf(getAddressOf($LHS.name)), "#>" + getNameOf(getAddressOf($LHS.name)) );
 
     }
   else if( isFloatID($LHS.name) && isUintIMM($RHS.name) )
     {
-      addCompilerMessage( "FloatID relop UintIMM: nyi", 3 );
-      addComment( "FloatID relop UintIMM: TOC (nyi)" );
+      addComment( "FloatID relop UntIMM: TOC" );
+      inlineFloat($RHS.name);
+      cmpFACMEM( "#<" + getNameOf(getAddressOf($LHS.name)), "#>" + getNameOf(getAddressOf($LHS.name)) );
 
     }
   else if( isFloatID($LHS.name) && isWordID($RHS.name) )
     {
-      addCompilerMessage( "FloatID relop WordID: nyi", 3 );
-      addComment( "FloatID relop WordID: TOC (nyi)" );
+      addComment( "FloatID relop WordID: TOC" );
+      addAsm( str_LDY + getNameOf(getAddressOf($RHS.name)), 3, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($RHS.name)) + " +1", 3, false );
+      addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 
+      cmpFACMEM( "#<" + getNameOf(getAddressOf($LHS.name)), "#>" + getNameOf(getAddressOf($LHS.name)) );
     }
   else if( isFloatID($LHS.name) && isWordIMM($RHS.name) )
     {
-      addCompilerMessage( "FloatID relop WordIMM: nyi", 3 );
-      addComment( "FloatID relop WordIMM: TOC (nyi)" );
-
+      addComment( "FloatID relop WordIMM: TOC" );
+      inlineFloat($RHS.name);
+      cmpFACMEM( "#<" + getNameOf(getAddressOf($LHS.name)), "#>" + getNameOf(getAddressOf($LHS.name)) );
     }
   else if( isFloatID($LHS.name) && isXA($RHS.name) )
     {
-      addCompilerMessage( "FloatID relop XA: nyi", 3 );
-      addComment( "FloatID relop XA: TOC (nyi)" );
+      addComment( "FloatID relop XA: TOC" );
+      addAsm( str_TAY, 1, false );
+      addAsm( str_TXA, 1, false );
+      addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 
+      cmpFACMEM( "#<" + getNameOf(getAddressOf($LHS.name)), "#>" + getNameOf(getAddressOf($LHS.name)) );
     }
+
+  
   else if( isFloatIMM($LHS.name) && isA($RHS.name) )
     {
       addCompilerMessage( "FloatIMM relop A: nyi", 3 );
@@ -7698,7 +7701,7 @@ condition: expression[LHS]
   else if( isUintID($LHS.name) && isFloatIMM($RHS.name) )
     {
       addCompilerMessage( "UintID relop FloatIMM: nyi", 3 );
-      addComment( "UintID relop FAC: FloatIMM (nyi)" );
+      addComment( "UintID relop FloatIMM: TOC (nyi)" );
 
     }
 
