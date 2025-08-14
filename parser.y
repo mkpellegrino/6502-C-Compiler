@@ -626,7 +626,7 @@
     int return_value = ( abs( x ) ^ 255 ) + 1;
     // for an 8 bit byte
     if( x > 255 ) return_value = ( abs( x ) ^ 65535 ) + 1;
-      return return_value;
+    return return_value;
   }
     
   
@@ -1017,19 +1017,6 @@
   void pushFAC()
   {
     addComment( "FAC -> Stack (pushFAC())" );
-    /* addAsm( str_LDA + "$66", 2, false ); */
-    /* addAsm( str_PHA, 1, false ); */
-    /* addAsm( str_LDA + "$65", 2, false ); */
-    /* addAsm( str_PHA, 1, false ); */
-    /* addAsm( str_LDA + "$64", 2, false ); */
-    /* addAsm( str_PHA, 1, false ); */
-    /* addAsm( str_LDA + "$63", 2, false ); */
-    /* addAsm( str_PHA, 1, false ); */
-    /* addAsm( str_LDA + "$62", 2, false ); */
-    /* addAsm( str_PHA, 1, false ); */
-    /* addAsm( str_LDA + "$61", 2, false ); */
-    /* addAsm( str_PHA, 1, false ); */
-    
     addAsm( str_TSX, 1, false );
     addAsm( str_TXA, 1, false );
     addAsm( str_SEC, 1, false );
@@ -1074,6 +1061,23 @@
   }
 
 
+  void Swap0ToFAC()
+  {
+    float_swap_space_is_needed = true;
+    addAsm( str_LDA + "#<!fp0+", 2, false );
+    addAsm( str_LDY + "#>!fp0+", 2, false );
+    addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
+    return;
+  }
+  void Swap1ToFAC()
+  {
+    float_swap_space_is_needed = true;
+    addAsm( str_LDA + "#<!fp1+", 2, false );
+    addAsm( str_LDY + "#>!fp1+", 2, false );
+    addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
+    return;
+  }
+  
   void FACToSwap0()
   {
     float_swap_space_is_needed = true;
@@ -1142,7 +1146,7 @@
     addAsm( str_TXS, 1, false ); // 2
   }
 
-void inlineFloat( string s, int addr=25)
+  void inlineFloat( string s, int addr=25)
   {
     addComment( "inline float: " + stripFirst(s) );
     string sign;
@@ -1946,7 +1950,7 @@ void inlineFloat( string s, int addr=25)
     byte_count -= asm_instr[asm_instr.size()-1]->getSize();
     asm_instr.erase( asm_instr.end()-1 );
     return;
- }
+  }
 
   void NodeTable()
   {
@@ -2047,13 +2051,13 @@ void inlineFloat( string s, int addr=25)
     
     string cmt = string("// ");
 
-      for( int i=0; i<asm_instr.size(); i++ )
-	{
-	  if( cmpstr( asm_instr[i]->getString(), string( "// MARKED_FOR_DELETION") ) )
-	    {
-	      asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+1);
-	    }
-	}
+    for( int i=0; i<asm_instr.size(); i++ )
+      {
+	if( cmpstr( asm_instr[i]->getString(), string( "// MARKED_FOR_DELETION") ) )
+	  {
+	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+1);
+	  }
+      }
     
     for( int i=0; i<asm_instr.size()-1; i++ )
       {
@@ -2486,55 +2490,55 @@ void inlineFloat( string s, int addr=25)
 	      {
 		int function_type = asm_functions[j]->getType();
 		if( cmpstr(asm_functions[j]->getIdentifier(),function_to_lookup) )
-		{
-		  switch( function_type )
-		    {
-		    case 0:
-		      // uint
-		      insAsm( i, str_PLA, 1, false );
-		      break;
-		    case 1:
-		      // int
-		      insAsm( i, str_PLA, 1, false );
-		      break;
-		    case 2:
-		      // word
-		      insAsm( i, str_PLA, 1, false );
-		      insAsm( i+1, str_TAX, 1, false );
-		      insAsm( i+2, str_PLA, 1, false );
+		  {
+		    switch( function_type )
+		      {
+		      case 0:
+			// uint
+			insAsm( i, str_PLA, 1, false );
+			break;
+		      case 1:
+			// int
+			insAsm( i, str_PLA, 1, false );
+			break;
+		      case 2:
+			// word
+			insAsm( i, str_PLA, 1, false );
+			insAsm( i+1, str_TAX, 1, false );
+			insAsm( i+2, str_PLA, 1, false );
 		      
-		      break;
-		    case 4:
-		      // double
-		      break;
-		    case 8:
-		      // float
-		      insAsm( i, str_TSX, 1, false );
-		      insAsm( i+1, str_INX, 1, false );
-		      insAsm( i+2, str_TXA, 1, false );
-		      insAsm( i+3, str_INX, 1, false );
-		      insAsm( i+4, str_INX, 1, false );
-		      insAsm( i+5, str_INX, 1, false );
-		      insAsm( i+6, str_INX, 1, false );
-		      insAsm( i+7, str_INX, 1, false );
-		      insAsm( i+8, str_TXS, 1, false );
-		      insAsm( i+9, str_LDY + "#$01", 2, false );
-		      insAsm( i+10, str_JSR + "$BBA2" + commentmarker + "STACK -> FAC", 3, false );
-		      break;
-		    case 16:
-		      // mob (deprecated)
-		      break;
-		    case 32:
-		      // string
-		      break;
-		    case 64:
-		      break;
-		    case 128:
-		      break;
-		    default:
+			break;
+		      case 4:
+			// double
+			break;
+		      case 8:
+			// float
+			insAsm( i, str_TSX, 1, false );
+			insAsm( i+1, str_INX, 1, false );
+			insAsm( i+2, str_TXA, 1, false );
+			insAsm( i+3, str_INX, 1, false );
+			insAsm( i+4, str_INX, 1, false );
+			insAsm( i+5, str_INX, 1, false );
+			insAsm( i+6, str_INX, 1, false );
+			insAsm( i+7, str_INX, 1, false );
+			insAsm( i+8, str_TXS, 1, false );
+			insAsm( i+9, str_LDY + "#$01", 2, false );
+			insAsm( i+10, str_JSR + "$BBA2" + commentmarker + "STACK -> FAC", 3, false );
+			break;
+		      case 16:
+			// mob (deprecated)
+			break;
+		      case 32:
+			// string
+			break;
+		      case 64:
+			break;
+		      case 128:
+			break;
+		      default:
 
-		    }
-		}
+		      }
+		  }
 	      }
 	  }
       }
@@ -3507,7 +3511,6 @@ parameterlist: /* empty */
     {
       // 2024 04 14 - mkpellegrino
       addAsm( str_LDA + getNameOf(getAddressOf( $3.name )), 3, false );
-      //addAsm( str_LDA + $3.name, 3, false );
       addAsm( str_PHA );
     }
   else if( isA($3.name) )
@@ -3522,16 +3525,12 @@ parameterlist: /* empty */
     }
   else if( isWordID($3.name) )
     {
-      //addAsm( str_LDA + "$" + toHex( getAddressOf($3.name) ), 3, false );
       // 2024 04 14 - mkpellegrino
       addAsm( str_LDA + getNameOf(getAddressOf( $3.name )), 3, false );
-      //addAsm( str_LDA + $3.name, 3, false );
-
       addAsm( str_PHA );
-      //addAsm( str_LDA + "$" + toHex( getAddressOf($3.name)+1 ), 3, false );
+
       // 2024 04 14 - mkpellegrino
       addAsm( str_LDA + getNameOf(getAddressOf( $3.name )) + " +1", 3, false );
-      //addAsm( str_LDA + $3.name + " +1", 3, false );
       addAsm( str_PHA );
     }
   else if( isWordIMM($3.name) )
@@ -3554,10 +3553,8 @@ parameterlist: /* empty */
   else if( isIntIMM( $3.name ) )
     {
       int tmp_v = atoi(stripFirst($3.name).c_str());
-      addAsm( "// ------ ", 0, true );
       addAsm( str_LDA + "#$" + toHex( twos_complement(tmp_v)), 2, false );
       addAsm( str_PHA );
-      addAsm( "// ------ ", 0, true ); 
     }
   else if( isFloatID($3.name) )
     {
@@ -3566,28 +3563,20 @@ parameterlist: /* empty */
 	{
 	  OP = string("$") + toHex(getAddressOf($3.name));
 	}
-      //addAsm( str_LDA + "$" + toHex( getAddressOf($3.name) ), 3, false );
       addAsm( str_LDA + OP, 3, false );
       addAsm( str_PHA );
-      //addAsm( str_LDA + "$" + toHex( getAddressOf($3.name)+1 ), 3, false );
       addAsm( str_LDA + OP + " +1", 3, false );
       addAsm( str_PHA );
-      //addAsm( str_LDA + "$" + toHex( getAddressOf($3.name)+2 ), 3, false );
-      addAsm( str_LDA + OP + "+2", 3, false );
+      addAsm( str_LDA + OP + " +2", 3, false );
       addAsm( str_PHA );
-      //addAsm( str_LDA + "$" + toHex( getAddressOf($3.name)+3 ), 3, false );
-      addAsm( str_LDA + OP+ "+3", 3, false );
+      addAsm( str_LDA + OP + " +3", 3, false );
       addAsm( str_PHA );
-      //addAsm( str_LDA + "$" + toHex( getAddressOf($3.name)+4 ), 3, false );
-      addAsm( str_LDA + OP + "+4", 3, false );
+      addAsm( str_LDA + OP + " +4", 3, false );
       addAsm( str_PHA );
     }
   else if( isFloatIMM($3.name) )
     {
-
-      //inlineFloatPush( $3.name, 105 );
-      inlineFloatPush( $3.name );
-      
+      inlineFloatPush( $3.name );      
     }
   else
     {
@@ -5821,27 +5810,27 @@ body: WHILE
       addAsm( str_STA+"$0314", 3, false );
       addAsm( str_STX+"$0315", 3, false );
       addComment( "Taken from: https://www.lemon64.com/forum/viewtopic.php?t=48499" );
-	addComment( "vvvvvvvvvvvvvvvvvvvv");
+      addComment( "vvvvvvvvvvvvvvvvvvvv");
 
-	addAsm( str_LDA+"#$81", 2, false );
-	addAsm( str_STA+"$DC0D", 3, false );
-	addAsm( str_LDA+"#$00", 2, false );
-	addAsm( str_STA+"$D01A", 3, false );
-	addAsm( str_INC+"$D019", 3, false );
-	addAsm( str_LDA+"$DC0D", 3, false );
-	if( sid_was_imported )
-	  {
-	    addAsm( str_JSR+"music.init", 3, false );
-	  }
-	else
-	  {
-	    // 2024 04 14 - mkpellegrino
-	    //addAsm( str_JSR+getNameOf(tmp_addr), 3, false );
-	    // 2024 04 24 - mkpellegrino (undid that change)
-	    addAsm( str_JSR+"$"+toHex(tmp_addr), 3, false );
-	  }
-	addComment( "^^^^^^^^^^^^^^^^^^^");
-	addAsm( str_CLI );
+      addAsm( str_LDA+"#$81", 2, false );
+      addAsm( str_STA+"$DC0D", 3, false );
+      addAsm( str_LDA+"#$00", 2, false );
+      addAsm( str_STA+"$D01A", 3, false );
+      addAsm( str_INC+"$D019", 3, false );
+      addAsm( str_LDA+"$DC0D", 3, false );
+      if( sid_was_imported )
+	{
+	  addAsm( str_JSR+"music.init", 3, false );
+	}
+      else
+	{
+	  // 2024 04 14 - mkpellegrino
+	  //addAsm( str_JSR+getNameOf(tmp_addr), 3, false );
+	  // 2024 04 24 - mkpellegrino (undid that change)
+	  addAsm( str_JSR+"$"+toHex(tmp_addr), 3, false );
+	}
+      addComment( "^^^^^^^^^^^^^^^^^^^");
+      addAsm( str_CLI );
     }
   else
     {
@@ -6938,43 +6927,225 @@ condition: expression[LHS]
   // ====================================================================================================================
   //                 COMPARISONS START HERE START OF COMPARISONS START OF RELOPS
   // ====================================================================================================================
-  if( isFloatIMM($LHS.name) && isFloatID($RHS.name)) 
+
+  // A RELOP
+  if( isA($LHS.name) && isA($RHS.name) )
     {
-      addComment( "FloatIMM relop FloatID: TOC" );
-		  
-      // FP Operations
-      inlineFloat( $LHS.name, 105);
-      current_variable_base_address = getAddressOf($RHS.name);
-      string tmp_name = getNameOf(current_variable_base_address);
-
-      addAsm( str_LDA + "#<" + getNameOf(getAddressOf($RHS.name)), 2, false );
-      addAsm( str_LDY + "#>" + getNameOf(getAddressOf($RHS.name)), 2, false );
-      addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
-      cmpFACMEM( "#$69", "#$00" );
-
-      addAsm( str_TXA, 1, false );
-      addAsm( str_LDA + "#$00", 2, false );
-      addAsm( str_PHA, 1, false );
-      addAsm( str_TAX, 1, false );
-      addAsm( str_PHA, 1, false );
-      addAsm( str_JSR + "SIGNEDCMP", 3, false );
-      addAsm( str_PLP );
-
+      addComment( "A relop A: TOC" );
+      addAsm( str_STA + "$02", 2, false );
+      addAsm( str_PLA, 1, false );
+      addAsm( str_CMP + "$02", 2, false );      
     }
-  else if( isFloatID($LHS.name) && isFAC($RHS.name) )
+  else if( isA($LHS.name) && isFAC($RHS.name) )
     {
-      addComment( "FloatID relop FAC: TOC" );
-      cmpFACMEM( "#<" + getNameOf(getAddressOf($LHS.name)), "#>" + getNameOf(getAddressOf($LHS.name)) );
+      addComment( "A relop FAC: TOC" );
 
-      addComment( "/--- Is this necessary? ---\\" );
-      addAsm( str_PHA, 1, false );
+      if( string($OP.name) == string("<") )
+	{
+	  addCompilerMessage( "A relop FAC: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, ">" );
+	}
+      else if( string($OP.name) == string(">") )
+	{
+	  addCompilerMessage( "A relop FAC: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, "<" );
+	}
+      else if( string($OP.name) == string(">=") )
+	{
+	  addCompilerMessage( "A relop FAC: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, "<=" );
+	}
+      else if( string($OP.name) == string("<=") )
+	{
+	  addCompilerMessage( "A relop FAC: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, ">=" );
+	}
+      FACToSwap0();
+      addAsm( str_PLA, 1, false );
+      addAsm( str_TAY, 1, false );
       addAsm( str_LDA + "#$00", 2, false );
-      addAsm( str_PHA, 1, false );
+      addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
+      cmpFACMEM( "#<!fp0+", "#>!fp0+" );
+    }    
+  else if( isA($LHS.name) && isFloatID($RHS.name) )
+    {
+      addComment( "A relop FloatID: TOC" );
+      string OP2 = getNameOf(getAddressOf($RHS.name));
+      string OP2L = "#<" + OP2;
+      string OP2H = "#>" + OP2;
+      
+      addAsm( str_TAY, 1, false );
+      addAsm( str_LDA + "#$00", 2, false );
+      addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
+      if( string($OP.name) == string("<") )
+	{
+	  addCompilerMessage( "A relop FloatID: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, ">" );
+	}
+      else if( string($OP.name) == string(">") )
+	{
+	  addCompilerMessage( "A relop FloatID: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, "<" );
+	}
+      else if( string($OP.name) == string(">=") )
+	{
+	  addCompilerMessage( "A relop FloatID: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, "<=" );
+	}
+      else if( string($OP.name) == string("<=") )
+	{
+	  addCompilerMessage( "A relop FloatID: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, ">=" );
+	}
 
-      signed_comparison_is_needed = true;
-      addAsm( str_JSR + "SIGNEDCMP", 3, false );
-      addAsm( str_PLP );
-      addComment( "\\--- Is this necessary? ---/" );
+      cmpFACMEM( OP2L, OP2H );	  
+    }    
+  else if( isA($LHS.name) && isFloatIMM($RHS.name) )
+    {
+      addComment( "A relop FloatIMM: TOC" );
+      if( string($OP.name) == string("<") )
+	{
+	  addCompilerMessage( "A relop FloatID: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, ">" );
+	}
+      else if( string($OP.name) == string(">") )
+	{
+	  addCompilerMessage( "A relop FloatID: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, "<" );
+	}
+      else if( string($OP.name) == string(">=") )
+	{
+	  addCompilerMessage( "A relop FloatID: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, "<=" );
+	}
+      else if( string($OP.name) == string("<=") )
+	{
+	  addCompilerMessage( "A relop FloatID: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, ">=" );
+	}
+      addAsm( str_TAY, 1, false );
+      addAsm( str_LDA + "#$00", 2, false );
+      addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
+      inlineFloatFP0($RHS.name);
+      cmpFACMEM( "#<!fp0+", "#>!fp0+" );
+    }    
+  else if( isA($LHS.name) && isIntID($RHS.name) )
+    {
+      addComment( "A relop IntID: TOC" );
+      addAsm( str_TAX, 1, false );
+      addAsm( str_SEC, 1, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($RHS.name)), 3, false );
+      addAsm( str_BMI + "!+", 2, false );
+      addAsm( str_TXA, 1, false );
+      addAsm( str_CMP + getNameOf(getAddressOf($RHS.name)), 3, false );
+      addAsm( "!:",0,true );
+    }    
+  else if( isA($LHS.name) && isIntIMM($RHS.name))
+    {
+      addCompilerMessage( "A relop IntIMM: can produce unexpected behavior", 1 );
+      addComment( "A relop IntIMM: TOC" );
+      if( string($OP.name) == "!=" )
+	{
+	  addCompilerMessage( "A is ALWAYS != to IntIMM", 1 );
+	}
+      if( string($OP.name) == ">" )
+	{
+	  addCompilerMessage( "A is ALWAYS > IntIMM", 1 );
+	}
+      if( string($OP.name) == ">=" )
+	{
+	  addCompilerMessage( "A is ALWAYS >= to IntIMM", 1 );
+	}
+      if( string($OP.name) == "<" )
+	{
+	  addCompilerMessage( "A is NEVER < IntIMM", 1 );
+	}
+      if( string($OP.name) == "<=" )
+	{
+	  addCompilerMessage( "A is NEVER <= to IntIMM", 1 );
+	}
+      if( string($OP.name) == "==" )
+	{
+	  addCompilerMessage( "A is NEVER == to IntIMM", 1 );
+	}
+      //int tmp_v = atoi(stripFirst($RHS.name).c_str());
+      //addAsm( str_CMP + "#$" + toHex( tmp_v ), 2, false );
+      addAsm( str_SEC, 1, false );
+    }
+  else if( isA($LHS.name) && isUintID($RHS.name))
+    {
+      addComment( "A relop UintID: TOC" );
+      addAsm( str_CMP + getNameOf( getAddressOf($RHS.name) ), 3, false );
+    }
+  else if( isA($LHS.name) && isUintIMM($RHS.name))
+    {
+      addComment( "A relop UintIMM: TOC" );
+      int tmp_v = atoi(stripFirst($RHS.name).c_str());
+      addAsm( str_CMP + "#$" + toHex( tmp_v ), 2, false );
+    }
+  else if( isA($LHS.name) && isWordID($RHS.name))  // mismatch
+    {
+      addComment( "A relop WordID: TOC" );
+      int tmp_v = getAddressOf( $RHS.name );
+      addAsm( str_TAY );
+      addAsm( str_LDA + "#$00", 2, false );
+      addAsm( str_CMP + getNameOf( tmp_v ) + " +1", 3, false );
+      addAsm( str_BNE + "!+", 2, false );
+      addAsm( str_TYA );
+      addAsm( str_CMP + getNameOf( tmp_v ), 3, false );
+      addAsm( "!:", 0, true );
+    }
+  else if( isA($LHS.name) && isWordIMM($RHS.name) )
+    {
+      addComment( "A relop WordIMM: TOC" );
+      int tmp_v = atoi(stripFirst($RHS.name).c_str());
+      int tmp_H = get_word_H(tmp_v);
+      int tmp_L = get_word_L(tmp_v);
+      if( tmp_v > 255 )
+	{
+	  addCompilerMessage( "A is always less than this WordIMM", 1 );
+	  addComment( "Set the Negative flag for '<'" );
+	  addAsm( str_LDA + "#$80", 2, false );
+	}
+      else
+	{
+	  addAsm( str_CMP + "#$" + toHex( tmp_L ), 2, false );
+	}
+    }    
+  else if( isA($LHS.name) && isXA($RHS.name) )
+    {
+      addCompilerMessage( "A relop XA: destroys $02 (testing)", 1 );
+      addComment( "A relop XA: TOC" );
+      if( string($OP.name) == string("<") )
+	{
+	  addCompilerMessage( "A relop XA: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, ">" );
+	}
+      else if( string($OP.name) == string(">") )
+	{
+	  addCompilerMessage( "A relop XA: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, "<" );
+	}
+      else if( string($OP.name) == string(">=") )
+	{
+	  addCompilerMessage( "A relop XA: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, "<=" );
+	}
+      else if( string($OP.name) == string("<=") )
+	{
+	  addCompilerMessage( "A relop XA: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, ">=" );
+	}
+
+      
+      addAsm( str_TAY, 1, false );
+      addAsm( str_TXA, 1, false );
+      addAsm( str_BNE + "!+", 2, false );
+      addAsm( str_PLA, 1, false );
+      addAsm( str_STA + "$02", 2, false );
+      addAsm( str_TYA, 1, false );
+      addAsm( str_CMP + "$02", 2, false );
+      addAsm( "!:", 0, true );
     }
   else if( isFAC($LHS.name) && isA($RHS.name) )
     {
@@ -6990,7 +7161,7 @@ condition: expression[LHS]
             
       // CMP(FAC, MEM)
       cmpFACMEM("#<!fp0+", "#>!fp0+");
-     }  
+    }  
   else if( isFAC($LHS.name) && isFAC($RHS.name) )
     {
       addComment( "FAC relop FAC: TOC" );
@@ -7035,7 +7206,7 @@ condition: expression[LHS]
 
       // CMP(FAC, MEM)
       cmpFACMEM( "#<!fp0+", "#>!fp0+" );
-     }
+    }
   else if( isFAC($LHS.name) && isIntIMM($RHS.name) )
     {
       addComment( "FAC relop IntIMM: TOC" );
@@ -7050,7 +7221,7 @@ condition: expression[LHS]
 
       // CMP(FAC, MEM)
       cmpFACMEM( "#<!fp0+", "#>!fp0+" );
-     }
+    }
   else if( isFAC($LHS.name) && isUintID($RHS.name) )
     {
       addComment( "FAC relop UintID: TOC" );
@@ -7064,7 +7235,7 @@ condition: expression[LHS]
 
       // CMP(FAC, MEM)
       cmpFACMEM( "#<!fp0+", "#>!fp0+" );
-     }
+    }
   else if( isFAC($LHS.name) && isUintIMM($RHS.name) )
     {
       addComment( "FAC relop UintIMM: TOC" );
@@ -7079,7 +7250,7 @@ condition: expression[LHS]
 
       // CMP(FAC, MEM)
       cmpFACMEM( "#<!fp0+", "#>!fp0+" );
-     }
+    }
   else if( isFAC($LHS.name) && isWordID($RHS.name) )
     {
       addComment( "FAC relop WordID: TOC" );
@@ -7094,7 +7265,7 @@ condition: expression[LHS]
 
       // CMP(FAC, MEM)
       cmpFACMEM( "#<!fp0+", "#>!fp0+" );
-     }
+    }
   else if( isFAC($LHS.name) && isWordIMM($RHS.name) )
     {
       addComment( "FAC relop WordIMM: TOC" );
@@ -7109,7 +7280,7 @@ condition: expression[LHS]
 
       // CMP(FAC, MEM)
       cmpFACMEM( "#<!fp0+", "#>!fp0+" );
-     }
+    }
   else if( isFAC($LHS.name) && isXA($RHS.name) )
     {
       addComment( "FAC relop XA: TOC" );
@@ -7122,20 +7293,686 @@ condition: expression[LHS]
 
       // CMP(FAC, MEM)
       cmpFACMEM( "#<!fp0+", "#>!fp0+" );
-     }
-  else if( isXA($LHS.name) && isWordIMM($RHS.name))  // mismatch
+    }
+
+  else if( isFloatID($LHS.name) && isA($RHS.name) )
     {
-      addComment( "XA relop WordIMM: TOC" );
-      int tmp_v = atoi(stripFirst($RHS.name).c_str());
-      int tmp_L = get_word_L(tmp_v);
-      int tmp_H = get_word_H(tmp_v);
-      addAsm( str_TAY );
-      addAsm( str_TXA );
-      addAsm( str_CMP + "#$" + toHex( tmp_H ), 2, false ); 
+      addComment( "FloatID relop A: TOC" );
+      addAsm( str_TAY, 1, false );
+      addAsm( str_LDA + "#$00", 2, false );
+      addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
+      
+      cmpFACMEM( "#<" + getNameOf(getAddressOf($LHS.name)), "#>" + getNameOf(getAddressOf($LHS.name)) );
+    }
+  else if( isFloatID($LHS.name) && isFAC($RHS.name) )
+    {
+      addComment( "FloatID relop FAC: TOC" );
+      cmpFACMEM( "#<" + getNameOf(getAddressOf($LHS.name)), "#>" + getNameOf(getAddressOf($LHS.name)) );
+    }
+  else if( isFloatID($LHS.name) && isFloatID($RHS.name) )
+    {
+      addComment( "FloatID relop FloatID: TOC");
+      addAsm( str_LDA + "#<" + getNameOf(getAddressOf($LHS.name)), 2, false ); 
+      addAsm( str_LDY + "#>" + getNameOf(getAddressOf($LHS.name)), 2, false );
+      addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
+      cmpFACMEM( "#<" + getNameOf(getAddressOf($RHS.name)), "#>" + getNameOf(getAddressOf($RHS.name)));
+    }
+  else if( isFloatID($LHS.name) && isFloatIMM($RHS.name))
+    {
+      // TODO: This uses ARG... 105... I d'nt lk ths!
+      addComment( "FloatID relop FloatIMM: TOC");
+      inlineFloat($RHS.name, 105 );
+      addAsm( str_LDA + "#<" + getNameOf(getAddressOf($LHS.name)), 2, false ); 
+      addAsm( str_LDY + "#>" + getNameOf(getAddressOf($LHS.name)), 2, false );
+      addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
+      cmpFACMEM( "#$69", "#$00" );
+    }    
+  else if( isFloatID($LHS.name) && isIntID($RHS.name) )
+    {
+      addComment( "FloatID relop IntID: TOC" );
+      addAsm( str_LDX + "#$00", 2, false );
+      addAsm( str_LDA + getNameOf( getAddressOf( $RHS.name )), 3, false );
+      addAsm( str_BPL + "!+", 2, false );
+      addAsm( str_DEX, 1, false );
+      addAsm( "!:\t" + str_TAY, 1, false );
+      addAsm( str_TXA, 1, false ); 
+      addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
+
+      cmpFACMEM( "#<" + getNameOf(getAddressOf($LHS.name)), "#>" + getNameOf(getAddressOf($LHS.name)) );
+      
+    }
+  else if( isFloatID($LHS.name) && isIntIMM($RHS.name) )
+    {
+      addCompilerMessage( "FloatID relop IntIMM: nyi", 3 );
+      addComment( "FloatID relop IntIMM: TOC (nyi)" );
+     
+    }
+  else if( isFloatID($LHS.name) && isUintID($RHS.name) )
+    {
+      addCompilerMessage( "FloatID relop UintID: nyi", 3 );
+      addComment( "FloatID relop UintID: TOC (nyi)" );
+
+    }
+  else if( isFloatID($LHS.name) && isUintIMM($RHS.name) )
+    {
+      addCompilerMessage( "FloatID relop UintIMM: nyi", 3 );
+      addComment( "FloatID relop UintIMM: TOC (nyi)" );
+
+    }
+  else if( isFloatID($LHS.name) && isWordID($RHS.name) )
+    {
+      addCompilerMessage( "FloatID relop WordID: nyi", 3 );
+      addComment( "FloatID relop WordID: TOC (nyi)" );
+
+    }
+  else if( isFloatID($LHS.name) && isWordIMM($RHS.name) )
+    {
+      addCompilerMessage( "FloatID relop WordIMM: nyi", 3 );
+      addComment( "FloatID relop WordIMM: TOC (nyi)" );
+
+    }
+  else if( isFloatID($LHS.name) && isXA($RHS.name) )
+    {
+      addCompilerMessage( "FloatID relop XA: nyi", 3 );
+      addComment( "FloatID relop XA: TOC (nyi)" );
+
+    }
+  else if( isFloatIMM($LHS.name) && isA($RHS.name) )
+    {
+      addCompilerMessage( "FloatIMM relop A: nyi", 3 );
+      addComment( "FloatIMM relop A: TOC (nyi)" );
+    }
+  else if( isFloatIMM($LHS.name) && isFAC($RHS.name) )
+    {
+      addCompilerMessage( "FloatIMM relop FAC: nyi", 3 );
+      addComment( "FloatIMM relop FAC: TOC (nyi)" );
+    }
+  else if( isFloatIMM($LHS.name) && isFloatID($RHS.name)) 
+    {
+      // TODO: This ALSO ises ARG... wutup wit dat?!
+      addComment( "FloatIMM relop FloatID: TOC" );
+		  
+      // FP Operations
+      inlineFloat( $LHS.name, 105);
+      current_variable_base_address = getAddressOf($RHS.name);
+      string tmp_name = getNameOf(current_variable_base_address);
+
+      addAsm( str_LDA + "#<" + getNameOf(getAddressOf($RHS.name)), 2, false );
+      addAsm( str_LDY + "#>" + getNameOf(getAddressOf($RHS.name)), 2, false );
+      addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
+      cmpFACMEM( "#$69", "#$00" );
+
+      // is this needed?
+      addAsm( str_TXA, 1, false );
+      addAsm( str_LDA + "#$00", 2, false );
+      addAsm( str_PHA, 1, false );
+      addAsm( str_TAX, 1, false );
+      addAsm( str_PHA, 1, false );
+      addAsm( str_JSR + "SIGNEDCMP", 3, false );
+      addAsm( str_PLP );
+
+    }
+  else if( isFloatIMM($LHS.name) && isFloatIMM($RHS.name) )
+    {
+      addCompilerMessage( "FloatIMM relop FloatIMM: nyi", 3 );
+      addComment( "FloatIMM relop FloatIMM: TOC (nyi)" );
+    }    
+  else if( isFloatIMM($LHS.name) && isIntID($RHS.name) )
+    {
+      addCompilerMessage( "FloatIMM relop IntID: nyi", 3 );
+      addComment( "FloatIMM relop IntID: TOC (nyi)" );
+    }    
+  else if( isFloatIMM($LHS.name) && isIntIMM($RHS.name) )
+    {
+      addCompilerMessage( "FloatIMM relop IntIMM: nyi", 3 );
+      addComment( "FloatIMM relop IntIMM: TOC (nyi)" );
+    }    
+  else if( isFloatIMM($LHS.name) && isUintID($RHS.name) )
+    {
+      addCompilerMessage( "FloatIMM relop UintID: nyi", 3 );
+      addComment( "FloatIMM relop UintID: TOC (nyi)" );
+    }    
+  else if( isFloatIMM($LHS.name) && isUintIMM($RHS.name) )
+    {
+      addCompilerMessage( "FloatIMM relop UintIMM: nyi", 3 );
+      addComment( "FloatIMM relop UintIMM: TOC (nyi)" );
+    }    
+  else if( isFloatIMM($LHS.name) && isWordID($RHS.name) )
+    {
+      addCompilerMessage( "FloatIMM relop WordID: nyi", 3 );
+      addComment( "FloatIMM relop WordID: TOC (nyi)" );
+    }    
+  else if( isFloatIMM($LHS.name) && isWordIMM($RHS.name) )
+    {
+      addCompilerMessage( "FloatIMM relop WordIMM: nyi", 3 );
+      addComment( "FloatIMM relop WordIMM: TOC (nyi)" );
+    } 
+  else if( isFloatIMM($LHS.name) && isXA($RHS.name) )
+    {
+      addCompilerMessage( "FloatIMM relop XA: nyi", 3 );
+      addComment( "FloatIMM relop XA: TOC (nyi)" );
+    }
+  else if( isIntID($LHS.name) && isA($RHS.name) )  // mismatch
+    {
+      // 2024 05 10 - mkpellegrino
+      addCompilerMessage( "IntID relop A: may produce unexpected results", 1 );
+      addComment( "IntID relop A: TOC" );
+      addAsm( str_PHA );
+      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
+      addAsm( str_PHA );
+      addAsm( str_JSR + "SIGNEDCMP", 3, false );
+      addAsm( str_PLP );
+    }
+  else if( isIntID($LHS.name) && isFAC($RHS.name) )
+    {
+
+    }
+  else if( isIntID($LHS.name) && isFloatID($RHS.name) )
+    {
+
+    }
+  else if( isIntID($LHS.name) && isFloatIMM($RHS.name) )
+    {
+
+    }
+  else if( isIntID($LHS.name) && isIntID($RHS.name) )
+    {
+      addComment( "IntID relop IntID: TOC" );
+
+      signed_comparison_is_needed = true;
+      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
+      addAsm( str_PHA );
+      addAsm( str_LDA + getNameOf(getAddressOf($RHS.name)), 3, false );
+      addAsm( str_PHA );
+      addAsm( str_JSR + "SIGNEDCMP", 3, false );
+      addAsm( str_PLP );
+    }
+  else if( isIntID($LHS.name) && isIntIMM($RHS.name) )
+    {
+      addComment( "IntID relop IntIMM: TOC" );
+
+      signed_comparison_is_needed = true;
+      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
+
+      addAsm( str_PHA );
+      
+      int i = atoi(stripFirst($RHS.name).c_str() );
+      if( i < 0 )
+	{
+	  i = twos_complement( i );
+	}
+      
+      addAsm( str_LDA + "#$" + toHex(i), 2, false );
+      addAsm( str_PHA );
+      addAsm( str_JSR + "SIGNEDCMP", 3, false );
+      addAsm( str_PLP );
+    }
+  else if( isIntID($LHS.name) && isUintID($RHS.name) )
+    {
+
+    }
+  else if( isIntID($LHS.name) && isUintIMM($RHS.name) )
+    {
+      addCompilerMessage( "IntID relop UintIMM (type mismatch)", 1 );
+      addComment( "IntID relop UIntIMM: TOC" );
+
+      if( atoi($RHS.name) > 127 || atoi($RHS.name) < -127 )
+	addCompilerMessage( "value out of range for INT comparison", 3 );
+	
+      signed_comparison_is_needed = true;
+      
+      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
+      addAsm( str_PHA );
+      addAsm( str_LDA + "#$" + toHex( atoi(stripFirst($RHS.name).c_str() )), 2, false );
+      addAsm( str_PHA );
+      addAsm( str_JSR + "SIGNEDCMP", 3, false );
+      addAsm( str_PLP );
+    }
+  else if( isIntID($LHS.name) && isWordID($RHS.name) )
+    {
+
+    }
+  else if( isIntID($LHS.name) && isWordIMM($RHS.name) )
+    {
+
+    }
+  else if( isIntID($LHS.name) && isXA($RHS.name) )
+    {
+
+    }
+  else if( isIntIMM($LHS.name) && isA($RHS.name) )
+    {
+
+    }
+  else if( isIntIMM($LHS.name) && isFAC($RHS.name) )
+    {
+
+    }
+  else if( isIntIMM($LHS.name) && isFloatID($RHS.name) )
+    {
+
+    }
+  else if( isIntIMM($LHS.name) && isFloatIMM($RHS.name) )
+    {
+
+    }
+  else if( isIntIMM($LHS.name) && isIntID($RHS.name) )
+    {
+
+      // TODO: OP1 is ALWAYS NEGATIVE!
+      addCompilerMessage( "IntIMM relop IntID: User experience may vary", 1 );
+      addComment( "IntIMM relop IntID: TOC");
+
+      signed_comparison_is_needed = true;
+      int OP1 = atoi(stripFirst($LHS.name).c_str());
+      if( OP1 < 0 )
+	{
+	  OP1 = twos_complement( OP1 );
+	}
+      addAsm( str_LDA + "#$" + toHex( OP1 ), 2, false );
+      addAsm( str_PHA );
+      addAsm( str_LDA + getNameOf(getAddressOf($RHS.name)), 3, false );
+      addAsm( str_PHA );
+      addAsm( str_JSR + "SIGNEDCMP", 3, false );
+      addAsm( str_PLP );
+    }
+  else if( isIntIMM($LHS.name) && isIntIMM($RHS.name) )
+    {
+      // TODO: OP1 is ALWAYS NEGATIVE!
+      addComment( "IntIMM relop IntIMM: TOC");
+      addCompilerMessage( "comparing 2 Immediate values... just hardcode it!", 1 );
+      signed_comparison_is_needed = true;
+      int OP1 = atoi(stripFirst($LHS.name).c_str());
+      if( OP1 < 0 )
+	{
+	  OP1 = twos_complement( OP1 );
+	}
+      int OP2 = atoi(stripFirst($RHS.name).c_str());
+      if( OP2 < 0 )
+	{
+	  OP2 = twos_complement( OP2 );
+	}
+      addAsm( str_LDA + "#$" + toHex( OP1 ), 2, false );
+      addAsm( str_PHA );
+      addAsm( str_LDA + "#$" + toHex( OP2 ), 2, false );
+      addAsm( str_PHA );
+      addAsm( str_JSR + "SIGNEDCMP", 3, false );
+      addAsm( str_PLP );
+    }
+
+  else if( isIntIMM($LHS.name) && isUintID($RHS.name) )
+    {
+      // TODO: OP1 is ALWAYS NEGATIVE!
+      //       OP2 is ALWAYS POSITIVE!
+      addCompilerMessage( "IntIMM relop UintID: symptoms may vary", 1 );
+
+      addComment( "IntIMM relop UintID: TOC" );
+
+      unsigned_signed_cmp_is_needed = true;
+
+      int i = atoi(stripFirst($LHS.name).c_str());
+      if( i < 0 )
+	{
+	  i = twos_complement(i);
+	}
+      addAsm( str_LDA + "#$" + toHex(i), 3, false );
+      addAsm( str_PHA );
+      addAsm( str_LDA + getNameOf(getAddressOf($RHS.name)), 3, false );
+      addAsm( str_PHA );
+      addAsm( str_JSR + "USCMP" + commentmarker + "unsigned comparison", 3, false );
+      addAsm( str_PLP );
+    }
+
+  else if( isIntIMM($LHS.name) && isUintIMM($RHS.name) )
+    {
+
+    }
+  else if( isIntIMM($LHS.name) && isWordID($RHS.name) )
+    {
+
+    }
+  else if( isIntIMM($LHS.name) && isWordIMM($RHS.name) )
+    {
+
+    }
+  else if( isIntIMM($LHS.name) && isXA($RHS.name) )
+    {
+
+    }
+  else if( isUintID($LHS.name) && isA($RHS.name) )
+    {
+      addComment( "UintID relop A: TOC" );
+      if( string($OP.name) == string("<") )
+	{
+	  addCompilerMessage( "UintID relop A: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, ">" );
+	}
+      else if( string($OP.name) == string(">") )
+	{
+	  addCompilerMessage( "UintID relop A: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, "<" );
+	}
+      else if( string($OP.name) == string(">=") )
+	{
+	  addCompilerMessage( "UintID relop A: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, "<=" );
+	}
+      else if( string($OP.name) == string("<=") )
+	{
+	  addCompilerMessage( "UintID relop A: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, ">=" );
+	}
+      addAsm( str_CMP + getNameOf( getAddressOf($LHS.name)), 3, false );
+    }
+  else if( isUintID($LHS.name) && isFAC($RHS.name) )
+    {
+
+    }
+  else if( isUintID($LHS.name) && isFloatID($RHS.name) )
+    {
+
+    }
+  else if( isUintID($LHS.name) && isFloatIMM($RHS.name) )
+    {
+
+    }
+
+  else if( isUintID($LHS.name) && isIntID($RHS.name))  // mismatch
+    {
+      addCompilerMessage( "UintID relop IntID (type mismatch)", 1 );
+      addComment( "UintID relop IntID: TOC" );
+      // if the address of $1 or $3 < 256... change instr size to 2
+      unsigned_signed_cmp_is_needed = true;
+      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
+      addAsm( str_PHA );
+      addAsm( str_LDA + getNameOf(getAddressOf($RHS.name)), 3, false );
+      addAsm( str_PHA );
+      addAsm( str_JSR + "USCMP" + commentmarker + "unsigned comparison", 3, false );
+      addAsm( str_PLP );
+    }
+  else if( isUintID($LHS.name) && isIntIMM($RHS.name) )  // mismatch
+    {
+
+      // TODO: OP2 is ALWAYS NEGATIVE!
+      addCompilerMessage( "UintID relop IntIMM (type mismatch)", 1 );
+      addComment( "UintID relop IntIMM: TOC" );
+
+      unsigned_signed_cmp_is_needed = true;
+
+      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
+      addAsm( str_PHA );
+      int i = atoi(stripFirst($RHS.name).c_str());
+      if( i < 0 )
+	{
+	  i = twos_complement(i);
+	}
+      addAsm( str_LDA + "#$" + toHex(i), 3, false );
+      addAsm( str_PHA );
+      addAsm( str_JSR + "USCMP" + commentmarker + "unsigned comparison", 3, false );
+      addAsm( str_PLP );
+    }
+
+  else if( isUintID($LHS.name) && isUintID($RHS.name))
+    {
+      addComment( "UintID relop UintID: TOC" );
+      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
+      addAsm( str_CMP + getNameOf(getAddressOf($RHS.name)), 3, false );
+    }
+  else if( isUintID($LHS.name) && isUintIMM($RHS.name))
+    {
+      int tmp_addr = getAddressOf($LHS.name);
+      string tmp_name = getNameOf(tmp_addr);
+      addComment( "UintID relop UintIMM: TOC" );
+      // Done
+      addAsm( str_LDA + tmp_name, 3, false );
+      addAsm( str_CMP + "#$"  + toHex( atoi(stripFirst($RHS.name).c_str() )), 2, false );
+    }
+
+  else if( isUintID($LHS.name) && isWordID($RHS.name) )
+    {
+
+    }
+  else if( isUintID($LHS.name) && isWordIMM($RHS.name) )
+    {
+
+    }
+  else if( isUintID($LHS.name) && isXA($RHS.name) )
+    {
+
+    }
+    
+  else if( isUintIMM($LHS.name) && isA($RHS.name) )
+    {
+
+    }
+  else if( isUintIMM($LHS.name) && isFAC($RHS.name) )
+    {
+
+    }
+  else if( isUintIMM($LHS.name) && isFloatID($RHS.name) )
+    {
+
+    }
+  else if( isUintIMM($LHS.name) && isFloatIMM($RHS.name) )
+    {
+
+    }
+  else if( isUintIMM($LHS.name) && isIntID($RHS.name) )  // mismatch
+    {
+      addCompilerMessage( "UintIMM relop IntID (type mismatch)", 1 );
+      addComment( "UintIMM relop IntID: TOC" );
+
+      unsigned_signed_cmp_is_needed = true;
+      int i = atoi(stripFirst($LHS.name).c_str());
+      if( i > 255 ) addCompilerMessage( "uint out of range (0-255)", 2 );
+      addAsm( str_LDA + "#$" + toHex(i), 3, false );
+      addAsm( str_PHA );
+      addAsm( str_LDA + $RHS.name, 3, false );
+      addAsm( str_PHA );
+      addAsm( str_JSR + "USCMP" + commentmarker + "unsigned comparison", 3, false );
+      addAsm( str_PLP );
+    }
+  else if( isUintIMM($LHS.name) && isIntIMM($RHS.name) )
+    {
+
+    }
+  else if( isUintIMM($LHS.name) && isUintID($RHS.name))
+    {
+      addCompilerMessage( "UintIMM relop UintID (type mismatch)", 1 );
+      addComment( "UintIMM relop UintID: TOC");
+      addAsm( str_LDA + "#$" + toHex( atoi(stripFirst($LHS.name).c_str() )), 2, false );
+      addAsm( str_CMP + getNameOf(getAddressOf($RHS.name)), 3, false );
+    }
+  else if( isUintIMM($LHS.name) && isUintIMM($RHS.name))
+    {
+      addComment( "UintIMM relop UintIMM: TOC");
+      addCompilerMessage( "Comparing of 2 Immediate values (just hard code it... you nit!)", 1 );
+      addAsm( str_LDA + "#$" + toHex( atoi(stripFirst($LHS.name).c_str() )), 2, false );
+      addAsm( str_CMP + "#$" + toHex( atoi(stripFirst($RHS.name).c_str() )), 2, false );
+    }
+  else if( isUintIMM($LHS.name) && isWordID($RHS.name) )
+    {
+
+    }
+  else if( isUintIMM($LHS.name) && isWordIMM($RHS.name) )
+    {
+
+    }
+  else if( isUintIMM($LHS.name) && isXA($RHS.name) )
+    {
+
+    }
+  else if( isWordID($LHS.name) && isA($RHS.name) )
+    {
+
+    }
+  else if( isWordID($LHS.name) && isFAC($RHS.name) )
+    {
+
+    }
+  else if( isWordID($LHS.name) && isFloatID($RHS.name) )
+    {
+
+    }
+  else if( isWordID($LHS.name) && isFloatIMM($RHS.name) )
+    {
+
+    }
+  else if( isWordID($LHS.name) && isIntID($RHS.name) )
+    {
+
+    }
+  else if( isWordID($LHS.name) && isIntIMM($RHS.name) )
+    {
+
+    }
+  else if( isWordID($LHS.name) && isUintID($RHS.name) )
+    {
+      addCompilerMessage( "WordID relop UintID (type mismatch)", 1 );
+      addComment( "WordID relop UintID: TOC");
+
+      addAsm( str_LDX + "#$01", 2, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)) + ",X",3, false ); 
+      addAsm( str_CMP + "#$00", 2, false );
+      addDebugComment( "if A is NOT 0, then WORD > UINT" );
       addAsm( str_BNE + "!+", 2, false );
-      addAsm( str_TYA );
-      addAsm( str_CMP + "#$" + toHex( tmp_L ), 2, false );
+      addCompilerMessage( "If address of OP1 or OP2 is in Zero Page, instruction size may vary", 0);
+      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
+      addAsm( str_CMP + getNameOf(getAddressOf($RHS.name)), 3, false );
       addAsm( "!:", 0, true );
+    }
+  else if( isWordID($LHS.name) && isUintIMM($RHS.name) )
+    {
+
+    }
+  else if( isWordID($LHS.name) && isWordID($RHS.name))
+    {
+      addComment( "WordID relop WordID: TOC" );
+      addAsm(str_LDA + getNameOf(getAddressOf($LHS.name)) + " +1", 3, false );
+      addAsm(str_CMP + getNameOf(getAddressOf($RHS.name)) + " +1", 3, false );
+      addAsm(str_BNE + "!+", 2, false );
+      addAsm(str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
+      addAsm(str_CMP + getNameOf(getAddressOf($RHS.name)), 3, false );
+      addAsm( "!:", 0, true );
+    }
+  else if( isWordID($LHS.name) && isWordIMM($RHS.name))
+    {
+      addComment( "WordID relop WordIMM: TOC" );
+      //addComment( getNameOf(getAddressOf($LHS.name)) + " relop " + $RHS.name );
+      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)) + " +1", 3, false );
+      addAsm( str_CMP + "#$" + toHex(get_word_H(atoi(stripFirst($RHS.name).c_str()))), 2, false );
+      addAsm( str_BNE + "!+", 2, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
+      addAsm( str_CMP + "#$" + toHex(get_word_L(atoi(stripFirst($RHS.name).c_str()))), 2, false );
+      addAsm( "!:", 0, true );
+    }
+  else if( isWordID($LHS.name) && isXA($RHS.name))  // mismatch
+    {
+      addComment( "WordID relop XA: TOC" );
+      if( arg_show_opt ) addCompilerMessage("Swapping WordID and XA in comparison would be more efficient", 1);
+      int tmp_v = getAddressOf( $LHS.name );
+      addAsm( str_STA + "!++", 3, false );
+      addAsm( str_STX + "!+", 3, false );
+      addAsm( str_LDX + getNameOf( tmp_v ) + " +1", 3, false );
+      // CPX #$00
+      addAsm( str_BYTE + "$E0" + commentmarker + "<-- CPX Immediate", 1, false );
+      addAsm( "!:\t" + str_BYTE + "$00", 1, true );
+      addAsm( str_BNE + "!++", 2, false );
+      addAsm( str_LDA + getNameOf( tmp_v ), 3, false );
+      // CMP #$00
+      addAsm( str_BYTE + "$C9" + commentmarker + "<-- CMP Immediate", 1, false );
+      addAsm( "!:\t" + str_BYTE + "$00", 1, true );
+      addAsm( "!:", 0, true );
+    }
+    
+  else if( isWordIMM($LHS.name) && isA($RHS.name) )
+    {
+      addComment( "WordIMM relop A: TOC (nyi)" );
+    }
+  else if( isWordIMM($LHS.name) && isFAC($RHS.name) )
+    {
+
+    }
+  else if( isWordIMM($LHS.name) && isFloatID($RHS.name) )
+    {
+
+    }
+  else if( isWordIMM($LHS.name) && isFloatIMM($RHS.name) )
+    {
+
+    }
+  else if( isWordIMM($LHS.name) && isIntID($RHS.name) )
+    {
+
+    }
+  else if( isWordIMM($LHS.name) && isIntIMM($RHS.name) )
+    {
+
+    }
+  else if( isWordIMM($LHS.name) && isUintID($RHS.name) )
+    {
+
+    }
+  else if( isWordIMM($LHS.name) && isUintIMM($RHS.name) )
+    {
+
+    }
+  else if( isWordIMM($LHS.name) && isWordID($RHS.name) )
+    {
+
+    }
+  else if( isWordIMM($LHS.name) && isWordIMM($RHS.name) )
+    {
+
+    }
+  else if( isWordIMM($LHS.name) && isXA($RHS.name) )
+    {
+
+    }
+
+  else if( isXA($LHS.name) && isA($RHS.name) )
+    {
+      addCompilerMessage( "XA relop A: testing", 1 );
+      addComment( "XA relop A: TOC" );
+      addAsm( str_STA + "$04", 2, false );
+      addAsm( str_LDX + "#$00", 2, false );
+      addAsm( str_STX + "$05", 2, false );
+
+      addAsm( str_PLA, 1, false );
+      addAsm( str_STA + "$03", 2, false );
+      addAsm( str_PLA, 1, false );
+      addAsm( str_STA + "$02", 2, false );
+
+      addAsm( str_LDA + "$03", 2, false );
+      addAsm( str_CMP + "$05", 2, false );
+      addAsm( str_BNE + "!+", 2, false );
+      addAsm( str_LDA + "$02", 2, false );
+      addAsm( str_CMP + "$04", 2, false );
+      addAsm( "!:", 0, true );
+    }
+  else if( isXA($LHS.name) && isFAC($RHS.name) )
+    {
+
+    }
+  else if( isXA($LHS.name) && isFloatID($RHS.name) )
+    {
+
+    }
+  else if( isXA($LHS.name) && isFloatIMM($RHS.name) )
+    {
+
+    }
+  else if( isXA($LHS.name) && isIntID($RHS.name) )
+    {
+
+    }
+  else if( isXA($LHS.name) && isIntIMM($RHS.name) )
+    {
+
+    }
+  else if( isXA($LHS.name) && isUintID($RHS.name) )
+    {
+
     }
   else if( isXA($LHS.name) && isUintIMM($RHS.name))  // mismatch
     {
@@ -7161,185 +7998,19 @@ condition: expression[LHS]
       addAsm( str_CMP + getNameOf( tmp_v ), 3, false );
       addAsm( "!:", 0, true );
     }
-  else if( isWordID($LHS.name) && isXA($RHS.name))  // mismatch
+
+  else if( isXA($LHS.name) && isWordIMM($RHS.name))  // mismatch
     {
-      addComment( "WordID relop XA: TOC" );
-      if( arg_show_opt ) addCompilerMessage("Swapping WordID and XA in comparison would be more efficient", 1);
-      int tmp_v = getAddressOf( $LHS.name );
-      addAsm( str_STA + "!++", 3, false );
-      addAsm( str_STX + "!+", 3, false );
-      addAsm( str_LDX + getNameOf( tmp_v ) + " +1", 3, false );
-      // CPX #$00
-      addAsm( str_BYTE + "$E0" + commentmarker + "<-- CPX Immediate", 1, false );
-      addAsm( "!:\t" + str_BYTE + "$00", 1, true );
-      addAsm( str_BNE + "!++", 2, false );
-      addAsm( str_LDA + getNameOf( tmp_v ), 3, false );
-      // CMP #$00
-      addAsm( str_BYTE + "$C9" + commentmarker + "<-- CMP Immediate", 1, false );
-      addAsm( "!:\t" + str_BYTE + "$00", 1, true );
-      addAsm( "!:", 0, true );
-    }
-  else if( isA($LHS.name) && isWordID($RHS.name))  // mismatch
-    {
-      addComment( "A relop WordID: TOC" );
-      int tmp_v = getAddressOf( $RHS.name );
+      addComment( "XA relop WordIMM: TOC" );
+      int tmp_v = atoi(stripFirst($RHS.name).c_str());
+      int tmp_L = get_word_L(tmp_v);
+      int tmp_H = get_word_H(tmp_v);
       addAsm( str_TAY );
-      addAsm( str_LDA + "#$00", 2, false );
-      addAsm( str_CMP + getNameOf( tmp_v ) + " +1", 3, false );
+      addAsm( str_TXA );
+      addAsm( str_CMP + "#$" + toHex( tmp_H ), 2, false ); 
       addAsm( str_BNE + "!+", 2, false );
       addAsm( str_TYA );
-      addAsm( str_CMP + getNameOf( tmp_v ), 3, false );
-      addAsm( "!:", 0, true );
-    }
-  else if( isA($LHS.name) && isUintID($RHS.name))
-    {
-      addComment( "A relop UintID: TOC" );
-      int tmp_v = getAddressOf($RHS.name);
-      addAsm( str_CMP + getNameOf( tmp_v ), 3, false );
-    }
-  else if( isA($LHS.name) && isUintIMM($RHS.name))
-    {
-      addComment( "A relop UintIMM: TOC" );
-      int tmp_v = atoi(stripFirst($RHS.name).c_str());
-      addAsm( str_CMP + "#$" + toHex( tmp_v ), 2, false );
-    }
-  else if( isA($LHS.name) && isIntIMM($RHS.name))  // mismatch
-    {
-      addCompilerMessage( "comparing A with IntIMM (type mismatch)", 1 );
-      addComment( "A relop IntIMM: TOC" );
-      int tmp_v = atoi(stripFirst($RHS.name).c_str());
-
-      if( tmp_v < 0 )
-	{
-	  addDebugComment( "Value is negative (so it's in two's complement)" );
-	  tmp_v = twos_complement(tmp_v);
-	}
-      
-      addAsm( str_CMP + "#$" + toHex( tmp_v ), 2, false );
-    }
-  else if( isUintID($LHS.name) && isIntID($RHS.name))  // mismatch
-    {
-      addCompilerMessage( "UintID relop IntID (type mismatch)", 1 );
-      addComment( "UintID relop IntID: TOC" );
-      // if the address of $1 or $3 < 256... change instr size to 2
-      unsigned_signed_cmp_is_needed = true;
-      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
-      addAsm( str_PHA );
-      addAsm( str_LDA + getNameOf(getAddressOf($RHS.name)), 3, false );
-      addAsm( str_PHA );
-      addAsm( str_JSR + "USCMP" + commentmarker + "unsigned comparison", 3, false );
-      addAsm( str_PLP );
-    }
-  else if( isUintIMM($LHS.name) && isIntID($RHS.name) )  // mismatch
-    {
-      addCompilerMessage( "UintIMM relop IntID (type mismatch)", 1 );
-      addComment( "UintIMM relop IntID: TOC" );
-
-      unsigned_signed_cmp_is_needed = true;
-      int i = atoi(stripFirst($LHS.name).c_str());
-      if( i > 255 ) addCompilerMessage( "uint out of range (0-255)", 2 );
-      addAsm( str_LDA + "#$" + toHex(i), 3, false );
-      addAsm( str_PHA );
-      addAsm( str_LDA + $RHS.name, 3, false );
-      addAsm( str_PHA );
-      addAsm( str_JSR + "USCMP" + commentmarker + "unsigned comparison", 3, false );
-      addAsm( str_PLP );
-    }
-  else if( isUintID($LHS.name) && isIntIMM($RHS.name) )  // mismatch
-    {
-      addCompilerMessage( "UintID relop IntIMM (type mismatch)", 1 );
-      addComment( "UintID relop IntIMM: TOC" );
-
-      unsigned_signed_cmp_is_needed = true;
-
-      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
-      addAsm( str_PHA );
-      int i = atoi(stripFirst($RHS.name).c_str());
-      if( i < 0 )
-	{
-	  i = twos_complement(i);
-	}
-      addAsm( str_LDA + "#$" + toHex(i), 3, false );
-      addAsm( str_PHA );
-      addAsm( str_JSR + "USCMP" + commentmarker + "unsigned comparison", 3, false );
-      addAsm( str_PLP );
-    }
-  else if( isIntIMM($LHS.name) && isUintID($RHS.name) )  // mismatch
-    {
-      addCompilerMessage( "IntIMM relop UIntID (type mismatch)", 1 );
-
-      addComment( "IntIMM relop UIntID: TOC" );
-
-      unsigned_signed_cmp_is_needed = true;
-
-      int i = atoi(stripFirst($LHS.name).c_str());
-      if( i < 0 )
-	{
-	  i = twos_complement(i);
-	}
-      addAsm( str_LDA + "#$" + toHex(i), 3, false );
-      addAsm( str_PHA );
-      addAsm( str_LDA + getNameOf(getAddressOf($RHS.name)), 3, false );
-      addAsm( str_PHA );
-      addAsm( str_JSR + "USCMP" + commentmarker + "unsigned comparison", 3, false );
-      addAsm( str_PLP );
-    }
-  else if( isUintID($LHS.name) && isA($RHS.name) )
-    {
-      addComment( "UintID relop A: TOC" );
-      addDebugComment( "Swap A and UintID before comparison (also preserve $02)" );
-      addAsm( str_TAX );
-      addAsm( str_LDA + "$02", 2, false );
-      addAsm( str_TAY );
-      addAsm( str_STX + "$02", 2, false );
-      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
-      addAsm( str_CMP + "$02", 2, false );
-      addAsm( str_STY + "$02", 2, false );
-    }
-  else if( isIntID($LHS.name) && isA($RHS.name) )  // mismatch
-    {
-      // 2024 05 10 - mkpellegrino
-      addCompilerMessage( "IntID relop A (type mismatch)", 1 );
-      addComment( "IntID relop A: TOC" );
-      addAsm( str_PHA );
-      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
-      addAsm( str_PHA );
-      addAsm( str_JSR + "SIGNEDCMP", 3, false );
-      addAsm( str_PLP );
-    }
-  else if( isA($LHS.name) && isXA($RHS.name) )
-    {
-      addCompilerMessage( "A relop XA: testing", 1 );
-      addComment( "A relop XA: TOC" );
-      addAsm( str_STA + "$04", 2, false );
-      addAsm( str_STX + "$05", 2, false );
-      addAsm( str_PLA, 1, false );
-      addAsm( str_STA + "$02", 2, false );
-      addAsm( str_LDA + "#$00", 2, false );
-      addAsm( str_CMP + "$05", 2, false );
-      addAsm( str_BNE + "!+", 2, false );
-      addAsm( str_LDA + "$02", 2, false );
-      addAsm( str_CMP + "$04", 2, false );
-      addAsm( "!:", 0, true );
-    }
-  else if( isXA($LHS.name) && isA($RHS.name) )
-    {
-      addCompilerMessage( "XA relop A: testing", 1 );
-      addComment( "XA relop A: TOC" );
-      addAsm( str_STA + "$04", 2, false );
-      addAsm( str_LDX + "#$00", 2, false );
-      addAsm( str_STX + "$05", 2, false );
-
-      addAsm( str_PLA, 1, false );
-      addAsm( str_STA + "$03", 2, false );
-      addAsm( str_PLA, 1, false );
-      addAsm( str_STA + "$02", 2, false );
-
-      addAsm( str_LDA + "$03", 2, false );
-      addAsm( str_CMP + "$05", 2, false );
-      addAsm( str_BNE + "!+", 2, false );
-      addAsm( str_LDA + "$02", 2, false );
-      addAsm( str_CMP + "$04", 2, false );
+      addAsm( str_CMP + "#$" + toHex( tmp_L ), 2, false );
       addAsm( "!:", 0, true );
     }
   else if( isXA($LHS.name) && isXA($RHS.name) )
@@ -7361,200 +8032,6 @@ condition: expression[LHS]
       addAsm( str_CMP + "$04", 2, false );
       addAsm( "!:", 0, true );
       
-    }
-  else if( isA($LHS.name) && isA($RHS.name) )
-    {
-      addCompilerMessage( "A relop A: testing", 1 );
-      addComment( "A relop A: TOC" );
-      addAsm( str_STA + "$02", 2, false );
-      addAsm( str_PLA, 1, false );
-      addAsm( str_CMP + "$02", 2, false );      
-    }
-  else if( isUintID($LHS.name) && isUintID($RHS.name))
-    {
-      addComment("UintID relop UintID: TOC");
-      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
-      addAsm( str_CMP + getNameOf(getAddressOf($RHS.name)), 3, false );
-    }
-  else if( isUintID($LHS.name) && isUintIMM($RHS.name))
-    {
-      int tmp_addr = getAddressOf($LHS.name);
-      string tmp_name = getNameOf(tmp_addr);
-      addComment("UintID relop UintIMM: TOC");
-      // Done
-      addAsm( str_LDA + tmp_name, 3, false );
-      addAsm( str_CMP + "#$"  + toHex( atoi(stripFirst($RHS.name).c_str() )), 2, false );
-    }
-  else if( isUintIMM($LHS.name) && isUintID($RHS.name))
-    {
-      addCompilerMessage( "UintIMM relop UintID (type mismatch)", 1 );
-      addComment("UintIMM relop UintID: TOC");
-      addAsm( str_LDA + "#$" + toHex( atoi(stripFirst($LHS.name).c_str() )), 2, false );
-      addAsm( str_CMP + getNameOf(getAddressOf($RHS.name)), 3, false );
-    }
-  else if( isUintIMM($LHS.name) && isUintIMM($RHS.name))
-    {
-      addComment("UintIMM relop UintIMM: TOC");
-      addCompilerMessage( "Comparing of 2 Immediate values (just hard code it)", 1 );
-      addAsm( str_LDA + "#$" + toHex( atoi(stripFirst($LHS.name).c_str() )), 2, false );
-      addAsm( str_CMP + "#$" + toHex( atoi(stripFirst($RHS.name).c_str() )), 2, false );
-    }
-  else if( isIntID($LHS.name) && isIntID($RHS.name) )
-    {
-      addComment("IntID relop IntID: TOC");
-
-      signed_comparison_is_needed = true;
-      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
-      addAsm( str_PHA );
-      addAsm( str_LDA + getNameOf(getAddressOf($RHS.name)), 3, false );
-      addAsm( str_PHA );
-      addAsm( str_JSR + "SIGNEDCMP", 3, false );
-      addAsm( str_PLP );
-    }
-  else if( isIntID($LHS.name) && isIntIMM($RHS.name) )
-    {
-      addComment("IntID relop IntIMM: TOC");
-
-      signed_comparison_is_needed = true;
-      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
-
-      addAsm( str_PHA );
-      
-      int i = atoi(stripFirst($RHS.name).c_str() );
-      if( i < 0 )
-	{
-	  i = twos_complement( i );
-	}
-      
-      addAsm( str_LDA + "#$" + toHex(i), 2, false );
-      addAsm( str_PHA );
-      addAsm( str_JSR + "SIGNEDCMP", 3, false );
-      addAsm( str_PLP );
-    }
-  else if( isIntID($LHS.name) && isUintIMM($RHS.name) )
-    {
-      addCompilerMessage( "IntID relop UintIMM (type mismatch)", 1 );
-      addComment("IntID relop UIntIMM: TOC");
-
-      if( atoi($RHS.name) > 127 || atoi($RHS.name) < -127 )
-	addCompilerMessage( "value out of range for INT comparison", 3 );
-	
-      signed_comparison_is_needed = true;
-      
-      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
-      addAsm( str_PHA );
-      addAsm( str_LDA + "#$" + toHex( atoi(stripFirst($RHS.name).c_str() )), 2, false );
-      addAsm( str_PHA );
-      addAsm( str_JSR + "SIGNEDCMP", 3, false );
-      addAsm( str_PLP );
-    }
-  else if( isIntIMM($LHS.name) && isIntID($RHS.name) )
-    {
-      addCompilerMessage( "IntIMM relop IntID (type mismatch)", 1 );
-      addComment("IntIMM relop IntID: TOC");
-
-      signed_comparison_is_needed = true;
-      int OP1 = atoi(stripFirst($LHS.name).c_str());
-      if( OP1 < 0 )
-	{
-	  OP1 = twos_complement( OP1 );
-	}
-      addAsm( str_LDA + "#$" + toHex( OP1 ), 2, false );
-      addAsm( str_PHA );
-      addAsm( str_LDA + getNameOf(getAddressOf($RHS.name)), 3, false );
-      addAsm( str_PHA );
-      addAsm( str_JSR + "SIGNEDCMP", 3, false );
-      addAsm( str_PLP );
-    }
-  else if( isIntIMM($LHS.name) && isIntIMM($RHS.name) )
-    {
-      addComment("IntIMM relop IntIMM: TOC");
-      addCompilerMessage( "comparing 2 Immediate values... just hardcode it!", 1 );
-      signed_comparison_is_needed = true;
-      int OP1 = atoi(stripFirst($LHS.name).c_str());
-      if( OP1 < 0 )
-	{
-	  OP1 = twos_complement( OP1 );
-	}
-      int OP2 = atoi(stripFirst($RHS.name).c_str());
-      if( OP2 < 0 )
-	{
-	  OP2 = twos_complement( OP2 );
-	}
-      addAsm( str_LDA + "#$" + toHex( OP1 ), 2, false );
-      addAsm( str_PHA );
-      addAsm( str_LDA + "#$" + toHex( OP2 ), 2, false );
-      addAsm( str_PHA );
-      addAsm( str_JSR + "SIGNEDCMP", 3, false );
-      addAsm( str_PLP );
-    }
-  else if( isFloatID($LHS.name) && isFloatIMM($RHS.name))
-    {
-      addComment("FloatID relop FloatIMM: TOC");
-      inlineFloat($RHS.name, 105 );
-      addAsm( str_LDA + "#<" + getNameOf(getAddressOf($LHS.name)), 2, false ); 
-      addAsm( str_LDY + "#>" + getNameOf(getAddressOf($LHS.name)), 2, false );
-      addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
-      cmpFACMEM( "#$69", "#$00" );
-
-      addAsm( str_PHA );
-      addAsm( str_LDA + "#$00", 2, false );
-      addAsm( str_PHA );
-      signed_comparison_is_needed = true;
-      addAsm( str_JSR + "SIGNEDCMP", 3, false );
-      addAsm( str_PLP );
-    }
-  else if( isWordID($LHS.name) && isUintID($RHS.name) )
-    {
-      addCompilerMessage( "WordID relop UintID (type mismatch)", 1 );
-      addComment("WordID relop UintID: TOC");
-
-      addAsm( str_LDX + "#$01", 2, false );
-      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)) + ",X",3, false ); 
-      addAsm( str_CMP + "#$00", 2, false );
-      addDebugComment( "if A is NOT 0, then WORD > UINT" );
-      addAsm( str_BNE + "!+", 2, false );
-      addCompilerMessage( "If address of OP1 or OP2 is in Zero Page, instruction size may vary", 0);
-      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
-      addAsm( str_CMP + getNameOf(getAddressOf($RHS.name)), 3, false );
-      addAsm( "!:", 0, true );
-    }
-  else if( isFloatID($LHS.name) && isFloatID($RHS.name) )
-    {
-      addComment("FloatID relop FloatID: TOC");
-      addAsm( str_LDA + "#<" + getNameOf(getAddressOf($LHS.name)), 2, false ); 
-      addAsm( str_LDY + "#>" + getNameOf(getAddressOf($LHS.name)), 2, false );
-      addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
-      cmpFACMEM( "#<" + getNameOf(getAddressOf($RHS.name)), "#>" + getNameOf(getAddressOf($RHS.name)));
-
-      // TODO: ? necessary?
-      addAsm( str_PHA );
-      addAsm( str_LDA + "#$00", 2, false );
-      addAsm( str_PHA );
-      signed_comparison_is_needed = true;
-      addAsm( str_JSR + "SIGNEDCMP", 3, false );
-      addAsm( str_PLP );
-    }
-  else if( isWordID($LHS.name) && isWordID($RHS.name))
-    {
-      addComment("WordID relop WordID: TOC");
-      addAsm(str_LDA + getNameOf(getAddressOf($LHS.name)) + " +1", 3, false );
-      addAsm(str_CMP + getNameOf(getAddressOf($RHS.name)) + " +1", 3, false );
-      addAsm(str_BNE + "!+", 2, false );
-      addAsm(str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
-      addAsm(str_CMP + getNameOf(getAddressOf($RHS.name)), 3, false );
-      addAsm( "!:", 0, true );
-    }
-  else if( isWordID($LHS.name) && isWordIMM($RHS.name))
-    {
-      addComment("WordID relop WordIMM: TOC");
-      //addComment( getNameOf(getAddressOf($LHS.name)) + " relop " + $RHS.name );
-      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)) + " +1", 3, false );
-      addAsm( str_CMP + "#$" + toHex(get_word_H(atoi(stripFirst($RHS.name).c_str()))), 2, false );
-      addAsm( str_BNE + "!+", 2, false );
-      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
-      addAsm( str_CMP + "#$" + toHex(get_word_L(atoi(stripFirst($RHS.name).c_str()))), 2, false );
-      addAsm( "!:", 0, true );
     }
   else
     {
@@ -10577,7 +11054,7 @@ statement: datatype ID init
     {
       addComment("WordID = FAC" );
       addAsm( str_JSR + "$B1AA" + commentmarker + "FAC -> WORD (ylo ahi)", 3, false );
-addAsm( str_STY + getNameOf(getAddressOf(_id)), 3, false );
+      addAsm( str_STY + getNameOf(getAddressOf(_id)), 3, false );
       addAsm( str_STA + getNameOf(getAddressOf(_id)) + " +1", 3, false );
     }  
   else if( isFloatID(_id) && isXA(_init) )
@@ -10645,7 +11122,7 @@ addAsm( str_STY + getNameOf(getAddressOf(_id)), 3, false );
     }
   else if( (isUintID(_id)||isIntID(_id)) && isFAC(_init) )
     {
-      addComment("UintID = FAC" );
+      addComment( "UintID = FAC" );
       addCompilerMessage("setting a 1 byte memory location to a Floating Point byte value... losing Sign and Fidelity" ,1);
       addAsm( str_JSR + "$B1AA" + commentmarker + "FAC -> WORD (y-lo a-hi)", 3, false );
       addAsm( str_STY + getNameOf(getAddressOf(_id)), 3, false );
@@ -12130,17 +12607,17 @@ arithmetic[MATHOP] expression[OP2]
 	      addAsm( str_LDX + "#$00", 2, false );
 	      break;
 	    default:
-	     div16_is_needed = true;
-	     addAsm( str_STA + "_DIV16_FB", 3, false );
-	     addAsm( str_LDA + "#$00", 2, false ); 
-	     addAsm( str_STA + "_DIV16_FC", 3, false );
-	     addAsm( str_LDA + "#$" + toHex(tmp_v), 2, false  );
-	     addAsm( str_STA + "_DIV16_FD", 3, false );
-	     addAsm( str_LDA + "#$00", 2, false ); 
-	     addAsm( str_STA + "_DIV16_FE", 3, false );
-	     addAsm( str_JSR + "DIV16", 3, false );
-	     addAsm( str_LDA + "_DIV16_FB", 3, false );
-	     addAsm( str_LDX + "_DIV16_FC", 3, false );
+	      div16_is_needed = true;
+	      addAsm( str_STA + "_DIV16_FB", 3, false );
+	      addAsm( str_LDA + "#$00", 2, false ); 
+	      addAsm( str_STA + "_DIV16_FC", 3, false );
+	      addAsm( str_LDA + "#$" + toHex(tmp_v), 2, false  );
+	      addAsm( str_STA + "_DIV16_FD", 3, false );
+	      addAsm( str_LDA + "#$00", 2, false ); 
+	      addAsm( str_STA + "_DIV16_FE", 3, false );
+	      addAsm( str_JSR + "DIV16", 3, false );
+	      addAsm( str_LDA + "_DIV16_FB", 3, false );
+	      addAsm( str_LDX + "_DIV16_FC", 3, false );
 	    }
 	  strcpy($$.name, "_XA" );
 	}
@@ -25011,7 +25488,7 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
       addAsm( str_LDY + getNameOf(getAddressOf($3.name)), 3, false  );
       addAsm( str_LDA + getNameOf(getAddressOf($3.name)) + " +1", 3, false  );
       addComment( "https://c64os.com/post/floatingpointmath" );
-	addAsm( str_STY + "$63", 2, false );
+      addAsm( str_STY + "$63", 2, false );
       addAsm( str_STA + "$62", 2, false );
       addAsm( str_LDX + "#$90", 2, false );
       addAsm( str_SEC, 1, false );
@@ -25691,112 +26168,112 @@ return: RETURN ';'
   {
 
 
-  // if $3.name is NOT an XA ... remove the previous 5 lines
-  if( !isXA($3.name) )
-    {
-      deletePreviousAsmUntil( "// MARKED_FOR_DELETION");
-      addCompilerMessage( "Deleted Mnemonics", 0 );
-    }
-  addComment( "Deleted Mnemonics" );
-  addComment( "Save return address locally" );
-  addAsm( str_PLA, 1, false );
-  addAsm( str_STA + "!rx-", 3, false );
-  addAsm( str_PLA, 1, false );
-  addAsm( str_STA + "!ry-", 3, false );
+    // if $3.name is NOT an XA ... remove the previous 5 lines
+    if( !isXA($3.name) )
+      {
+	deletePreviousAsmUntil( "// MARKED_FOR_DELETION");
+	addCompilerMessage( "Deleted Mnemonics", 0 );
+      }
+    addComment( "Deleted Mnemonics" );
+    addComment( "Save return address locally" );
+    addAsm( str_PLA, 1, false );
+    addAsm( str_STA + "!rx-", 3, false );
+    addAsm( str_PLA, 1, false );
+    addAsm( str_STA + "!ry-", 3, false );
 
-  int v = getAddressOf($3.name);
-  if( isUintID($3.name) || isIntID($3.name) )
-    {
-      addAsm( str_LDA + getNameOf(v), 3, false );
-      addAsm( str_PHA );
-      addAsm( str_LDA + "#$01", 2, false );
-      addAsm( str_PHA );
-    }
-  else if( isWordID($3.name) )
-    {
-      addAsm( str_LDA + getNameOf(v), 3, false );
-      addAsm( str_PHA );
-      addAsm( str_LDA + getNameOf(v) + " +1", 3, false );
-      addAsm( str_PHA );
-      addAsm( str_LDA + "#$02", 2, false );
-      addAsm( str_PHA );
-    }
-  else if( isUintIMM($3.name) || isIntIMM($3.name) )
-    {
-      addCompilerMessage( "this should really be a hardcoded return value", 2 );
+    int v = getAddressOf($3.name);
+    if( isUintID($3.name) || isIntID($3.name) )
+      {
+	addAsm( str_LDA + getNameOf(v), 3, false );
+	addAsm( str_PHA );
+	addAsm( str_LDA + "#$01", 2, false );
+	addAsm( str_PHA );
+      }
+    else if( isWordID($3.name) )
+      {
+	addAsm( str_LDA + getNameOf(v), 3, false );
+	addAsm( str_PHA );
+	addAsm( str_LDA + getNameOf(v) + " +1", 3, false );
+	addAsm( str_PHA );
+	addAsm( str_LDA + "#$02", 2, false );
+	addAsm( str_PHA );
+      }
+    else if( isUintIMM($3.name) || isIntIMM($3.name) )
+      {
+	addCompilerMessage( "this should really be a hardcoded return value", 2 );
 
       
-      v = atoi(stripFirst($3.name).c_str());
+	v = atoi(stripFirst($3.name).c_str());
 
-      addAsm( str_LDA + "#$" + toHex(v), 2, false );
-      addAsm( str_PHA );
-      addAsm( str_LDA + "#$01", 2, false );
-      addAsm( str_PHA );
-    }
-  else if( isWordIMM($3.name) )
-    {
-      addCompilerMessage( "this should really be a hardcoded return value", 2 );
-      v = atoi(stripFirst($3.name).c_str());
-      int a_register = get_word_L( v );
-      int x_register = get_word_H( v );
-      addAsm( str_LDA + "#$" + toHex(a_register), 2, false );
-      addAsm( str_PHA );
-      addAsm( str_LDA + "#$" + toHex(x_register), 2, false );
-      addAsm( str_PHA );
-      addAsm( str_LDA + "#$02", 2, false );
-      addAsm( str_PHA );
-    }
-  else if( isWordID($3.name) )
-    {
-      v = atoi(stripFirst($3.name).c_str());
-      addAsm( str_LDA + getNameOf(v) + " +1", 3, false );
-      addAsm( str_PHA );
-      addAsm( str_LDA + getNameOf(v), 3, false );
-      addAsm( str_PHA );
-      addAsm( str_LDA + "#$02", 2, false );
-      addAsm( str_PHA );
-    }
-  else if( isXA($3.name) )
-    {
-      stack_is_needed = true;
-      addAsm( str_JSR + "POP", 3, false );
-      addAsm( str_PHA );
-      addAsm( str_JSR + "POP", 3, false );
-      addAsm( str_PHA );
-      addAsm( str_LDA + "#$02", 2, false );
-      addAsm( str_PHA );
-    }
-  else if( isFloatID($3.name) )
-    {
-      v = atoi(stripFirst($3.name).c_str());
-      addAsm( str_LDA + getNameOf(v) + " +1", 3, false );
-      addAsm( str_PHA );
-      addAsm( str_LDA + getNameOf(v), 3, false );
-      addAsm( str_PHA );
-      addAsm( str_LDA + "#$05", 2, false );
-      addAsm( str_PHA );
-    }
-  else if( isFloatIMM($3.name) )
-    {
-      addCompilerMessage( "Just hardcode the value", 3 );
-    }
-  else if( isFAC($3.name) )
-    {
-      addCompilerMessage( "FAC is an unsupported return type", 3 );
-    }
-  else
-    {
-      addCompilerMessage( "invalid return type", 3 );
-    }
+	addAsm( str_LDA + "#$" + toHex(v), 2, false );
+	addAsm( str_PHA );
+	addAsm( str_LDA + "#$01", 2, false );
+	addAsm( str_PHA );
+      }
+    else if( isWordIMM($3.name) )
+      {
+	addCompilerMessage( "this should really be a hardcoded return value", 2 );
+	v = atoi(stripFirst($3.name).c_str());
+	int a_register = get_word_L( v );
+	int x_register = get_word_H( v );
+	addAsm( str_LDA + "#$" + toHex(a_register), 2, false );
+	addAsm( str_PHA );
+	addAsm( str_LDA + "#$" + toHex(x_register), 2, false );
+	addAsm( str_PHA );
+	addAsm( str_LDA + "#$02", 2, false );
+	addAsm( str_PHA );
+      }
+    else if( isWordID($3.name) )
+      {
+	v = atoi(stripFirst($3.name).c_str());
+	addAsm( str_LDA + getNameOf(v) + " +1", 3, false );
+	addAsm( str_PHA );
+	addAsm( str_LDA + getNameOf(v), 3, false );
+	addAsm( str_PHA );
+	addAsm( str_LDA + "#$02", 2, false );
+	addAsm( str_PHA );
+      }
+    else if( isXA($3.name) )
+      {
+	stack_is_needed = true;
+	addAsm( str_JSR + "POP", 3, false );
+	addAsm( str_PHA );
+	addAsm( str_JSR + "POP", 3, false );
+	addAsm( str_PHA );
+	addAsm( str_LDA + "#$02", 2, false );
+	addAsm( str_PHA );
+      }
+    else if( isFloatID($3.name) )
+      {
+	v = atoi(stripFirst($3.name).c_str());
+	addAsm( str_LDA + getNameOf(v) + " +1", 3, false );
+	addAsm( str_PHA );
+	addAsm( str_LDA + getNameOf(v), 3, false );
+	addAsm( str_PHA );
+	addAsm( str_LDA + "#$05", 2, false );
+	addAsm( str_PHA );
+      }
+    else if( isFloatIMM($3.name) )
+      {
+	addCompilerMessage( "Just hardcode the value", 3 );
+      }
+    else if( isFAC($3.name) )
+      {
+	addCompilerMessage( "FAC is an unsupported return type", 3 );
+      }
+    else
+      {
+	addCompilerMessage( "invalid return type", 3 );
+      }
 
-  addComment( "Restore return address" );
-  addAsm( str_LDA + "!ry-", 3, false );
-  addAsm( str_PHA, 1, false );
-  addAsm( str_LDA + "!rx-", 3, false );
-  addAsm( str_PHA, 1, false );
-  addAsm( str_RTS );
-  addAsm( string( "// returned: ") + getNameOf(getAddressOf($3.name)), 0, true );
-  addComment( "Returning a value via the stack" );
+    addComment( "Restore return address" );
+    addAsm( str_LDA + "!ry-", 3, false );
+    addAsm( str_PHA, 1, false );
+    addAsm( str_LDA + "!rx-", 3, false );
+    addAsm( str_PHA, 1, false );
+    addAsm( str_RTS );
+    addAsm( string( "// returned: ") + getNameOf(getAddressOf($3.name)), 0, true );
+    addComment( "Returning a value via the stack" );
   }
 |
 {
