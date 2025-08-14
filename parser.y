@@ -7083,7 +7083,7 @@ condition: expression[LHS]
       int tmp_v = atoi(stripFirst($RHS.name).c_str());
       addAsm( str_CMP + "#$" + toHex( tmp_v ), 2, false );
     }
-  else if( isA($LHS.name) && isWordID($RHS.name))  // mismatch
+  else if( isA($LHS.name) && isWordID($RHS.name))
     {
       addComment( "A relop WordID: TOC" );
       int tmp_v = getAddressOf( $RHS.name );
@@ -7401,16 +7401,6 @@ condition: expression[LHS]
       addAsm( str_LDY + "#>" + getNameOf(getAddressOf($RHS.name)), 2, false );
       addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
       cmpFACMEM( "#$69", "#$00" );
-
-      // is this needed?
-      addAsm( str_TXA, 1, false );
-      addAsm( str_LDA + "#$00", 2, false );
-      addAsm( str_PHA, 1, false );
-      addAsm( str_TAX, 1, false );
-      addAsm( str_PHA, 1, false );
-      addAsm( str_JSR + "SIGNEDCMP", 3, false );
-      addAsm( str_PLP );
-
     }
   else if( isFloatIMM($LHS.name) && isFloatIMM($RHS.name) )
     {
@@ -7452,7 +7442,7 @@ condition: expression[LHS]
       addCompilerMessage( "FloatIMM relop XA: nyi", 3 );
       addComment( "FloatIMM relop XA: TOC (nyi)" );
     }
-  else if( isIntID($LHS.name) && isA($RHS.name) )  // mismatch
+  else if( isIntID($LHS.name) && isA($RHS.name) )
     {
       // 2024 05 10 - mkpellegrino
       addCompilerMessage( "IntID relop A: may produce unexpected results", 1 );
@@ -7465,14 +7455,19 @@ condition: expression[LHS]
     }
   else if( isIntID($LHS.name) && isFAC($RHS.name) )
     {
-
+      addCompilerMessage( "IntID relop FAC: nyi", 3 );
+      addComment( "IntID relop FAC: TOC (nyi)" );
     }
   else if( isIntID($LHS.name) && isFloatID($RHS.name) )
     {
+      addCompilerMessage( "IntID relop FloatID: nyi", 3 );
+      addComment( "IntID relop FloatID: TOC (nyi)" );
 
     }
   else if( isIntID($LHS.name) && isFloatIMM($RHS.name) )
     {
+      addCompilerMessage( "IntID relop FloatIMM: nyi", 3 );
+      addComment( "IntID relop FloatIMM: TOC (nyi)" );
 
     }
   else if( isIntID($LHS.name) && isIntID($RHS.name) )
@@ -7509,6 +7504,8 @@ condition: expression[LHS]
     }
   else if( isIntID($LHS.name) && isUintID($RHS.name) )
     {
+      addCompilerMessage( "IntID relop UintID: nyi", 3 );
+      addComment( "IntID relop UintID: TOC (nyi)" );
 
     }
   else if( isIntID($LHS.name) && isUintIMM($RHS.name) )
@@ -7530,30 +7527,44 @@ condition: expression[LHS]
     }
   else if( isIntID($LHS.name) && isWordID($RHS.name) )
     {
+      addCompilerMessage( "IntID relop WordID: nyi", 3 );
+      addComment( "IntID relop WordID: TOC (nyi)" );
 
     }
   else if( isIntID($LHS.name) && isWordIMM($RHS.name) )
     {
+      addCompilerMessage( "IntID relop WordIMM: nyi", 3 );
+      addComment( "IntID relop WordIMM: TOC (nyi)" );
 
     }
   else if( isIntID($LHS.name) && isXA($RHS.name) )
     {
+      addCompilerMessage( "IntID relop XA: nyi", 3 );
+      addComment( "IntID relop XA: TOC (nyi)" );
 
     }
   else if( isIntIMM($LHS.name) && isA($RHS.name) )
     {
+      addCompilerMessage( "IntIMM relop A: nyi", 3 );
+      addComment( "IntIMM relop A: TOC (nyi)" );
 
     }
   else if( isIntIMM($LHS.name) && isFAC($RHS.name) )
     {
+      addCompilerMessage( "IntIMM relop FAC: nyi", 3 );
+      addComment( "IntIMM relop FAC: TOC (nyi)" );
 
     }
   else if( isIntIMM($LHS.name) && isFloatID($RHS.name) )
     {
+      addCompilerMessage( "IntIMM relop FloatID: nyi", 3 );
+      addComment( "IntIMM relop FloatID: TOC (nyi)" );
 
     }
   else if( isIntIMM($LHS.name) && isFloatIMM($RHS.name) )
     {
+      addCompilerMessage( "IntIMM relop FloatIMM: nyi", 3 );
+      addComment( "IntIMM relop FloatIMM: TOC (nyi)" );
 
     }
   else if( isIntIMM($LHS.name) && isIntID($RHS.name) )
@@ -7625,18 +7636,26 @@ condition: expression[LHS]
 
   else if( isIntIMM($LHS.name) && isUintIMM($RHS.name) )
     {
+      addCompilerMessage( "IntIMM relop UintIMM: nyi", 3 );
+      addComment( "IntIMM relop UintIMM: TOC (nyi)" );
 
     }
   else if( isIntIMM($LHS.name) && isWordID($RHS.name) )
     {
+      addCompilerMessage( "IntIMM relop WordID: nyi", 3 );
+      addComment( "IntIMM relop WordID: TOC (nyi)" );
 
     }
   else if( isIntIMM($LHS.name) && isWordIMM($RHS.name) )
     {
+      addCompilerMessage( "IntIMM relop WordIMM: nyi", 3 );
+      addComment( "IntIMM relop WordIMM: TOC (nyi)" );
 
     }
   else if( isIntIMM($LHS.name) && isXA($RHS.name) )
     {
+      addCompilerMessage( "IntIMM relop XA: nyi", 3 );
+      addComment( "IntIMM relop XA: TOC (nyi)" );
 
     }
   else if( isUintID($LHS.name) && isA($RHS.name) )
@@ -7666,20 +7685,26 @@ condition: expression[LHS]
     }
   else if( isUintID($LHS.name) && isFAC($RHS.name) )
     {
+      addCompilerMessage( "UintID relop FAC: nyi", 3 );
+      addComment( "UintID relop FAC: TOC (nyi)" );
 
     }
   else if( isUintID($LHS.name) && isFloatID($RHS.name) )
     {
+      addCompilerMessage( "UintID relop FloatID: nyi", 3 );
+      addComment( "UintID relop FloatID: TOC (nyi)" );
 
     }
   else if( isUintID($LHS.name) && isFloatIMM($RHS.name) )
     {
+      addCompilerMessage( "UintID relop FloatIMM: nyi", 3 );
+      addComment( "UintID relop FAC: FloatIMM (nyi)" );
 
     }
 
-  else if( isUintID($LHS.name) && isIntID($RHS.name))  // mismatch
+  else if( isUintID($LHS.name) && isIntID($RHS.name))
     {
-      addCompilerMessage( "UintID relop IntID (type mismatch)", 1 );
+      addCompilerMessage( "UintID relop IntID: results may vary", 1 );
       addComment( "UintID relop IntID: TOC" );
       // if the address of $1 or $3 < 256... change instr size to 2
       unsigned_signed_cmp_is_needed = true;
@@ -7690,7 +7715,7 @@ condition: expression[LHS]
       addAsm( str_JSR + "USCMP" + commentmarker + "unsigned comparison", 3, false );
       addAsm( str_PLP );
     }
-  else if( isUintID($LHS.name) && isIntIMM($RHS.name) )  // mismatch
+  else if( isUintID($LHS.name) && isIntIMM($RHS.name) )
     {
 
       // TODO: OP2 is ALWAYS NEGATIVE!
@@ -7730,36 +7755,50 @@ condition: expression[LHS]
 
   else if( isUintID($LHS.name) && isWordID($RHS.name) )
     {
+      addCompilerMessage( "UintID relop WordID: nyi", 3 );
+      addComment( "UintID relop WordID: TOC (nyi)" );
 
     }
   else if( isUintID($LHS.name) && isWordIMM($RHS.name) )
     {
+      addCompilerMessage( "UintID relop WordIMM: nyi", 3 );
+      addComment( "UintID relop WordIMM: TOC (nyi)" );
 
     }
   else if( isUintID($LHS.name) && isXA($RHS.name) )
     {
+      addCompilerMessage( "UintID relop XA: nyi", 3 );
+      addComment( "UintID relop XA: TOC (nyi)" );
 
     }
     
   else if( isUintIMM($LHS.name) && isA($RHS.name) )
     {
+      addCompilerMessage( "UintIMM relop A: nyi", 3 );
+      addComment( "UintIMM relop A: TOC (nyi)" );
 
     }
   else if( isUintIMM($LHS.name) && isFAC($RHS.name) )
     {
+      addCompilerMessage( "UintIMM relop FAC: nyi", 3 );
+      addComment( "UintIMM relop FAC: TOC (nyi)" );
 
     }
   else if( isUintIMM($LHS.name) && isFloatID($RHS.name) )
     {
+      addCompilerMessage( "UintIMM relop FloatID: nyi", 3 );
+      addComment( "UintIMM relop FloatID: TOC (nyi)" );
 
     }
   else if( isUintIMM($LHS.name) && isFloatIMM($RHS.name) )
     {
+      addCompilerMessage( "UintIMM relop FloatIMM: nyi", 3 );
+      addComment( "UintIMM relop FloatIMM: TOC (nyi)" );
 
     }
-  else if( isUintIMM($LHS.name) && isIntID($RHS.name) )  // mismatch
+  else if( isUintIMM($LHS.name) && isIntID($RHS.name) )
     {
-      addCompilerMessage( "UintIMM relop IntID (type mismatch)", 1 );
+      addCompilerMessage( "UintIMM relop IntID: symptoms may vary", 1 );
       addComment( "UintIMM relop IntID: TOC" );
 
       unsigned_signed_cmp_is_needed = true;
@@ -7774,6 +7813,8 @@ condition: expression[LHS]
     }
   else if( isUintIMM($LHS.name) && isIntIMM($RHS.name) )
     {
+      addCompilerMessage( "UintIMM relop IntIMM: nyi", 3 );
+      addComment( "UintIMM relop IntIMM: TOC (nyi)" );
 
     }
   else if( isUintIMM($LHS.name) && isUintID($RHS.name))
@@ -7792,42 +7833,62 @@ condition: expression[LHS]
     }
   else if( isUintIMM($LHS.name) && isWordID($RHS.name) )
     {
+      addCompilerMessage( "UintIMM relop WordID: nyi", 3 );
+      addComment( "UintIMM relop WordID: TOC (nyi)" );
 
     }
   else if( isUintIMM($LHS.name) && isWordIMM($RHS.name) )
     {
+      addCompilerMessage( "UintIMM relop WordIMM: nyi", 3 );
+      addComment( "UintIMM relop WordIMM: TOC (nyi)" );
 
     }
   else if( isUintIMM($LHS.name) && isXA($RHS.name) )
     {
+      addCompilerMessage( "UintIMM relop XA: nyi", 3 );
+      addComment( "UintIMM relop XA: TOC (nyi)" );
 
     }
   else if( isWordID($LHS.name) && isA($RHS.name) )
     {
+      addCompilerMessage( "WordID relop A: nyi", 3 );
+      addComment( "WordID relop A: TOC (nyi)" );
 
     }
   else if( isWordID($LHS.name) && isFAC($RHS.name) )
     {
+      addCompilerMessage( "WordID relop FAC: nyi", 3 );
+      addComment( "WordID relop FAC: TOC (nyi)" );
 
     }
   else if( isWordID($LHS.name) && isFloatID($RHS.name) )
     {
+      addCompilerMessage( "WordID relop FloatID: nyi", 3 );
+      addComment( "WordID relop FloatID: TOC (nyi)" );
 
     }
   else if( isWordID($LHS.name) && isFloatIMM($RHS.name) )
     {
+      addCompilerMessage( "WordID relop FloatIMM: nyi", 3 );
+      addComment( "WordID relop FloatIMM: TOC (nyi)" );
 
     }
   else if( isWordID($LHS.name) && isIntID($RHS.name) )
     {
+      addCompilerMessage( "WordID relop IntID: nyi", 3 );
+      addComment( "WordID relop IntID: TOC (nyi)" );
 
     }
   else if( isWordID($LHS.name) && isIntIMM($RHS.name) )
     {
+      // IntIMM is ALWAYS NEGATIVE!
+      addCompilerMessage( "WordID relop IntIMM: nyi", 3 );
+      addComment( "WordID relop IntIMM: TOC (nyi)" );
 
     }
   else if( isWordID($LHS.name) && isUintID($RHS.name) )
     {
+      // TODO: Rework this
       addCompilerMessage( "WordID relop UintID (type mismatch)", 1 );
       addComment( "WordID relop UintID: TOC");
 
@@ -7843,6 +7904,8 @@ condition: expression[LHS]
     }
   else if( isWordID($LHS.name) && isUintIMM($RHS.name) )
     {
+      addCompilerMessage( "WordID relop UintIMM: nyi", 3 );
+      addComment( "WordID relop UintIMM: TOC (nyi)" );
 
     }
   else if( isWordID($LHS.name) && isWordID($RHS.name))
@@ -7858,7 +7921,6 @@ condition: expression[LHS]
   else if( isWordID($LHS.name) && isWordIMM($RHS.name))
     {
       addComment( "WordID relop WordIMM: TOC" );
-      //addComment( getNameOf(getAddressOf($LHS.name)) + " relop " + $RHS.name );
       addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)) + " +1", 3, false );
       addAsm( str_CMP + "#$" + toHex(get_word_H(atoi(stripFirst($RHS.name).c_str()))), 2, false );
       addAsm( str_BNE + "!+", 2, false );
@@ -7866,7 +7928,7 @@ condition: expression[LHS]
       addAsm( str_CMP + "#$" + toHex(get_word_L(atoi(stripFirst($RHS.name).c_str()))), 2, false );
       addAsm( "!:", 0, true );
     }
-  else if( isWordID($LHS.name) && isXA($RHS.name))  // mismatch
+  else if( isWordID($LHS.name) && isXA($RHS.name))
     {
       addComment( "WordID relop XA: TOC" );
       if( arg_show_opt ) addCompilerMessage("Swapping WordID and XA in comparison would be more efficient", 1);
@@ -7887,46 +7949,67 @@ condition: expression[LHS]
     
   else if( isWordIMM($LHS.name) && isA($RHS.name) )
     {
+      addCompilerMessage( "WordIMM relop A: nyi", 3 );
       addComment( "WordIMM relop A: TOC (nyi)" );
     }
   else if( isWordIMM($LHS.name) && isFAC($RHS.name) )
     {
+      addCompilerMessage( "WordIMM relop FAC: nyi", 3 );
+      addComment( "WordIMM relop FAC: TOC (nyi)" );
 
     }
   else if( isWordIMM($LHS.name) && isFloatID($RHS.name) )
     {
+      addCompilerMessage( "WordIMM relop FloatID: nyi", 3 );
+      addComment( "WordIMM relop FloatID: TOC (nyi)" );
 
     }
   else if( isWordIMM($LHS.name) && isFloatIMM($RHS.name) )
     {
+      addCompilerMessage( "WordIMM relop FloatIMM: nyi", 3 );
+      addComment( "WordIMM relop FloatIMM: TOC (nyi)" );
 
     }
   else if( isWordIMM($LHS.name) && isIntID($RHS.name) )
     {
+      addCompilerMessage( "WordIMM relop IntID: nyi", 3 );
+      addComment( "WordIMM relop IntID: TOC (nyi)" );
 
     }
   else if( isWordIMM($LHS.name) && isIntIMM($RHS.name) )
     {
+      addCompilerMessage( "WordIMM relop IntIMM: nyi", 3 );
+      addComment( "WordIMM relop IntIMM: TOC (nyi)" );
 
     }
   else if( isWordIMM($LHS.name) && isUintID($RHS.name) )
     {
+      addCompilerMessage( "WordIMM relop UintID: nyi", 3 );
+      addComment( "WordIMM relop UintID: TOC (nyi)" );
 
     }
   else if( isWordIMM($LHS.name) && isUintIMM($RHS.name) )
     {
+      addCompilerMessage( "WordIMM relop UintIMM: nyi", 3 );
+      addComment( "WordIMM relop UintIMM: TOC (nyi)" );
 
     }
   else if( isWordIMM($LHS.name) && isWordID($RHS.name) )
     {
+      addCompilerMessage( "WordIMM relop WordID: nyi", 3 );
+      addComment( "WordIMM relop WordID: TOC (nyi)" );
 
     }
   else if( isWordIMM($LHS.name) && isWordIMM($RHS.name) )
     {
+      addCompilerMessage( "WordIMM relop WordIMM: nyi", 3 );
+      addComment( "WordIMM relop WordIMM: TOC (nyi)" );
 
     }
   else if( isWordIMM($LHS.name) && isXA($RHS.name) )
     {
+      addCompilerMessage( "WordIMM relop XA: nyi", 3 );
+      addComment( "WordIMM relop XA: TOC (nyi)" );
 
     }
 
@@ -7952,29 +8035,41 @@ condition: expression[LHS]
     }
   else if( isXA($LHS.name) && isFAC($RHS.name) )
     {
+      addCompilerMessage( "XA relop FAC: nyi", 3 );
+      addComment( "XA relop FAC: TOC (nyi)" );
 
     }
   else if( isXA($LHS.name) && isFloatID($RHS.name) )
     {
+      addCompilerMessage( "XA relop FloatID: nyi", 3 );
+      addComment( "XA relop FloatID: TOC (nyi)" );
 
     }
   else if( isXA($LHS.name) && isFloatIMM($RHS.name) )
     {
+      addCompilerMessage( "XA relop FloatIMM: nyi", 3 );
+      addComment( "XA relop FloatIMM: TOC (nyi)" );
 
     }
   else if( isXA($LHS.name) && isIntID($RHS.name) )
     {
+      addCompilerMessage( "XA relop IntID: nyi", 3 );
+      addComment( "XA relop IntID: TOC (nyi)" );
 
     }
   else if( isXA($LHS.name) && isIntIMM($RHS.name) )
     {
+      addCompilerMessage( "XA relop IntIMM: nyi", 3 );
+      addComment( "XA relop IntIMM: TOC (nyi)" );
 
     }
   else if( isXA($LHS.name) && isUintID($RHS.name) )
     {
+      addCompilerMessage( "XA relop UintID: nyi", 3 );
+      addComment( "XA relop UintID: TOC (nyi)" );
 
     }
-  else if( isXA($LHS.name) && isUintIMM($RHS.name))  // mismatch
+  else if( isXA($LHS.name) && isUintIMM($RHS.name))
     {
       // This should be more like XA relop WordIMM
       addComment( "XA relop UintIMM: TOC" );
@@ -7989,7 +8084,7 @@ condition: expression[LHS]
       addAsm( str_CMP + "#$" + toHex( tmp_v ), 2, false );
       addAsm( "!:", 0, true );
     }
-  else if( isXA($LHS.name) && isWordID($RHS.name))  // mismatch
+  else if( isXA($LHS.name) && isWordID($RHS.name))
     {
       addComment( "XA relop WordID: TOC" );
       int tmp_v = getAddressOf( $RHS.name );
@@ -7999,7 +8094,7 @@ condition: expression[LHS]
       addAsm( "!:", 0, true );
     }
 
-  else if( isXA($LHS.name) && isWordIMM($RHS.name))  // mismatch
+  else if( isXA($LHS.name) && isWordIMM($RHS.name))
     {
       addComment( "XA relop WordIMM: TOC" );
       int tmp_v = atoi(stripFirst($RHS.name).c_str());
