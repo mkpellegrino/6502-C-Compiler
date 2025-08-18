@@ -4322,7 +4322,7 @@ body: WHILE
       addAsm( "!:\t" + str_TYA, 1, true);
       addAsm( str_CMP + "#$30", 2, false );
       addAsm( str_BEQ + "!--", 2, false );
-      addAsm( str_JMP + "!---", 2, false );
+      addAsm( str_JMP + "!---", 3, false );
       addAsm( "!:", 0, true );
     }
   else if( isFAC($3.name) )
@@ -4390,7 +4390,7 @@ body: WHILE
       addAsm( str_BEQ + "!+", 2, false );
       addAsm( str_INX );
       addAsm( str_JSR + "$FFD2", 3, false );
-      addAsm( str_JMP + "!-", 0, false );
+      addAsm( str_JMP + "!-", 3, false );
       addAsm( "!:", 0, true );
     }
   else if( isXA($3.name) )
@@ -6988,22 +6988,22 @@ condition: expression[LHS]
       addComment( "A relop FloatIMM: TOC" );
       if( string($OP.name) == string("<") )
 	{
-	  addCompilerMessage( "A relop FloatID: Relative Operator Manipulation", 0 );
+	  addCompilerMessage( "A relop FloatIMM: Relative Operator Manipulation", 0 );
 	  strcpy( $OP.name, ">" );
 	}
       else if( string($OP.name) == string(">") )
 	{
-	  addCompilerMessage( "A relop FloatID: Relative Operator Manipulation", 0 );
+	  addCompilerMessage( "A relop FloatIMM: Relative Operator Manipulation", 0 );
 	  strcpy( $OP.name, "<" );
 	}
       else if( string($OP.name) == string(">=") )
 	{
-	  addCompilerMessage( "A relop FloatID: Relative Operator Manipulation", 0 );
+	  addCompilerMessage( "A relop FloatIMM: Relative Operator Manipulation", 0 );
 	  strcpy( $OP.name, "<=" );
 	}
       else if( string($OP.name) == string("<=") )
 	{
-	  addCompilerMessage( "A relop FloatID: Relative Operator Manipulation", 0 );
+	  addCompilerMessage( "A relop FloatIMM: Relative Operator Manipulation", 0 );
 	  strcpy( $OP.name, ">=" );
 	}
       addAsm( str_TAY, 1, false );
@@ -7161,31 +7161,25 @@ condition: expression[LHS]
       addComment( "FAC relop FloatID: TOC" );
       if( string($OP.name) == string("<") )
 	{
-	  addCompilerMessage( "A relop XA: Relative Operator Manipulation", 0 );
+	  addCompilerMessage( "FAC relop FloatID: Relative Operator Manipulation", 0 );
 	  strcpy( $OP.name, ">" );
 	}
       else if( string($OP.name) == string(">") )
 	{
-	  addCompilerMessage( "A relop XA: Relative Operator Manipulation", 0 );
+	  addCompilerMessage( "FAC relop FloatID: Relative Operator Manipulation", 0 );
 	  strcpy( $OP.name, "<" );
 	}
       else if( string($OP.name) == string(">=") )
 	{
-	  addCompilerMessage( "A relop XA: Relative Operator Manipulation", 0 );
+	  addCompilerMessage( "FAC relop FloatID: Relative Operator Manipulation", 0 );
 	  strcpy( $OP.name, "<=" );
 	}
       else if( string($OP.name) == string("<=") )
 	{
-	  addCompilerMessage( "A relop XA: Relative Operator Manipulation", 0 );
+	  addCompilerMessage( "FAC relop FloatID: Relative Operator Manipulation", 0 );
 	  strcpy( $OP.name, ">=" );
 	}
 
-
-      //FACToSwap0();
-      
-      //addAsm( str_LDA + "#<" + getNameOf(getAddressOf($RHS.name)), 2, false );
-      //addAsm( str_LDY + "#>" + getNameOf(getAddressOf($RHS.name)), 2, false );
-      //addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
       
       cmpFACMEM( "#<" + getNameOf(getAddressOf($RHS.name)), "#>" + getNameOf(getAddressOf($RHS.name)) );
     }
@@ -7870,22 +7864,51 @@ condition: expression[LHS]
     }
   else if( isIntID($LHS.name) && isWordID($RHS.name) )
     {
-      addCompilerMessage( "IntID relop WordID: nyi", 3 );
-      addComment( "IntID relop WordID: TOC (nyi)" );
-
+      addComment( "IntID relop WordID: TOC (testing)" );
+      addAsm( str_CLC, 1, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($RHS.name)) + " +1", 3, false );
+      addAsm( str_BNE + "!+", 2, false );
+      
+      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
+      addAsm( str_BMI + "!+", 2, false );
+      
+      addAsm( str_CMP + getNameOf(getAddressOf($RHS.name)), 2, false );
+      //addAsm( str_JMP + "!++", 3, false );
+      //addAsm( "!:",0,true );
+      
+      addAsm( "!:",0,true );
     }
   else if( isIntID($LHS.name) && isWordIMM($RHS.name) )
     {
-      addCompilerMessage( "IntID relop WordIMM: nyi", 3 );
       int R = atoi( stripFirst($RHS.name).c_str() );
-      addComment( "IntID relop WordIMM: TOC (nyi)" );
-
+      addComment( "IntID relop WordIMM: TOC (testing)" );
+      if( R > 127 )
+	{
+	  addCompilerMessage( "IntID relop WordIMM: This WordIMM will always be > IntID", 1 );
+	  addAsm( str_LDA + "#$FF", 2, false );
+	  addAsm( str_CLC, 1, false );
+	}
+      else
+	{
+	  addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
+	  addAsm( str_CLC, 1, false );
+	  addAsm( str_BMI + "!+", 2, false );
+	  addAsm( str_CMP + "#$" + toHex(R), 2, false );
+	  addAsm( "!:",0,true );
+	  
+	}
     }
   else if( isIntID($LHS.name) && isXA($RHS.name) )
     {
-      addCompilerMessage( "IntID relop XA: nyi", 3 );
-      addComment( "IntID relop XA: TOC (nyi)" );
-
+      addComment( "IntID relop XA: TOC (self-modifying code)" );
+      addAsm( str_TAY, 1, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
+      addAsm( str_CLC, 1, false );
+      addAsm( str_BMI + "!++", 2, false );
+      addAsm( str_STY + "!+", 3, false );
+      addAsm( str_BYTE + "$C9" + commentmarker + "<-- CMP Immediate", 1, false );
+      addAsm( "!:\t" + str_BYTE + "$00", 1, false );
+      addAsm( "!:",0,true );
     }
   else if( isIntIMM($LHS.name) && isA($RHS.name) )
     {
@@ -7897,14 +7920,44 @@ condition: expression[LHS]
     }
   else if( isIntIMM($LHS.name) && isFAC($RHS.name) )
     {
-      addCompilerMessage( "IntIMM relop FAC: nyi", 3 );
-      addComment( "IntIMM relop FAC: TOC (nyi)" );
-
+      addComment( "IntIMM relop FAC: TOC" );
+      //float L = atof( stripFirst($LHS.name).c_str() );
+      inlineFloat( $LHS.name );
+      deletePreviousAsm();
+      deletePreviousAsm();
+      deletePreviousAsm();
+      cmpFACMEM( "#$19", "#$00" );  
     }
   else if( isIntIMM($LHS.name) && isFloatID($RHS.name) )
     {
-      addCompilerMessage( "IntIMM relop FloatID: nyi", 3 );
-      addComment( "IntIMM relop FloatID: TOC (nyi)" );
+      addCompilerMessage( "IntIMM relop FloatID: testing", 1 );
+      addComment( "IntIMM relop FloatID: TOC (testing)" );
+      if( string($OP.name) == string("<") )
+	{
+	  addCompilerMessage( "IntIMM relop FloatID: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, ">" );
+	}
+      else if( string($OP.name) == string(">") )
+	{
+	  addCompilerMessage( "IntIMM relop FloatID: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, "<" );
+	}
+      else if( string($OP.name) == string(">=") )
+	{
+	  addCompilerMessage( "IntIMM relop FloatID: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, "<=" );
+	}
+      else if( string($OP.name) == string("<=") )
+	{
+	  addCompilerMessage( "IntIMM relop FloatID: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, ">=" );
+	}
+
+      
+      //float L = atof( stripFirst($LHS.name).c_str() );
+      inlineFloat($LHS.name);
+      cmpFACMEM( "#<" + getNameOf(getAddressOf($RHS.name)), "#>" + getNameOf(getAddressOf($RHS.name)) );
+
 
     }
   else if( isIntIMM($LHS.name) && isFloatIMM($RHS.name) )
@@ -8099,14 +8152,69 @@ condition: expression[LHS]
     }
   else if( isUintID($LHS.name) && isFloatID($RHS.name) )
     {
-      addCompilerMessage( "UintID relop FloatID: nyi", 3 );
-      addComment( "UintID relop FloatID: TOC (nyi)" );
+      addCompilerMessage( "UintID relop FloatID: testing", 1 );
+      if( string($OP.name) == string("<") )
+	{
+	  addCompilerMessage( "UintID relop FloatID: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, ">" );
+	}
+      else if( string($OP.name) == string(">") )
+	{
+	  addCompilerMessage( "UintID relop FloatID: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, "<" );
+	}
+      else if( string($OP.name) == string(">=") )
+	{
+	  addCompilerMessage( "UintID relop FloatID: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, "<=" );
+	}
+      else if( string($OP.name) == string("<=") )
+	{
+	  addCompilerMessage( "UintID relop FloatID: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, ">=" );
+	}
+
+      
+      addComment( "UintID relop FloatID: TOC (testing)" );
+      addAsm( str_LDY + getNameOf(getAddressOf($LHS.name) ), 3, false );
+      addAsm( str_LDA + "#$00", 2, false );
+      addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
+      cmpFACMEM( "#<" + getNameOf(getAddressOf($RHS.name) ), "#>" + getNameOf(getAddressOf($RHS.name) ));
+      
 
     }
   else if( isUintID($LHS.name) && isFloatIMM($RHS.name) )
     {
-      addCompilerMessage( "UintID relop FloatIMM: nyi", 3 );
-      addComment( "UintID relop FloatIMM: TOC (nyi)" );
+      addCompilerMessage( "UintID relop FloatIMM: taesting", 1 );
+      addComment( "UintID relop FloatIMM: TOC (testing)" );
+      if( string($OP.name) == string("<") )
+	{
+	  addCompilerMessage( "UintID relop FloatID: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, ">" );
+	}
+      else if( string($OP.name) == string(">") )
+	{
+	  addCompilerMessage( "UintID relop FloatID: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, "<" );
+	}
+      else if( string($OP.name) == string(">=") )
+	{
+	  addCompilerMessage( "UintID relop FloatID: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, "<=" );
+	}
+      else if( string($OP.name) == string("<=") )
+	{
+	  addCompilerMessage( "UintID relop FloatID: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, ">=" );
+	}
+      addAsm( str_LDY + getNameOf(getAddressOf($LHS.name) ), 3, false );
+      addAsm( str_LDA + "#$00", 2, false );
+      addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
+      inlineFloat( $RHS.name );
+      deletePreviousAsm();
+      deletePreviousAsm();
+      deletePreviousAsm();
+      cmpFACMEM( "#$19", "#$00" );
 
     }
 
