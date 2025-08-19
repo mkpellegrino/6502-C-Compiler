@@ -7868,14 +7868,9 @@ condition: expression[LHS]
       addAsm( str_CLC, 1, false );
       addAsm( str_LDA + getNameOf(getAddressOf($RHS.name)) + " +1", 3, false );
       addAsm( str_BNE + "!+", 2, false );
-      
       addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
-      addAsm( str_BMI + "!+", 2, false );
-      
-      addAsm( str_CMP + getNameOf(getAddressOf($RHS.name)), 2, false );
-      //addAsm( str_JMP + "!++", 3, false );
-      //addAsm( "!:",0,true );
-      
+      addAsm( str_BMI + "!+", 2, false );      
+      addAsm( str_CMP + getNameOf(getAddressOf($RHS.name)), 2, false );      
       addAsm( "!:",0,true );
     }
   else if( isIntID($LHS.name) && isWordIMM($RHS.name) )
@@ -8232,24 +8227,15 @@ condition: expression[LHS]
     }
   else if( isUintID($LHS.name) && isIntIMM($RHS.name) )
     {
-
-      // TODO: OP2 is ALWAYS NEGATIVE!
-      addCompilerMessage( "UintID relop IntIMM (type mismatch)", 1 );
       addComment( "UintID relop IntIMM: TOC" );
-
-      unsigned_signed_cmp_is_needed = true;
-
-      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
-      addAsm( str_PHA );
-      int i = atoi(stripFirst($RHS.name).c_str());
-      if( i < 0 )
+      addComment( "UintID relop IntIMM: IntIMM is known to be < UintID... OPTIMIZE" );
+      if( arg_show_opt )
 	{
-	  i = twos_complement(i);
+	  addCompilerMessage( "UintID relop IntIMM: This condition is known at compile-time... just hard-code it!", 0 );
 	}
-      addAsm( str_LDA + "#$" + toHex(i), 3, false );
-      addAsm( str_PHA );
-      addAsm( str_JSR + "USCMP" + commentmarker + "unsigned comparison", 3, false );
-      addAsm( str_PLP );
+      addAsm( str_LDA + "#$01", 2, false );
+      addAsm( str_SEC, 1, false );
+
     }
 
   else if( isUintID($LHS.name) && isUintID($RHS.name))
@@ -8265,50 +8251,135 @@ condition: expression[LHS]
       addComment( "UintID relop UintIMM: TOC" );
       // Done
       addAsm( str_LDA + tmp_name, 3, false );
-      addAsm( str_CMP + "#$"  + toHex( atoi(stripFirst($RHS.name).c_str() )), 2, false );
+      addAsm( str_CMP + "#$" + toHex( atoi(stripFirst($RHS.name).c_str() )), 2, false );
     }
 
   else if( isUintID($LHS.name) && isWordID($RHS.name) )
     {
-      addCompilerMessage( "UintID relop WordID: nyi", 3 );
-      addComment( "UintID relop WordID: TOC (nyi)" );
+      addComment( "UintID relop WordID: TOC" );
+      addAsm( str_CLC, 1, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($RHS.name)) + " +1", 3, false );
+      addAsm( str_BNE + "!+", 2, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
+      addAsm( str_CMP + getNameOf(getAddressOf($RHS.name)), 2, false );      
+      addAsm( "!:",0,true );
 
     }
   else if( isUintID($LHS.name) && isWordIMM($RHS.name) )
     {
-      addCompilerMessage( "UintID relop WordIMM: nyi", 3 );
-      addComment( "UintID relop WordIMM: TOC (nyi)" );
-
+      addComment( "UintID relop WordIMM: TOC" );
+      
+      int V = atoi(stripFirst($RHS.name).c_str() );
+      int VL = get_word_L(atoi(stripFirst($RHS.name).c_str()));
+      //int VH = get_word_H(atoi(stripFirst($RHS.name).c_str()));
+      if( V > 255 )
+	{
+	  // if > 255 then there's no need for a check
+	  if( arg_show_opt )
+	    {
+	      addCompilerMessage( "UintID relop WordIMM > 255: This condition is known at compile-time... just hard-code it!", 0 );
+	      addComment( "UintID relop WordIMM > 255: OPTIMIZE" );
+	      addComment( "This RHS is known to ALWAYS be greater than this LHS." );
+	    }
+	  addComment( "UintID relop WordIMM: Compare is not necessary, RHS is > 255" );
+	  addAsm( str_LDA + "#$FF", 2, false );
+	  addAsm( str_CLC, 1, false );
+	}
+      else
+	{
+	  addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
+	  addAsm( str_CMP + "#$" + toHex(VL), 2, false );
+	}
     }
   else if( isUintID($LHS.name) && isXA($RHS.name) )
-    {
-      addCompilerMessage( "UintID relop XA: nyi", 3 );
-      addComment( "UintID relop XA: TOC (nyi)" );
+    {      
+      addCompilerMessage( "UintID relop XA: testing", 1 );
+      addComment( "UintID relop XA: TOC (uses self-modifying code)" );
+
+      addAsm( str_STY + "!+", 3, false );
+      addAsm( str_CLC, 1, false );
+      addAsm( str_TXA, 1, false );
+      addAsm( str_BNE + "!++", 2, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
+      addAsm( str_BYTE + "$C9" + commentmarker + "<-- CMP Immediate", 1, false );
+      addAsm( "!:\t" + str_BYTE + "$00", 1, true );
+
+
+      addAsm( "!:",0,true );
 
     }
     
   else if( isUintIMM($LHS.name) && isA($RHS.name) )
     {
-      addCompilerMessage( "UintIMM relop A: nyi", 3 );
-      addComment( "UintIMM relop A: TOC (nyi)" );
+      if( string($OP.name) == string("<") )
+	{
+	  addCompilerMessage( "UintIMM relop A: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, ">" );
+	}
+      else if( string($OP.name) == string(">") )
+	{
+	  addCompilerMessage( "UintIMM relop A: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, "<" );
+	}
+      else if( string($OP.name) == string(">=") )
+	{
+	  addCompilerMessage( "UintIMM relop A: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, "<=" );
+	}
+      else if( string($OP.name) == string("<=") )
+	{
+	  addCompilerMessage( "UintIMM relop A: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, ">=" );
+	}
+      
+      addComment( "UintIMM relop A: TOC" );
 
+      addAsm( str_CMP + "#$" + toHex( atoi(stripFirst($LHS.name).c_str() )), 2, false );
+
+      
     }
   else if( isUintIMM($LHS.name) && isFAC($RHS.name) )
     {
-      addCompilerMessage( "UintIMM relop FAC: nyi", 3 );
-      addComment( "UintIMM relop FAC: TOC (nyi)" );
+      addComment( "UintIMM relop FAC: TOC" );
 
+      inlineFloat( $LHS.name );
+      deletePreviousAsm();
+      deletePreviousAsm();
+      deletePreviousAsm();
+      cmpFACMEM( "#$19", "#$00" );
     }
   else if( isUintIMM($LHS.name) && isFloatID($RHS.name) )
     {
-      addCompilerMessage( "UintIMM relop FloatID: nyi", 3 );
-      addComment( "UintIMM relop FloatID: TOC (nyi)" );
-
+      if( string($OP.name) == string("<") )
+	{
+	  addCompilerMessage( "UintIMM relop FloatID: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, ">" );
+	}
+      else if( string($OP.name) == string(">") )
+	{
+	  addCompilerMessage( "UintIMM relop FloatID: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, "<" );
+	}
+      else if( string($OP.name) == string(">=") )
+	{
+	  addCompilerMessage( "UintIMM relop FloatID: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, "<=" );
+	}
+      else if( string($OP.name) == string("<=") )
+	{
+	  addCompilerMessage( "UintIMM relop FloatID: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, ">=" );
+	}
+      
+      addComment( "UintIMM relop FloatID: TOC (testing)" );
+      inlineFloat($LHS.name);
+      cmpFACMEM( "#<" + getNameOf(getAddressOf($RHS.name)), "#>" + getNameOf(getAddressOf($RHS.name)) );
+      
     }
   else if( isUintIMM($LHS.name) && isFloatIMM($RHS.name) )
     {
       addComment( "UintIMM relop FloatIMM: TOC" );
-      if( arg_show_opt ) addCompilerMessage( "This condition is known at compile-time... just hard-code it!", 0 );
+      if( arg_show_opt ) addCompilerMessage( "UintIMM relop FloatIMM: This condition is known at compile-time... just hard-code it!", 0 );
       float L = atof( stripFirst($LHS.name).c_str() );
       float R = atof( stripFirst($RHS.name).c_str() );
       if( L > R )
@@ -8397,8 +8468,14 @@ condition: expression[LHS]
     }
   else if( isUintIMM($LHS.name) && isWordID($RHS.name) )
     {
-      addCompilerMessage( "UintIMM relop WordID: nyi", 3 );
-      addComment( "UintIMM relop WordID: TOC (nyi)" );
+      addComment( "UintIMM relop WordID: TOC" );
+      int L = atoi(stripFirst($LHS.name).c_str() );
+      addAsm( str_LDA + "#$00", 2, false );
+      addAsm( str_CMP + getNameOf(getAddressOf($RHS.name)) + " +1", 3, false );
+      addAsm( str_BNE + "!+", 2, false );
+      addAsm( str_LDA + "#$" + toHex(L), 2, false );
+      addAsm( str_CMP + getNameOf(getAddressOf($RHS.name)), 3, false );
+      addAsm( "!:", 0, true );
 
     }
   else if( isUintIMM($LHS.name) && isWordIMM($RHS.name) )
@@ -8426,77 +8503,190 @@ condition: expression[LHS]
     }
   else if( isUintIMM($LHS.name) && isXA($RHS.name) )
     {
-      addCompilerMessage( "UintIMM relop XA: nyi", 3 );
-      addComment( "UintIMM relop XA: TOC (nyi)" );
+      addComment( "UintIMM relop XA: TOC (self-modifying code)" );
+      addAsm( str_STA + "!+", 3, false );
+      int L = atoi(stripFirst($LHS.name).c_str() );
 
+      addAsm( str_TXA, 1, false );
+      addAsm( str_BNE + "!++", 2, false );
+      addAsm( str_LDA + "#$" + toHex(L), 2, false );
+      addAsm( str_BYTE + "$C9" + commentmarker + "<-- CMP Immediate", 1, false );
+      addAsm( "!:\t" + str_BYTE + "$00", 1, true );
+
+      addAsm( "!:", 0, true );
     }
   else if( isWordID($LHS.name) && isA($RHS.name) )
     {
-      addCompilerMessage( "WordID relop A: nyi", 3 );
-      addComment( "WordID relop A: TOC (nyi)" );
+      addComment( "WordID relop A: TOC (self-modifying code)" );
+      addAsm( str_STA + "!+", 3, false );
+      addAsm( str_SEC );
+      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)) + " +1", 3, false );
+      addAsm( str_BNE + "!++", 2, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
+      addAsm( str_BYTE + "$C9" + commentmarker + "<-- CMP Immediate", 1, false );
+      addAsm( "!:\t" + str_BYTE + "$00", 1, true );
+      addAsm( "!:", 0, true );
 
     }
   else if( isWordID($LHS.name) && isFAC($RHS.name) )
     {
-      addCompilerMessage( "WordID relop FAC: nyi", 3 );
-      addComment( "WordID relop FAC: TOC (nyi)" );
+      addComment( "WordID relop FAC: TOC" );
 
+      if( string($OP.name) == string("<") )
+	{
+	  addCompilerMessage( "WordID relop FAC: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, ">" );
+	}
+      else if( string($OP.name) == string(">") )
+	{
+	  addCompilerMessage( "WordID relop FAC: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, "<" );
+	}
+      else if( string($OP.name) == string(">=") )
+	{
+	  addCompilerMessage( "WordID relop FAC: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, "<=" );
+	}
+      else if( string($OP.name) == string("<=") )
+	{
+	  addCompilerMessage( "WordID relop FAC: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, ">=" );
+	}
+
+      FACToSwap0();
+      addAsm( str_LDY + getNameOf(getAddressOf($LHS.name)), 3, false );      
+      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)) + " +1", 3, false );      
+      addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
+
+      cmpFACMEM( "#<!fp0+", "#>!fp0+" );
     }
   else if( isWordID($LHS.name) && isFloatID($RHS.name) )
     {
-      addCompilerMessage( "WordID relop FloatID: nyi", 3 );
-      addComment( "WordID relop FloatID: TOC (nyi)" );
+      addComment( "WordID relop FloatID: TOC" );
+      if( string($OP.name) == string("<") )
+	{
+	  addCompilerMessage( "WordID relop FloatID: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, ">" );
+	}
+      else if( string($OP.name) == string(">") )
+	{
+	  addCompilerMessage( "WordID relop FloatID: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, "<" );
+	}
+      else if( string($OP.name) == string(">=") )
+	{
+	  addCompilerMessage( "WordID relop FloatID: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, "<=" );
+	}
+      else if( string($OP.name) == string("<=") )
+	{
+	  addCompilerMessage( "WordID relop FloatID: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, ">=" );
+	}
+      addAsm( str_LDY + getNameOf(getAddressOf($LHS.name)), 3, false );      
+      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)) + " +1", 3, false );      
+      addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
+      cmpFACMEM( "#<" + getNameOf(getAddressOf($RHS.name)), "#>" + getNameOf(getAddressOf($RHS.name)) );
 
     }
   else if( isWordID($LHS.name) && isFloatIMM($RHS.name) )
     {
-      addCompilerMessage( "WordID relop FloatIMM: nyi", 3 );
+      addCompilerMessage( "WordID relop FloatIMM: testing", 1 );
       addComment( "WordID relop FloatIMM: TOC (nyi)" );
-
+      if( string($OP.name) == string("<") )
+	{
+	  addCompilerMessage( "WordID relop FloatIMM: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, ">" );
+	}
+      else if( string($OP.name) == string(">") )
+	{
+	  addCompilerMessage( "WordID relop FloatIMM: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, "<" );
+	}
+      else if( string($OP.name) == string(">=") )
+	{
+	  addCompilerMessage( "WordID relop FloatIMM: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, "<=" );
+	}
+      else if( string($OP.name) == string("<=") )
+	{
+	  addCompilerMessage( "WordID relop FloatIMM: Relative Operator Manipulation", 0 );
+	  strcpy( $OP.name, ">=" );
+	}
+      addAsm( str_LDY + getNameOf(getAddressOf($LHS.name)), 3, false );      
+      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)) + " +1", 3, false );      
+      addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
+      inlineFloat( $RHS.name );
+      deletePreviousAsm();
+      deletePreviousAsm();
+      deletePreviousAsm();
+      cmpFACMEM( "#$19", "#$00" );
     }
   else if( isWordID($LHS.name) && isIntID($RHS.name) )
     {
-      addCompilerMessage( "WordID relop IntID: nyi", 3 );
-      addComment( "WordID relop IntID: TOC (nyi)" );
-
+      addComment( "WordID relop IntID: TOC" );
+      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)) + " +1", 3, false );
+      addAsm( str_BNE + "!+", 2, false ); 
+      addAsm( str_LDA + getNameOf(getAddressOf($RHS.name)), 3, false );
+      addAsm( str_BMI + "!+", 2, false ); 
+      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
+      addAsm( str_CMP + getNameOf(getAddressOf($RHS.name)), 3, false );
+      addAsm( str_JMP + "!++", 3, false );
+      addAsm( "!:\t" + str_LDA + "#$01", 2, true );
+      addAsm( str_SEC, 1, false );
+      addAsm( "!:", 0, true );
     }
   else if( isWordID($LHS.name) && isIntIMM($RHS.name) )
     {
-      // IntIMM is ALWAYS NEGATIVE!
+      if( arg_show_opt )
+	{
+	  addCompilerMessage( "WordID relop IntIMM: IntIMM is ALWAYS < WordID", 0 );
+	}
       addComment( "WordID relop IntIMM: TOC" );
       addAsm( str_LDA + "#$01", 2, false );
       addAsm( str_SEC, 1, false );
     }
   else if( isWordID($LHS.name) && isUintID($RHS.name) )
     {
-      // TODO: Rework this
-      addCompilerMessage( "WordID relop UintID (type mismatch)", 1 );
       addComment( "WordID relop UintID: TOC");
 
-      addAsm( str_LDX + "#$01", 2, false );
-      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)) + ",X",3, false ); 
-      addAsm( str_CMP + "#$00", 2, false );
-      addDebugComment( "if A is NOT 0, then WORD > UINT" );
+      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)) + " +1",3, false ); 
       addAsm( str_BNE + "!+", 2, false );
-      addCompilerMessage( "If address of OP1 or OP2 is in Zero Page, instruction size may vary", 0);
       addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
       addAsm( str_CMP + getNameOf(getAddressOf($RHS.name)), 3, false );
+      addAsm( str_JMP + "!++", 3, false );
+      addAsm( "!:\t" + str_LDA + "#$01", 2, true );
+      addAsm( str_SEC, 1, false );
       addAsm( "!:", 0, true );
     }
   else if( isWordID($LHS.name) && isUintIMM($RHS.name) )
     {
-      addCompilerMessage( "WordID relop UintIMM: nyi", 3 );
-      addComment( "WordID relop UintIMM: TOC (nyi)" );
 
+      int R = atoi( stripFirst($RHS.name).c_str() );
+      
+      addComment( "WordID relop UintIMM: TOC" );
+
+      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)) + " +1",3, false ); 
+      addAsm( str_BNE + "!+", 2, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
+      addAsm( str_CMP + "#$" + toHex(R), 3, false );
+      addAsm( str_JMP + "!++", 3, false );
+      addAsm( "!:\t" + str_LDA + "#$01", 2, true );
+      addAsm( str_SEC, 1, false );
+      addAsm( "!:", 0, true );
+
+
+
+      
     }
   else if( isWordID($LHS.name) && isWordID($RHS.name))
     {
       addComment( "WordID relop WordID: TOC" );
-      addAsm(str_LDA + getNameOf(getAddressOf($LHS.name)) + " +1", 3, false );
-      addAsm(str_CMP + getNameOf(getAddressOf($RHS.name)) + " +1", 3, false );
-      addAsm(str_BNE + "!+", 2, false );
-      addAsm(str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
-      addAsm(str_CMP + getNameOf(getAddressOf($RHS.name)), 3, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)) + " +1", 3, false );
+      addAsm( str_CMP + getNameOf(getAddressOf($RHS.name)) + " +1", 3, false );
+      addAsm( str_BNE + "!+", 2, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
+      addAsm( str_CMP + getNameOf(getAddressOf($RHS.name)), 3, false );
       addAsm( "!:", 0, true );
     }
   else if( isWordID($LHS.name) && isWordIMM($RHS.name))
@@ -8511,7 +8701,7 @@ condition: expression[LHS]
     }
   else if( isWordID($LHS.name) && isXA($RHS.name))
     {
-      addComment( "WordID relop XA: TOC" );
+      addComment( "WordID relop XA: TOC (self-modifying code)" );
       if( arg_show_opt ) addCompilerMessage("Swapping WordID and XA in comparison would be more efficient", 1);
       int tmp_v = getAddressOf( $LHS.name );
       addAsm( str_STA + "!++", 3, false );
@@ -8684,7 +8874,7 @@ condition: expression[LHS]
     }
   else if( isXA($LHS.name) && isFAC($RHS.name) )
     {
-      addComment( "XA relop FAC: TOC (nyi)" );
+      addComment( "XA relop FAC: TOC" );
 
       if( string($OP.name) == string("<") )
 	{
