@@ -6520,9 +6520,7 @@ body: WHILE
     }
   else if( isWordID($3.name) && isWordID($6.name) && isUintIMM($9.name) )
     {
-      //pushScope("memcpy");
       addCompilerMessage( "memcpy(wordid,wordid,uintimm): nyi", 3 );
-      //popScope();
     }
   else if( isXA( $3.name ) && isWordIMM($6.name) && isUintIMM($9.name) )
     {
@@ -7009,8 +7007,6 @@ condition: expression[LHS]
       addAsm( str_TAY, 1, false );
       addAsm( str_LDA + "#$00", 2, false );
       addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
-      //inlineFloatFP0($RHS.name);
-      //cmpFACMEM( "#<!fp0+", "#>!fp0+" );
       inlineFloat($RHS.name);
       deletePreviousAsm();
       deletePreviousAsm();
@@ -7030,7 +7026,7 @@ condition: expression[LHS]
     }    
   else if( isA($LHS.name) && isIntIMM($RHS.name))
     {
-      addCompilerMessage( "A relop IntIMM: can produce unexpected behavior", 1 );
+      addCompilerMessage( "A relop IntIMM: could produce unexpected behavior", 1 );
       addComment( "A relop IntIMM: TOC" );
       if( string($OP.name) == "!=" )
 	{
@@ -7056,8 +7052,6 @@ condition: expression[LHS]
 	{
 	  addCompilerMessage( "A is NEVER == to IntIMM", 1 );
 	}
-      //int tmp_v = atoi(stripFirst($RHS.name).c_str());
-      //addAsm( str_CMP + "#$" + toHex( tmp_v ), 2, false );
       addAsm( str_SEC, 1, false );
     }
   else if( isA($LHS.name) && isUintID($RHS.name))
@@ -7102,8 +7096,7 @@ condition: expression[LHS]
     }    
   else if( isA($LHS.name) && isXA($RHS.name) )
     {
-      addCompilerMessage( "A relop XA: destroys $02 (testing)", 1 );
-      addComment( "A relop XA: TOC" );
+      addComment( "A relop XA: TOC (destroys $02)" );
       if( string($OP.name) == string("<") )
 	{
 	  addCompilerMessage( "A relop XA: Relative Operator Manipulation", 0 );
@@ -7124,7 +7117,6 @@ condition: expression[LHS]
 	  addCompilerMessage( "A relop XA: Relative Operator Manipulation", 0 );
 	  strcpy( $OP.name, ">=" );
 	}
-
       
       addAsm( str_TAY, 1, false );
       addAsm( str_TXA, 1, false );
@@ -7178,9 +7170,7 @@ condition: expression[LHS]
 	{
 	  addCompilerMessage( "FAC relop FloatID: Relative Operator Manipulation", 0 );
 	  strcpy( $OP.name, ">=" );
-	}
-
-      
+	}      
       cmpFACMEM( "#<" + getNameOf(getAddressOf($RHS.name)), "#>" + getNameOf(getAddressOf($RHS.name)) );
     }
   else if( isFAC($LHS.name) && isFloatIMM($RHS.name) )
@@ -7279,24 +7269,25 @@ condition: expression[LHS]
   else if( isFAC($LHS.name) && isUintIMM($RHS.name) )
     {
       addComment( "FAC relop UintIMM: TOC" );
+      // switchy switchy!
       if( string($OP.name) == string("<") )
 	{
-	  addCompilerMessage( "A relop XA: Relative Operator Manipulation", 0 );
+	  addCompilerMessage( "FAC relop UintIMM: Relative Operator Manipulation", 0 );
 	  strcpy( $OP.name, ">" );
 	}
       else if( string($OP.name) == string(">") )
 	{
-	  addCompilerMessage( "A relop XA: Relative Operator Manipulation", 0 );
+	  addCompilerMessage( "FAC relop UintIMM: Relative Operator Manipulation", 0 );
 	  strcpy( $OP.name, "<" );
 	}
       else if( string($OP.name) == string(">=") )
 	{
-	  addCompilerMessage( "A relop XA: Relative Operator Manipulation", 0 );
+	  addCompilerMessage( "FAC relop UintIMM: Relative Operator Manipulation", 0 );
 	  strcpy( $OP.name, "<=" );
 	}
       else if( string($OP.name) == string("<=") )
 	{
-	  addCompilerMessage( "A relop XA: Relative Operator Manipulation", 0 );
+	  addCompilerMessage( "FAC relop UintIMM: Relative Operator Manipulation", 0 );
 	  strcpy( $OP.name, ">=" );
 	}
 
@@ -7325,24 +7316,25 @@ condition: expression[LHS]
     {
       addComment( "FAC relop WordIMM: TOC" );
 
+      // switchy switchy
       if( string($OP.name) == string("<") )
 	{
-	  addCompilerMessage( "A relop XA: Relative Operator Manipulation", 0 );
+	  addCompilerMessage( "FAC relop WordIMM: Relative Operator Manipulation", 0 );
 	  strcpy( $OP.name, ">" );
 	}
       else if( string($OP.name) == string(">") )
 	{
-	  addCompilerMessage( "A relop XA: Relative Operator Manipulation", 0 );
+	  addCompilerMessage( "FAC relop WordIMM: Relative Operator Manipulation", 0 );
 	  strcpy( $OP.name, "<" );
 	}
       else if( string($OP.name) == string(">=") )
 	{
-	  addCompilerMessage( "A relop XA: Relative Operator Manipulation", 0 );
+	  addCompilerMessage( "FAC relop WordIMM: Relative Operator Manipulation", 0 );
 	  strcpy( $OP.name, "<=" );
 	}
       else if( string($OP.name) == string("<=") )
 	{
-	  addCompilerMessage( "A relop XA: Relative Operator Manipulation", 0 );
+	  addCompilerMessage( "FAC relop WordIMM: Relative Operator Manipulation", 0 );
 	  strcpy( $OP.name, ">=" );
 	}
       inlineFloat( $RHS.name );
@@ -7584,8 +7576,6 @@ condition: expression[LHS]
 	  addAsm( str_LDA + "#$FF", 2, false );
 	  addAsm( str_CLC, 1, false );
 	}
-
-      
     }    
   else if( isFloatIMM($LHS.name) && isUintID($RHS.name) )
     {
@@ -7673,24 +7663,25 @@ condition: expression[LHS]
     }
   else if( isIntID($LHS.name) && isA($RHS.name) )
     {
+      // switchy switchy
       if( string($OP.name) == string("<") )
 	{
-	  addCompilerMessage( "IntID relop FAC: Relative Operator Manipulation", 0 );
+	  addCompilerMessage( "IntID relop A: Relative Operator Manipulation", 0 );
 	  strcpy( $OP.name, ">" );
 	}
       else if( string($OP.name) == string(">") )
 	{
-	  addCompilerMessage( "IntID relop FAC: Relative Operator Manipulation", 0 );
+	  addCompilerMessage( "IntID relop A: Relative Operator Manipulation", 0 );
 	  strcpy( $OP.name, "<" );
 	}
       else if( string($OP.name) == string(">=") )
 	{
-	  addCompilerMessage( "IntID relop FAC: Relative Operator Manipulation", 0 );
+	  addCompilerMessage( "IntID relop A: Relative Operator Manipulation", 0 );
 	  strcpy( $OP.name, "<=" );
 	}
       else if( string($OP.name) == string("<=") )
 	{
-	  addCompilerMessage( "IntID relop FAC: Relative Operator Manipulation", 0 );
+	  addCompilerMessage( "IntID relop A: Relative Operator Manipulation", 0 );
 	  strcpy( $OP.name, ">=" );
 	}
       
@@ -7708,6 +7699,7 @@ condition: expression[LHS]
   else if( isIntID($LHS.name) && isFAC($RHS.name) )
     {
       addComment( "IntID relop FAC: TOC" );
+      // switchy switchy
       if( string($OP.name) == string("<") )
 	{
 	  addCompilerMessage( "IntID relop FAC: Relative Operator Manipulation", 0 );
@@ -7740,6 +7732,7 @@ condition: expression[LHS]
   else if( isIntID($LHS.name) && isFloatID($RHS.name) )
     {
       addComment( "IntID relop FloatID: TOC" );
+      // switchy switchy
       if( string($OP.name) == string("<") )
 	{
 	  addCompilerMessage( "IntID relop FloatID: Relative Operator Manipulation", 0 );
@@ -7772,6 +7765,7 @@ condition: expression[LHS]
   else if( isIntID($LHS.name) && isFloatIMM($RHS.name) )
     {
       addComment( "IntID relop FloatIMM: TOC" );
+      // switchy switchy
       if( string($OP.name) == string("<") )
 	{
 	  addCompilerMessage( "IntID relop FloatID: Relative Operator Manipulation", 0 );
@@ -7896,7 +7890,7 @@ condition: expression[LHS]
   else if( isIntID($LHS.name) && isXA($RHS.name) )
     {
       addComment( "IntID relop XA: TOC" );
-
+      // switchy switchy
       if( string($OP.name) == string("<") )
 	{
 	  addCompilerMessage( "IntID relop XA: Relative Operator Manipulation", 0 );
@@ -7952,6 +7946,7 @@ condition: expression[LHS]
   else if( isIntIMM($LHS.name) && isFloatID($RHS.name) )
     {
       addComment( "IntIMM relop FloatID: TOC" );
+      // switchy switchy
       if( string($OP.name) == string("<") )
 	{
 	  addCompilerMessage( "IntIMM relop FloatID: Relative Operator Manipulation", 0 );
@@ -8042,9 +8037,12 @@ condition: expression[LHS]
 
   else if( isIntIMM($LHS.name) && isUintID($RHS.name) )
     {
-      // TODO: OP1 is ALWAYS NEGATIVE!
-      //       OP2 is ALWAYS POSITIVE!
       addComment( "IntIMM relop UintID: TOC" );
+      if( arg_show_opt )
+	{
+	  addCompilerMessage( "This could be hard-coded because IntIMM is always < UintID", 0 );
+	  addComment( "OPTIMIZE (IntIMM is always < UintID)" );
+	}
       addAsm( str_LDA + "#$FF", 2, false );
       addAsm( str_CLC, 1, false );
     }
@@ -8112,6 +8110,7 @@ condition: expression[LHS]
   else if( isUintID($LHS.name) && isA($RHS.name) )
     {
       addComment( "UintID relop A: TOC" );
+      // switchy switchy
       if( string($OP.name) == string("<") )
 	{
 	  addCompilerMessage( "UintID relop A: Relative Operator Manipulation", 0 );
@@ -8137,6 +8136,7 @@ condition: expression[LHS]
   else if( isUintID($LHS.name) && isFAC($RHS.name) )
     {
       addComment( "UintID relop FAC: TOC" );
+      // switchy switchy
       if( string($OP.name) == string("<") )
 	{
 	  addCompilerMessage( "UintID relop FAC: Relative Operator Manipulation", 0 );
@@ -8167,6 +8167,7 @@ condition: expression[LHS]
   else if( isUintID($LHS.name) && isFloatID($RHS.name) )
     {
       addCompilerMessage( "UintID relop FloatID: testing", 1 );
+      // switchy switchy
       if( string($OP.name) == string("<") )
 	{
 	  addCompilerMessage( "UintID relop FloatID: Relative Operator Manipulation", 0 );
@@ -8199,26 +8200,26 @@ condition: expression[LHS]
     }
   else if( isUintID($LHS.name) && isFloatIMM($RHS.name) )
     {
-      addCompilerMessage( "UintID relop FloatIMM: taesting", 1 );
-      addComment( "UintID relop FloatIMM: TOC (testing)" );
+      addComment( "UintID relop FloatIMM: TOC" );
+      // switchy switchy
       if( string($OP.name) == string("<") )
 	{
-	  addCompilerMessage( "UintID relop FloatID: Relative Operator Manipulation", 0 );
+	  addCompilerMessage( "UintID relop FloatIMM: Relative Operator Manipulation", 0 );
 	  strcpy( $OP.name, ">" );
 	}
       else if( string($OP.name) == string(">") )
 	{
-	  addCompilerMessage( "UintID relop FloatID: Relative Operator Manipulation", 0 );
+	  addCompilerMessage( "UintID relop FloatIMM: Relative Operator Manipulation", 0 );
 	  strcpy( $OP.name, "<" );
 	}
       else if( string($OP.name) == string(">=") )
 	{
-	  addCompilerMessage( "UintID relop FloatID: Relative Operator Manipulation", 0 );
+	  addCompilerMessage( "UintID relop FloatIMM: Relative Operator Manipulation", 0 );
 	  strcpy( $OP.name, "<=" );
 	}
       else if( string($OP.name) == string("<=") )
 	{
-	  addCompilerMessage( "UintID relop FloatID: Relative Operator Manipulation", 0 );
+	  addCompilerMessage( "UintID relop FloatIMM: Relative Operator Manipulation", 0 );
 	  strcpy( $OP.name, ">=" );
 	}
       addAsm( str_LDY + getNameOf(getAddressOf($LHS.name) ), 3, false );
@@ -8321,14 +8322,11 @@ condition: expression[LHS]
       addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
       addAsm( str_BYTE + "$C9" + commentmarker + "<-- CMP Immediate", 1, false );
       addAsm( "!:\t" + str_BYTE + "$00", 1, true );
-
-
       addAsm( "!:",0,true );
-
-    }
-    
+    }    
   else if( isUintIMM($LHS.name) && isA($RHS.name) )
     {
+      // switchy switchy
       if( string($OP.name) == string("<") )
 	{
 	  addCompilerMessage( "UintIMM relop A: Relative Operator Manipulation", 0 );
@@ -8353,8 +8351,6 @@ condition: expression[LHS]
       addComment( "UintIMM relop A: TOC" );
 
       addAsm( str_CMP + "#$" + toHex( atoi(stripFirst($LHS.name).c_str() )), 2, false );
-
-      
     }
   else if( isUintIMM($LHS.name) && isFAC($RHS.name) )
     {
@@ -8368,6 +8364,7 @@ condition: expression[LHS]
     }
   else if( isUintIMM($LHS.name) && isFloatID($RHS.name) )
     {
+      // switchy switchy
       if( string($OP.name) == string("<") )
 	{
 	  addCompilerMessage( "UintIMM relop FloatID: Relative Operator Manipulation", 0 );
@@ -8462,7 +8459,6 @@ condition: expression[LHS]
     }
   else if( isUintIMM($LHS.name) && isUintID($RHS.name))
     {
-      addCompilerMessage( "UintIMM relop UintID (type mismatch)", 1 );
       addComment( "UintIMM relop UintID: TOC");
       addAsm( str_LDA + "#$" + toHex( atoi(stripFirst($LHS.name).c_str() )), 2, false );
       addAsm( str_CMP + getNameOf(getAddressOf($RHS.name)), 3, false );
@@ -8554,6 +8550,7 @@ condition: expression[LHS]
   else if( isWordID($LHS.name) && isFAC($RHS.name) )
     {
       addComment( "WordID relop FAC: TOC" );
+      // switchy switchy
 
       if( string($OP.name) == string("<") )
 	{
@@ -8586,6 +8583,7 @@ condition: expression[LHS]
   else if( isWordID($LHS.name) && isFloatID($RHS.name) )
     {
       addComment( "WordID relop FloatID: TOC" );
+      // switchy switchy
       if( string($OP.name) == string("<") )
 	{
 	  addCompilerMessage( "WordID relop FloatID: Relative Operator Manipulation", 0 );
@@ -8615,6 +8613,7 @@ condition: expression[LHS]
   else if( isWordID($LHS.name) && isFloatIMM($RHS.name) )
     {
       addComment( "WordID relop FloatIMM: TOC" );
+      // switchy switchy
       if( string($OP.name) == string("<") )
 	{
 	  addCompilerMessage( "WordID relop FloatIMM: Relative Operator Manipulation", 0 );
@@ -8683,11 +8682,8 @@ condition: expression[LHS]
     }
   else if( isWordID($LHS.name) && isUintIMM($RHS.name) )
     {
-
       int R = atoi( stripFirst($RHS.name).c_str() );
-      
       addComment( "WordID relop UintIMM: TOC" );
-
       addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)) + " +1",3, false ); 
       addAsm( str_BNE + "!+", 2, false );
       addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
@@ -8696,10 +8692,6 @@ condition: expression[LHS]
       addAsm( "!:\t" + str_LDA + "#$01", 2, true );
       addAsm( str_SEC, 1, false );
       addAsm( "!:", 0, true );
-
-
-
-      
     }
   else if( isWordID($LHS.name) && isWordID($RHS.name))
     {
@@ -8768,6 +8760,7 @@ condition: expression[LHS]
   else if( isWordIMM($LHS.name) && isFloatID($RHS.name) )
     {
       addComment( "WordIMM relop FloatID: TOC" );
+      // switchy switchy
       if( string($OP.name) == string("<") )
 	{
 	  addCompilerMessage( "IntIMM relop FloatID: Relative Operator Manipulation", 0 );
@@ -8936,8 +8929,8 @@ condition: expression[LHS]
     }
   else if( isWordIMM($LHS.name) && isXA($RHS.name) )
     {
-      addCompilerMessage( "WordIMM relop XA: testing", 1 );
       addComment( "WordIMM relop XA: TOC (testing)" );
+      // switchy switchy
       if( string($OP.name) == string("<") )
 	{
 	  addCompilerMessage( "WordIMM relop XA: Relative Operator Manipulation", 0 );
@@ -8972,7 +8965,6 @@ condition: expression[LHS]
     }
   else if( isXA($LHS.name) && isA($RHS.name) )
     {
-      addCompilerMessage( "XA relop A: testing", 1 );
       addComment( "XA relop A: TOC" );
       addAsm( str_STA + "$04", 2, false );
       addAsm( str_LDX + "#$00", 2, false );
@@ -8993,6 +8985,7 @@ condition: expression[LHS]
   else if( isXA($LHS.name) && isFAC($RHS.name) )
     {
       addComment( "XA relop FAC: TOC" );
+      // switchy switchy
 
       if( string($OP.name) == string("<") )
 	{
@@ -9024,6 +9017,7 @@ condition: expression[LHS]
   else if( isXA($LHS.name) && isFloatID($RHS.name) )
     {
       addComment( "XA relop FloatID: TOC" );
+      // switchy switchy
       if( string($OP.name) == string("<") )
 	{
 	  addCompilerMessage( "XA relop FloatID: Relative Operator Manipulation", 0 );
@@ -9052,6 +9046,7 @@ condition: expression[LHS]
   else if( isXA($LHS.name) && isFloatIMM($RHS.name) )
     {
       addComment( "XA relop FloatIMM: TOC" );
+      // switchy switchy
       if( string($OP.name) == string("<") )
 	{
 	  addCompilerMessage( "XA relop FloatIMM: Relative Operator Manipulation", 0 );
@@ -9117,7 +9112,6 @@ condition: expression[LHS]
     }
   else if( isXA($LHS.name) && isUintIMM($RHS.name))
     {
-      // This should be more like XA relop WordIMM
       addComment( "XA relop UintIMM: TOC" );
       int tmp_v = atoi(stripFirst($RHS.name).c_str());
 
@@ -9156,7 +9150,7 @@ condition: expression[LHS]
     }
   else if( isXA($LHS.name) && isXA($RHS.name) )
     {
-      addCompilerMessage( "XA relop XA: testing", 1 );
+      addCompilerMessage( "XA relop XA: Destroys ZP $02-$05", 1 );
       addComment( "XA relop XA: TOC" );
       addAsm( str_STX + "$05", 2, false );
       addAsm( str_STA + "$04", 2, false );
@@ -9609,10 +9603,10 @@ condition: expression[LHS]
   //addCompilerMessage( "Logical anding of 2 conditions is very poorly implemented. (if A && B)", 1 );
 };
 
-| TRUE { add('K'); $$.nd = NULL; }
-| FALSE { add('K'); $$.nd = NULL; }
-| { $$.nd = NULL; }
-;
+//| TRUE { add('K'); $$.nd = NULL; }
+//| FALSE { add('K'); $$.nd = NULL; }
+//| { $$.nd = NULL; }
+//;
 
 statement: datatype ID init
 {
@@ -9636,19 +9630,7 @@ statement: datatype ID init
 
   current_variable_base_address = getAddressOf(_id);
 
-  if(isFloatDT(_dt) && isFloatID(_id) && isARG(_init))
-    {
-      addCompilerMessage( "float ID = ARG has been removed (for now)", 3 );
-      addComment( "Float FloatID = ARG" );
-      //addAsm( str_LDA + "#69", 2, false );
-      //addAsm( str_LDY + "#$00", 2, false );
-      //addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
-      addAsm( str_JSR + "$BBFC" + commentmarker + "ARG -> FAC", 3, false );
-      addAsm( str_LDX + "#<" + getNameOf(getAddressOf(_id)), 2, false );
-      addAsm( str_LDY + "#>" + getNameOf(getAddressOf(_id)), 2, false ); 
-      addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );
-    }
-  else if( _init == string("Slipstream"))
+  if( _init == string("Slipstream"))
     {
       // I have no idea WTF I was thinking here... Slipstream?!?
       if( (isIntDT(_dt) || isUintDT(_dt)) && (isIntID(_id) || isUintID(_id)) )
@@ -9677,9 +9659,21 @@ statement: datatype ID init
 	  addCompilerMessage( "Uninitialised float may contain garbage", 0 );
 	}
     }
+  else if(isFloatDT(_dt) && isFloatID(_id) && isIntIMM(_init))
+    {
+      addComment( "initialising a float with IntIMM" );
+      int v = twos_complement(atoi( stripFirst(stripFirst(_init).c_str()).c_str()));
+      addAsm( str_LDY + "#$" + toHex(v), 2, false );
+      addAsm( str_LDA + "#$FF", 2, false );
+      addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
+      addAsm( str_LDX + "#<" + getNameOf(getAddressOf( _id )), 2, false );
+      addAsm( str_LDY + "#>" + getNameOf(getAddressOf( _id )), 2, false );
+      addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );
+
+    }
   else if(isFloatDT(_dt) && isFloatID(_id) && isXA(_init))
     {
-      addComment( "FLOAT FloatID = XA" );
+      addComment( "float FloatID = XA" );
       addComment( "^v^ OPTIMIZE v^v" );
       addAsm( str_TAY, 1, false );
       addAsm( str_TXA, 1, false );
@@ -9690,7 +9684,7 @@ statement: datatype ID init
     }
   else if(isFloatDT(_dt) && isFloatID(_id) && isA(_init))
     {
-      addComment( "Float FloatID = A" );
+      addComment( "float FloatID = A" );
       addComment( "^v^ OPTIMIZE v^v" );
       addAsm( str_TAY, 1, false );
       addAsm( str_LDA + "#$00", 2, false );
@@ -9701,51 +9695,93 @@ statement: datatype ID init
     }
   else if(isFloatDT(_dt) && isFloatID(_id) && isFAC(_init))
     {
-      addComment( "FLOAT FloatID = FAC" );
+      addComment( "float FloatID = FAC" );
       addAsm( str_LDX + "#<" + getNameOf(getAddressOf(_id)), 2, false );
       addAsm( str_LDY + "#>" + getNameOf(getAddressOf(_id)), 2, false );
       addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );
     }
-  else if(isFloatDT(_dt) && isFloatID(_id) && isFloatIMM(_init))
-    {
-      addCompilerMessage( "This shouldn't trigger", 3 );
-      addComment( "float FloatID = FloatIMM" );
-      inlineFloat(_init, current_variable_base_address );
-    }
   else if(isUintDT(_dt) && isUintID(_id) && isA(_init))
     {
-      addComment( "Uint UintID = A" );
+      addComment( "uint UintID = A" );
       int instr_size = 3;
       if( current_variable_base_address < 256 ) instr_size = 2;
       addAsm(str_STA + _id, instr_size, false );
     }
   else if(isIntDT(_dt) && isIntID(_id) && isA(_init))
     {
-      addComment( "Int IntID = A" ); 
+      addComment( "int IntID = A" ); 
       int instr_size = 3;
       if( current_variable_base_address < 256 ) instr_size = 2;
       addAsm(str_STA + _id, instr_size, false );
     }
-  else if((isUintDT(_dt)||isIntDT(_dt)) && (isUintID(_id)||isIntID(_id)) && isXA(_init))
+  else if( isUintDT(_dt) && isUintID(_id) && isXA(_init) )
     {
-      addComment( "Uint/Int UintID/IntID = XA " );
+      addComment( "uint UintID = XA" );
       addCompilerMessage("Initialising a 1 byte memory location with a 2 byte value; losing High Byte", 1);
       int instr_size = 3;
       if( current_variable_base_address < 256 ) instr_size = 2;
       addAsm( str_STA + _id, instr_size, false );
     }
+  else if( isUintDT(_dt) && isUintID(_id) && isIntIMM(_init) )
+    {
+      addComment( "uint UintID = IntIMM" );
+      addCompilerMessage("Initialising Unsigned Integer with Signed Integer... chaos may ensue!", 1);
+      int instr_size = 3;
+      if( current_variable_base_address < 256 ) instr_size = 2;
+      int v = twos_complement(atoi( stripFirst(stripFirst( _init ).c_str()).c_str() ));
+      addAsm( str_LDA + "#$" + toHex(v), 2, false );
+      addAsm( str_STA + _id, instr_size, false );
+    }
+  else if( isIntDT(_dt) && isIntID(_id) && isIntIMM(_init) )
+    {
+      addComment( "int IntID = IntIMM" );
+      int instr_size = 3;
+      if( current_variable_base_address < 256 ) instr_size = 2;
+      int v = twos_complement(atoi( stripFirst(stripFirst( _init ).c_str()).c_str() ));
+      addAsm( str_LDA + "#$" + toHex(v), 2, false );
+      addAsm( str_STA + _id, instr_size, false );
+    }
+  else if( isWordDT(_dt) && isWordID(_id) && isIntIMM(_init) )
+    {
+      addComment( "word WordID = IntIMM" );
+      addCompilerMessage("Initialising Unsigned Word with Signed Intger... chaos may ensue!", 1);
+
+      int instr_size = 3;
+      if( current_variable_base_address < 256 ) instr_size = 2;
+      int v = twos_complement(atoi( stripFirst(stripFirst( _init ).c_str()).c_str() ));
+      addAsm( str_LDA + "#$" + toHex(v), 2, false );
+      addAsm( str_LDX + "#$FF", 2, false );
+      addAsm( str_STA + _id, instr_size, false );
+      addAsm( str_STX + _id + " +1", instr_size, false );
+    }
+  else if( isIntDT(_dt) && isIntID(_id) && isXA(_init) )
+    {
+      addComment( "int IntID = XA" );
+      addCompilerMessage("Initialising a 1 byte memory location with a 2 byte value; losing High Byte", 1);
+      int instr_size = 3;
+      if( current_variable_base_address < 256 ) instr_size = 2;
+      addAsm( str_STA + _id, instr_size, false );
+    }
+  else if( isWordDT(_dt) && isWordID(_id) && isIntIMM(_init) )
+    {
+      addCompilerMessage( "Initialising a WordID with an 8-bit SIGNED  integer", 1);
+      int instr_size = 3;
+      addAsm( str_STA + _id, instr_size, false );	    
+      addAsm( str_LDX + "#$FF", 2, false );
+      addAsm( str_STX + _id + " +1", instr_size, false );
+    }
   else if( isWordDT(_dt) && isWordID(_id) && isA(_init) )
     {
-      addCompilerMessage("Initialising a 2 byte memory location with a 1 byte value",0);
+      addCompilerMessage("Initialising a 2 byte memory location with a 1 byte value (high byte zeroed out)", 1);
       addComment( "word WordID = A" );
-      illegal_operations_are_needed = true;
+      //illegal_operations_are_needed = true;
       addAsm( str_LDX + "#$00", 2, false );
       int instr_size = 3;
       if( current_variable_base_address < 256 ) instr_size = 2;
-      addAsm(str_STA + _id, instr_size, false );	    
+      addAsm( str_STA + _id, instr_size, false );	    
       instr_size = 3;
       if( current_variable_base_address+1 < 256 ) instr_size = 2;
-      addAsm(str_STX + _id + " +1", instr_size, false );
+      addAsm( str_STX + _id + " +1", instr_size, false );
     }
   else if( isWordDT(_dt) && isWordID(_id) && isXA(_init))
     {
@@ -9756,7 +9792,7 @@ statement: datatype ID init
   else if(isWordDT(_dt) && isWordID(_id) && isFAC(_init))
     {
       addComment("word WordID = FAC" );
-      addCompilerMessage( "16-bit word is signed", 0 );
+      addCompilerMessage( "16-bit word is signed", 1 );
       addAsm( str_JSR + "$B1AA" + commentmarker + "FAC -> WORD", 3, false );
       addAsm( str_STY + getNameOf(getAddressOf($2.name)), 3, false );
       addAsm( str_STA + getNameOf(getAddressOf($2.name)) + " +1", 3, false ); 
@@ -9764,19 +9800,20 @@ statement: datatype ID init
   else if(isUintDT(_dt) && isUintID(_id) && isFAC(_init))
     {
       addComment("uint ID = FAC" );
+      addCompilerMessage( "initialising UintID with FAC ... possible sign conflict... you will likely be eaten by a Grue.", 1 );
       addAsm( str_JSR + "$B1AA" + commentmarker + "FAC -> WORD", 3, false );
       // if A is != #$00, then Y should = #$FF
-      addAsm( str_CMP + "#$00", 2, false );
-      addAsm( str_BEQ + "!+", 2, false );
-      addAsm( str_LDY + "#$FF", 2, false );
+      
+      //addAsm( str_CMP + "#$00", 2, false );
+      //addAsm( str_BMI + "!+", 2, false );
+      //addAsm( str_LDY + "#$FF", 2, false );
       addAsm( "!:\t" + str_STY + getNameOf(getAddressOf($2.name)), 3, true );
     }
   else if(isIntDT(_dt) && isIntID(_id) && isFAC(_init))
     {
-      addCompilerMessage( "Possible SIGN issues", 1 );
+      addCompilerMessage( "initialising IntID with FAC ... possible sign conflict... you will likely be eaten by a Grue.", 1 );
       addComment("int ID = FAC" );
       // if the bit 15 == 1 then it's negative... otherwise it's positive
-      addCompilerMessage( "16-bit word is signed", 0 );
 
       addAsm( str_JSR + "$B1AA" + commentmarker + "FAC -> WORD (ylo ahi)", 3, false );
       addAsm( str_STY + getNameOf(getAddressOf($2.name)), 3, false );
@@ -12707,13 +12744,7 @@ init: '=' expression
   
   int variable_type = getTypeOf( $$.name );
 
-  if( isARG($2.name)  )
-    {
-      addCompilerMessage( "ARG is being removed", 3 );
-      addComment( "initialising with ARG" );
-      strcpy($$.name, "_ARG" );
-    }
-  else if( isXA($2.name)  )
+  if( isXA($2.name)  )
     {
       addComment( "initialising with XA" );
       strcpy($$.name, "_XA" );
@@ -12723,10 +12754,6 @@ init: '=' expression
       addComment( "initialising with FAC" );
       strcpy($$.name, "_FAC" );
     }  
-  else if( isMOB($2.name)  )
-    {
-      addCompilerMessage( "MOB type has been removed", 3 );
-    }  
   else if( isA($2.name) )
     {
       addComment( "initialising with A" );
@@ -12735,9 +12762,6 @@ init: '=' expression
   else if( isFloatIMM($2.name) )
     {
       addComment( "initialising with FloatIMM" );
-      //inlineFloat( $2.name, 105 );
-      // 2025 07 01 - mkpellegrino
-      //inlineFloat( $2.name, 25 );
       inlineFloat( $2.name );
       strcpy($$.name, "_FAC");
     }
@@ -12800,27 +12824,32 @@ init: '=' expression
     }
   else if( isIntIMM($2.name) )
     {
-      addComment( "initialising with IntIMM" );
-      int v = atoi( stripFirst($2.name).c_str() );
-      if( v < 0 )
-	{
-	  addComment( "... two's complement ..." );
+      addComment( "The special case of IntIMM" );
+      strcpy($$.name, $2.name );
+
+      
+      // this is a special case and should maybe be taken out
+      // until: dt id init
+      //addComment( "initialising with IntIMM" );
+      //int v = twos_complement( atoi( stripFirst($2.name).c_str() )) ;
+      //if( v < 0 )
+      //{
+	  //addComment( "... two's complement ..." );
 		     
-	  v = twos_complement(v);
-	}
-      addAsm( str_LDA + "#$" + toHex(v), 2, false );
-      strcpy( $$.name, "_A" );
+      //  v = twos_complement(v);
+      //	}
+      //addAsm( str_LDA + "#$" + toHex(v), 2, false );
+      //strcpy( $$.name, "_A" );
     }
   else if( isWordIMM($2.name) )
     {
       addComment( "initialising with WordIMM" );
 
       int tmp_int = atoi( stripFirst($2.name).c_str() );
-      if( get_word_L(tmp_int) ==  get_word_H(tmp_int) )
+      if( get_word_L(tmp_int) == get_word_H(tmp_int) )
 	{
 	  addComment( "undocumented instruction" );
 	  addAsm( str_LAX + "#$" + toHex( get_word_L(tmp_int)), 2, false );
-	  //addAsm( str_TAX );
 	}
       else
 	{
@@ -12831,9 +12860,12 @@ init: '=' expression
     }
   else if( isNULL($2.name) )
     {
-      //addComment( "initialising NULL" );
       strcpy($$.name, "NULL" );
     }
+  else if( isMOB($2.name)  )
+    {
+      addCompilerMessage( "MOB type has been removed", 3 );
+    }  
   else
     {
       addComment( "What is this?  Pass it on!" );
@@ -12936,8 +12968,9 @@ arithmetic[MATHOP] expression[OP2]
 	{
 	  if( arg_unsafe_math )
 	    {
-	      addComment( "A + A --> A (Destroys $FB)" );	   
-	      addAsm( str_STA + "$FB" + commentmarker + "(2:3)", 2, false ); // temporaily store OP2 in zp
+	      addCompilerMessage( "A + A --> A (Destroys ZP $FB)", 1 );
+	      addComment( "A + A --> A (Destroys ZP $FB)" );	   
+	      addAsm( str_STA + "$FB" + commentmarker + "(2:3) (bytes:cycles)", 2, false ); // temporaily store OP2 in zp
 	      addAsm( str_PLA + commentmarker + "(1:4)", 1, false ); 
 	      addAsm( str_CLC, 1, false );
 	      addAsm( str_ADC + "$FB" + commentmarker + "(2:3)" , 2, false );
@@ -12946,7 +12979,7 @@ arithmetic[MATHOP] expression[OP2]
 	  else
 	    {
 	      addComment( "A + A --> A" );
-	      addAsm( str_TAX + commentmarker + "(1:2)", 1, false );
+	      addAsm( str_TAX + commentmarker + "(1:2) (bytes:cycles)", 1, false );
 	      addAsm( str_PLA + commentmarker + "(1:4)", 1, false );
 	      addAsm( str_TAY + commentmarker + "(1:2)", 1, false );
 	      addAsm( str_LDA + "$FB" + commentmarker + "(2:2)", 2, false );
@@ -13048,7 +13081,6 @@ arithmetic[MATHOP] expression[OP2]
       else if( op == string( "**" ) )
 	{
 	  addComment( "A ** A --> XA" );
-	  mul16_is_needed = true;
 	  pow16_is_needed = true;
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_LDA + "#$00", 2, false );
@@ -13099,18 +13131,15 @@ arithmetic[MATHOP] expression[OP2]
 	}
       else if( op == string( "-" ) )
 	{
-	  addComment( "A - FAC --> FAC" );
-	  float_swap_space_is_needed = true;
+	  addCompilerMessage( "A - FAC --> FAC (Destroys ZP $02)", 1 );
+	  addComment( "A - FAC --> FAC (Destroys $02)" );
 	  addAsm( str_STA + "$02", 2, false );
 	  pushFAC();
 	  addAsm( str_LDY + "$02", 2, false );	  
 	  addAsm( str_LDA + "#$00", 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 
-	  addAsm( str_LDX + "#<!fp1+", 2, false );
-	  addAsm( str_LDY + "#>!fp1+", 2, false );
-	  addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );
-
+	  FACToSwap1();
 	  popFAC();
 	  addAsm( str_LDA + "#<!fp1+", 2, false );
 	  addAsm( str_LDY + "#>!fp1+", 2, false );
@@ -13164,9 +13193,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_LDA + "#$00", 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 
-	  addAsm( str_LDX + "#<!fp1+", 2, false );
-	  addAsm( str_LDY + "#>!fp1+", 2, false );
-	  addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );
+	  FACToSwap1();
 
 	  popFAC();
 
@@ -13201,9 +13228,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_LDA + "#$00", 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 
-	  addAsm( str_LDX + "#<!fp1+", 2, false );
-	  addAsm( str_LDY + "#>!fp1+", 2, false );
-	  addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );
+	  FACToSwap1();
 
 	  popFAC();
 
@@ -13309,13 +13334,11 @@ arithmetic[MATHOP] expression[OP2]
 
       if( op == string("+") )
 	{	  
-	  float_swap_space_is_needed = true;
 	  addAsm( str_PHA, 1, false );
 	  inlineFloat($4.name);
-	  addComment( "Use the Floating Point Swap Space" );
-	  addAsm( str_LDX + "#<!fp0+", 2, false );
-	  addAsm( str_LDY + "#>!fp0+", 2, false );
-	  addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );
+
+	  FACToSwap0();
+
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAY, 1, false );
 	  addAsm( str_LDA + "#$00", 2, false );
@@ -13327,13 +13350,9 @@ arithmetic[MATHOP] expression[OP2]
 	}
       else if( op == string("-") )
 	{	  
-	  float_swap_space_is_needed = true;
 	  addAsm( str_PHA, 1, false );
 	  inlineFloat($4.name);
-	  addComment( "Use the Floating Point Swap Space" );
-	  addAsm( str_LDX + "#<!fp0+", 2, false );
-	  addAsm( str_LDY + "#>!fp0+", 2, false );
-	  addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );
+	  FACToSwap0();
 	  
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAY, 1, false );
@@ -13351,13 +13370,10 @@ arithmetic[MATHOP] expression[OP2]
 	}
       else if( op == string("*") )
 	{	  
-	  float_swap_space_is_needed = true;
 	  addAsm( str_PHA, 1, false );
 	  inlineFloat($4.name);
-	  addComment( "Use the Floating Point Swap Space" );
-	  addAsm( str_LDX + "#<!fp0+", 2, false );
-	  addAsm( str_LDY + "#>!fp0+", 2, false );
-	  addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );	  
+	  FACToSwap0();
+	    
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAY, 1, false );
 	  addAsm( str_LDA + "#$00", 2, false );
@@ -13370,13 +13386,10 @@ arithmetic[MATHOP] expression[OP2]
 	}
       else if( op == string("/") )
 	{	  
-	  float_swap_space_is_needed = true;
 	  addAsm( str_PHA, 1, false );
 	  inlineFloat($4.name);
-	  addComment( "Use the Floating Point Swap Space" );
-	  addAsm( str_LDX + "#<!fp0+", 2, false );
-	  addAsm( str_LDY + "#>!fp0+", 2, false );
-	  addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );
+
+	  FACToSwap0();
 	  
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAY, 1, false );
@@ -13393,13 +13406,11 @@ arithmetic[MATHOP] expression[OP2]
 	}
       else if( op == string( "**" ))
 	{
-	  float_swap_space_is_needed = true;
 	  addAsm( str_PHA, 1, false );
 	  inlineFloat($4.name);
-	  addComment( "Use the Floating Point Swap Space" );
-	  addAsm( str_LDX + "#<!fp0+", 2, false );
-	  addAsm( str_LDY + "#>!fp0+", 2, false );
-	  addAsm( str_JSR + "$BBD4" + commentmarker + "FAC -> MEM", 3, false );
+
+	  FACToSwap0();
+	  
 	  
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAY, 1, false );
@@ -13453,7 +13464,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_LDA + O2, instr_size, false );
 	  addAsm( str_BPL + "!+", 2, false );
 	  addAsm( str_DEX, 1, false );
-	  addAsm( "!:\t" + str_STX + "_MUL16_FE", 3, false );
+	  addAsm( "!:\t" + str_STX + "_MUL16_FE", 3, true );
 	  addAsm( str_STA + "_MUL16_FD", 3, false );
 	  addAsm( str_JSR + "MUL16", 3, false );
 	  addAsm( str_LDA + "MUL16R", 3, false );
@@ -16138,7 +16149,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_EOR + "#$FF", 2, false );
 	  addAsm( str_CLC, 1, false );
 	  addAsm( str_ADC + "#$01", 2, false );
-	  addAsm( "!:\t" + str_STA + "_DIV16_FB", 3, false );
+	  addAsm( "!:\t" + str_STA + "_DIV16_FB", 3, true );
 	  addAsm( str_LDA + "#$00", 2, false );
 	  addAsm( str_STA + "_DIV16_FC", 3, false );
 	  addAsm( str_STA + "_DIV16_FE", 3, false );
@@ -16719,7 +16730,6 @@ arithmetic[MATHOP] expression[OP2]
   else if( isIntID($1.name) && isIntIMM($4.name) )
     {
       addComment( "IntID math IntIMM: TOC" );
-      //addCompilerMessage( "IntID math IntIMM: nyi (test this please)", 3 );
       if( op == string("+"))
 	{
 	  addComment( "IntID + IntIMM --> A" );
@@ -17488,7 +17498,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_EOR + "#$FF", 2, false );
 	  addAsm( str_CLC, 1, false );
 	  addAsm( str_ADC + "#$01", 2, false );
-	  addAsm( "!:\t" + str_STA + "_DIV16_FB", 3, false );
+	  addAsm( "!:\t" + str_STA + "_DIV16_FB", 3, true );
 	  
 	  addAsm( str_JSR + "DIV16", 3, false );
 
@@ -17525,7 +17535,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_LDA + O1, sizeOP1A, false );
 	  addAsm( str_BPL + "!+", 2, false );
 	  addAsm( str_DEX, 1, false );
-	  addAsm( "!:\t" + str_PHA, 1, false );
+	  addAsm( "!:\t" + str_PHA, 1, true );
 	  addAsm( str_TXA, 1, false );
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_TYA, 1, false );
@@ -17898,7 +17908,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_LDA + OP2, 2, false );
 	  addAsm( str_BMI + "!+", 2, false );
 	  addAsm( str_INX, 1, false );
-	  addAsm( "!:\t" + str_STA + "_MUL16_FD", 3, false );
+	  addAsm( "!:\t" + str_STA + "_MUL16_FD", 3, true );
 	  addAsm( str_STX + "_MUL16_FE", 3, false );
 	  addAsm( str_JSR + "MUL16", 3, false );
 	  addAsm( str_LDA + "MUL16R", 3, false );
@@ -18438,11 +18448,11 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_STX + "!++", 3, false );
 	  addAsm( str_LDA + "#$" + toHex(OP1value), 2, false ); 
 	  addAsm( str_BYTE + "$E9" + commentmarker + "<-- SBC Immediate", 1, false );
-	  addAsm( "!:\t" + str_BYTE + "$00" + commentmarker + "<-- A", 1, false );
+	  addAsm( "!:\t" + str_BYTE + "$00" + commentmarker + "<-- A", 1, true );
 	  addAsm( str_TAY, 1, false );
 	  addAsm( str_LDA + "#$FF", 2, false );
 	  addAsm( str_BYTE + "$E9" + commentmarker + "<-- SBC Immediate", 1, false );
-	  addAsm( "!:\t" + str_BYTE + "$00" + commentmarker + "<-- X", 1, false );	  
+	  addAsm( "!:\t" + str_BYTE + "$00" + commentmarker + "<-- X", 1, true );	  
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_TYA, 1, false );
 	  strcpy( $$.name, "_XA" );
@@ -21133,7 +21143,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_LDA + O2, sizeOP2A, false );
 	  addAsm( str_BPL + "!+", 2, false );
 	  addAsm( str_DEX, 1, false );
-	  addAsm( "!:\t" + str_STX + "_MUL16_FE", 3, false);
+	  addAsm( "!:\t" + str_STX + "_MUL16_FE", 3, true);
 	  addAsm( str_STA + "_MUL16_FD", 3, false);
 	  addAsm( str_JSR + "MUL16", 3, false );
 	  addAsm( str_LDA + "MUL16R", 3, false );
@@ -21993,7 +22003,7 @@ arithmetic[MATHOP] expression[OP2]
 	      addAsm( str_LDX + getNameOf(tmp_op1) + " +1" + commentmarker + "(4)", 3, false );
 	      addAsm( str_CLC + commentmarker + "(2)", 1, false );
 	      addAsm( str_LDY + "#$03" + commentmarker + "(2)", 2, false );
-	      addAsm( "!:\t" + str_ROL + commentmarker + "(2)", 2, false );
+	      addAsm( "!:\t" + str_ROL + commentmarker + "(2)", 2, true );
 	      addAsm( str_PHA + commentmarker + "(3)", 1, false );
 	      addAsm( str_TXA + commentmarker + "(2)", 1, false );
 	      addAsm( str_ROL + commentmarker + "(2)", 1, false );
@@ -22009,7 +22019,7 @@ arithmetic[MATHOP] expression[OP2]
 	      addAsm( str_LDX + getNameOf(tmp_op1) + " +1" + commentmarker + "(4)", 3, false );
 	      addAsm( str_CLC + commentmarker + "(2)", 1, false );
 	      addAsm( str_LDY + "#$04" + commentmarker + "(2)", 2, false );
-	      addAsm( "!:\t" + str_ROL + commentmarker + "(2)", 2, false );
+	      addAsm( "!:\t" + str_ROL + commentmarker + "(2)", 2, true );
 	      addAsm( str_PHA + commentmarker + "(3)", 1, false );
 	      addAsm( str_TXA + commentmarker + "(2)", 1, false );
 	      addAsm( str_ROL + commentmarker + "(2)", 1, false );
@@ -22649,7 +22659,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false );
 	  addAsm( str_BPL + "!+", 2, false );
 	  addAsm( str_DEX, 1, false );
-	  addAsm( "!:\t" + str_ADC + "#$" + toHex(get_word_L(tmp_int)), 2, false );
+	  addAsm( "!:\t" + str_ADC + "#$" + toHex(get_word_L(tmp_int)), 2, true );
 	  addAsm( str_TAY, 1, false );
 	  addAsm( str_TXA, 1, false );
 	  addAsm( str_ADC + "#$" + toHex(get_word_H(tmp_int)), 2, false );
@@ -22671,7 +22681,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_TAY, 1, false );
 	  addAsm( str_TXA, 1, false );
 	  addAsm( str_BYTE + "$E9" + commentmarker + "<-- SBC Immediate", 1, false );
-	  addAsm( "!:\t" + str_BYTE + "$00", 1, false );
+	  addAsm( "!:\t" + str_BYTE + "$00", 1, true );
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_TYA, 1, false );
 	  strcpy($$.name, "_XA" );
@@ -23481,7 +23491,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_LDA + O2, sizeOP2A, false );
 	  addAsm( str_BPL + "!+", 2, false );
 	  addAsm( str_DEC + "!++", 3, false );
-	  addAsm( "!:\t" + str_CLC );
+	  addAsm( "!:\t" + str_CLC, 1, true);
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_ADC + O2, sizeOP2A, false );
 	  addAsm( str_TAY, 1, false );
@@ -23501,7 +23511,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_LDA + O2, sizeOP2A, false );
 	  addAsm( str_BPL + "!+", 2, false );
 	  addAsm( str_DEC + "!++", 3, false );
-	  addAsm( "!:\t" + str_SEC );
+	  addAsm( "!:\t" + str_SEC, 1, true);
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_SBC + O2, sizeOP2A, false );
 	  addAsm( str_TAY, 1, false );
@@ -23523,7 +23533,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_LDA + O2, sizeOP2A, false );
 	  addAsm( str_BPL + "!+", 2, false );
 	  addAsm( str_DEC + "_MUL16_FE", 3, false);
-	  addAsm( "!:\t" + str_STA + "_MUL16_FD", 3, false);
+	  addAsm( "!:\t" + str_STA + "_MUL16_FD", 3, true);
 	  addAsm( str_JSR + "MUL16", 3, false );
 	  addAsm( str_LDA + "MUL16R", 3, false );
 	  addAsm( str_LDX + "MUL16R+1", 3, false );
@@ -23585,7 +23595,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_LAX + "#$00", 2, false );
 	  addAsm( str_JMP + "!++", 3, false );
 
-	  addAsm( "!:\t" + str_PHA, 1, false );
+	  addAsm( "!:\t" + str_PHA, 1, true );
 	  addAsm( str_JSR + "pow16", 3, false );
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAX, 1, false );
@@ -24304,6 +24314,7 @@ arithmetic[MATHOP] expression[OP2]
 	      addAsm( str_BNE + "!-", 2, false );
 	      addAsm( str_LDY + "$02", 2, false );
 	      addAsm( str_LDX + "$03", 2, false );
+	      
 	      addAsm( str_PLA );
 	      addAsm( str_STA + "$03", 2, false );
 	      addAsm( str_PLA );
@@ -26153,93 +26164,99 @@ arithmetic[MATHOP] expression[OP2]
     }
   strcpy($$.name, "_FAC" );
 };
-| '{' value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ','
-value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ','
-value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ','
-value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ','
-value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ','
-value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ','
-value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' value '}'
-{
-  int sprite_number = atoi($2.name);
-  if( sprite_number > 7 || sprite_number < 0 )
-    {
-      addCompilerMessage( "invalid MOB number: should be 0-7", 3 );
-    }
-  int sprite_area = atoi($4.name);
-  if( sprite_area > 255 || sprite_area < 0 )
-    {
-      addCompilerMessage( "invalid MOB location: should be 0-255", 3 );
-    }
+
+// HERE LIES THE BODY OF POOR OL' MOB
+// WHILE HE LIV'D HE DID HIS JOB
+// BUT NIGH HE'S GONE... NONE WILL SOB
+// REST YE IN PEACE - POOR OL' MOB
+
+/* | '{' value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' */
+/* value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' */
+/* value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' */
+/* value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' */
+/* value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' */
+/* value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' */
+/* value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' value '}' */
+/* { */
+/*   int sprite_number = atoi($2.name); */
+/*   if( sprite_number > 7 || sprite_number < 0 ) */
+/*     { */
+/*       addCompilerMessage( "invalid MOB number: should be 0-7", 3 ); */
+/*     } */
+/*   int sprite_area = atoi($4.name); */
+/*   if( sprite_area > 255 || sprite_area < 0 ) */
+/*     { */
+/*       addCompilerMessage( "invalid MOB location: should be 0-255", 3 ); */
+/*     } */
   
-  mob_vector.push_back( atoi(stripFirst($2.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($4.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($6.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($8.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($10.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($12.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($14.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($16.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($18.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($20.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($22.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($24.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($26.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($28.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($30.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($32.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($34.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($36.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($38.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($40.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($42.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($44.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($46.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($48.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($50.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($52.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($54.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($56.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($58.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($60.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($62.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($64.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($66.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($68.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($70.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($72.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($74.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($76.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($78.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($80.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($82.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($84.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($86.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($88.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($90.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($92.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($94.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($96.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($98.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($100.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($102.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($104.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($106.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($108.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($110.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($112.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($114.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($116.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($118.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($120.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($122.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($124.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($126.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($128.name).c_str()) );
-  mob_vector.push_back( atoi(stripFirst($130.name).c_str()) );
-  strcpy($$.name, "_MOB" );
-  //strcpy($$.name, "m" ); // 0404
-};
+/*   mob_vector.push_back( atoi(stripFirst($2.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($4.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($6.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($8.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($10.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($12.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($14.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($16.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($18.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($20.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($22.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($24.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($26.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($28.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($30.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($32.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($34.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($36.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($38.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($40.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($42.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($44.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($46.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($48.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($50.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($52.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($54.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($56.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($58.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($60.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($62.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($64.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($66.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($68.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($70.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($72.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($74.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($76.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($78.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($80.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($82.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($84.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($86.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($88.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($90.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($92.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($94.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($96.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($98.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($100.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($102.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($104.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($106.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($108.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($110.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($112.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($114.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($116.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($118.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($120.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($122.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($124.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($126.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($128.name).c_str()) ); */
+/*   mob_vector.push_back( atoi(stripFirst($130.name).c_str()) ); */
+/*   strcpy($$.name, "_MOB" ); */
+/*   //strcpy($$.name, "m" ); // 0404 */
+/* }; */
 | tGETIN '(' ')'
 {
   addComment( "=========================================================");  
@@ -26274,11 +26291,11 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
     }
   else if( isIntIMM( $3.name ) || isUintIMM( $3.name ))
     {
-      int value = atoi(stripFirst($3.name).c_str());
-      if( value < 0 )
-	{
-	  value = twos_complement( value );
-	}
+      int value = twos_complement(atoi(stripFirst($3.name).c_str()));
+      //if( value < 0 )
+      //	{
+      //  value = twos_complement( value );
+      //}
       addAsm( str_LDA + "#$" + toHex( value ), 2, false );
       strcpy($$.name, "_A");
 
@@ -26313,6 +26330,18 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
       addAsm( str_TAX );
       addAsm( str_TYA );
       strcpy($$.name, "_XA");
+    }
+  else if( isWordIMM( $3.name ) )
+    {
+      int value = twos_complement(atoi(stripFirst($3.name).c_str()));
+      //if( value < 0 )
+      //	{
+      //  value = twos_complement( value );
+      //}
+      addAsm( str_LDA + "#$" + toHex( get_word_L(value) ), 2, false );
+      addAsm( str_LDX + "#$" + toHex( get_word_H(value) ), 2, false );
+      strcpy($$.name, "_XA");
+
     }
   else if( isXA( $3.name ) )
     {
@@ -26361,13 +26390,13 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
     }
   else if( isFAC($3.name) )
     {
-      addComment( "ln( FAC )" );
+      addComment( "ln(FAC)" );
       addAsm( str_JSR + "$B9EA" + commentmarker + "ln(FAC) -> FAC", 3, false );
       strcpy($$.name, "_FAC");
     }
   else if( isFloatID($3.name) )
     {
-      addComment( "ln( FloatID )" );
+      addComment( "ln(FloatID)" );
       addAsm( str_LDA + "#<" + getNameOf(getAddressOf($3.name)), 2, false  );
       addAsm( str_LDY + "#>" + getNameOf(getAddressOf($3.name)), 2, false  );
       addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false ); // FP ->FAC
@@ -26376,7 +26405,7 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
     }
   else if( isWordID($3.name) )
     {
-      addComment( "ln( WordID )" );
+      addComment( "ln(WordID)" );
       addComment( "https://c64os.com/post/floatingpointmath" );
       addAsm( str_LDY + getNameOf(getAddressOf($3.name)), 3, false  );
       addAsm( str_LDA + getNameOf(getAddressOf($3.name)) + " +1", 3, false  );
@@ -26390,16 +26419,13 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
     }
   else if( isIntID($3.name) )
     {
-      addComment( "ln( IntID )" );
+      addComment( "ln(IntID)" );
       addAsm( str_LDX + "#$00", 2, false );
-      addAsm( str_LDY + getNameOf(getAddressOf($3.name)), 3, false ); 
-      addAsm( str_TYA, 1, false );
-      addAsm( str_ASL, 1, false );
-      addAsm( str_BCC + "!pos+", 2, false );
-      // result is negative
-      addAsm( str_LDX + "#$FF", 2, false );
-      addAsm( "!pos:", 0, true );
-      addAsm( str_STY + "$63", 2, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false ); 
+      addAsm( str_BPL + "!+", 2, false );
+      addAsm( str_DEX, 1, false );
+      addAsm( "!:", 0, true );
+      addAsm( str_STA + "$63", 2, false );
       addAsm( str_STX + "$62", 2, false );
       addAsm( str_LDX + "#$90", 2, false );
       addAsm( str_JSR + "$BC44" + commentmarker + "signed word16 -> FAC", 3, false );
@@ -26417,7 +26443,7 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
     }
   else if( isXA($3.name) )
     {
-      addComment( "ln( XA )" );
+      addComment( "ln(XA)" );
       addAsm( str_TAY, 1, false );
       addAsm( str_TXA, 1, false );
       addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
@@ -26426,7 +26452,7 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
     }
   else if( isA($3.name) )
     {
-      addComment( "ln( A )" );
+      addComment( "ln(A)" );
       addAsm( str_TAY, 1, false );
       addAsm( str_LDA + "#$00", 2, false );
       addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
@@ -26491,14 +26517,21 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
     }
   else if( isIntID($3.name) )
     {
-      addCompilerMessage( "abs(IntID): nyi", 3 );
+      addComment( "abs(IntID)" );
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
+      addAsm( str_BPL + "!+", 2, false );
+      addAsm( str_EOR + "#$FF", 2, false );
+      addAsm( str_CLC, 1, false );
+      addAsm( str_ADC + "#$01", 2, false );
+      addAsm( "!:", 0, true );
+      strcpy($$.name, "_A");
     }
   else if( isFloatID($3.name) )
     {
       addCompilerMessage( "abs(FloatID) is a ROM routine", 1 );
       addAsm( str_LDA + "#<" + getNameOf(getAddressOf($3.name)), 2, false  );
       addAsm( str_LDY + "#>" + getNameOf(getAddressOf($3.name)), 2, false  );
-      addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false ); // FP ->FAC
+      addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
       addAsm( str_JSR + "$BC58" + commentmarker + "abs(FAC) -> FAC", 3, false );
       strcpy($$.name, "_FAC");
     }
@@ -26508,7 +26541,7 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
     }
   else
     {
-      addCompilerMessage( "trying to calculate absolute value of unknown type", 3);
+      addCompilerMessage( "cannot calculate absolute value of unknown type", 3);
     }
 }
 | tSIN '(' expression ')'
@@ -26543,16 +26576,14 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
     }
   else if( isIntID($3.name) )
     {
-      addComment( "sin( IntID )" );
+      addComment( "sin(IntID)" );
       addAsm( str_LDX + "#$00", 2, false );
-      addAsm( str_LDY + getNameOf(getAddressOf($3.name)), 3, false ); 
-      addAsm( str_TYA, 1, false );
-      addAsm( str_ASL, 1, false );
-      addAsm( str_BCC + "!pos+", 2, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false ); 
+      addAsm( str_BPL + "!+", 2, false );
       // result is negative
-      addAsm( str_LDX + "#$FF", 2, false );
-      addAsm( "!pos:", 0, true );
-      addAsm( str_STY + "$63", 2, false );
+      addAsm( str_DEX, 1, false );
+      addAsm( "!:", 0, true );
+      addAsm( str_STA + "$63", 2, false );
       addAsm( str_STX + "$62", 2, false );
       addAsm( str_LDX + "#$90", 2, false );
       addAsm( str_JSR + "$BC44" + commentmarker + "signed word16 -> FAC", 3, false );
@@ -26640,21 +26671,16 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
     }
   else if( isIntID($3.name) )
     {
-      addComment( "cos( IntID )" );
+      addComment( "cos(IntID)" );
       addAsm( str_LDX + "#$00", 2, false );
-      addAsm( str_LDY + getNameOf(getAddressOf($3.name)), 3, false ); 
-      addAsm( str_TYA, 1, false );
-      addAsm( str_ASL, 1, false );
-      addAsm( str_BCC + "!pos+", 2, false );
-      // result is negative
-      addAsm( str_LDX + "#$FF", 2, false );
-      //addAsm( str_DEX, 1, false );
-      addAsm( "!pos:", 0, true );
-      addAsm( str_STY + "$63", 2, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false ); 
+      addAsm( str_BPL + "!+", 2, false );
+      addAsm( str_DEX, 1, false );
+      addAsm( "!:", 0, true );
+      addAsm( str_STA + "$63", 2, false );
       addAsm( str_STX + "$62", 2, false );
       addAsm( str_LDX + "#$90", 2, false );
-      addAsm( str_JSR + "$BC44", 3, false );
-      
+      addAsm( str_JSR + "$BC44", 3, false );      
       addAsm( str_JSR + "$E264" + commentmarker + "cos(FAC) -> FAC", 3, false );
       strcpy($$.name, "_FAC");
     }
@@ -26738,23 +26764,20 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
     }
   else if( isIntID($3.name) )
     {
-      addComment( "tan( IntID )" );
+      addComment( "tan(IntID)" );
       addComment( "https://skoolkid.github.io/sk6502/c64rom/asm/B391.html" );
-
       addAsm( str_LDX + "#$00", 2, false );
-      addAsm( str_LDY + getNameOf(getAddressOf($3.name)), 3, false ); 
-      addAsm( str_TYA, 1, false );
-      addAsm( str_ASL, 1, false );
-      addAsm( str_BCC + "!pos+", 2, false );
-      // result is negative
-      addAsm( str_LDX + "#$FF", 2, false );
-      addAsm( "!pos:", 0, true );
-      addAsm( str_STY + "$63", 2, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false ); 
+      addAsm( str_BPL + "!+", 2, false );
+      addAsm( str_DEX, 1, false );
+      addAsm( "!:", 0, true );
+      addAsm( str_STA + "$63", 2, false );
       addAsm( str_STX + "$62", 2, false );
       addAsm( str_LDX + "#$90", 2, false );
       addAsm( str_JSR + "$BC44", 3, false );
       addAsm( str_JSR + "$E2B4" + commentmarker + "tan(FAC) -> FAC", 3, false );
       strcpy($$.name, "_FAC");
+
     }
   else if( isUintID($3.name) )
     {
@@ -26816,8 +26839,7 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
 };
 | ID
 {
-  addParserComment(string( "RULE: expression: ID : ") + $1.name);
-  addComment( "ID: " + string($1.name) );
+  //addComment( "ID: " + string($1.name) );
   int base_address = getAddressOf($1.name);
   int t = getTypeOf($1.name);
   strcpy($$.name, (string( "$" ) + toHex(getAddressOf($1.name))).c_str() );
@@ -26845,13 +26867,11 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
     }
   else if( isA( $3.name ) )
     {
-      addCompilerMessage( "Slowest possible method... could you use an ID or IMM instead of A?", 0 );
-      addAsm( str_LDY + "$02", 2, false );
-      addAsm( str_STA + "$02", 2, false );
+      addAsm( str_STA + "!+", 3, false );
       addAsm( str_LDA + "$D01E" + commentmarker + "MOB-MOB Collision Register", 3, false );
-      addAsm( str_AND + "$02", 2, false );
-      addAsm( str_STY + "$02", 2, false );      
-    }
+      addAsm( str_BYTE + "$29" + commentmarker + "<-- AND Immediate", 1, false );
+      addAsm( "!:\t" + str_BYTE + "$00", 1, true );
+   }
   else
     {
       addCompilerMessage( "invalid argument for spritecollision( UintID / UintIMM )", 3 );
@@ -26868,27 +26888,24 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
 };
 | tMOBBKGCOLLISION '(' expression ')'
 {
-  if( isUintID($3.name) )
+  if(isUintID($3.name))
     {
       addAsm( str_LDA + "$D01F" + commentmarker + "MOB-Background Collision Register", 3, false );
       //addAsm( str_AND + "$" + toHex(getAddressOf($3.name)), 3, false );
       addAsm( str_AND + getNameOf(getAddressOf($3.name)), 3, false );
     }
-  else if( isUintIMM($3.name) )
+  else if(isUintIMM($3.name))
     {
       addAsm( str_LDA + "$D01F" + commentmarker + "MOB-Background Collision Register", 3, false );
       addAsm( str_AND + "#$" + toHex(atoi(stripFirst($3.name).c_str())), 2, false );
     }
   else if( isA( $3.name ) )
     {
-      addCompilerMessage( "Slowest possible method... could you use an ID or IMM instead of A?", 0 );
-      addAsm( str_LDY + "$02", 2, false );
-      addAsm( str_STA + "$02", 2, false );
+      addAsm( str_STA + "!+", 3, false );
       addAsm( str_LDA + "$D01F" + commentmarker + "MOB-Background Collision Register", 3, false );
-      addAsm( str_AND + "$02", 2, false );
-      addAsm( str_STY + "$02", 2, false );      
+      addAsm( str_BYTE + "$29" + commentmarker + "<-- AND Immediate", 1, false );
+      addAsm( "!:\t" + str_BYTE + "$00", 1, true );
     }
-
   else
     {
       addCompilerMessage( "invalid argument for mobbkgcollision( UintID / UintIMM )", 3 );
@@ -26915,7 +26932,6 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
     {
       int v = (atoi(stripFirst($3.name).c_str()) & 0xFF00)/255;
       addAsm( str_LDA + "#$" + toHex(v), 2, false );
-
     }
   else
     {
@@ -26976,9 +26992,12 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
   if( isFloatID( $3.name ) )
     {
       addAsm( str_LDA + "#<" + getNameOf(addr), 2, false  );
-      addAsm( str_LDY + "#>" + getNameOf(addr), 2, false  );
-      
+      addAsm( str_LDY + "#>" + getNameOf(addr), 2, false  );      
       addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
+      addAsm( str_JSR + "$BF71" + commentmarker + "sqrt(FAC) -> FAC", 3, false );
+    }
+  else if( isFAC( $3.name ) )
+    {
       addAsm( str_JSR + "$BF71" + commentmarker + "sqrt(FAC) -> FAC", 3, false );
     }
   else
@@ -27039,18 +27058,14 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
 {
   addComment( "tPEEK '(' expression ')' " );
 
-  if( isARG($3.name) || isFAC($3.name) )
-    {
-      addCompilerMessage( "peek argument type conflict ARG/FAC", 3 );
-    }
-  else if( isWordID($3.name) )
+  if( isWordID($3.name) )
     {
       addComment( "peek( WordID );" );
 
       int addr = hexToDecimal($3.name);
       int instr_size = 3;
       if( addr < 256 ) instr_size = 2;
-      addAsm( str_LDY + "#$00", 2, false );
+      //addAsm( str_LDY + "#$00", 2, false );
 
       // 2024 04 14 - mkpellegrino
       addAsm( str_LDA + getNameOf(addr), instr_size, false );
@@ -27076,36 +27091,55 @@ value ',' value ',' value ',' value ',' value ',' value ',' value ',' value ',' 
       addAsm( str_BYTE + "$AD" + commentmarker + "<-- LDA Absolute", 1, false );
       addAsm( "!:\t" + str_BYTE + "$00", 1, true );
       addAsm( "!:\t" + str_BYTE + "$00", 1, true );
-      
-      
     }
-  else if( isIntID($3.name) || isUintID($3.name) )
+  else if( isIntID($3.name) )
     {
-      addComment( "peek( (U)IntID );" );
+      addComment( "peek( IntID );" );
+      addCompilerMessage( "peek(IntID): using abs( IntID )", 1 );
       addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
+      addAsm( str_AND + "#$7F", 2, false );
       addAsm( str_STA + "!+", 3, false );
-      addAsm( str_BYTE + "$A9" + commentmarker + "<-- LDA immediate", 1, false );
+      addAsm( str_BYTE + "$A5" + commentmarker + "<-- LDA ZP", 1, false );
+      addAsm( "!:\t" + str_BYTE + "$00", 1, true );
+    }
+  else if(isUintID($3.name) )
+    {
+      addComment( "peek( UintID );" );
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
+      
+      addAsm( str_STA + "!+", 3, false );
+      addAsm( str_BYTE + "$A5" + commentmarker + "<-- LDA ZP", 1, false );
       addAsm( "!:\t"+str_BYTE + "$00", 1, true );
     }
-  else if( isIntIMM($3.name) || isUintIMM($3.name) )
+  else if( isIntIMM($3.name)  )
     {
-      addComment( "peek( UIntIMM );" );
+      addComment( "peek( IntIMM );" );
+      addCompilerMessage( "peek(IntIMM): using abs( IntIMM )", 1 );
+
+      int v = atoi( stripFirst(stripFirst($3.name).c_str()).c_str() );
+      addAsm(str_LDA + "$" + toHex(v), 2, false );
+    }
+  else if(  isUintIMM($3.name) )
+    {
+      addComment( "peek( UintIMM );" );
 
       int v = atoi( stripFirst($3.name).c_str() );
       addAsm(str_LDA + "$" + toHex(v), 2, false );
     }
   else if( isWordIMM($3.name ) )
     {
+      addComment( "peek( WordIMM );" );
       int addr = atoi( stripFirst($3.name).c_str() );
       int instr_size =3;
       if( addr < 256 ) instr_size = 2;
-      addAsm(str_LDA + "$"  + toHex(addr), instr_size, false );
+      addAsm(str_LDA + "$" + toHex(addr), instr_size, false );
     }
   else if( isA($3.name) )
     {
+      addComment( "peek( A );" );
       addAsm( str_STA + "!+", 3, false );
-      addAsm( str_BYTE + "$A9" + commentmarker + "<-- LDA immediate", 1, false );
-      addAsm( "!:\t"+str_BYTE + "$00", 1, true );
+      addAsm( str_BYTE + "$A5" + commentmarker + "<-- LDA ZP", 1, false );
+      addAsm( "!:\t" + str_BYTE + "$00", 1, true );
     }
   else
     {
