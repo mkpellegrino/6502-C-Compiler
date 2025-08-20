@@ -1110,8 +1110,6 @@
     addAsm( str_STA + "!fp0+ +3", 3, false );
     addAsm( str_PLA, 1, false );
     addAsm( str_STA + "!fp0+ +4", 3, false );
-    //addAsm( str_PLA, 1, false );
-    //addAsm( str_STA + "!fp0+ +5", 3, false );
     return;
   }
   
@@ -3291,48 +3289,35 @@ argumentlist:
   switch( t )
     {
     case 0:
-    case 1: // one byte argument
+    case 1: // 8-bit argument
       addAsm(str_PLA);
-      //addAsm(str_STA+"$"+toHex(getAddressOf($2.name)), 3, false);
-      addAsm(str_STA+$2.name, 3, false);
+      addAsm( str_STA + $2.name, 3, false );
       break;
     case 2:
-    case 3:
-      addAsm(str_PLA);
-      //addAsm(str_STA+"$"+toHex(getAddressOf($2.name)+1), 3, false);
-      addAsm(str_STA+$2.name+" +1", 3, false);
-      addAsm(str_PLA);
-      //addAsm(str_STA+"$"+toHex(getAddressOf($2.name)), 3, false);
-      addAsm(str_STA+$2.name, 3, false);
+    case 3: // 16-bit argument
+      addAsm( str_PLA );
+      addAsm( str_STA + $2.name + " +1", 3, false );
+      addAsm( str_PLA );
+      addAsm( str_STA + $2.name, 3, false );
       break;
     case 4:
       // double
       break;
     case 8:
-      // float
-      addAsm(str_PLA);
-      //addAsm(str_STA+"$"+toHex(getAddressOf($2.name)+4), 3, false);
-      addAsm(str_STA+$2.name+"+4", 3, false);
-      addAsm(str_PLA);
-      //addAsm(str_STA+"$"+toHex(getAddressOf($2.name)+3), 3, false);
-      addAsm(str_STA+$2.name+"+3", 3, false);
-
-      addAsm(str_PLA);
-      //addAsm(str_STA+"$"+toHex(getAddressOf($2.name)+2), 3, false);
-
-      addAsm(str_STA+$2.name+"+2", 3, false);
-
-      addAsm(str_PLA);
-      //addAsm(str_STA+"$"+toHex(getAddressOf($2.name)+1), 3, false);
-      addAsm(str_STA+$2.name+" +1", 3, false);
-
-      addAsm(str_PLA);
-      //addAsm(str_STA+"$"+toHex(getAddressOf($2.name)), 3, false);
-      addAsm(str_STA+$2.name, 3, false);
-
+      // floating point argument  -- same as stackToSwap functions
+      addAsm( str_PLA );
+      addAsm( str_STA + $2.name, 3, false );
+      addAsm( str_PLA );
+      addAsm( str_STA + $2.name + " +1", 3, false );
+      addAsm( str_PLA );
+      addAsm( str_STA + $2.name + " +2", 3, false );
+      addAsm( str_PLA );
+      addAsm( str_STA + $2.name + " +3", 3, false );
+      addAsm( str_PLA );
+      addAsm( str_STA + $2.name + " +4", 3, false );
       break;
     case 16:
-      // MOV
+      // MOB
       break;
       
     default:
@@ -3352,44 +3337,44 @@ argumentlist:
     case 0:
     case 1: // one byte argument
       addAsm(str_PLA);
-      //addAsm(str_STA+"$"+toHex(getAddressOf($2.name)), 3, false);
       addAsm(str_STA+$2.name, 3, false);
 
       break;
     case 2:
     case 3:
       addAsm(str_PLA);
-      //addAsm(str_STA+"$"+toHex(getAddressOf($2.name)+1), 3, false);
       addAsm(str_STA+$2.name+" +1", 3, false);
-
       addAsm(str_PLA);
-      //addAsm(str_STA+"$"+toHex(getAddressOf($2.name)), 3, false);
       addAsm(str_STA+$2.name, 3, false);
-
       break;
     case 4:
       // double
       break;
     case 8:
       // float
-      addAsm(str_PLA);
-      //addAsm(str_STA+"$"+toHex(getAddressOf($2.name)+4), 3, false);
-      addAsm(str_STA+$2.name+"+4", 3, false);
 
-      addAsm(str_PLA);
-      //addAsm(str_STA+"$"+toHex(getAddressOf($2.name)+3), 3, false);
-      addAsm(str_STA+$2.name+"+3", 3, false);
+      // floating point argument  -- same as stackToSwap functions
+      addAsm( str_PLA );
+      addAsm( str_STA + $2.name, 3, false );
+      addAsm( str_PLA );
+      addAsm( str_STA + $2.name + " +1", 3, false );
+      addAsm( str_PLA );
+      addAsm( str_STA + $2.name + " +2", 3, false );
+      addAsm( str_PLA );
+      addAsm( str_STA + $2.name + " +3", 3, false );
+      addAsm( str_PLA );
+      addAsm( str_STA + $2.name + " +4", 3, false );
 
-      addAsm(str_PLA);
-      //addAsm(str_STA+"$"+toHex(getAddressOf($2.name)+2), 3, false);
-      addAsm(str_STA+$2.name+"+2", 3, false);
-
-      addAsm(str_PLA);
-      //addAsm(str_STA+"$"+toHex(getAddressOf($2.name)+1), 3, false);
-      addAsm(str_STA+$2.name+" +1", 3, false);
-      addAsm(str_PLA);
-      //addAsm(str_STA+"$"+toHex(getAddressOf($2.name)), 3, false);
-      addAsm(str_STA+$2.name, 3, false);
+      /* addAsm(str_PLA); */
+      /* addAsm(str_STA+$2.name+"+4", 3, false); */
+      /* addAsm(str_PLA); */
+      /* addAsm(str_STA+$2.name+"+3", 3, false); */
+      /* addAsm(str_PLA); */
+      /* addAsm(str_STA+$2.name+"+2", 3, false); */
+      /* addAsm(str_PLA); */
+      /* addAsm(str_STA+$2.name+" +1", 3, false); */
+      /* addAsm(str_PLA); */
+      /* addAsm(str_STA+$2.name, 3, false); */
 
 
       break;
@@ -3411,11 +3396,14 @@ parameterlist: /* empty */
 | expression
 {
   addComment( string( "Param: " ) + $1.name );
-  if( isUintID($1.name) || isIntID($1.name))
+  if( isUintID($1.name))
     {
-      // 2024 04 14 - mkpellegrino
       addAsm( str_LDA + getNameOf(getAddressOf( $1.name )), 3, false );
-      //addAsm( str_LDA + $1.name, 3, false );
+      addAsm( str_PHA );
+    }
+  else if( isIntID($1.name) )
+    {
+      addAsm( str_LDA + getNameOf(getAddressOf( $1.name )), 3, false );
       addAsm( str_PHA );
     }
   else if( isA( $1.name ) )
@@ -3432,13 +3420,8 @@ parameterlist: /* empty */
     {
       // 2024 04 14 - mkpellegrino
       addAsm( str_LDA + getNameOf(getAddressOf( $1.name )), 3, false );
-      //addAsm( str_LDA + $1.name, 3, false );
-
       addAsm( str_PHA );
-      // 2024 04 14 - mkpellegrino
       addAsm( str_LDA + getNameOf(getAddressOf( $1.name )) + " +1", 3, false );
-      //addAsm( str_LDA + $1.name + " +1", 3, false );
-
       addAsm( str_PHA );
     }
   else if( isWordIMM( $1.name ) )
@@ -3493,11 +3476,8 @@ parameterlist: /* empty */
     }
   else if( isFloatIMM($1.name) )
     {
-      // mkpellegrino = 2025 07 17
-      // I think that this might be more efficient
       inlineFloat( $1.name );
       pushFAC();
-      //inlineFloatPush( $1.name, 105 );      
     }
   else
     {
@@ -3576,7 +3556,9 @@ parameterlist: /* empty */
     }
   else if( isFloatIMM($3.name) )
     {
-      inlineFloatPush( $3.name );      
+      inlineFloat($3.name);
+      pushFAC();
+      //inlineFloatPush( $3.name );      
     }
   else
     {
@@ -3700,8 +3682,8 @@ tDOUBLE {addParserComment( string("RULE: datatype: ") + $$.name); current_variab
 |
 FLOAT {addParserComment( string("RULE: datatype: ") + $$.name); current_variable_type=8;strcpy($$.name, "FLOAT");}
 |
-tMOB {addParserComment( string("RULE: datatype: ") + $$.name); current_variable_type=16;strcpy($$.name, "MOB");}
-|
+//tMOB {addParserComment( string("RULE: datatype: ") + $$.name); current_variable_type=16;strcpy($$.name, "MOB");}
+//|
 VOID {addParserComment( string("RULE: datatype: ") + $$.name); current_variable_type=32;strcpy($$.name, "VOID");}
 |
 STR {addParserComment( string("RULE: datatype: ") + $$.name); current_variable_type=64;strcpy($$.name, "STRING");}
@@ -4328,7 +4310,7 @@ body: WHILE
   else if( isFAC($3.name) )
     {
       addComment( "printf(FAC);" );
-      addAsm( str_JSR + "$BDDD" + commentmarker + "FAC -> PETSCII ($0100)", 3, false );
+      addAsm( str_JSR + "$BDDD" + commentmarker + "FAC -> PETSCII (Stored at $0100)", 3, false );
       addAsm( str_LDX + "#$00", 2, false );
       addAsm( "!:\t" + str_LDA + "$0100,X", 3, true );
       addAsm( str_CMP + "#$00", 2, false );
@@ -4341,7 +4323,6 @@ body: WHILE
   else if( isFloatID($3.name) )
     {
       addComment( "printf(FloatID);" );
-      //addComment(string("printf(") + getNameOf(getAddressOf($3.name)) + string(");"));
       current_variable_base_address = getAddressOf($3.name);
 
       addAsm( str_LDA + "#<" + getNameOf(getAddressOf($3.name)), 2, false );
@@ -4351,7 +4332,7 @@ body: WHILE
       addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false ); // FP ->FAC
       // call the FOUT
       
-      addAsm( str_JSR + "$BDDD" + commentmarker + "FAC -> PETSCII ($0100)", 3, false );
+      addAsm( str_JSR + "$BDDD" + commentmarker + "FAC -> PETSCII (Stored at $0100)", 3, false );
       addAsm( str_LDA + "#$00", 2, false );
       addAsm( str_STA + "$02", 2, false );
       addAsm( str_LDA + "#$01", 2, false );
