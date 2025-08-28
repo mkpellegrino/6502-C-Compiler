@@ -1371,7 +1371,14 @@
 
   ostream & operator << (ostream &out, const asm_data &a) 
     {
-      out << a.text << commentmarker << "$" << std::hex << a.address << endl;
+      if( arg_memory_locations )
+	{
+	  out << a.text << commentmarker << "$" << std::hex << a.address << endl;
+	}
+      else
+	{
+	  out << a.text << endl;
+	}
       return out;
     }
 
@@ -1950,15 +1957,15 @@
     return;
   }
 
-  void NodeTable()
-  {
-    cerr << "NODES" << endl;
-    for( int i=0; i<node_vector.size(); i++ )
-      {
-	cerr << node_vector[i] << endl;
-      }
-    return;
-  }
+  /* void NodeTable() */
+  /* { */
+  /*   cerr << "NODES" << endl; */
+  /*   for( int i=0; i<node_vector.size(); i++ ) */
+  /*     { */
+  /* 	cerr << node_vector[i] << endl; */
+  /*     } */
+  /*   return; */
+  /* } */
 
   void ProcessComments()
   {
@@ -2027,11 +2034,11 @@
     string sta03 = string("sta $03");
     string sta02 = string("sta $02");
     string lda02 = string("lda $02");
+    string lda03 = string("lda $03");
     string ldaZero = string( "lda #$00" );
     string ldxZero = string( "ldx #$00" );
     string ldyZero = string( "ldy #$00" );
     string pha = string("pha");
-    string lda03 = string("lda $03");
     string php = string("php");    
     string clc = string("clc");
     string sec = string("sec");
@@ -2103,6 +2110,54 @@
 	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+10);
 	    addOptimizationMessage( "removing POP-PUSH IFIF", i);
 	  }
+
+	// POP-PUSH removal ($03)
+	if(
+	   cmpstr( asm_instr[i]->getString(), pla ) &&
+	   cmpstr( asm_instr[i+1]->getString(), sta03 ) &&
+	   cmpstr( asm_instr[i+2]->getString(), lda03 ) &&
+	   cmpstr( asm_instr[i+3]->getString(), pha )
+	   )
+	  {
+	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+4);
+	    addOptimizationMessage( "removing POP-PUSH $03", i);
+	  }
+	// POP-PUSH removal ($02)
+	if(
+	   cmpstr( asm_instr[i]->getString(), pla ) &&
+	   cmpstr( asm_instr[i+1]->getString(), sta02 ) &&
+	   cmpstr( asm_instr[i+2]->getString(), lda02 ) &&
+	   cmpstr( asm_instr[i+3]->getString(), pha )
+	   )
+	  {
+	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+4);
+	    addOptimizationMessage( "removing POP-PUSH $02", i);
+	  }
+	
+	// PUSH-POP removal ($02)
+	if(
+	   cmpstr( asm_instr[i]->getString(), lda02 ) &&
+	   cmpstr( asm_instr[i+1]->getString(), pha ) &&
+	   cmpstr( asm_instr[i+2]->getString(), pla ) &&
+	   cmpstr( asm_instr[i+3]->getString(), sta02 )
+	   )
+	  {
+	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+4);
+	    addOptimizationMessage( "removing PUSH-POP $02", i);
+	  }
+	// PUSH-POP removal ($03)
+	if(
+	   cmpstr( asm_instr[i]->getString(), lda03 ) &&
+	   cmpstr( asm_instr[i+1]->getString(), pha ) &&
+	   cmpstr( asm_instr[i+2]->getString(), pla ) &&
+	   cmpstr( asm_instr[i+3]->getString(), sta03 )
+	   )
+	  {
+	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+4);
+	    addOptimizationMessage( "removing PUSH-POP $03", i);
+	  }
+
+	
       }
 
 
@@ -2445,8 +2500,6 @@
 	    addOptimizationMessage( "removing Unecesary Stack Manipulations", i);
 	  }
       }
-
-
     return;
   }
 
@@ -2931,8 +2984,6 @@
       %%
 
       program: headers main '(' ')' '{' body return '}' function {};
-
-
 
 headers: 
 | /* empty */
@@ -4480,7 +4531,7 @@ body: WHILE
 // STATEMENT
 | PRINTFF '(' STR ')' ';'
 {
-  addCommentSection( string("printf(") + string($3.name) + string( ");") );
+  addComment( string("printf(") + string($3.name) + string( ");") );
 
   addAsm( str_LDX + "$02", 2, false );
   addAsm( str_LDA + "$03", 2, false );
@@ -5636,7 +5687,7 @@ body: WHILE
 // STATEMENT
 | tCLS '(' ')' ';'
 {
-  addCommentSection( "cls()");
+  addComment( "cls()");
   cls_is_needed = true;
   addAsm( str_JSR + "CLS" + commentmarker + "deep cls()", 3, false );
 };
@@ -7207,22 +7258,22 @@ condition: expression[LHS]
       addComment( "FAC relop IntIMM: TOC" );
       if( string($OP.name) == string("<") )
 	{
-	  addCompilerMessage( "A relop XA: Relative Operator Manipulation", 0 );
+	  addCompilerMessage( "FAC relop IntIMM: Relative Operator Manipulation", 0 );
 	  strcpy( $OP.name, ">" );
 	}
       else if( string($OP.name) == string(">") )
 	{
-	  addCompilerMessage( "A relop XA: Relative Operator Manipulation", 0 );
+	  addCompilerMessage( "FAC relop IntIMM: Relative Operator Manipulation", 0 );
 	  strcpy( $OP.name, "<" );
 	}
       else if( string($OP.name) == string(">=") )
 	{
-	  addCompilerMessage( "A relop XA: Relative Operator Manipulation", 0 );
+	  addCompilerMessage( "FAC relop IntIMM: Relative Operator Manipulation", 0 );
 	  strcpy( $OP.name, "<=" );
 	}
       else if( string($OP.name) == string("<=") )
 	{
-	  addCompilerMessage( "A relop XA: Relative Operator Manipulation", 0 );
+	  addCompilerMessage( "FAC relop IntIMM: Relative Operator Manipulation", 0 );
 	  strcpy( $OP.name, ">=" );
 	}
 
@@ -7639,8 +7690,6 @@ condition: expression[LHS]
       deletePreviousAsm();
       deletePreviousAsm();
       cmpFACMEM("#$19", "#$00");
-
-      
     }
   else if( isIntID($LHS.name) && isA($RHS.name) )
     {
@@ -7749,22 +7798,22 @@ condition: expression[LHS]
       // switchy switchy
       if( string($OP.name) == string("<") )
 	{
-	  addCompilerMessage( "IntID relop FloatID: Relative Operator Manipulation", 0 );
+	  addCompilerMessage( "IntID relop FloatIMM: Relative Operator Manipulation", 0 );
 	  strcpy( $OP.name, ">" );
 	}
       else if( string($OP.name) == string(">") )
 	{
-	  addCompilerMessage( "IntID relop FloatID: Relative Operator Manipulation", 0 );
+	  addCompilerMessage( "IntID relop FloatIMM: Relative Operator Manipulation", 0 );
 	  strcpy( $OP.name, "<" );
 	}
       else if( string($OP.name) == string(">=") )
 	{
-	  addCompilerMessage( "IntID relop FloatID: Relative Operator Manipulation", 0 );
+	  addCompilerMessage( "IntID relop FloatIMM: Relative Operator Manipulation", 0 );
 	  strcpy( $OP.name, "<=" );
 	}
       else if( string($OP.name) == string("<=") )
 	{
-	  addCompilerMessage( "IntID relop FloatID: Relative Operator Manipulation", 0 );
+	  addCompilerMessage( "IntID relop FloatIMM: Relative Operator Manipulation", 0 );
 	  strcpy( $OP.name, ">=" );
 	}
       addAsm( str_LDX + "#$00", 2, false );
@@ -7976,7 +8025,7 @@ condition: expression[LHS]
     }
   else if( isIntIMM($LHS.name) && isIntID($RHS.name) )
     {
-
+      // TODO: Clean this up a bit.
       addCompilerMessage( "IntIMM relop IntID: User experience may vary", 1 );
       addComment( "IntIMM relop IntID: TOC");
 
@@ -8744,22 +8793,22 @@ condition: expression[LHS]
       // switchy switchy
       if( string($OP.name) == string("<") )
 	{
-	  addCompilerMessage( "IntIMM relop FloatID: Relative Operator Manipulation", 0 );
+	  addCompilerMessage( "WordIMM relop FloatID: Relative Operator Manipulation", 0 );
 	  strcpy( $OP.name, ">" );
 	}
       else if( string($OP.name) == string(">") )
 	{
-	  addCompilerMessage( "IntIMM relop FloatID: Relative Operator Manipulation", 0 );
+	  addCompilerMessage( "WordIMM relop FloatID: Relative Operator Manipulation", 0 );
 	  strcpy( $OP.name, "<" );
 	}
       else if( string($OP.name) == string(">=") )
 	{
-	  addCompilerMessage( "IntIMM relop FloatID: Relative Operator Manipulation", 0 );
+	  addCompilerMessage( "WordIMM relop FloatID: Relative Operator Manipulation", 0 );
 	  strcpy( $OP.name, "<=" );
 	}
       else if( string($OP.name) == string("<=") )
 	{
-	  addCompilerMessage( "IntIMM relop FloatID: Relative Operator Manipulation", 0 );
+	  addCompilerMessage( "WordIMM relop FloatID: Relative Operator Manipulation", 0 );
 	  strcpy( $OP.name, ">=" );
 	}
       inlineFloat($LHS.name);
@@ -9620,7 +9669,14 @@ statement: datatype ID init
 	  int addr1 = getAddressOf(_id);
 	  int instr_size = 3;
 	  if( addr1 < 256 ) instr_size = 2;
-	  addAsm( str_STA + _id + commentmarker + "$" + toHex(addr1), instr_size, false );
+	  if( arg_memory_locations )
+	    {
+	      addAsm( str_STA + _id + commentmarker + "$" + toHex(addr1), instr_size, false );
+	    }
+	  else
+	    {
+	      addAsm( str_STA + _id, instr_size, false );
+	    }
 	}
       else if( isWordDT(_dt) && isWordID(_id) )
 	{
@@ -9629,11 +9685,25 @@ statement: datatype ID init
 	  int addr2 = getAddressOf(_id)+1;
 	  int instr_size = 3;
 	  if( addr1 < 256 ) instr_size = 2;
-	  addAsm( str_STA + _id + commentmarker + "$" + toHex(addr1), instr_size, false );
+	  if( arg_memory_locations )
+	    {
+	      addAsm( str_STA + _id + commentmarker + "$" + toHex(addr1), instr_size, false );
+	    }
+	  else
+	    {
+	      addAsm( str_STA + _id, instr_size, false );
 
+	    }
 	  instr_size = 3;
 	  if( addr2 < 256 ) instr_size = 2;
-	  addAsm( str_STX + _id + " +1" + commentmarker + "$" + toHex(addr1+1), instr_size, false );
+	  if( arg_memory_locations )
+	    {
+	      addAsm( str_STX + _id + " +1" + commentmarker + "$" + toHex(addr1+1), instr_size, false );
+	    }
+	  else
+	    {
+	      addAsm( str_STX + _id + " +1", instr_size, false );
+	    }
 	}
       else if( isFloatDT(_dt) && isFloatID(_id)  )
 	{
@@ -19137,8 +19207,70 @@ arithmetic[MATHOP] expression[OP2]
 	    }
 	  else if( tmp_v == 1 )
 	    {
+	      addComment( "Special Case: UintID * #$01" );
 	      addAsm( str_LDA + O1, sizeOP1A, false);
 	      addAsm( str_LDX + "#$00", 2, false );
+	    }
+	  else if( tmp_v == 2 )
+	    {
+	      addComment( "Special Case: UintID * #$02" );
+	      addAsm( str_LDA + O1, sizeOP1A, false);
+	      addAsm( str_LDX + "#$00", 2, false );
+
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );
+	    }
+	  else if( tmp_v == 4 )
+	    {
+	      addComment( "Special Case: UintID * #$04" );
+	      addAsm( str_LDA + O1, sizeOP1A, false);
+	      addAsm( str_LDX + "#$00", 2, false );
+
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );
+
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );
+	    }
+	  else if( tmp_v == 8 )
+	    {
+	      addComment( "Special Case: UintID * #$08" );
+	      addAsm( str_LDA + O1, sizeOP1A, false);
+	      addAsm( str_LDX + "#$00", 2, false );
+
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );
+
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );
+
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );
+
 	    }
 	  else if( tmp_v == 11 )
 	    {
@@ -19300,7 +19432,7 @@ arithmetic[MATHOP] expression[OP2]
 	{
 	  int addr_op1 = hexToDecimal($1.name);
 	  int op2 = atoi(stripFirst($4.name).c_str());
-	  addComment( "UintID / UintIMM --> A" );
+	  addComment( "UintID / UintIMM --> XA" );
 	  div16_is_needed = true;
 	  addAsm( str_LDA + O1, sizeOP1A, false );
 	  addAsm( str_STA + "_DIV16_FB", 3, false );
@@ -26248,19 +26380,13 @@ arithmetic[MATHOP] expression[OP2]
 };
 | tGETCHAR '(' ')'
 {
-  addComment( "=========================================================");  
-  addComment( string("                 getchar()" ));
-  addComment( "=========================================================");
+  addComment( "getchar()" );
   addAsm( str_JSR + "$FFE4", 3, false );
   strcpy($$.name, "_A" );
 };
 | tTWOS '(' expression ')'
 {
-  //twos_complement_is_needed = true;
-  addComment( "=========================================================");  
-  addComment( string("                 twos(expression)"));
-  addComment( "=========================================================");
-
+  addComment( "twos(expression)");
   if( isUintID( $3.name ) || isIntID( $3.name ))
     {
       //addAsm( str_LDA + "$" + toHex(getAddressOf( string($3.name))), 3, false );
@@ -26380,7 +26506,7 @@ arithmetic[MATHOP] expression[OP2]
       addComment( "ln(FloatID)" );
       addAsm( str_LDA + "#<" + getNameOf(getAddressOf($3.name)), 2, false  );
       addAsm( str_LDY + "#>" + getNameOf(getAddressOf($3.name)), 2, false  );
-      addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false ); // FP ->FAC
+      addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
       addAsm( str_JSR + "$B9EA" + commentmarker + "ln(FAC) -> FAC", 3, false );
       strcpy($$.name, "_FAC");
     }
@@ -27884,21 +28010,21 @@ int main(int argc, char *argv[])
       addAsm( str_SED );
       addAsm( str_LDA + "#$00", 2, false );
       addAsm( str_STA + "HTD_OUT", 3, false );
-      addAsm( str_STA + "HTD_OUT+1", 3, false );
-      addAsm( str_STA + "HTD_OUT+2", 3, false );
+      addAsm( str_STA + "HTD_OUT +1", 3, false );
+      addAsm( str_STA + "HTD_OUT +2", 3, false );
       addAsm( str_LDX + "#$10", 2, false );
       addAsm( "CNVBIT:",0,true );
       addAsm( str_ASL + "HTD_IN", 3, false );
-      addAsm( str_ROL + "HTD_IN+1", 3, false );
+      addAsm( str_ROL + "HTD_IN +1", 3, false );
       addAsm( str_LDA + "HTD_OUT", 3, false );
       addAsm( str_ADC + "HTD_OUT", 3, false );
       addAsm( str_STA + "HTD_OUT", 3, false );
-      addAsm( str_LDA + "HTD_OUT+1", 3, false );
-      addAsm( str_ADC + "HTD_OUT+1", 3, false );
-      addAsm( str_STA + "HTD_OUT+1", 3, false );
-      addAsm( str_LDA + "HTD_OUT+2", 3, false );
-      addAsm( str_ADC + "HTD_OUT+2", 3, false );
-      addAsm( str_STA + "HTD_OUT+2", 3, false );
+      addAsm( str_LDA + "HTD_OUT +1", 3, false );
+      addAsm( str_ADC + "HTD_OUT +1", 3, false );
+      addAsm( str_STA + "HTD_OUT +1", 3, false );
+      addAsm( str_LDA + "HTD_OUT +2", 3, false );
+      addAsm( str_ADC + "HTD_OUT +2", 3, false );
+      addAsm( str_STA + "HTD_OUT +2", 3, false );
       addAsm( str_DEX );
       addAsm( str_BNE + "CNVBIT", 2, false );
       addAsm( str_CLD );
@@ -27925,13 +28051,13 @@ int main(int argc, char *argv[])
       addAsm( str_LSR );
 
       addAsm( str_ORA + "#$30", 2, false);
-      addAsm( str_STA + "HTD_STR+2", 3, false);
+      addAsm( str_STA + "HTD_STR +2", 3, false);
       addAsm( str_PLA );
       addAsm( str_AND + "#$0F", 2, false);
       addAsm( str_ORA + "#$30", 2, false);
-      addAsm( str_STA + "HTD_STR+3", 3, false);
+      addAsm( str_STA + "HTD_STR +3", 3, false);
 
-      addAsm( str_LDA + "HTD_OUT+2", 3, false);
+      addAsm( str_LDA + "HTD_OUT +2", 3, false);
       addAsm( str_PHA );
       addAsm( str_LSR );
       addAsm( str_LSR );
@@ -27943,7 +28069,7 @@ int main(int argc, char *argv[])
       addAsm( str_PLA );
       addAsm( str_AND + "#$0F", 2, false);
       addAsm( str_ORA + "#$30", 2, false);
-      addAsm( str_STA + "HTD_STR+1", 3, false);
+      addAsm( str_STA + "HTD_STR +1", 3, false);
 
       
       // now put it into a 7 byte buffer
@@ -28492,13 +28618,13 @@ int main(int argc, char *argv[])
       addAsm( str_TAY );
       addAsm( str_CLC );
       addAsm( str_LDA + "!-----", 3, false ); 
-      addAsm( str_ADC + "MUL16R+2", 3, false );
-      addAsm( str_STA + "MUL16R+2", 3, false );
+      addAsm( str_ADC + "MUL16R +2", 3, false );
+      addAsm( str_STA + "MUL16R +2", 3, false );
       addAsm( str_TYA );
       addAsm( str_ADC + "!----", 3, false);
       addAsm( "!:\t" + str_ROR , 1, true );
-      addAsm( str_ROR + "MUL16R+2", 3, false );
-      addAsm( str_ROR + "MUL16R+1", 3, false );
+      addAsm( str_ROR + "MUL16R +2", 3, false );
+      addAsm( str_ROR + "MUL16R +1", 3, false );
       addAsm( str_ROR + "MUL16R", 3, false );
       addAsm( str_DEX );
       addAsm( str_BNE + "!--", 2, false );
@@ -28940,8 +29066,8 @@ int main(int argc, char *argv[])
 
       //addAsm( "FINPUT:", 0, true );
       addAsm( str_STY + "MAXCHARS", 3, false );
-      addAsm( str_STX + "CHECKALLOWED+1", 3, false ); 
-      addAsm( str_STA + "CHECKALLOWED+2", 3, false );
+      addAsm( str_STX + "CHECKALLOWED +1", 3, false ); 
+      addAsm( str_STA + "CHECKALLOWED +2", 3, false );
 
       addAsm( str_LDA + "#$00", 2, false );
       addAsm( str_STA + "INPUTY", 3, false );
