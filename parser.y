@@ -25540,7 +25540,7 @@ arithmetic[MATHOP] expression[OP2]
       addAsm( str_LDA+"#$" + toHex(get_word_H(addr)), 2, false  );
       addAsm( str_AND + getNameOf(hexToDecimal(stripFirst($1.name))) + " +1", 3, false);
       addAsm( str_TAX );
-xs      addAsm( str_TYA );
+      addAsm( str_TYA );
       strcpy( $$.name, "_XA" );      
     }
   else if( (isUintID($1.name)||isIntID($1.name)) && isUintID($3.name) )
