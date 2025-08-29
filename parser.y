@@ -25292,7 +25292,13 @@ arithmetic[MATHOP] expression[OP2]
 | tbwNOT expression
 {
   addComment( "~ expression (bitwise not)" );
-  if( isWordID($2.name) )
+  if( isA($2.name) )
+    {
+      addAsm( str_EOR + "#$FF", 2, false );
+      addAsm( str_LDX + "#$FF", 2, false );
+      strcpy($$.name, "_XA" );
+    }
+  else if( isWordID($2.name) )
     {
       addAsm( str_LDA + getNameOf(getAddressOf($2.name))+" +1", 3, false );
       addAsm( str_EOR + "#$FF", 3, false );
@@ -25308,11 +25314,43 @@ arithmetic[MATHOP] expression[OP2]
       addAsm( str_LDX + "#$FF", 2, false );
       strcpy($$.name, "_XA" );
     }
+  else if( isIntIMM($2.name)  )
+    {
+      int addr = atoi(stripFirst($2.name).c_str());
+      addAsm( str_LDA + "#$" + toHex(get_word_L(addr) ^ 255), 2, false  );
+      addAsm( str_LDX + "#$FF", 2, false  );
+      strcpy($$.name, "_XA" );
+    }
   else if( isUintID($2.name) )
     {      
       addAsm( str_LDA + getNameOf(getAddressOf($2.name)), 3, false );
       addAsm( str_EOR + "#$FF", 2, false );
       addAsm( str_LDX + "#$FF", 2, false );
+      strcpy($$.name, "_XA" );
+    }
+  else if( isWordID($2.mame) )
+    {
+      addAsm( str_LDA + getNameOf(getAddressOf($2.name)), 3, false );
+      addAsm( str_EOR + "#$FF", 2, false );
+      addAsm( str_TAY, 1, false );
+      addAsm( str_TXA, 1, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($2.name)) + " +1", 3, false );
+      addAsm( str_TAX, 1, false );
+      addAsm( str_TYA, 1, false );
+      strcpy($$.name, "_XA" );
+    }
+  else if( isUintIMM($2.name) )
+    {
+      int addr = atoi(stripFirst($2.name).c_str());
+      addAsm( str_LDA + "#$" + toHex(get_word_L(addr) ^ 255), 2, false  );
+      addAsm( str_LDX + "#$FF", 2, false  );
+      strcpy($$.name, "_XA" );
+    }
+  else if( isWordIMM($2.name) )
+    {
+      int val = atoi(stripFirst($2.name).c_str());
+      addAsm( str_LDA + "#$" + toHex(get_word_L(val) ^ 255), 2, false  );
+      addAsm( str_LDX + "#$" + toHex(get_word_H(val) ^ 255), 2, false  );
       strcpy($$.name, "_XA" );
     }
   else if( isXA($2.name) )
@@ -25325,25 +25363,9 @@ arithmetic[MATHOP] expression[OP2]
       addAsm( str_TYA, 1, false );
       strcpy($$.name, "_XA" );
     }
-  else if( isA($2.name) )
+  else if( isFAC($2.name) || isFloatID($2.name) || isFloatIMM($2.name) )
     {
-      addAsm( str_EOR + "#$FF", 2, false );
-      addAsm( str_LDX + "#$FF", 2, false );
-      strcpy($$.name, "_XA" );
-    }
-  else if( isWordIMM($2.name) )
-    {
-      int val = atoi(stripFirst($2.name).c_str());
-      addAsm( str_LDA + "#$" + toHex(get_word_L(val) ^ 255), 2, false  );
-      addAsm( str_LDX + "#$" + toHex(get_word_H(val) ^ 255), 2, false  );
-      strcpy($$.name, "_XA" );
-    }
-  else if( isIntIMM($2.name) || isUintIMM($2.name) )
-    {
-      int addr = atoi(stripFirst($2.name).c_str());
-      addAsm( str_LDA + "#$" + toHex(get_word_L(addr) ^ 255), 2, false  );
-      addAsm( str_LDX + "#$FF", 2, false  );
-      strcpy($$.name, "_XA" );
+      addCompilerMessage( "Bitwise Not (~): Not permitted for floating point numbers... Das ist verboten!", 3 );
     }
   else
     {
@@ -25352,6 +25374,9 @@ arithmetic[MATHOP] expression[OP2]
 };
 | expression tbwOR expression
 {
+  // TODO: This needs to be setup more like the maths
+  // (or maybe should be IN the maths) so that a mid-rule-action
+  // pushes A or XA
   addComment( "expression tbwOR expression" );
   if( isWordID($1.name) && isWordID($3.name) )
     {
@@ -25467,6 +25492,11 @@ arithmetic[MATHOP] expression[OP2]
       addAsm( str_ORA + "#$" + toHex(OP2), 2, false );
       strcpy( $$.name, "_A" );
     }
+  else if( isFAC($1.name) || isFloatID($1.name) || isFloatIMM( $1.name ) || isFAC($3.name) || isFloatID($3.name) || isFloatIMM($3.name) )
+    {
+      addCompilerMessage( "exp | exp: FAC, FloatID, and FloatIMM are ot permitted here.  Go back to the land of Modor where shadows lie.", 3 );
+
+    }
   else
     {
       addCompilerMessage( "Bitwise OR (|) not implemented for type", 3 );
@@ -25474,6 +25504,9 @@ arithmetic[MATHOP] expression[OP2]
 };
 | expression tbwAND expression
 {
+  // TODO: This needs to be setup more like the maths
+  // (or maybe should be IN the maths) so that a mid-rule-action
+  // pushes A or XA
   addComment("expression tbwAND expression");
   if( isWordID($1.name) && isWordID($3.name) )
     {
@@ -25495,7 +25528,6 @@ arithmetic[MATHOP] expression[OP2]
   else if( isWordID($1.name) && isXA($3.name) )
     {
       addComment( "WordID & XA" );
-
       int addr = getAddressOf($1.name);
       int instr_size = 3;
       if( addr < 256 ) instr_size = 2;
@@ -25512,7 +25544,13 @@ arithmetic[MATHOP] expression[OP2]
   else if( isXA($1.name) && isWordID($3.name) )
     {
       addComment( "XA & WordID" );
-      addCompilerMessage( "XA & WordID: nyi", 3 );
+      addAsm( str_AND + getNameOf(hexToDecimal(stripFirst($1.name))), 3, false);
+      addAsm( str_TAY );
+      addAsm( str_TXA );
+      addAsm( str_AND + getNameOf(hexToDecimal(stripFirst($1.name))) + " +1", 3, false);
+      addAsm( str_TAX );
+      addAsm( str_TYA );
+      strcpy( $$.name, "_XA" );
     }  
   else if( isXA($1.name) && isWordIMM($3.name) )
     {
@@ -25537,36 +25575,49 @@ arithmetic[MATHOP] expression[OP2]
       addAsm( str_LDA + "#$" + toHex(get_word_L(addr)), 2, false  );
       addAsm( str_AND + getNameOf(hexToDecimal(stripFirst($1.name))), 3, false);
       addAsm( str_TAY );
-      addAsm( str_LDA+"#$" + toHex(get_word_H(addr)), 2, false  );
+      addAsm( str_LDA + "#$" + toHex(get_word_H(addr)), 2, false  );
       addAsm( str_AND + getNameOf(hexToDecimal(stripFirst($1.name))) + " +1", 3, false);
       addAsm( str_TAX );
       addAsm( str_TYA );
       strcpy( $$.name, "_XA" );      
     }
-  else if( (isUintID($1.name)||isIntID($1.name)) && isUintID($3.name) )
+  else if( isIntID($1.name) && isUintID($3.name) )
     {
-      // TODO: Break this out into multiple else-if's
-      addComment( "(U)intID & UintID" );
-
+      addComment( "IntID & UintID" );
+      addCompilerMessage( "IndID & UintID: may produce unexpected results.", 1 );
       int addr1 = getAddressOf($1.name);
       int addr2 = getAddressOf($3.name);
       
       addAsm( str_LDA + getNameOf(addr1), 3, false);
       addAsm( str_AND + getNameOf(addr2), 3, false);
-
       strcpy( $$.name, "_A" );
     }
-  else if( (isUintID($1.name)||isIntID($1.name)) && isUintIMM($3.name) )
+  else if( isUintID($1.name) && isUintID($3.name) )
     {
-      // TODO: Break this out into multiple else-if's
-      addComment( "(U)intID & UintIMM" );
+      addComment( "UintID & UintID" );
       int addr1 = getAddressOf($1.name);
-
-      
+      int addr2 = getAddressOf($3.name);
+      addAsm( str_LDA + getNameOf(addr1), 3, false);
+      addAsm( str_AND + getNameOf(addr2), 3, false);
+      strcpy( $$.name, "_A" );
+    }
+  else if( isIntID($1.name) && isUintIMM($3.name) )
+    {
+      addComment( "IntID & UintIMM" );
+      addCompilerMessage( "IndID & UintIMM: may produce unexpected results.", 1 );
+      int addr1 = getAddressOf($1.name);
+      int addr = atoi(stripFirst($3.name).c_str());
+      addAsm( str_LDA + "#$" + toHex(addr), 2, false  );      
+      addAsm( str_AND + getNameOf(addr1), 3, false);
+      strcpy( $$.name, "_A" );
+    }
+  else if( isUintID($1.name) && isUintIMM($3.name) )
+    {
+      addComment( "UintID & UintIMM" );
+      int addr1 = getAddressOf($1.name);
       int addr = atoi(stripFirst($3.name).c_str());
       addAsm( str_LDA+"#$" + toHex(addr), 2, false  );      
       addAsm( str_AND + getNameOf(addr1), 3, false);
-      //addAsm( str_AND + "$" + stripFirst($1.name), 3, false);
       strcpy( $$.name, "_A" );
     }
   else if( isUintID($1.name) && isA($3.name) )
@@ -25582,7 +25633,6 @@ arithmetic[MATHOP] expression[OP2]
       else
 	{
 	  addAsm( str_AND + getNameOf(addr), 2, false);
-
 	}
       strcpy( $$.name, "_A" );
     }
@@ -25600,8 +25650,6 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_AND + getNameOf(addr), 2, false);
 	}
       strcpy( $$.name, "_A" );
-
-
     }
   else if( (isUintIMM($1.name)||isIntIMM($1.name)) && isA($3.name) )
     {
@@ -25618,6 +25666,10 @@ arithmetic[MATHOP] expression[OP2]
       int OP2 = atoi(stripFirst($3.name).c_str());
       addAsm( str_AND + "#$" + toHex(OP2), 2, false );
       strcpy( $$.name, "_A" );
+    }
+  else if( isFAC($1.name) || isFloatID($1.name) || isFloatIMM( $1.name ) || isFAC($3.name) || isFloatID($3.name) || isFloatIMM($3.name) )
+    {
+      addCompilerMessage( "exp & exp: FAC, FloatID, and FloatIMM are ot permitted here.  Go back to the land of Modor where shadows lie.", 3 );
     }
   else
     {
