@@ -25504,34 +25504,48 @@ arithmetic[MATHOP] expression[OP2]
       addAsm( str_TXA );
       if( addr + 1 > 255 ) instr_size = 3;
 
-      addAsm( str_AND + getNameOf(addr) + "+1", instr_size, true );
+      addAsm( str_AND + getNameOf(addr) + " +1", instr_size, true );
       addAsm( str_TAX );
       addAsm( str_TYA );
       strcpy( $$.name, "_XA" );
     }
+  else if( isXA($1.name) && isWordID($3.name) )
+    {
+      addComment( "XA & WordID" );
+      addCompilerMessage( "XA & WordID: nyi", 3 );
+    }  
+  else if( isXA($1.name) && isWordIMM($3.name) )
+    {
+      addComment( "XA & WordIMM" );
+      int v = atoi(stripFirst($3.name).c_str());
+      int vL = get_word_L( v );
+      int vH = get_word_H( v );
+      
+      addAsm( str_AND + "#$" + toHex(vL), 3, false);
+      addAsm( str_TAY, 1, false );
+      addAsm( str_TXA, 1, false );
+      addAsm( str_AND + "#$" + toHex(vH), 3, false);
+      addAsm( str_TAX, 1, false );
+      addAsm( str_TYA, 1, false );
+      strcpy( $$.name, "_XA" );
+    }  
   else if( isWordID($1.name) && isWordIMM($3.name) )
     {
       addComment( "WordID & WordIMM" );
 
       int addr = atoi(stripFirst($3.name).c_str());
-      addAsm( str_LDA+"#$" + toHex(get_word_L(addr)), 2, false  );
-      // 2024 05 03 - mkpellegrino
-      //addAsm( str_AND + "$" + stripFirst($1.name), 3, false);
+      addAsm( str_LDA + "#$" + toHex(get_word_L(addr)), 2, false  );
       addAsm( str_AND + getNameOf(hexToDecimal(stripFirst($1.name))), 3, false);
-      //addAsm( str_PHA );
       addAsm( str_TAY );
-      addAsm( str_LDA+"#$" + toHex(get_word_H(addr)), 2, false  );      
-      // 2024 05 03 - mkpellegrino
-      //addAsm( str_AND + "$" + stripFirst($1.name) + "+1", 3, false);
-      addAsm( str_AND + getNameOf(hexToDecimal(stripFirst($1.name))) + "+1", 3, false);
+      addAsm( str_LDA+"#$" + toHex(get_word_H(addr)), 2, false  );
+      addAsm( str_AND + getNameOf(hexToDecimal(stripFirst($1.name))) + " +1", 3, false);
       addAsm( str_TAX );
-      //addAsm( str_PLA );
-      addAsm( str_TYA );
+xs      addAsm( str_TYA );
       strcpy( $$.name, "_XA" );      
     }
   else if( (isUintID($1.name)||isIntID($1.name)) && isUintID($3.name) )
     {
-
+      // TODO: Break this out into multiple else-if's
       addComment( "(U)intID & UintID" );
 
       int addr1 = getAddressOf($1.name);
@@ -25544,6 +25558,7 @@ arithmetic[MATHOP] expression[OP2]
     }
   else if( (isUintID($1.name)||isIntID($1.name)) && isUintIMM($3.name) )
     {
+      // TODO: Break this out into multiple else-if's
       addComment( "(U)intID & UintIMM" );
       int addr1 = getAddressOf($1.name);
 
