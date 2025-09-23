@@ -2976,7 +2976,7 @@
 
 //%parse-param { FILE* fp }
 %token VOID 
-%token <nd_obj> CHAR tFCLOSE tFOPEN tFCLRCHN tFCHROUT tFCHRIN tFREADST tFCHKOUT tFCHKIN tSETLFS tSETNAM tSAVE tLOAD tIMPORT tSPRPTR tPUSH tPOP tCOMMENT tDATA tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tLN tABS tSIN tCOS tTAN tMOB tSIDIRQ tSIDOFF tSTRTOFLOAT tSTRTOWORD tTOFLOAT tINTTOWORD tTOUINT tTOWORD tTOBIT tDEC tINC tROL tROR tLSR tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJUMP tSETSCR tJSR tIRQ tROMOUT tROMIN tLDA tASL tSPRITESET  tSPRITEOFF tSPRITETOGGLE tRND tXXX tINLINE tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tPEEK tPOKE NEWLINE CHARACTER tPRINTS PRINTFF SCANFF INT FLOAT WHILE FOR IF ELSE TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE EXPONENT tSQRT UNARY INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL tSCREEN tNULL tMEMCPY tSEED tNEEDS tPI tE
+%token <nd_obj> CHAR tFCLOSE tFOPEN tFCLRCHN tFCHROUT tFCHRIN tFREADST tFCHKOUT tFCHKIN tSETLFS tSETNAM tSAVE tLOAD tIMPORT tSPRPTR tPUSH tPOP tCOMMENT tDATA tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tLN tABS tSIN tCOS tTAN tMOB tSIDIRQ tSIDOFF tSTRTOFLOAT tSTRTOWORD tTOFLOAT tINTTOWORD tTOUINT tTOWORD tTOBIT tDEC tINC tROL tROR tLSR tGETPC tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJUMP tSETSCR tJSR tIRQ tROMOUT tROMIN tLDA tASL tSPRITESET  tSPRITEOFF tSPRITETOGGLE tRND tXXX tINLINE tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tPEEK tPOKE NEWLINE CHARACTER tPRINTS PRINTFF SCANFF INT FLOAT WHILE FOR IF ELSE TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE EXPONENT tSQRT UNARY INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL tSCREEN tNULL tMEMCPY tSEED tNEEDS tPI tE
 %type <nd_obj> headers main body return function datatype statement arithmetic relop program else 
    %type <nd_obj2> init value expression /*charlist*/ numberlist parameterlist argumentlist
       %type <nd_obj3> condition
@@ -6745,9 +6745,17 @@ body: WHILE
 	 }
 '{' body '}'
 {
+  
   $$.nd = mknode(NULL, $4.nd, $1.name);
 }
-| { $$.nd = NULL; }
+|
+{
+  
+  byte_count -= asm_instr[asm_instr.size()-2]->getSize();
+  asm_instr.erase( asm_instr.end()-2 );  
+  addComment( "OPTIMIZED: Removed unnecessary 'jmp'" );	       
+  $$.nd = NULL;
+}
 
 // COMPARISONS
 
@@ -25594,9 +25602,17 @@ arithmetic[MATHOP] expression[OP2]
 	}
       strcpy( $$.name, "_A" );
     }
-  else if( (isUintIMM($1.name)||isIntIMM($1.name)) && isA($3.name) )
+  else if( isUintIMM($1.name) && isA($3.name) )
     {
-      addComment( "(U)intIMM & A" );
+      addComment( "UintIMM & A" );
+
+      int OP1 = atoi(stripFirst($1.name).c_str());
+      addAsm( str_AND + "#$" + toHex(OP1), 2, false );
+      strcpy( $$.name, "_A" );
+    }
+  else if(isIntIMM($1.name) && isA($3.name) )
+    {
+      addComment( "IntIMM & A" );
 
       int OP1 = atoi(stripFirst($1.name).c_str());
       addAsm( str_AND + "#$" + toHex(OP1), 2, false );
@@ -25627,6 +25643,20 @@ arithmetic[MATHOP] expression[OP2]
       addCompilerMessage( "Bitwise AND (&) not implemented for type (yet)", 3 );
     }
 };
+| tGETPC '(' ')'
+{
+  addComment( "Puts the Program Counter into XA" );
+  addAsm( str_JSR + "!+", 3, false );
+  addAsm( "!:\t" + str_PLA, 1, true );
+  addAsm( str_SEC, 1, false );
+  addAsm( str_SBC + "#$02", 2, false );
+  addAsm( str_TAY, 1, false );
+  addAsm( str_PLA, 1, false );
+  addAsm( str_SBC + "#$00", 2, false );
+  addAsm( str_TAX, 1, false );
+  addAsm( str_TYA, 1, false );  
+  strcpy( $$.name, "_XA" );
+}
 | tGETBANK '(' ')'
 {
   bnkmem_is_needed=true;
@@ -25808,7 +25838,7 @@ arithmetic[MATHOP] expression[OP2]
   addAsm( str_TAY );
   //addAsm( str_PHA );
   addAsm( str_JSR + "POP", 3, false );
-  addAsm( str_STA + "$5d", 2, false );
+  addAsm( str_STA + "$5D", 2, false );
   addAsm( str_JSR + "POP", 3, false );
   addAsm( str_STA + "$5C", 2, false );
   addAsm( str_JSR + "POP", 3, false );
@@ -25870,7 +25900,7 @@ arithmetic[MATHOP] expression[OP2]
 };
 | tINTTOWORD '(' expression ')'
 {
-  // takes a signed 8-but integer and
+  // takes a signed 8-bit integer and
   // turns it into a 16-bit word
   if( isA($3.name) )
     {
@@ -25924,10 +25954,8 @@ arithmetic[MATHOP] expression[OP2]
     }
   strcpy( $$.name, "_XA" );
 };
-
 | tTOWORD '(' expression ')'
 {
-  // TODO: Convert EXPRESSION to a Word
   int t = getTypeOf($3.name);
   if( isFloatID($3.name))
     {
@@ -25968,7 +25996,6 @@ arithmetic[MATHOP] expression[OP2]
     }
   else if( isIntID($3.name) )
     {
-      // TODO: FIX THIS!
       addCompilerMessage( "toword(intid): broken" );
       int base_address =  getAddressOf($3.name);
       int inst_size = 3;
@@ -26011,8 +26038,7 @@ arithmetic[MATHOP] expression[OP2]
       addAsm( str_LDA + "#$" + toHex( get_word_L(tmp_int) ), 2, false);
       addAsm( str_LDX + "#$" + toHex( get_word_H(tmp_int) ), 2, false);
       strcpy($$.name, "_XA" );
-
-    }
+   }
   else if( isUintIMM($3.name) )
     {
       addComment("toword(UintIMM) --> XA" );
