@@ -4185,7 +4185,7 @@ body: WHILE
       
       addAsm( str_LDX + "#$00", 2, false );
       addAsm( "!:\t" + str_LDA + OP3 + ",X", 3, true );
-      addAsm( str_CMP + "#$00", 2, false );
+      //addAsm( str_CMP + "#$00", 2, false );
       addAsm( str_BEQ + "!+", 2, false ); 
       addAsm( str_JSR + "$FFD2", 3, false );
       addAsm( str_INX );
@@ -4364,7 +4364,7 @@ body: WHILE
       addAsm( str_JSR + "$BDDD" + commentmarker + "FAC -> PETSCII (Stored at $0100)", 3, false );
       addAsm( str_LDX + "#$00", 2, false );
       addAsm( "!:\t" + str_LDA + "$0100,X", 3, true );
-      addAsm( str_CMP + "#$00", 2, false );
+      //addAsm( str_CMP + "#$00", 2, false );
       addAsm( str_BEQ + "!+", 2, false );
       addAsm( str_JSR + "$FFD2", 3, false );
       addAsm( str_INX );
@@ -4418,7 +4418,7 @@ body: WHILE
       addAsm( str_BNE + "!+", 2, false );
       addAsm( str_DEX );
       addAsm( "!:\t" + str_LDA + "HTD_STR,X", 3, true );
-      addAsm( str_CMP + "#$00", 2, false );
+      //addAsm( str_CMP + "#$00", 2, false );
       addAsm( str_BEQ + "!+", 2, false );
       addAsm( str_INX );
       addAsm( str_JSR + "$FFD2", 3, false );
@@ -4455,7 +4455,7 @@ body: WHILE
       // ---------------------------------
 
       addAsm( "!:\t" + str_LDA + "HTD_STR,X", 3, true );
-      addAsm( str_CMP + "#$00", 2, false );
+      //addAsm( str_CMP + "#$00", 2, false );
       addAsm( str_BEQ + "!+", 2, false );
       addAsm( str_INX );
       addAsm( str_JSR + "$FFD2", 3, false );
@@ -4487,7 +4487,7 @@ body: WHILE
 
       addAsm( str_DEX );
       addAsm( "!:\t" + str_LDA +"HTD_STR,X", 3, true );
-      addAsm( str_CMP + "#$00", 2, false );
+      //addAsm( str_CMP + "#$00", 2, false );
       addAsm( str_BEQ + "!+", 2, false );
       addAsm( str_INX );
       addAsm( str_JSR + "$FFD2", 3, false );
@@ -4516,7 +4516,7 @@ body: WHILE
       addAsm( str_BNE + "!+", 2, false ); 
       addAsm( str_DEX );
       addAsm( "!:\t" + str_LDA + "HTD_STR,X", 3, true );
-      addAsm( str_CMP + "#$00", 2, false );
+      //addAsm( str_CMP + "#$00", 2, false );
       addAsm( str_BEQ + "!+", 2, false );
       addAsm( str_INX );
       addAsm( str_JSR + "$FFD2", 3, false );
@@ -9086,7 +9086,7 @@ condition: expression[LHS]
       // save A in Y
       addAsm( str_TAY );
       addAsm( str_TXA );
-      addAsm( str_CMP + "#$00", 2, false ); 
+      //addAsm( str_CMP + "#$00", 2, false ); 
       addAsm( str_BNE + "!+", 2, false );
       addAsm( str_TYA );
       addAsm( str_CMP + "#$" + toHex( tmp_v ), 2, false );
@@ -9585,7 +9585,7 @@ statement: datatype ID init
 
   if( int_uint )
     {
-      addCompilerMessage( "Initialising a signed integer with an unsigned integer that is > 127.  Chaos may ensue.", 1 );
+      // addCompilerMessage( "Initialising a signed integer with an unsigned integer that is > 127.  Chaos may ensue.", 1 );
     }
   int_uint = false;
 			  
@@ -12429,7 +12429,7 @@ statement: datatype ID init
       addAsm( "!:\t" + str_BYTE + "$00", 1, true );
       addAsm( "!:\t" + str_BYTE + "$00", 1, true );
 
-      addAsm( str_CMP + "#$00", 2, false );
+      //addAsm( str_CMP + "#$00", 2, false );
       addAsm( str_BEQ + "!+", 2, false );
       addAsm( str_INX );
       addAsm( str_JMP + "!---", 3, false );
@@ -12464,7 +12464,7 @@ statement: datatype ID init
       addAsm( "!:\t" + str_BYTE + "$00", 1, true );
       addAsm( "!:\t" + str_BYTE + "$00", 1, true );
 
-      addAsm( str_CMP + "#$00", 2, false );
+      //addAsm( str_CMP + "#$00", 2, false );
       addAsm( str_BEQ + "!+", 2, false );
       addAsm( str_INX );
       addAsm( str_JMP + "!---", 3, false );
@@ -12499,7 +12499,7 @@ statement: datatype ID init
       addAsm( "!:\t" + str_BYTE + "$00", 1, true );
       addAsm( "!:\t" + str_BYTE + "$00", 1, true );
 
-      addAsm( str_CMP + "#$00", 2, false );
+      //addAsm( str_CMP + "#$00", 2, false );
       addAsm( str_BEQ + "!+", 2, false );
       addAsm( str_INX );
       addAsm( str_JMP + "!---", 3, false );
@@ -14102,7 +14102,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addComment( "A / XA --> XA" );
 	  if( !arg_unsafe_math )
 	    {
-	      addAsm( str_CMP + "#$00", 2, false );
+	      //addAsm( str_CMP + "#$00", 2, false );
 	      addAsm( str_BNE + "!+", 2, false );
 	      addAsm( str_CPX + "#$00", 2, false );
 	      addAsm( str_BNE + "!+", 2, false );
@@ -28161,7 +28161,7 @@ int main(int argc, char *argv[])
       //addAsm( str_BYTE + "$90, $04" + commentmarker + "BCC +4", 2, false );  // JumpRel +4             -> (+++)
       addAsm( str_BCC + "!+", 2 );
       addAsm( str_LDA + string("#$01"), 2, false );          // A=1                       (***)
-      addAsm( str_CMP + "#$00", 2, false );          // CMP A with 0
+      //addAsm( str_CMP + "#$00", 2, false );          // CMP A with 0
       addAsm( "!:\t" + str_PHP, 1, true);
 
       addAsm( str_JSR + "POP", 3, false );
@@ -28469,7 +28469,7 @@ int main(int argc, char *argv[])
       addAsm( str_STX + "!lv_mem0- +1", 3, false );
 
       addAsm( str_LDA + "!lv_arg1- +1", 3, false );
-      addAsm( str_CMP + "#$00", 2, false );
+      //addAsm( str_CMP + "#$00", 2, false );
       addAsm( str_BNE + "!+", 2, false );
       addAsm( str_LDA + "!lv_arg1-", 3, false );
       addAsm( str_CMP + "#$01", 2, false );
@@ -28479,7 +28479,7 @@ int main(int argc, char *argv[])
       addAsm( str_STA + "!lv_ret-", 3, false );
       addAsm( str_STX + "!lv_ret- +1", 3, false );
       addAsm( "!_skip:\t" + str_LDA + "!lv_arg1- +1", 3, true );
-      addAsm( str_CMP + "#$00", 2, false );
+      //addAsm( str_CMP + "#$00", 2, false );
       addAsm( str_BNE + "!+", 2, false );
       addAsm( str_LDA + "!lv_arg1-", 3, false );
       addAsm( str_CMP + "#$01", 2, false );
@@ -29245,7 +29245,7 @@ int main(int argc, char *argv[])
       addAsm( str_JSR + "$FFE4", 3, false );
 
       // 2023 06 07 - maybe take out the following line ??
-      addAsm( str_CMP + "#$00", 2, false );
+      //addAsm( str_CMP + "#$00", 2, false );
       addAsm( str_BEQ + "GETKEY", 2, false );
       /* this memory loc could be anywhere */
       /* I chose $CFDF because it's right */
