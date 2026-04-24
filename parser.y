@@ -25673,7 +25673,7 @@ arithmetic[MATHOP] expression[OP2]
   else if( isIntID($1.name) && isUintID($3.name) )
     {
       addComment( "IntID & UintID" );
-      addCompilerMessage( "IndID & UintID: may produce unexpected results.", 1 );
+      addCompilerMessage( "IntID & UintID: may produce unexpected results.", 1 );
       int addr1 = getAddressOf($1.name);
       int addr2 = getAddressOf($3.name);
       
@@ -25693,7 +25693,7 @@ arithmetic[MATHOP] expression[OP2]
   else if( isIntID($1.name) && isUintIMM($3.name) )
     {
       addComment( "IntID & UintIMM" );
-      addCompilerMessage( "IndID & UintIMM: may produce unexpected results.", 1 );
+      addCompilerMessage( "IntID & UintIMM: may produce unexpected results.", 1 );
       int addr1 = getAddressOf($1.name);
       int addr = atoi(stripFirst($3.name).c_str());
       addAsm( str_LDA + "#$" + toHex(addr), 2, false  );      
