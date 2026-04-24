@@ -797,7 +797,74 @@
       {
 	nmb = nmb.substr(0, nmb.length()-1);
       }
+
     return_value = binaryToHex( nmb );
+
+    // output the 5 byte packed and 6 byte FAC values as a comment
+    // I'M SURE that there's a more efficient way of doing this.
+    // optimise if you get the chance
+    string byte0 = return_value.substr(0, 2);
+    string byte1 = return_value.substr(2, 2);
+    string byte2 = return_value.substr(4, 2);
+    string byte3 = return_value.substr(6, 2);
+    string byte4 = return_value.substr(8, 2);
+    string signbyte = byte1;
+    
+    string sw = return_value.substr(2, 1);
+    string newsw = string("");
+    if( sw == string( "0" ))
+      {
+	newsw += "8";
+      }
+    else if( sw == string( "1" ))
+      {
+	newsw += "9";
+      }
+    else if( sw == string( "2" ))
+      {
+	newsw += "A";
+      }
+    else if( sw == string( "3" ))
+      {
+	newsw += "B";
+      }
+    else if( sw == string( "4" ))
+      {
+	newsw += "C";
+      }
+    else if( sw == string( "5" ))
+      {
+	newsw += "D";
+      }
+    else if( sw == string( "6" ))
+      {
+	newsw += "E";
+      }
+    else if( sw == string( "7" ))
+      {
+	newsw += "F";
+      }
+    else
+      {
+	newsw = sw;
+      }
+    newsw += return_value.substr(3, 1);
+    
+    addComment( string( "6 Byte FAC: ") + byte0 + string(" ") +
+	       newsw + string(" ") +
+	       byte2 + string(" ") +
+	       byte3 + string(" ") +
+	       byte4 + string(" ") +
+	       signbyte
+	       );
+
+    addComment( string( "5 Byte MEM: ") + byte0 + string(" ") +
+	       signbyte + string(" ") +
+	       byte2 + string(" ") +
+	       byte3 + string(" ") +
+	       byte4
+	       );
+
     return return_value;
   }
 
@@ -4101,6 +4168,7 @@ body: WHILE
 };
 
 // STATEMENT
+// TODO: backspace is not working!
 | SCANFF '(' expression ')' ';'
 {
   if( isWordID( $3.name ) )
@@ -4115,9 +4183,13 @@ body: WHILE
       addAsm( str_LDA + "#>SCANFBUF-2", 2, false );
       addAsm( str_STA + "$FC", 2, false );
       int addr = getAddressOf($3.name);
-      addAsm( str_LDA + $3.name, 2, false);
+
+      addAsm( str_LDA + getNameOf(addr), 2, false );
+      //addAsm( str_LDA + $3.name, 2, false);
+
       addAsm( str_STA + "$FD", 2, false );
-      addAsm( str_LDA + $3.name + " +1", 2, false);
+      addAsm( str_LDA + getNameOf(addr) + " +1", 2, false);
+      //addAsm( str_LDA + $3.name + " +1", 2, false);
       addAsm( str_STA + "$FE", 2, false ); 
       addAsm( str_LDA + "#$" + toHex(scanf_buffer_size), 2, false );
       addAsm( str_PHA );
@@ -9914,7 +9986,6 @@ statement: datatype ID init
     {
       addCompilerMessage( "invalid increment", 3 );
     }
-
 };
 | tDEC '(' ID ',' NUMBER ')'
 {
@@ -12261,13 +12332,6 @@ statement: datatype ID init
       if( current_variable_base_address < 256 ) instr_size=2; 
       addAsm( str_STA + getNameOf(current_variable_base_address), instr_size, false);
     }
-  else if( isUintID(_id) && isA(_init) )
-    {
-      addComment( "UintID = A" );
-      int instr_size = 3;
-      if( current_variable_base_address < 256 ) instr_size=2; 
-      addAsm( str_STA + getNameOf(current_variable_base_address), instr_size, false);
-    }
   else if( isIntID && isXA(_init) )
     {
       addComment( "IntID = XA" );
@@ -12277,7 +12341,14 @@ statement: datatype ID init
       if( current_variable_base_address < 256 ) instr_size=2; 
       addAsm( str_STA + getNameOf(current_variable_base_address), instr_size, false);
     }
-  else if( (isUintID(_id)||isIntID(_id)) && isXA(_init) )
+  else if( isIntID(_id) && isFAC(_init) )
+    {
+      addComment( "UintID = FAC" );
+      addCompilerMessage("setting a 1 byte memory location to a Floating Point byte value... losing Sign and Fidelity" ,1);
+      addAsm( str_JSR + "$B1AA" + commentmarker + "FAC -> WORD (y-lo a-hi)", 3, false );
+      addAsm( str_STY + getNameOf(getAddressOf(_id)), 3, false );
+    }
+  else if( isIntID(_id) && isXA(_init) )
     {
       // this should happen only if the instruction is
       // something specific
@@ -12288,7 +12359,34 @@ statement: datatype ID init
       if( current_variable_base_address < 256 ) instr_size = 2;
       addAsm( str_STA + getNameOf(current_variable_base_address), instr_size, false );
     }
-  else if( (isUintID(_id)||isIntID(_id)) && isFAC(_init) )
+  else if( isIntID(_id) && isIntIMM(_init) )
+    {
+      addComment( "IntID init with IntIMM" );
+      //addCompilerMessage( stripFirst(_init).c_str(), 3 );
+      int tmp = atoi( stripFirst(_init).c_str() ) ;
+      addAsm( str_LDA + "#$" + toHex(twos_complement(tmp)), 2, false );
+      addAsm( str_STA + getNameOf(getAddressOf(_id)), 3, false );
+      
+    }
+  else if( isUintID(_id) && isA(_init) )
+    {
+      addComment( "UintID = A" );
+      int instr_size = 3;
+      if( current_variable_base_address < 256 ) instr_size=2; 
+      addAsm( str_STA + getNameOf(current_variable_base_address), instr_size, false);
+    }
+  else if( isUintID(_id) && isXA(_init) )
+    {
+      // this should happen only if the instruction is
+      // something specific
+      addAsm( "// ^^^ OPTIMIZE (maybe) ^^^", 0, false );
+      addComment( "UintID init with XA" );
+      addCompilerMessage("setting a 1 byte memory location to a 2 byte value... losing High Byte", 1);
+      int instr_size = 3;
+      if( current_variable_base_address < 256 ) instr_size = 2;
+      addAsm( str_STA + getNameOf(current_variable_base_address), instr_size, false );
+    }
+  else if( isUintID(_id) && isFAC(_init) )
     {
       addComment( "UintID = FAC" );
       addCompilerMessage("setting a 1 byte memory location to a Floating Point byte value... losing Sign and Fidelity" ,1);
@@ -12297,6 +12395,9 @@ statement: datatype ID init
     }
   else
     {
+      addCompilerMessage( ">>> ", 0 );
+      addCompilerMessage( _init, 0 );
+      addCompilerMessage( "<<< ", 0 );
       addCompilerMessage( "ID initialisation error: invalid initialiser", 3 );
     } 
 };
@@ -13746,6 +13847,22 @@ arithmetic[MATHOP] expression[OP2]
 	      addAsm( str_LSR, 1, false );
 	    case 2:
 	      addAsm( str_LSR, 1, false );
+	      addAsm( str_LDX + "#$00", 2, false );
+	      break;
+	    case 10:
+	      addAsm( str_LSR );
+	      addAsm( str_STA + "$2A", 2, false );
+	      addAsm( str_LSR );
+	      addAsm( str_ADC + "$2A", 2, false );
+	      addAsm( str_ROR );
+	      addAsm( str_LSR );
+	      addAsm( str_LSR );
+	      addAsm( str_ADC + "$2A", 2, false );
+	      addAsm( str_ROR );
+	      addAsm( str_ADC + "$2A", 2, false );
+	      addAsm( str_ROR );
+	      addAsm( str_LSR );
+	      addAsm( str_LSR );
 	      addAsm( str_LDX + "#$00", 2, false );
 	      break;
 	    default:
@@ -19377,22 +19494,43 @@ arithmetic[MATHOP] expression[OP2]
 	  strcpy($$.name, "_XA" );
 	}
       else if( op == string("/") )
-	{
+	{	      
+	  addComment( "UintID / UintIMM --> XA" );
 	  int addr_op1 = hexToDecimal($1.name);
 	  int op2 = atoi(stripFirst($4.name).c_str());
-	  addComment( "UintID / UintIMM --> XA" );
-	  div16_is_needed = true;
-	  addAsm( str_LDA + O1, sizeOP1A, false );
-	  addAsm( str_STA + "_DIV16_FB", 3, false );
-	  addAsm( str_LDA + "#$00", 2, false ); 
-	  addAsm( str_STA + "_DIV16_FC", 3, false );
-	  addAsm( str_STA + "_DIV16_FE", 3, false );
+	  if( op2 == 10 )
+	    {
+	      addComment( "Special Case ... / 10" );
+	      addAsm( str_LSR );
+	      addAsm( str_STA + "$2A", 2, false );
+	      addAsm( str_LSR );
+	      addAsm( str_ADC + "$2A", 2, false );
+	      addAsm( str_ROR );
+	      addAsm( str_LSR );
+	      addAsm( str_LSR );
+	      addAsm( str_ADC + "$2A", 2, false );
+	      addAsm( str_ROR );
+	      addAsm( str_ADC + "$2A", 2, false );
+	      addAsm( str_ROR );
+	      addAsm( str_LSR );
+	      addAsm( str_LSR );
+	      addAsm( str_LDX + "#$00", 2, false );
+	    }
+	  else
+	    {
+	      div16_is_needed = true;
+	      addAsm( str_LDA + O1, sizeOP1A, false );
+	      addAsm( str_STA + "_DIV16_FB", 3, false );
+	      addAsm( str_LDA + "#$00", 2, false ); 
+	      addAsm( str_STA + "_DIV16_FC", 3, false );
+	      addAsm( str_STA + "_DIV16_FE", 3, false );
 	  
-	  addAsm( str_LDA + "#$" + toHex(op2), 2, false );
-	  addAsm( str_STA + "_DIV16_FD", 3, false );
-	  addAsm( str_JSR + "DIV16", 3, false );
-	  addAsm( str_LDA + "_DIV16_FB", 3, false );
-	  addAsm( str_LDX + "_DIV16_FC", 3, false );
+	      addAsm( str_LDA + "#$" + toHex(op2), 2, false );
+	      addAsm( str_STA + "_DIV16_FD", 3, false );
+	      addAsm( str_JSR + "DIV16", 3, false );
+	      addAsm( str_LDA + "_DIV16_FB", 3, false );
+	      addAsm( str_LDX + "_DIV16_FC", 3, false );
+	    }
 	  strcpy($$.name, "_XA" );
 	}
       else if( op == string("**") )
@@ -28829,9 +28967,15 @@ int main(int argc, char *argv[])
     }
   if( byte2hex_is_needed )
     {
+      addComment( "return address" );
+      addAsm( "!rx:\t" + str_BYTE + "$00", 1, true );
+      addAsm( "!ry:\t" + str_BYTE + "$00", 1, true );
       addComment( "Display a Hexadecimal Byte" );
       addAsm( string("BYTE2HEX:\t\t"), 0, true );
-      saveReturnAddress();
+      addAsm( str_PLA, 1, false );
+      addAsm( str_STA + "!rx-", 3, false );
+      addAsm( str_PLA, 1, false );
+      addAsm( str_STA + "!ry-", 3, false );
       // =================================================================================
       addAsm( str_CLD );
       addAsm( str_PLA );
@@ -28867,7 +29011,15 @@ int main(int argc, char *argv[])
       addAsm( str_JSR + "$FFD2", 3, false );
 
       // =================================================================================
-      restoreReturnAddress();
+      //restoreReturnAddress();
+      
+      addComment( "Restore return address" );
+      addAsm( str_LDA + "!ry-", 3, false );
+      addAsm( str_PHA, 1, false );
+      addAsm( str_LDA + "!rx-", 3, false );
+      addAsm( str_PHA, 1, false );
+
+      
       addAsm( str_RTS );
       
     }
@@ -29143,7 +29295,8 @@ int main(int argc, char *argv[])
       addAsm( str_BEQ + "!+", 2, false );
       addAsm( str_INX );
       addAsm( str_JMP + "CHECKALLOWED", 3, false );
-      addAsm("INPUTOK:", 0, true );
+      //addAsm("INPUTOK:", 0, true );
+      addComment( "Input is OK" );
       addAsm( "!:\t" + str_LDA + "LASTCHAR" + commentmarker + "Get the char back", 3, true );
       addAsm( str_LDY + "INPUTY", 3, false );
       addAsm( str_STA + "GOTINPUT,y" + commentmarker + "Add it to string", 3, false );
