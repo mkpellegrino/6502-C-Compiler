@@ -850,18 +850,18 @@
       }
     newsw += return_value.substr(3, 1);
     
-    addComment( string( "6 Byte FAC: ") + byte0 + string(" ") +
-	       newsw + string(" ") +
-	       byte2 + string(" ") +
-	       byte3 + string(" ") +
-	       byte4 + string(" ") +
+    addComment( string( "6 Byte FAC: .byte $") + byte0 + string(", $") +
+	       newsw + string(", $") +
+	       byte2 + string(", $") +
+	       byte3 + string(", $") +
+	       byte4 + string(", $") +
 	       signbyte
 	       );
 
-    addComment( string( "5 Byte MEM: ") + byte0 + string(" ") +
-	       signbyte + string(" ") +
-	       byte2 + string(" ") +
-	       byte3 + string(" ") +
+    addComment( string( "5 Byte MEM: .byte $") + byte0 + string(", $") +
+	       signbyte + string(", $") +
+	       byte2 + string(", $") +
+	       byte3 + string(", $") +
 	       byte4
 	       );
 
