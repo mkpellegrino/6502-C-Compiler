@@ -256,6 +256,7 @@
   bool bmpmem_is_needed=false;
   bool bin2bit_is_needed=false;
   bool word2dec_is_needed=false;
+  bool new_word2dec_is_needed=false;
   bool plot_is_needed=false;
   bool float_swap_space_is_needed = false;
   bool multicolour_plot_is_needed=false;
@@ -4342,8 +4343,8 @@ body: WHILE
 {
   if( isUintID($3.name) )
     {
+      // TODO: determine if it's more efficient to do this or use the _display_word function
       addComment( "printf(UintID);" );
-      //addComment(string("printf(") + getNameOf(getAddressOf($3.name)) + string(");"));
       int addr = hexToDecimal(stripFirst($3.name).c_str());
       addAsm( str_LDA + getNameOf(addr), 3, false );
       addAsm( str_PHA );
@@ -4398,6 +4399,7 @@ body: WHILE
       addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
       addAsm( str_BPL + "!+", 2, false );
       addAsm( str_TAX, 1, false );
+      addComment( "Display Negative Sign if necessary" );
       addAsm( str_LDA + "#$2D", 2, false );
       addAsm( str_JSR + "$FFD2", 3, false );
       addAsm( str_TXA, 1, false );
@@ -4465,106 +4467,39 @@ body: WHILE
   else if( isWordID($3.name) )
     {
       addComment( "printf(WordID);" );
-
-      //addComment(string("printf(") + getNameOf(getAddressOf($3.name)) + string(");"));
-      word2dec_is_needed = true;
-      byte2hex_is_needed = true;
+      new_word2dec_is_needed = true;
       current_variable_base_address = getAddressOf($3.name);
       int base_address_op1 = hexToDecimal($3.name);
       int inst_size = 3;
       if( base_address_op1 < 256 ) inst_size = 2;
       addAsm( str_LDA + getNameOf(base_address_op1), inst_size, false );
-      addAsm( str_STA + "HTD_IN", 3, false );
+      addAsm( str_PHA, 1, false );
       addAsm( str_LDA + getNameOf(base_address_op1) + " +1", inst_size, false );
-      addAsm( str_STA + "HTD_IN+1", 3, false );
-      addAsm( str_JSR + "WORD2DEC", 3, false );
-
-      // find the 1st non-30 ('0') byte
-      addAsm( str_LDX + "#$00", 2, false );
-      addAsm( "!:\t" + str_LDA + "HTD_STR,X", 3, true );
-      addAsm( str_CMP + "#$30", 2, false );
-      addAsm( str_BNE + "!+", 2, false );
-      addAsm( str_INX );
-      addAsm( str_JMP + "!-", 3, false );
-      addAsm( "!:\t" + str_CPX + "#$06", 2, true );
-      addAsm( str_BNE + "!+", 2, false );
-      addAsm( str_DEX );
-      addAsm( "!:\t" + str_LDA + "HTD_STR,X", 3, true );
-      //addAsm( str_CMP + "#$00", 2, false );
-      addAsm( str_BEQ + "!+", 2, false );
-      addAsm( str_INX );
-      addAsm( str_JSR + "$FFD2", 3, false );
-      addAsm( str_JMP + "!-", 3, false );
-      addAsm( "!:", 0, true );
+      addAsm( str_PHA, 1, false );
+      addAsm( str_JSR + "_display_word", 3, false );
     }
   else if( isXA($3.name) )
     {
       addComment( "printf(XA);" );
-      word2dec_is_needed = true;
-      byte2hex_is_needed = true;
+      new_word2dec_is_needed = true;
       current_variable_base_address = getAddressOf($3.name);
-      int base_address_op1 = hexToDecimal($3.name);
-      int inst_size = 3;
-      if( base_address_op1 < 256 ) inst_size = 2;
-      addAsm( str_STA + "HTD_IN", 3, false );
-      addAsm( str_STX + "HTD_IN+1", 3, false );
-      addAsm( str_JSR + "WORD2DEC", 3, false );
-
-      // find the 1st non-30 ('0') byte
-      addAsm( str_LDX + "#$00", 2, false );
-      addAsm( "!:\t" + str_LDA + "HTD_STR,X", 3, true );
-      addAsm( str_CMP + "#$30", 2, false );
-      addAsm( str_BNE + "!+", 2, false );
-      addAsm( str_INX );
-      addAsm( str_JMP + "!-", 3, false );
-      // ---------------------------------
-      // 2022 12 16 - mkpellegrino
-      // make sure it prints a 0 if it's 0
-      // and not just a blank space!
-      addAsm( "!:\t" + str_CPX + "#$06", 2, true );
-      addAsm( str_BNE + "!+", 2, false );
-      addAsm( str_DEX );
-      // ---------------------------------
-
-      addAsm( "!:\t" + str_LDA + "HTD_STR,X", 3, true );
-      //addAsm( str_CMP + "#$00", 2, false );
-      addAsm( str_BEQ + "!+", 2, false );
-      addAsm( str_INX );
-      addAsm( str_JSR + "$FFD2", 3, false );
-      addAsm( str_JMP + "!-", 3, false );
-      addAsm( "!:", 0, true );
+      addAsm( str_PHA, 1, false );
+      addAsm( str_TXA, 1, false );
+      addAsm( str_PHA, 1, false );
+      addAsm( str_JSR + "_display_word", 3, false );
     }
   else if( isWordIMM($3.name) )
     {
       addComment( "printf(WordIMM);" );
       if( arg_show_opt ) addCompilerMessage( "This is VERY inefficient.  You could just print the value as a string", 1 );
       int tmp = atoi( stripFirst($3.name).c_str() );
-      word2dec_is_needed = true;
-      byte2hex_is_needed = true;
-
-      
+      new_word2dec_is_needed = true;
       addAsm( str_LDA + "#$"  + toHex( get_word_L( tmp )), 2, false );
-      addAsm( str_STA + "HTD_IN", 3, false );
+      addAsm( str_PHA, 1, false );      
       addAsm( str_LDA + "#$" + toHex( get_word_H( tmp )), 2, false );
-      addAsm( str_STA + "HTD_IN+1", 3, false );
-      addAsm( str_JSR + "WORD2DEC", 3, false );
-      addAsm( str_LDX + "#$00", 2, false );
-      addAsm( "!:\t" + str_LDA +"HTD_STR,X", 3, true );
-      addAsm( str_CMP + "#$30", 2, false );
-      addAsm( str_BNE + "!+", 2, false );
-      addAsm( str_INX );
-      addAsm( str_JMP + "!-", 3, false );
-      addAsm( "!:\t" + str_CPX + "#$06", 2, true );
-      addAsm( str_BNE + "!+", 2, false );
+      addAsm( str_PHA, 1, false );
+      addAsm( str_JSR + "_display_word", 3, false );
 
-      addAsm( str_DEX );
-      addAsm( "!:\t" + str_LDA +"HTD_STR,X", 3, true );
-      //addAsm( str_CMP + "#$00", 2, false );
-      addAsm( str_BEQ + "!+", 2, false );
-      addAsm( str_INX );
-      addAsm( str_JSR + "$FFD2", 3, false );
-      addAsm( str_JMP + "!-", 3, false );
-      addAsm( "!:", 0, true );
     }
   else if( isIntIMM($3.name ))
     {
@@ -4574,64 +4509,24 @@ body: WHILE
       addComment( "Display the negative sign" );
       addAsm( str_LDA + "#$2D", 2, false );
       addAsm( str_JSR + "$FFD2", 3, false );
-      //tmp = twos_complement( tmp );
-      word2dec_is_needed = true;
-      byte2hex_is_needed = true;
-      addAsm( str_LDA + "#$" + toHex( tmp ), 2, false );
-      addAsm( str_STA + "HTD_IN", 3, false );
+      new_word2dec_is_needed = true;
+      addAsm( str_LDA + "#$"  + toHex( get_word_L( tmp )), 2, false );
+      addAsm( str_PHA, 1, false );      
       addAsm( str_LDA + "#$00", 2, false );
-      addAsm( str_STA + "HTD_IN+1", 3, false );
-      addAsm( str_JSR + "WORD2DEC", 3, false );
-      addAsm( str_LDX + "#$00", 2, false );
-      addAsm( "!:\t" + str_LDA + "HTD_STR,X", 3, true );
-      addAsm( str_CMP + "#$30", 2, false );
-      addAsm( str_BNE + "!+", 2, false );
-      addAsm( str_INX );
-      addAsm( str_JMP + "!-", 3, false );
-      addAsm( "!:\t" + str_CPX + "#$06", 2, true );
-      addAsm( str_BNE + "!+", 2, false ); 
-      addAsm( str_DEX );
-      addAsm( "!:\t" + str_LDA + "HTD_STR,X", 3, true );
-      //addAsm( str_CMP + "#$00", 2, false );
-      addAsm( str_BEQ + "!+", 2, false );
-      addAsm( str_INX );
-      addAsm( str_JSR + "$FFD2", 3, false );
-      addAsm( str_JMP + "!-", 3, false );
-      addAsm( "!:", 0, true );
+      addAsm( str_PHA, 1, false );
+      addAsm( str_JSR + "_display_word", 3, false );
     }
     else if(isUintIMM($3.name))
     {
       addComment( "printf(UintIMM);" );
       if( arg_show_opt ) addCompilerMessage( "This is VERY inefficient.  You could just print the value as a string", 1 );
       int tmp = atoi( stripFirst($3.name).c_str() );
-      if( tmp < 0 )
-	{
-	  tmp = twos_complement( tmp );
-
-	}
-      word2dec_is_needed = true;
-      byte2hex_is_needed = true;
-      addAsm( str_LDA + "#$" + toHex( tmp ), 2, false );
-      addAsm( str_STA + "HTD_IN", 3, false );
+      new_word2dec_is_needed = true;
+      addAsm( str_LDA + "#$"  + toHex( get_word_L( tmp )), 2, false );
+      addAsm( str_PHA, 1, false );      
       addAsm( str_LDA + "#$00", 2, false );
-      addAsm( str_STA + "HTD_IN+1", 3, false );
-      addAsm( str_JSR + "WORD2DEC", 3, false );
-      addAsm( str_LDX + "#$00", 2, false );
-      addAsm( "!:\t" + str_LDA + "HTD_STR,X", 3, true );
-      addAsm( str_CMP + "#$30", 2, false );
-      addAsm( str_BNE + "!+", 2, false );
-      addAsm( str_INX );
-      addAsm( str_JMP + "!-", 3, false );
-      addAsm( "!:\t" + str_CPX + "#$06", 2, true );
-      addAsm( str_BNE + "!+", 2, false ); 
-      addAsm( str_DEX );
-      addAsm( "!:\t" + str_LDA + "HTD_STR,X", 3, true );
-      //addAsm( str_CMP + "#$00", 2, false );
-      addAsm( str_BEQ + "!+", 2, false );
-      addAsm( str_INX );
-      addAsm( str_JSR + "$FFD2", 3, false );
-      addAsm( str_JMP + "!-", 3, false );
-      addAsm( "!:", 0, true );
+      addAsm( str_PHA, 1, false );
+      addAsm( str_JSR + "_display_word", 3, false );
     }
   else
     {
@@ -28210,9 +28105,9 @@ int main(int argc, char *argv[])
       restoreReturnAddress();
       addAsm( str_RTS );
     }
+  // TODO: REMOVE THIS SECTION... WORD2DEC IS NO LONGER USED
   if( word2dec_is_needed )
-    {
-      
+    {      
       addAsm( "!mem0:", 0, true );
       addAsm( "HTD_STR:", 0, true );
       addAsm( str_BYTE + "$00, $00, $00, $00, $00, $00, $00", 7, false );
@@ -28319,6 +28214,130 @@ int main(int argc, char *argv[])
       restoreReturnAddress();
       addAsm( str_RTS );
     }
+  if( new_word2dec_is_needed )
+    {
+      addComment( "--------------------------" );
+      addComment( "return address tmp storage" );
+      addAsm( "!rx:\t" + str_BYTE + "$00", 1, true );
+      addAsm( "!ry:\t" + str_BYTE + "$00", 1, true );
+      addComment( "string of PETSCII bytes tmp storage" );      
+      addAsm( "!mem0:\t" + str_BYTE + "$00, $00, $00, $00, $00, $00, $00", 7, true );
+      addComment( "------------------------------------------------------------" );
+      addComment( "    This chunk of code is by: Andrew Jacobs, 28-Feb-2004" );
+      addComment( "Taken from: http://6502.org/source/integers/hex2dec-more.htm" );
+      addComment( " Modified to make jumps and addressing relative for KickAsm " );
+      addComment( "------------------------------------------------------------" );
+      addAsm( "!mem1:\t" + str_BYTE + "$00, $00", 2, true );
+      addAsm( "!mem2:\t" + str_BYTE + "$00, $00, $00", 3, true );
+      addAsm( "!mem3:\t" + str_BYTE + "$00", 1, true );
+      addAsm( "!mem4:\t" + str_BYTE + "$00", 1, true );
+      
+      
+      addAsm( string("_display_word:\t\t") + commentmarker + "2 Byte Word to Decimal", 0, true );
+
+      // save return address
+      addAsm( str_PLA, 1, false );
+      addAsm( str_STA + "!rx-", 3, false );
+      addAsm( str_PLA, 1, false );
+      addAsm( str_STA + "!ry-", 3, false );
+
+      // parameter
+      addAsm( str_PLA, 1, false );
+      addAsm( str_STA + "!mem1- +1", 3, false );
+      addAsm( str_PLA, 1, false );
+      addAsm( str_STA + "!mem1-", 3, false );
+
+      // restore return address
+      addAsm( str_LDA + "!ry-", 3, false );
+      addAsm( str_PHA, 1, false );
+      addAsm( str_LDA + "!rx-", 3, false );
+      addAsm( str_PHA, 1, false );
+      // ==================================================================================
+
+      addAsm( str_SED );
+      addAsm( str_LDA + "#$00", 2, false );
+      addAsm( str_STA + "!mem2-", 3, false );
+      addAsm( str_STA + "!mem2- +1", 3, false );
+      addAsm( str_STA + "!mem2- +2", 3, false );
+      addAsm( str_LDX + "#$10", 2, false );
+      addAsm( "!:\t" + str_ASL + "!mem1-", 3, true );
+      addAsm( str_ROL + "!mem1- +1", 3, false );
+      addAsm( str_LDA + "!mem2-", 3, false );
+      addAsm( str_ADC + "!mem2-", 3, false );
+      addAsm( str_STA + "!mem2-", 3, false );
+      addAsm( str_LDA + "!mem2- +1", 3, false );
+      addAsm( str_ADC + "!mem2- +1", 3, false );
+      addAsm( str_STA + "!mem2- +1", 3, false );
+      addAsm( str_LDA + "!mem2- +2", 3, false );
+      addAsm( str_ADC + "!mem2- +2", 3, false );
+      addAsm( str_STA + "!mem2- +2", 3, false );
+      addAsm( str_DEX );
+      addAsm( str_BNE + "!-", 2, false );
+      addAsm( str_CLD );
+      addComment( "------------------------------------------------------------" );
+      addAsm( str_LDA + "!mem2-", 3, false);
+      addAsm( str_PHA );
+      addAsm( str_LSR );
+      addAsm( str_LSR );
+      addAsm( str_LSR );
+      addAsm( str_LSR );
+      addAsm( str_ORA + "#$30", 2, false);
+      addAsm( str_STA + "!mem0- +4", 3, false);
+      addAsm( str_PLA );
+      addAsm( str_AND + "#$0F", 2, false);
+      addAsm( str_ORA + "#$30", 2, false);
+      addAsm( str_STA + "!mem0- +5", 3, false);
+      
+
+      addAsm( str_LDA + "!mem2- +1", 3, false);
+      addAsm( str_PHA );
+      addAsm( str_LSR );
+      addAsm( str_LSR );
+      addAsm( str_LSR );
+      addAsm( str_LSR );
+
+      addAsm( str_ORA + "#$30", 2, false);
+      addAsm( str_STA + "!mem0- +2", 3, false);
+      addAsm( str_PLA );
+      addAsm( str_AND + "#$0F", 2, false);
+      addAsm( str_ORA + "#$30", 2, false);
+      addAsm( str_STA + "!mem0- +3", 3, false);
+
+      addAsm( str_LDA + "!mem2- +2", 3, false);
+      addAsm( str_PHA );
+      addAsm( str_LSR );
+      addAsm( str_LSR );
+      addAsm( str_LSR );
+      addAsm( str_LSR );
+
+      addAsm( str_ORA + "#$30", 2, false);
+      addAsm( str_STA + "!mem0-", 3, false);
+      addAsm( str_PLA );
+      addAsm( str_AND + "#$0F", 2, false);
+      addAsm( str_ORA + "#$30", 2, false);
+      addAsm( str_STA + "!mem0- +1", 3, false);
+
+      // now print it
+      addAsm( str_LDX + "#$00", 2, false );
+      addAsm( "!:\t" + str_LDA + "!mem0-,X", 3, true );
+      addAsm( str_CMP + "#$30", 2, false );
+      addAsm( str_BNE + "!+", 2, false );
+      addAsm( str_INX );
+      addAsm( str_JMP + "!-", 3, false );
+      addAsm( "!:\t" + str_CPX + "#$06", 2, true );
+      addAsm( str_BNE + "!+", 2, false );
+      addAsm( str_DEX );
+      addAsm( "!:\t" + str_LDA + "!mem0-,X", 3, true );
+      //addAsm( str_CMP + "#$00", 2, false );
+      addAsm( str_BEQ + "!+", 2, false );
+      addAsm( str_INX );
+      addAsm( str_JSR + "$FFD2", 3, false );
+      addAsm( str_JMP + "!-", 3, false );
+      addAsm( "!:\t" + str_RTS, 1, true );
+      addComment( "--------------------------" );
+    }
+
+  
   if( unsigned_signed_cmp_is_needed )
     {
       stack_is_needed = true;      
