@@ -261,7 +261,9 @@
   bool float_swap_space_is_needed = false;
   bool multicolour_plot_is_needed=false;
   bool getplot_is_needed=false;
+
   bool unsigned_signed_cmp_is_needed=false;
+  bool new_unsigned_signed_cmp_is_needed=false;
   bool split_byte_is_needed=false;
   bool decimal_digit_is_needed=false;
   bool modulus_is_needed=false;
@@ -3194,7 +3196,8 @@ headers:
     }
   if( s == "unsigned signed cmp" )
     {
-      unsigned_signed_cmp_is_needed = true;
+      //unsigned_signed_cmp_is_needed = true;
+      new_unsigned_signed_cmp_is_needed = true;
       correct_usage = true;
     }
   if( s == "decimal digit" )
@@ -3365,7 +3368,8 @@ headers:
     }
   if( s == "unsigned signed cmp" )
     {
-      unsigned_signed_cmp_is_needed = true;
+      //unsigned_signed_cmp_is_needed = true;
+      new_unsigned_signed_cmp_is_needed = true;
       correct_usage = true;
     }
   if( s == "decimal digit" )
@@ -4348,7 +4352,7 @@ body: WHILE
       int addr = hexToDecimal(stripFirst($3.name).c_str());
       addAsm( str_LDA + getNameOf(addr), 3, false );
       addAsm( str_PHA );
-      addAsm( str_JSR + "BYT2STR", 3, false ); byt2str_is_needed = true;
+      addAsm( str_JSR + "_byte_to_string", 3, false ); byt2str_is_needed = true;
       addAsm( str_PLA );
       addAsm( str_TAX );
       addAsm( str_PLA );
@@ -4372,7 +4376,7 @@ body: WHILE
     {
       addComment( "printf(A);" );
       addAsm( str_PHA );
-      addAsm( str_JSR + "BYT2STR", 3, false ); byt2str_is_needed = true;
+      addAsm( str_JSR + "_byte_to_string", 3, false ); byt2str_is_needed = true;
       addAsm( str_PLA );
       addAsm( str_TAX );
       addAsm( str_PLA );
@@ -4410,7 +4414,7 @@ body: WHILE
       
       
       addAsm( str_PHA );
-      addAsm( "!:\t" + str_JSR + "BYT2STR", 3, true ); byt2str_is_needed = true;
+      addAsm( "!:\t" + str_JSR + "_byte_to_string", 3, true ); byt2str_is_needed = true;
 
       addAsm( str_PLA );
       addAsm( str_TAX );
@@ -7781,7 +7785,7 @@ condition: expression[LHS]
       addAsm( str_PHA );
       addAsm( str_LDA + getNameOf(getAddressOf($RHS.name)), 3, false );
       addAsm( str_PHA );
-      addAsm( str_JSR + "SIGNEDCMP", 3, false );
+      addAsm( str_JSR + "_signed_comparison", 3, false );
       addAsm( str_PLP );
     }
   else if( isIntID($LHS.name) && isIntIMM($RHS.name) )
@@ -7797,7 +7801,7 @@ condition: expression[LHS]
       
       addAsm( str_LDA + "#$" + toHex(i), 2, false );
       addAsm( str_PHA );
-      addAsm( str_JSR + "SIGNEDCMP", 3, false );
+      addAsm( str_JSR + "_signed_comparison", 3, false );
       addAsm( str_PLP );
     }
   else if( isIntID($LHS.name) && isUintID($RHS.name) )
@@ -7982,7 +7986,7 @@ condition: expression[LHS]
       addAsm( str_PHA );
       addAsm( str_LDA + getNameOf(getAddressOf($RHS.name)), 3, false );
       addAsm( str_PHA );
-      addAsm( str_JSR + "SIGNEDCMP", 3, false );
+      addAsm( str_JSR + "_signed_comparison", 3, false );
       addAsm( str_PLP );
     }
   else if( isIntIMM($LHS.name) && isIntIMM($RHS.name) )
@@ -10545,7 +10549,7 @@ statement: datatype ID init
   else if( (isUintID($3.name) && isWordID($5.name)) ||
 	   (isIntID($3.name) && isWordID($5.name)) )
     {
-      addComment( "spritex( UIntID, WordID );" );
+      addComment( "spritex( UintID, WordID ); or spritex( IntID, WordID );" );
       addDebugComment( "this needs work" );
       bin2bit_is_needed = true;
       
@@ -10564,7 +10568,7 @@ statement: datatype ID init
       addAsm( str_LDA + getNameOf( sprite_addr ), 3, false );
 
       addAsm( str_PHA );
-      addAsm( str_JSR + "BIN2BIT", 3, false);
+      addAsm( str_JSR + "_bin_to_bit", 3, false);
       addAsm( str_PLA );
 
       addAsm( str_EOR + "#$FF", 2, false );
@@ -12133,7 +12137,7 @@ statement: datatype ID init
       // STA $????
       // PLA
       // STA $????+1
-      addComment( "WORD array[A] = XA; (with an MRA)" );
+       addComment( "WORD array[A] = XA; (with an MRA)" );
       int tmp_base_address = getAddressOf( arg0.c_str() );
       
       // arg1 (the array index) is on the processor stack      
@@ -12169,7 +12173,6 @@ statement: datatype ID init
 
       addAsm( str_PLA );
       addAsm( str_STA + "$02", 2, false );
-
     }
   else
     {
@@ -26347,7 +26350,7 @@ arithmetic[MATHOP] expression[OP2]
     {
       addCompilerMessage( "16-bit word is SIGNED", 1 );
       addAsm( str_LDY + getNameOf(getAddressOf($3.name)), 3, false ); 
-      addAsm( str_LDA + getNameOf(getAddressOf($3.name)) + "+1", 3, false ); 
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)) + " +1", 3, false ); 
       addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
     }
   else if( isXA($3.name) )
@@ -27300,8 +27303,8 @@ arithmetic[MATHOP] expression[OP2]
       addAsm( str_STA + "!+", 3, false );
       addAsm( str_STX + "!++", 3, false );
       addAsm( str_BYTE + "$AD" + commentmarker + "<-- LDA Absolute", 1, false );
-      addAsm( "!:\t" + str_BYTE + "$00", 1, true );
-      addAsm( "!:\t" + str_BYTE + "$00", 1, true );
+      addAsm( "!:\t" + str_BYTE + "$00" + commentmarker + "lo byte", 1, true );
+      addAsm( "!:\t" + str_BYTE + "$00" + commentmarker + "hi byte", 1, true );
       
     }
   else if( isXA($3.name) )
@@ -27311,8 +27314,8 @@ arithmetic[MATHOP] expression[OP2]
       addAsm( str_STX + "!++", 3, false );
 
       addAsm( str_BYTE + "$AD" + commentmarker + "<-- LDA Absolute", 1, false );
-      addAsm( "!:\t" + str_BYTE + "$00", 1, true );
-      addAsm( "!:\t" + str_BYTE + "$00", 1, true );
+      addAsm( "!:\t" + str_BYTE + "$00" + commentmarker + "lo byte", 1, true );
+      addAsm( "!:\t" + str_BYTE + "$00" + commentmarker + "hi byte", 1, true );
     }
   else if( isIntID($3.name) )
     {
@@ -27428,21 +27431,14 @@ value: FLOAT_NUM
       N.erase(0,2);
       int val = hexToDecimal(N);
       string return_value = string("w") + toString(val);
-      //addAsm( str_LDA + "#$" + N[2] + N[3], 2, false );
-      //addAsm( str_LDX + "#$" + N[0] + N[1], 2, false );
-      //strcpy( $$.name, "_XA" );
       strcpy( $$.name, return_value.c_str() );
-      //addComment(string("RULE: value: HEX_NUM: (") + string($1.name) + string(")->(") + return_value + string(")") );
     }
   else
     {
       N.erase(0,2);
       int val = hexToDecimal(N);
       string return_value = string("u") + toString(val);
-      //addAsm( str_LDA + "#$" + N, 2, false );
-      //strcpy( $$.name, "_A" );
       strcpy( $$.name, return_value.c_str() );
-      // addComment(string("RULE: value: HEX_NUM: (") + string($1.name) + string(")->(") + return_value + string(")") );
     }
 };
 | INT
@@ -27813,6 +27809,7 @@ int main(int argc, char *argv[])
       //printf("Semantic analysis completed with no errors");
     }
 
+  // TODO: Remove this section
   if( load_is_needed )
     {
       addAsm( "LOAD:", 0, true );
@@ -27886,7 +27883,7 @@ int main(int argc, char *argv[])
       addAsm( str_RTS );
     }
 
-
+  // TODO: Remove this section ... it's not being used
   if( load16_is_needed )
     {
       addAsm( "LOAD16I:", 0, true );
@@ -27895,12 +27892,10 @@ int main(int argc, char *argv[])
       addAsm( str_BYTE + "$00, $00", 2, false );
       addAsm( "LOAD16A:", 0, true );
       addAsm( str_BYTE + "$00, $00", 2, false );
-
       
       addComment( "Load more that 255 bytes from disk" );
       addAsm( "LOAD16:", 0, true );
       saveReturnAddress();
-
       
       // save $02/$03 in software stack (pretty slow!)
       addComment( "save $02/$03" );
@@ -27910,7 +27905,6 @@ int main(int argc, char *argv[])
       addAsm( str_JSR + "PUSH", 3, false );
       //addAsm( str_CLC );
 
-      
       addComment( "number of bytes" );
       addAsm( str_PLA );
       addAsm( str_STA + "LOAD16L+1", 3, false );
@@ -27929,7 +27923,6 @@ int main(int argc, char *argv[])
       addAsm( str_STA + "LOAD16I", 3, false );
       addAsm( str_STA + "LOAD16I+1", 3, false );
 
-	  
       addComment( "SETFN" );
       addAsm( str_PLA );
       addAsm( str_TAX );
@@ -27937,7 +27930,6 @@ int main(int argc, char *argv[])
       addAsm( str_TAY );
       addAsm( str_PLA );
       addAsm( str_JSR + "$FFBD", 3, false );
-
 
       addComment( "SETFLS" );
       addAsm( str_LDA + "#$03", 2, false );
@@ -27957,7 +27949,6 @@ int main(int argc, char *argv[])
       addAsm( str_PLA );
       addAsm( str_STA + "$03", 2, false );
 
-
       // TOP OF LOOP
       addAsm( generateNewLabel(), 0, true );
 
@@ -27972,8 +27963,7 @@ int main(int argc, char *argv[])
       addComment( "read a byte from disk" );
       addAsm( str_JSR + "$FFCF", 3, false );
 
-
-      addComment( "poke it into memry" );
+      addComment( "poke it into memory" );
       addAsm( str_LDY + "#$00", 2, false );
       addAsm( str_STA + "($02),Y", 2, false );
       
@@ -28015,7 +28005,6 @@ int main(int argc, char *argv[])
       restoreReturnAddress();
 
       addAsm( str_RTS );
-
     }
 
   
@@ -28039,27 +28028,35 @@ int main(int argc, char *argv[])
     }
   if( bin2bit_is_needed )
     {
-      addAsm( string("BIN2BIT:\t\t") + commentmarker + "Convert an integer in A to the Ath bit", 0, true );
-      saveReturnAddress();
+      addComment( "-----------------------------" );
+      addAsm( "!rx:\t" + str_BYTE + "$00", 1, false );
+      addAsm( string("_bin_to_bit:\t\t") + commentmarker + "Convert an integer in A to the Ath bit", 0, true );
+      addAsm( str_PLA, 1, false );
+      addAsm( str_STA + "!rx-", 3, false );
+      addAsm( str_PLA, 1, false );
+      addAsm( str_TAY, 1, false );
       // ==================================================================================
-      addAsm( str_PLA );
-      addAsm( str_TAX );
-      addAsm( str_INX );
+      addAsm( str_PLA, 1, false );
+      addAsm( str_TAX, 1, false );
+      addAsm( str_INX, 1, false);
       addAsm( str_LDA + "#$00", 2, false );
-      addAsm( str_SEC );
-      addComment( "top-of-loop:" );
-      addAsm( str_ROL );
-      addAsm( str_DEX );
-      addAsm( str_BYTE + "$D0, $FC" + commentmarker + "BNE top-of-loop", 2, false );
+      addAsm( str_SEC, 1, false );
+      addAsm( "!:\t" + str_ROL, 1, true );
+      addAsm( str_DEX, 1, false );
+      addAsm( str_BNE + "!-", 2, false );
       addAsm( str_PHA + commentmarker + "return value on processor stack", 1, false);// the return value will be on the stack
       // ==================================================================================
-      restoreReturnAddress();
+      addAsm( str_TYA, 1, false );
+      addAsm( str_PHA, 1, false );
+      addAsm( str_LDA + "!rx-", 3, false );
+      addAsm( str_PHA, 1, false );
       addAsm( str_RTS );
+      addComment( "-----------------------------" );
     }
   if( signed_comparison_is_needed )
     {
       stack_is_needed = true;
-      addAsm( string("SIGNEDCMP: ") + commentmarker + string(" Signed Comparison"), 0, true );
+      addAsm( string("_signed_comparison: ") + commentmarker + string(" Signed Comparison"), 0, true );
       saveReturnAddress();
       // ==================================================================================
 
@@ -28337,7 +28334,7 @@ int main(int argc, char *argv[])
       addComment( "--------------------------" );
     }
 
-  
+  // TODO: not even needed
   if( unsigned_signed_cmp_is_needed )
     {
       stack_is_needed = true;      
@@ -28371,6 +28368,46 @@ int main(int argc, char *argv[])
       addAsm( str_RTS );
 
     }
+
+  if( new_unsigned_signed_cmp_is_needed )
+    {
+      stack_is_needed = true;      
+      addAsm( "!rx:\t" + str_BYTE + "$00", 1, true );
+      addAsm( "!ry:\t" + str_BYTE + "$00", 1, true );
+      addAsm( string( "_unsigned_signed_cmp:\t\t" ) + commentmarker + "Uint/Int Comparison", 0, true );
+      addAsm( str_PLA, 1, false );
+      addAsm( str_STA + "!rx-", 3, false );
+      addAsm( str_PLA, 1, false );
+      addAsm( str_STA + "!ry-", 3, false );
+      // ==================================================================================
+      addAsm( str_LDX + "$05", 2, false );
+      addAsm( str_PLA ); // pull the signed value off the stack
+      addAsm( str_STA + "$05", 2,false ); // save the signed byte in Zeropage ($0005)
+      addAsm( str_TXA, 1, false );
+      addAsm( str_PHA, 1, false ); // now $05 is on the stack
+
+      addComment( "could BPL do this?" );
+      addAsm( str_AND + "#$80", 2, false );          // SIGNED INT: F3 -> 80 (it's negative)
+      addAsm( str_CMP + "#$80", 2, false );          // IF IT's NEGATIVE
+      addAsm( str_PLA ); // get the unsigned byte
+      addAsm( str_BCS + "!+", 2 );
+      addAsm( str_CMP + "$05", 2, false );           // A = UINT
+      addAsm( str_BCS + "!+", 2 );
+      addAsm( str_BCC + "!+", 2 );
+      addAsm( str_LDA + string("#$01"), 2, false );          // A=1                       (***)
+      addAsm( "!:\t" + str_PHP, 1, true);
+
+      addAsm( str_PLA, 1, false );
+      addAsm( str_STA + "$05", 2, false );
+      // ==================================================================================
+      addAsm( str_LDA + "!ry-", 3, false );
+      addAsm( str_PHA, 1, false );
+      addAsm( str_LDA + "!rx-", 3, false );
+      addAsm( str_PHA, 1, false );
+      addAsm( str_RTS );
+    }
+
+
   if( float_swap_space_is_needed )
     {
       addComment( "Floating Point Swap Space" );
@@ -28500,8 +28537,9 @@ int main(int argc, char *argv[])
       
 
       addAsm( str_STA + "$22" + commentmarker + "tmpstore", 2, false );
-      addAsm( commentmarker + string(" These subroutines I added to calculate the addresses based on VICII settings"), 0, true );
+      //addAsm( commentmarker + string(" These subroutines I added to calculate the addresses based on VICII settings"), 0, true );
       bnkmem_is_needed=true;
+      addComment( "this can be hardcoded for speed" );
       addAsm( str_JSR + "BNKMEM", 3, false );
       addAsm( str_PLA ); // <<- A should now be #$00, #$40, #$80, #$C0 based on Bank #      
       addAsm( str_CLC );
@@ -28770,8 +28808,8 @@ int main(int argc, char *argv[])
       addAsm( str_STA + "!lv_mem1-", 3, false );
       addAsm( "!:\t" + str_LDA + "!lv_mem1-", 3, true );
       addAsm( str_BYTE + "$C9" + commentmarker + "<-- CMP Immediate", 1, false );
-      addAsm( "!lv_arg1:", 0, true );
-      addAsm( str_BYTE + "$00", 1, false );
+      addAsm( "!lv_arg1:" + str_BYTE + "$00", 1, true );
+      //addAsm( str_BYTE + "$00", 1, false );
 	      
       addAsm( str_BCS + "!+", 2, false );
       
@@ -28809,8 +28847,8 @@ int main(int argc, char *argv[])
       addAsm( str_TAY, 1, false );
 
       addAsm( str_BYTE + "$A9" + commentmarker + "<-- LDA Immediate", 1, false );
-      addAsm( "hack:", 0, true ); // lv_mem0
-      addAsm( str_BYTE + "$00", 1, false );
+      addAsm( "hack:" + str_BYTE + "$00", 1, true ); // lv_mem0
+      //addAsm( str_BYTE + "$00", 1, false );
       
       addAsm( str_PHA, 1, false );
       
@@ -29087,11 +29125,19 @@ int main(int argc, char *argv[])
     }
   if( byt2str_is_needed  )
     {
-      return_addresses_needed = true;
+      //return_addresses_needed = true;
       addComment( "Turns a 1 byte value into 3 PETSCII chars on stack" );
-      addAsm( string("BYT2STR:\t\t"), 0, true );
 
-      saveReturnAddress();
+      addAsm( "!rx:\t" + str_BYTE + "$00", 1, true );
+      addAsm( "!ry:\t" + str_BYTE + "$00", 1, true );
+      addAsm( "!lv_mem0:\t" + str_BYTE + "$00", 1, true );
+      addAsm( string("_byte_to_string:\t\t"), 0, true );
+
+      addAsm( str_PLA, 1, false );
+      addAsm( str_STA + "!rx-", 3, false );
+      addAsm( str_PLA, 1, false );
+      addAsm( str_STA + "!ry-", 3, false );
+      //saveReturnAddress();
       //==================================================================================
       addAsm( str_PLA ); // the value to be put into the string
       addComment( "Taken from: codebase64.org/doku.php?id=base:tiny_.a_to_ascii_routine" );
@@ -29106,15 +29152,21 @@ int main(int argc, char *argv[])
       addAsm( str_BMI + "!-", 2, false );
       addAsm( str_ADC + "#$2F", 2, false );
       // push A onto STACK
-      addAsm( str_JSR + "PUSH", 3, false );
+      addAsm( str_STA + "!lv_mem0-", 3, false );
+      //addAsm( str_JSR + "PUSH", 3, false );
       addAsm( str_TYA, 1, false );
       addAsm( str_PHA, 1, false );
       addAsm( str_TXA, 1, false );
       addAsm( str_PHA, 1, false );
-      addAsm( str_JSR + "POP", 3, false );
+      addAsm( str_LDA + "!lv_mem0-", 3, false );
+      //addAsm( str_JSR + "POP", 3, false );
       addAsm( str_PHA, 1, false );
       //==================================================================================
-      restoreReturnAddress();
+      //restoreReturnAddress();
+      addAsm( str_LDA + "!ry-", 3, false );
+      addAsm( str_PHA, 1, false );
+      addAsm( str_LDA + "!rx-", 3, false );
+      addAsm( str_PHA, 1, false );
       addAsm( str_RTS );
 
       
