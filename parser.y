@@ -12131,13 +12131,41 @@ statement: datatype ID init
     }
   else if(isWordID(arg0.c_str()) && isA(arg1.c_str()) && isXA(arg2.c_str()))
     {
+       addComment( "WORD array[A] = XA; (with an MRA) - 60 cycles" );
+       int tmp_base_address = getAddressOf( arg0.c_str() );
+       addAsm( str_LDY + "#<" +  getNameOf(tmp_base_address), 2, false );
+       addAsm( str_STY + "!+", 3, false );
+       addAsm( str_LDY + "#>" +  getNameOf(tmp_base_address), 2, false );
+       addAsm( str_STY + "!++", 3, false );
+       addAsm( str_TAY, 1, false );
+       addAsm( str_PLA, 1, false );
+       addAsm( str_ASL, 1, false );
+       addAsm( str_CLC, 1, false );
+       addAsm( str_ADC + "!++", 3, false );
+       addAsm( str_STA + "!++", 3, false );
+       addAsm( str_STA + "!++++", 3, false );
+       addAsm( str_LDA + "#$00", 2, false );
+       addAsm( str_ADC + "!+", 3, false );
+       addAsm( str_STA + "!+", 3, false );
+       addAsm( str_CLC, 1, false );
+       addAsm( str_ADC + "#$01", 2, false );
+       addAsm( str_STA + "!+++", 3, false );
+       addAsm( str_BYTE + "$8C" + commentmarker + "STY abs", 1, false );
+       addAsm( "!:\t" + str_BYTE + "$00", 1, true );
+       addAsm( "!:\t" + str_BYTE + "$00", 1, true );
+       addAsm( str_BYTE + "$8E" + commentmarker + "STX abs", 1, false );
+       addAsm( "!:\t" + str_BYTE + "$00", 1, true );
+       addAsm( "!:\t" + str_BYTE + "$00", 1, true );
+    }
+  else if(isWordID(arg0.c_str()) && isA(arg1.c_str()) && isXA(arg2.c_str()))
+    {
       // TODO: Redo this with self modifying code
       // so it compiles to something like:
       // PLA
       // STA $????
       // PLA
       // STA $????+1
-       addComment( "WORD array[A] = XA; (with an MRA)" );
+       addComment( "WORD array[A] = XA; (with an MRA) -- old version" );
       int tmp_base_address = getAddressOf( arg0.c_str() );
       
       // arg1 (the array index) is on the processor stack      
