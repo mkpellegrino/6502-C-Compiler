@@ -11974,10 +11974,10 @@ statement: datatype ID init
     }
   else if( isIntID(ag0) && isUintIMM(ag1) && isXA(ag2))
     {
+      addCompilerMessage( "int " + arg0 + "[uint/int] is being initialised with a word.  lost fidelity.", 1 );
       int tmp_index = atoi(stripFirst(ag1).c_str());
 
       addComment( "IntID_array[UintID] = XA" ); 
-      //addAsm( str_LDX + toHex( tmp_index ), 3, false );
       addAsm( str_STA + getNameOf(getAddressOf(arg0.c_str())) + "+" + stripFirst(arg1.c_str()), 3, false );
     }      
   else if( isIntID(arg0.c_str()) && isUintIMM(arg1.c_str()) && isA( arg2.c_str() ))
@@ -12003,8 +12003,6 @@ statement: datatype ID init
       addComment( "uint array[(U)IntIMM] = A" );
 
       int tmp_index = atoi(stripFirst(arg1.c_str()).c_str());
-      //addAsm( str_LDX + "#$" + toHex(tmp_index), 2, false );
-      //addAsm( str_STA + getNameOf( current_variable_base_address ) +",X" , 3, false );
       addAsm( str_STA + getNameOf( current_variable_base_address ) + "+" + stripFirst(arg1.c_str()), 3, false );
     }
   else if( isUintID( arg0.c_str() ) && (isUintIMM(arg1.c_str()) || isIntIMM(arg1.c_str())) && isUintID(arg2.c_str()) )
@@ -12013,8 +12011,6 @@ statement: datatype ID init
       int tmp_v = getAddressOf(arg2.c_str());
       int tmp_index = atoi(stripFirst(arg1.c_str()).c_str());
       addAsm( str_LDA + getNameOf(tmp_v), 3, false );
-      //addAsm( str_LDX + "#$"  + toHex(tmp_index), 2, false );
-      //addAsm( str_STA + getNameOf( current_variable_base_address ) + ",X" , 3, false );
       addAsm( str_STA + getNameOf( current_variable_base_address ) + "+" + stripFirst(arg1.c_str()), 3, false );
     }
   else if( isUintID( arg0.c_str() ) && (isUintID(arg1.c_str()) || isIntID(arg1.c_str())) && isUintID(arg2.c_str()) )
@@ -12037,7 +12033,7 @@ statement: datatype ID init
       int tmp_i = getAddressOf( arg1.c_str() );
       int tmp_v = getAddressOf( arg0.c_str() );
       addAsm( str_LDA + getNameOf(tmp_i), 3, false ); 
-      addAsm( str_ASL );// 2* because it's a word array... not a byte array
+      addAsm( str_ASL );// *2 because it's a word array... not a byte array
       addAsm( str_TAX );
       addAsm( str_TYA );
       addAsm( str_STA + getNameOf( tmp_v ) + ",X", 3, false );
@@ -12053,7 +12049,7 @@ statement: datatype ID init
       int tmp_i = getAddressOf(arg1.c_str());
       int tmp_w = atoi( stripFirst(arg2.c_str()).c_str() );
       addAsm( str_LDA + getNameOf( tmp_i ), 3, false );
-      addAsm( str_ASL );  // 2* because it's a word array... not a byte array
+      addAsm( str_ASL );  // *2 because it's a word array... not a byte array
       addAsm( str_TAX );
       addAsm( str_LDA + "#<" + getNameOf(tmp_w), 2, false );
       addAsm( str_STA + getNameOf( tmp_base ) + string( ",X" ), 3, false );
@@ -12069,7 +12065,7 @@ statement: datatype ID init
       int tmp_i = getAddressOf(arg1.c_str());
       int tmp_w = getAddressOf(arg2.c_str());
       addAsm( str_LDA + "$" + toHex( tmp_i ), 3, false ); 
-      addAsm( str_ASL ); // 2* because it's a word array... not a byte array
+      addAsm( str_ASL ); // *2* because it's a word array... not a byte array
       addAsm( str_TAX );
       addAsm( str_LDA + "#<" + getNameOf(tmp_w), 2, false );
       addAsm( str_STA + getNameOf( tmp_base ) + string( ",X" ), 3, false );
@@ -12083,15 +12079,13 @@ statement: datatype ID init
       addComment( "WordID[UintIMM] = WordID" );
 
       int tmp_base = getAddressOf( arg0.c_str() );
-      int tmp_i = 2*atoi( stripFirst(arg1.c_str()).c_str() );  // 2* because it's a word array... not a byte array
+      int tmp_i = 2*atoi( stripFirst(arg1.c_str()).c_str() );  // *2 because it's a word array... not a byte array
       int tmp_w = getAddressOf(arg2.c_str());
 
       addAsm( str_LDA + "#<" + toHex( getAddressOf(arg2.c_str())), 2, false );
-      //addAsm( str_LDA + "#$" + toHex(get_word_L(tmp_w) ), 2, false );
       addAsm( str_STA + getNameOf( getAddressOf( arg0.c_str() ) ) + "+" + itos(2*atoi(stripFirst(arg1.c_str()).c_str())), 3, false );
 
       addAsm( str_LDA + "#>" + toHex(getAddressOf(arg2.c_str())), 2, false );
-      //addAsm( str_LDA + "#$" + toHex(get_word_H(tmp_w) ), 2, false );
       addAsm( str_STA + getNameOf( getAddressOf( arg0.c_str() ) ) + "+" + itos(1+2*atoi(stripFirst(arg1.c_str()).c_str())), 3, false );
 
     }
@@ -12099,7 +12093,7 @@ statement: datatype ID init
     {
       addComment( "WordID[UintIMM] = WordIMM" );
       int tmp_base = getAddressOf( arg0.c_str() );
-      int tmp_i = 2*atoi( stripFirst(arg1.c_str()).c_str() );  // 2* because it's a word array... not a byte array
+      int tmp_i = 2*atoi( stripFirst(arg1.c_str()).c_str() );  // *2 because it's a word array... not a byte array
       int tmp_w = atoi( stripFirst(arg2.c_str()).c_str() );
 
       addAsm( str_LDA + "#<" + toHex(getAddressOf(arg2.c_str())), 2, false );    
@@ -12111,7 +12105,7 @@ statement: datatype ID init
     {
       addComment( "word array[(U)IntIMM] = XA;" );
       int tmp_base = getAddressOf( arg0.c_str() );
-      int tmp_i = 2*atoi( stripFirst(arg1.c_str()).c_str() );  // 2* because it's a word array... not a byte array
+      int tmp_i = 2*atoi( stripFirst(arg1.c_str()).c_str() );  // *2 because it's a word array... not a byte array
 
       int tmp_w = atoi( stripFirst(arg2.c_str()).c_str() );
       addAsm( str_STA + getNameOf( tmp_base ) + " +" + itos(tmp_i), 3, false );
@@ -12405,7 +12399,7 @@ statement: datatype ID init
   else if( isIntID && isXA(_init) )
     {
       addComment( "IntID = XA" );
-      addCompilerMessage("setting a 1 byte memory location to a 2 byte value... losing High Byte", 1);
+      addCompilerMessage("setting a 1 byte memory location to a 2 byte value... lost fidelity", 1);
 
       int instr_size = 3;
       if( current_variable_base_address < 256 ) instr_size=2; 
@@ -13025,6 +13019,7 @@ init: '=' expression
   else if( isMOB($2.name)  )
     {
       addCompilerMessage( "MOB type has been removed", 3 );
+      strcpy($$.name, "NULL" );
     }  
   else
     {
@@ -13128,17 +13123,28 @@ arithmetic[MATHOP] expression[OP2]
 	{
 	  if( arg_unsafe_math )
 	    {
-	      addCompilerMessage( "A + A --> A (Destroys ZP $FB)", 1 );
+	      addCompilerMessage( "A + A --> A (Destroys ZP $FB) (12 cycles)", 1 );
 	      addComment( "A + A --> A (Destroys ZP $FB)" );	   
-	      addAsm( str_STA + "$FB" + commentmarker + "(2:3) (bytes:cycles)", 2, false ); // temporaily store OP2 in zp
-	      addAsm( str_PLA + commentmarker + "(1:4)", 1, false ); 
-	      addAsm( str_CLC, 1, false );
-	      addAsm( str_ADC + "$FB" + commentmarker + "(2:3)" , 2, false );
-	      addCompilerMessage( "--unsafe-math saved 11 bytes and 22 clock cycles", 0 );
+	      addAsm( str_STA + "$FB", 2, false );                // 3
+	      addAsm( str_PLA, 1, false );                        // 4
+	      addAsm( str_CLC, 1, false );                        // 2
+	      addAsm( str_ADC, 2, false );                        // 3
+	      addCompilerMessage( "--unsafe-math saved 11 bytes and 22 clock cycles", 0 );  
+	    }
+	  else if (1)
+	    {
+	      addComment( "A + A --> A (14 cycles)" );
+	      addAsm( str_TAY, 1, false ); // 2
+	      addAsm( str_TSX, 1, false ); // 2
+	      addAsm( str_INX, 1, false ); // 2
+	      addAsm( str_TXS, 1, false ); // 2
+	      addAsm( str_CLC, 1, false ); // 2
+	      addAsm( str_ADC + "$0100,X", 3, false ); // 4*
+	      // * add 1 to cycles if the page boundary is crossed... it won't be
 	    }
 	  else
 	    {
-	      addComment( "A + A --> A" );
+	      addComment( "A + A --> A (don't use!)" );
 	      addAsm( str_TAX + commentmarker + "(1:2) (bytes:cycles)", 1, false );
 	      addAsm( str_PLA + commentmarker + "(1:4)", 1, false );
 	      addAsm( str_TAY + commentmarker + "(1:2)", 1, false );
