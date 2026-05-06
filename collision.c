@@ -1,5 +1,3 @@
-#include <stdio.h>
-
 int main()
 {
   cls();
@@ -10,10 +8,19 @@ int main()
   uint collisiontracker=0;
 
   word location = 0x040A;
-  
+
+
+  poke( 0x07F8, 0xC0 );
   cursorxy( 20, 23 );
   
-  mob sprite1 = { 0, 192, 0, 24, 0, 0, 24, 0, 0, 36, 0, 0, 36, 0, 0, 66, 0, 0, 66, 0, 0, 153, 0, 0, 153, 0, 0, 153, 0, 17, 24, 136, 18, 0, 72, 20, 0, 40, 24, 0, 24, 16, 0, 8, 32, 0, 4, 64, 0, 2, 64, 102, 2, 63, 153, 252, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+  data sprite1 = { 0, 24, 0, 0, 24, 0, 0, 36, 0, 0, 36, 0, 0, 66, 0, 0, 66, 0, 0, 153, 0, 0, 153, 0, 0, 153, 0, 17, 24, 136, 18, 0, 72, 20, 0, 40, 24, 0, 24, 16, 0, 8, 32, 0, 4, 64, 0, 2, 64, 102, 2, 63, 153, 252, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+
+  word saddr = sprite1;
+  for( word addr = 0x3000; addr < 0x3040; addr = addr + 0x0001 )
+    {
+      poke( addr, peek(saddr) );
+      saddr = saddr + 0x0001;
+    }
   
   spriteset( 1 ); // turn on all sprites
   spritexy( 0, x, y );
@@ -38,6 +45,7 @@ int main()
     }
   spriteset( 0 );
   clearkb();
+
   return;
 }
 
