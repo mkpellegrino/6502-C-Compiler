@@ -13076,7 +13076,7 @@ arithmetic[MATHOP] expression[OP2]
       addComment( "^^^--- OPTIMIZE ---^^^" );
     }
   
-  if( isA($1.name) && (!isXA($4.name) && !isA($4.name) /* && !isFAC($4.name) */ ) )
+  if( isA($1.name) && (!isXA($4.name) && !isA($4.name) ) )
     {
       addAsm( str_PLA, 1, false );
       addComment( "^^^--- OPTIMIZE ---^^^" );
@@ -13121,73 +13121,22 @@ arithmetic[MATHOP] expression[OP2]
       addComment( "A math A: TOC" );
       if( op == string("+"))
 	{
-	  if( arg_unsafe_math )
-	    {
-	      addCompilerMessage( "A + A --> A (Destroys ZP $FB) (12 cycles)", 1 );
-	      addComment( "A + A --> A (Destroys ZP $FB)" );	   
-	      addAsm( str_STA + "$FB", 2, false );                // 3
-	      addAsm( str_PLA, 1, false );                        // 4
-	      addAsm( str_CLC, 1, false );                        // 2
-	      addAsm( str_ADC, 2, false );                        // 3
-	      addCompilerMessage( "--unsafe-math saved 11 bytes and 22 clock cycles", 0 );  
-	    }
-	  else if (1)
-	    {
-	      addComment( "A + A --> A (14 cycles)" );
-	      addAsm( str_TAY, 1, false ); // 2
-	      addAsm( str_TSX, 1, false ); // 2
-	      addAsm( str_INX, 1, false ); // 2
-	      addAsm( str_TXS, 1, false ); // 2
-	      addAsm( str_CLC, 1, false ); // 2
-	      addAsm( str_ADC + "$0100,X", 3, false ); // 4*
-	      // * add 1 to cycles if the page boundary is crossed... it won't be
-	    }
-	  else
-	    {
-	      addComment( "A + A --> A (don't use!)" );
-	      addAsm( str_TAX + commentmarker + "(1:2) (bytes:cycles)", 1, false );
-	      addAsm( str_PLA + commentmarker + "(1:4)", 1, false );
-	      addAsm( str_TAY + commentmarker + "(1:2)", 1, false );
-	      addAsm( str_LDA + "$FB" + commentmarker + "(2:2)", 2, false );
-	      addAsm( str_PHA + commentmarker + "(1:3)", 1, false );
-	      addAsm( str_STX + "$FB" + commentmarker + "(2:3)", 2, false );
-	      addAsm( str_TYA + commentmarker + "(1:2)", 1, false );
-	      addAsm( str_CLC, 1, false );
-	      addAsm( str_ADC + "$FB" + commentmarker + "(2:3)", 2, false );
-	      addAsm( str_TAY + commentmarker + "(1:2)", 1, false );
-	      addAsm( str_PLA + commentmarker + "(1:4)", 1, false );
-	      addAsm( str_STA + "$FB" + commentmarker + "(2:3)", false );
-	      addAsm( str_TYA + commentmarker + "(1:2)", 1, false );
-	    }	  
+	  addComment( "A + A --> A (12 cycles)" );
+	  addAsm( str_STA + "!+", 3, false ); // 4
+	  addAsm( str_PLA, 1, false ); // 4
+	  addAsm( str_CLC, 1, false ); // 2 
+	  addAsm( str_BYTE + "$69" + commentmarker + "<-- ADC imm", 1, false ); // 2 
+	  addAsm( "!:\t" + str_BYTE + "$00", 1, true );
 	  strcpy($$.name, "_A" );
 	}
       else if( op == string("-"))
 	{
-	  if( arg_unsafe_math )
-	    {
-	      addComment( "A - A --> A (Destroys $FB)" );	   
-	      addAsm( str_STA + "$FB", 2, false ); // temporaily store OP2 in zp
-	      addAsm( str_PLA ); 
-	      addAsm( str_SEC );
-	      addAsm( str_SBC + "$FB", 2, false );
-	    }
-	  else
-	    {	  
-	      addComment( "A - A --> A" );
-	      addAsm( str_TAX, 1, false );
-	      addAsm( str_PLA, 1, false );
-	      addAsm( str_TAY, 1, false );
-	      addAsm( str_LDA + "$FB", 2, false );
-	      addAsm( str_PHA, 1, false );
-	      addAsm( str_STX + "$FB", 2, false );
-	      addAsm( str_TYA, 1, false );
-	      addAsm( str_SEC );
-	      addAsm( str_SBC + "$FB", 2, false );
-	      addAsm( str_TAY, 1, false );
-	      addAsm( str_PLA, 1, false );
-	      addAsm( str_STA + "$FB", false );
-	      addAsm( str_TYA, 1, false );
-	    }
+	  addComment( "A - A --> A (12 cycles)" );
+	  addAsm( str_STA + "!+", 3, false ); // 4
+	  addAsm( str_PLA, 1, false ); // 4
+	  addAsm( str_SEC, 1, false ); // 2 
+	  addAsm( str_BYTE + "$E9" + commentmarker + "<-- SBC imm", 1, false ); // 2 
+	  addAsm( "!:\t" + str_BYTE + "$00", 1, true );
 	  strcpy($$.name, "_A" );
 
 	}
