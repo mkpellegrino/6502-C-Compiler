@@ -6696,12 +6696,8 @@ body: WHILE
     }
   else if( isWordID(param1) && isA(param2) )
     {
-      addComment( "poke(WordID, A)" );
-      //addAsm( str_PHA, 1, false );
-      //addAsm( str_STA + "!+", 3, false );
+      addComment( "poke(WordID, A) -- self modifying code" );
       int addr_addr = getAddressOf(param1);
-      //int value = atoi( stripFirst(param2).c_str() );
-      //if( value < 0 || value > 255) addCompilerMessage( "value out of range [0,255]", 3 );
       int instr_size = 3;
       if( addr_addr < 256 ) instr_size = 2; // it's in Zero Page
       addAsm( str_LDY + getNameOf(addr_addr), instr_size, false );
@@ -6710,9 +6706,6 @@ body: WHILE
       if( addr_addr < 255 ) instr_size = 2;
       addAsm( str_LDY + getNameOf(addr_addr) + " +1", instr_size, false ); 
       addAsm( str_STY + "!++", 3, false );
-      //addAsm( str_PLA, 1, false );
-      //addAsm( str_BYTE + "$A9" + commentmarker + "<-- LDA immediate", 1, false );
-      //addAsm( "!:\t"+str_BYTE + "$00", 1, true );
       addAsm( str_BYTE + "$8D" + commentmarker + "<-- STA absolute", 1, false );
       addAsm( "!:\t"+str_BYTE + "$00", 1, true );
       addAsm( "!:\t"+str_BYTE + "$00", 1, true );
@@ -6733,14 +6726,21 @@ body: WHILE
       addAsm( str_BYTE + "$85" + commentmarker + "<-- STA Zero Page", 1, false );
       addAsm( "!:\t"+str_BYTE + "$00", 1, true );
     }
-  else if( (isUintIMM(param1)||isIntIMM(param1)) && (isUintIMM(param2)||isIntIMM(param2)))
+  else if(isUintIMM(param1) && isUintIMM(param2))
     {
-      addComment("poke( UIntIMM, UintIMM); (zp)");
+      addComment("poke( UintIMM, UintIMM); (poking into ZP)");
       int addr = atoi( stripFirst(param1).c_str() );
       int value = atoi( stripFirst(param2).c_str() );
-      if( value < 0 || value > 255) addCompilerMessage( "poke parameter out of range [0,255]", 3 );
       addAsm( str_LDA + "#$" + toHex( value ), 2, false );
       addAsm( str_STA + "$" + toHex( addr ), 2, false );
+    }
+  else if(isIntIMM(param1))
+    {
+      addCompilerMessage( "poke address out of range (it's negative)", 3 );
+    }
+  else if(isIntIMM(param2))
+    {
+      addCompilerMessage( "poke argument out of range (it's negative)", 3 );
     }
   else
     {
@@ -11950,7 +11950,7 @@ statement: datatype ID init
   char* ag1 = $3.name;
   char* ag2 = $6.name;
 
-  if( isA(arg1.c_str() ) && !isXA(arg2.c_str() ) )
+  if( isA(arg1.c_str() ) && !isXA(arg2.c_str()) && !isA(arg2.c_str()) )
     {
       // remove last instruction
       // it should be a "pha"
@@ -11958,14 +11958,13 @@ statement: datatype ID init
       addAsm( str_PLA, 1, false );
     }
 
+  
   //addCompilerMessage( arg0 + "[" + getNameOf(hexToDecimal(stripFirst(arg1).c_str())) + "]=" + arg2, 0 ); 
   addComment( "Array Initialisation" );
   addParserComment( "RULE: statement: ID '[' expression ']' init" );
   current_variable_type=getTypeOf(arg0.c_str());
   current_variable_base_address = getAddressOf(arg0.c_str());
 
-  
-  //if( isUintID( arg0.c_str() ) && (isUintID(arg1.c_str()) || isIntID(arg1.c_str())) && isA(arg2.c_str()) )
   if( isUintID( arg0.c_str() ) && (isUintID(ag1) || isIntID(arg1.c_str())) && isA(arg2.c_str()) )
     {
       addComment( "UintID_array[(U)IntID] = A" ); 
@@ -11989,7 +11988,7 @@ statement: datatype ID init
   else if( isUintID(arg0.c_str()) && (isUintID(arg1.c_str()) || isIntID(arg1.c_str())) && isXA(arg2.c_str()) )
     {
       addComment( "UINT array[(U)IntID] = XA;" );
-      addCompilerMessage( "Setting Uint = XA, losing high byte", 1 );
+      addCompilerMessage( "uint " + arg0 + "[uint/int] is being initialised with a word.  lost fidelity.", 1 );
       addAsm( str_TAY );
       int tmp_i = getAddressOf( arg1.c_str() );
       int tmp_v = getAddressOf( arg0.c_str() );
@@ -12001,7 +12000,7 @@ statement: datatype ID init
     }
   else if( isUintID( arg0.c_str() ) && (isUintIMM(arg1.c_str()) || isIntIMM(arg1.c_str())) && isA(arg2.c_str()) )
     {
-      addComment( "UintID_array[(U)IntIMM] = A" );
+      addComment( "uint array[(U)IntIMM] = A" );
 
       int tmp_index = atoi(stripFirst(arg1.c_str()).c_str());
       //addAsm( str_LDX + "#$" + toHex(tmp_index), 2, false );
@@ -12020,7 +12019,7 @@ statement: datatype ID init
     }
   else if( isUintID( arg0.c_str() ) && (isUintID(arg1.c_str()) || isIntID(arg1.c_str())) && isUintID(arg2.c_str()) )
     {
-      addComment( "UintID_array[(U)IntID] = UintID" );
+      addComment( "uint array[(U)IntID] = UintID" );
 	    
       int tmp_v = getAddressOf(arg2.c_str());
       int tmp_index = getAddressOf(arg1.c_str());
@@ -12030,7 +12029,7 @@ statement: datatype ID init
     }
   else if( isWordID( arg0.c_str() ) && (isUintID(arg1.c_str()) || isIntID(arg1.c_str())) && isXA(arg2.c_str()) )
     {
-      addComment( "wordarray[(U)IntID] = XA;" );
+      addComment( "word array[(U)IntID] = XA;" );
 
       addAsm( str_TAY );
       addAsm( str_TXA );
@@ -12104,14 +12103,9 @@ statement: datatype ID init
       int tmp_w = atoi( stripFirst(arg2.c_str()).c_str() );
 
       addAsm( str_LDA + "#<" + toHex(getAddressOf(arg2.c_str())), 2, false );    
-      //addAsm( str_LDA + "#$" + toHex(get_word_L(tmp_w) ), 2, false );
-
-      addAsm( str_STA + getNameOf( tmp_base ) + "+" + itos(tmp_i), 3, false );
-      
-      addAsm( str_LDA + "#>" + toHex(getAddressOf(arg2.c_str())), 2, false );
-      //addAsm( str_LDA + "#$" + toHex(get_word_H(tmp_w) ), 2, false );
-      
-      addAsm( str_STA + getNameOf( tmp_base ) + "+" + itos(tmp_i+1), 3, false );
+      addAsm( str_STA + getNameOf( tmp_base ) + " +" + itos(tmp_i), 3, false );
+      addAsm( str_LDA + "#>" + toHex(getAddressOf(arg2.c_str())), 2, false );      
+      addAsm( str_STA + getNameOf( tmp_base ) + " +" + itos(tmp_i+1), 3, false );
     }
   else if( isWordID( arg0.c_str() ) && (isUintIMM(arg1.c_str()) || isIntIMM(arg1.c_str())) && isXA(arg2.c_str()) )
     {
@@ -12120,90 +12114,202 @@ statement: datatype ID init
       int tmp_i = 2*atoi( stripFirst(arg1.c_str()).c_str() );  // 2* because it's a word array... not a byte array
 
       int tmp_w = atoi( stripFirst(arg2.c_str()).c_str() );
-
-      //addAsm( str_TAY );
-      //addAsm( str_TXA );
-      //addAsm( str_PHA );
-      //addAsm( str_TYA );
-      addAsm( str_STA + getNameOf( tmp_base ) + "+" + itos(tmp_i), 3, false );
-      //addAsm( str_PLA );
-      addAsm( str_STX + getNameOf( tmp_base ) + "+" + itos(tmp_i+1), 3, false );
+      addAsm( str_STA + getNameOf( tmp_base ) + " +" + itos(tmp_i), 3, false );
+      addAsm( str_STX + getNameOf( tmp_base ) + " +" + itos(tmp_i+1), 3, false );
     }
-  else if(isWordID(arg0.c_str()) && isA(arg1.c_str()) && isXA(arg2.c_str()))
+  else if(arg_unsafe_math && isWordID(arg0.c_str()) && isA(arg1.c_str()) && isXA(arg2.c_str()))
     {
-       addComment( "WORD array[A] = XA; (with an MRA) - 60 cycles" );
-       int tmp_base_address = getAddressOf( arg0.c_str() );
-       addAsm( str_LDY + "#<" +  getNameOf(tmp_base_address), 2, false );
-       addAsm( str_STY + "!+", 3, false );
-       addAsm( str_LDY + "#>" +  getNameOf(tmp_base_address), 2, false );
-       addAsm( str_STY + "!++", 3, false );
-       addAsm( str_TAY, 1, false );
-       addAsm( str_PLA, 1, false );
-       addAsm( str_ASL, 1, false );
-       addAsm( str_CLC, 1, false );
-       addAsm( str_ADC + "!++", 3, false );
-       addAsm( str_STA + "!++", 3, false );
-       addAsm( str_STA + "!++++", 3, false );
-       addAsm( str_LDA + "#$00", 2, false );
-       addAsm( str_ADC + "!+", 3, false );
-       addAsm( str_STA + "!+", 3, false );
-       addAsm( str_CLC, 1, false );
-       addAsm( str_ADC + "#$01", 2, false );
-       addAsm( str_STA + "!+++", 3, false );
-       addAsm( str_BYTE + "$8C" + commentmarker + "STY abs", 1, false );
-       addAsm( "!:\t" + str_BYTE + "$00", 1, true );
-       addAsm( "!:\t" + str_BYTE + "$00", 1, true );
-       addAsm( str_BYTE + "$8E" + commentmarker + "STX abs", 1, false );
-       addAsm( "!:\t" + str_BYTE + "$00", 1, true );
-       addAsm( "!:\t" + str_BYTE + "$00", 1, true );
-    }
-  else if(isWordID(arg0.c_str()) && isA(arg1.c_str()) && isXA(arg2.c_str()))
-    {
-      // TODO: Redo this with self modifying code
-      // so it compiles to something like:
-      // PLA
-      // STA $????
-      // PLA
-      // STA $????+1
-       addComment( "WORD array[A] = XA; (with an MRA) -- old version" );
+      addComment( "word array[A] = XA; (with an MRA) - UNSAFE $02/$03: 48 cycles" );
       int tmp_base_address = getAddressOf( arg0.c_str() );
-      
-      // arg1 (the array index) is on the processor stack      
-      addAsm( str_JSR + "PUSH", 3, false ); // push A from XA onto our stack
-      addAsm( str_TXA );
-      addAsm( str_JSR + "PUSH", 3, false ); // push X from XA onto our stack
-
-      addAsm( str_PLA );
-      addAsm( str_ASL + commentmarker + "*2 b/c its a WORD array", 1, false);
-      addAsm( str_TAY );
-      addAsm( str_INY + commentmarker + "b/c we will store X first",1,false);
-      addAsm( str_LDA + "$02", 2, false );
-      addAsm( str_PHA ); // push $02 onto processor stack
-      addAsm( str_LDA + "$03", 2, false );
-      addAsm( str_PHA ); // push $03 onto processor stack
-
-      addAsm( str_LDA + "#<" +  getNameOf(tmp_base_address), 2, false );
-      //addAsm( str_LDA + "#$" +  toHex(get_word_L(tmp_base_address)), 2, false );
-      addAsm( str_STA + "$02", 2, false );
-      //addAsm( str_LDA + "#$" +  toHex(get_word_H(tmp_base_address)), 2, false );
-      addAsm( str_LDA + "#>" +  getNameOf(tmp_base_address), 2, false );
-      addAsm( str_STA + "$03", 2, false );
-
-      addAsm( str_JSR + "POP", 3, false ); // pop X from XA off of our stack
-      addAsm( str_STA + "($02),Y", 2, false );
-      addAsm( str_DEY );
-      addAsm( str_JSR + "POP", 3, false ); // pop A from XA off of our stack
-      addAsm( str_STA + "($02),Y", 2, false );
-
-      // restore $02 and $03
-      addAsm( str_PLA );
-      addAsm( str_STA + "$03", 2, false );
-
-      addAsm( str_PLA );
-      addAsm( str_STA + "$02", 2, false );
+      addAsm( str_STA + "!+", 3, false );   // 4 cycles
+      addAsm( str_STX + "!++", 3, false );   // 4 cycles
+      addAsm( str_PLA, 1, false );   // 4 cycles
+      addAsm( str_ASL, 1, false );   // 2 cycles
+      addAsm( str_TAY, 1, false );   // 2 cycles
+      addAsm( str_LDA + "#<" + getNameOf(tmp_base_address) + commentmarker + "lo byte", 2, false ); // 4 cycles
+      addAsm( str_STA + "$02", 2, false );  // 3 cycles
+      addAsm( str_LDA + "#>" +  getNameOf(tmp_base_address) + commentmarker + "hi byte", 2, false ); // 4 cycles
+      addAsm( str_STA + "$03", 3, false );  // 3 cycles ... 42
+      addAsm( str_BYTE + "$A9" + commentmarker + "<-- LDA imm", 1, false );  // 2 cycles
+      addAsm( "!:\t" + str_BYTE + "$00" + commentmarker + "lo byte", 1, true);
+      addAsm( str_STA + "($02),Y", 2, false ); // 6 cycles
+      addAsm( str_BYTE + "$A9" + commentmarker + "<-- LDA imm", 1, false );  // 2 cycles
+      addAsm( "!:\t" + str_BYTE + "$00" + commentmarker + "hi byte", 1, true);
+      addAsm( str_INY, 1, false ); // 2 cycles
+      addAsm( str_STA + "($02),Y", 2, false );  // 6 cycles
     }
+  else if(isWordID(arg0.c_str()) && isA(arg1.c_str()) && isA(arg2.c_str()))
+    {
+      addComment( "word array[A] = A;" );
+      addAsm( str_LDX + "#$00", 2, false ); // 2 cycles
+      int tmp_base_address = getAddressOf( arg0.c_str() );
+      addAsm( str_TAY, 1, false ); // 2 cycles
+      addAsm( str_PLA, 1, false ); // 4 cycles
+      addAsm( str_ASL, 1, false ); // 2 cycles
+      addAsm( str_CLC, 1, false ); // 2 cycles
+      addAsm( str_ADC + "#<" + getNameOf(tmp_base_address) + commentmarker + "lo byte", 2, false ); // 4 cycles
+
+      addAsm( str_STA + "!+", 3, false ); // 4 cycles
+
+      addAsm( str_LDA + "#$00", 2, false );  // 2 cycles
+      addAsm( str_ADC + "#>" + getNameOf(tmp_base_address) + commentmarker + "hi byte", 2, false ); // 4 cycles
+      addAsm( str_STA + "!++", 3, false ); // 4 cycles
+
+      addAsm( str_LDA + "!+", 3, false ); // 4 cycles
+      addAsm( str_CLC, 1, false ); // 2 cycles
+      addAsm( str_ADC + "#$01", 2, false );  // 2 cycles
+      addAsm( str_STA + "!+++", 3, false ); // 4 cycles
+
+      addAsm( str_LDA + "!++", 3, false ); // 4 cycles
+      addAsm( str_ADC + "#$00", 2, false );  // 2 cycles
+      addAsm( str_STA + "!++++", 3, false ); // 4 cycles
+
+      addAsm( str_BYTE + "$8C" + commentmarker + "STY abs", 1, false );  // 4 cycles
+      addAsm( "!:\t" + str_BYTE + "$00" + commentmarker + "lo byte", 1, true );
+      addAsm( "!:\t" + str_BYTE + "$00" + commentmarker + "hi byte", 1, true );
+      addAsm( str_BYTE + "$8E" + commentmarker + "STX abs", 1, false );  // 4 cycles
+      addAsm( "!:\t" + str_BYTE + "$00" + commentmarker + "lo byte", 1, true );
+      addAsm( "!:\t" + str_BYTE + "$00" + commentmarker + "hi byte", 1, true );
+
+    }
+  else if(isWordID(arg0.c_str()) && isA(arg1.c_str()) && isXA(arg2.c_str()))
+    {
+      addComment( "word array[A] = XA; (with an MRA): 58 cycles" );
+
+      addCompilerMessage( "If index is > 126, bad things happen", 1 );
+
+      int tmp_base_address = getAddressOf( arg0.c_str() );
+      addAsm( str_TAY, 1, false ); // 2 cycles
+      addAsm( str_PLA, 1, false ); // 4 cycles
+      addAsm( str_ASL, 1, false ); // 2 cycles
+      addAsm( str_CLC, 1, false ); // 2 cycles
+      addAsm( str_ADC + "#<" + getNameOf(tmp_base_address) + commentmarker + "lo byte", 2, false ); // 4 cycles
+
+      addAsm( str_STA + "!+", 3, false ); // 4 cycles
+
+      addAsm( str_LDA + "#$00", 2, false );  // 2 cycles
+      addAsm( str_ADC + "#>" + getNameOf(tmp_base_address) + commentmarker + "hi byte", 2, false ); // 4 cycles
+      addAsm( str_STA + "!++", 3, false ); // 4 cycles
+
+      addAsm( str_LDA + "!+", 3, false ); // 4 cycles
+      addAsm( str_CLC, 1, false ); // 2 cycles
+      addAsm( str_ADC + "#$01", 2, false );  // 2 cycles
+      addAsm( str_STA + "!+++", 3, false ); // 4 cycles
+
+      addAsm( str_LDA + "!++", 3, false ); // 4 cycles
+      addAsm( str_ADC + "#$00", 2, false );  // 2 cycles
+      addAsm( str_STA + "!++++", 3, false ); // 4 cycles
+
+      addAsm( str_BYTE + "$8C" + commentmarker + "STY abs", 1, false );  // 4 cycles
+      addAsm( "!:\t" + str_BYTE + "$00" + commentmarker + "lo byte", 1, true );
+      addAsm( "!:\t" + str_BYTE + "$00" + commentmarker + "hi byte", 1, true );
+      addAsm( str_BYTE + "$8E" + commentmarker + "STX abs", 1, false );  // 4 cycles
+      addAsm( "!:\t" + str_BYTE + "$00" + commentmarker + "lo byte", 1, true );
+      addAsm( "!:\t" + str_BYTE + "$00" + commentmarker + "hi byte", 1, true );
+    }  
+  else if(isUintID(arg0.c_str()) && isA(arg1.c_str()) && isA(arg2.c_str()))
+    {
+      addCompilerMessage( "If index is > 255, bad things happen", 1 );
+      int tmp_base_address = getAddressOf( arg0.c_str() );
+      addAsm( str_TAY, 1, false );
+      addAsm( str_PLA, 1, false );
+      addAsm( str_CLC, 1, false );
+      addAsm( str_ADC + "#<" + getNameOf(tmp_base_address) + commentmarker + "lo byte", 2, false ); // 4 cycles
+
+      addAsm( str_STA + "!+", 3, false );
+
+      addAsm( str_LDA + "#$00", 2, false );  // 2 cycles
+      addAsm( str_ADC + "#>" + getNameOf(tmp_base_address) + commentmarker + "hi byte", 2, false ); // 4 cycles
+      addAsm( str_STA + "!++", 3, false );
+
+      addAsm( str_BYTE + "$8C" + commentmarker + "STY abs", 1, false );  // 4 cycles
+      addAsm( "!:\t" + str_BYTE + "$00" + commentmarker + "lo byte", 1, true );
+      addAsm( "!:\t" + str_BYTE + "$00" + commentmarker + "hi byte", 1, true );
+    }  
+  else if(isUintID(arg0.c_str()) && isA(arg1.c_str()) && isXA(arg2.c_str()))
+    {
+      // 30 cycles
+      addCompilerMessage( "If index is > 255, bad things happen", 1 );
+      addCompilerMessage( "uint " + arg0 + "[A] is being initialised with a word.  lost fidelity.", 1 );
+      int tmp_base_address = getAddressOf( arg0.c_str() );
+      addAsm( str_TAY, 1, false ); // 2 cycles
+      addAsm( str_PLA, 1, false ); // 4 cycles
+      addAsm( str_CLC, 1, false ); // 2 cycles
+      addAsm( str_ADC + "#<" + getNameOf(tmp_base_address) + commentmarker + "lo byte", 2, false ); // 4 cycles
+
+      addAsm( str_STA + "!+", 3, false ); // 4 cycles
+
+      addAsm( str_LDA + "#$00", 2, false );  // 2 cycles
+      addAsm( str_ADC + "#>" + getNameOf(tmp_base_address) + commentmarker + "hi byte", 2, false ); // 4 cycles
+      addAsm( str_STA + "!++", 3, false ); // 4 cycles
+
+      addAsm( str_BYTE + "$8C" + commentmarker + "STY abs", 1, false );  // 4 cycles
+      addAsm( "!:\t" + str_BYTE + "$00" + commentmarker + "lo byte", 1, true );
+      addAsm( "!:\t" + str_BYTE + "$00" + commentmarker + "hi byte", 1, true );
+    }  
+  /* else if(isWordID(arg0.c_str()) && isA(arg1.c_str()) && isXA(arg2.c_str())) */
+  /*   { */
+  /*     addComment( "word array[A] = XA; (with an MRA): 70 Cycles" ); */
+  /*     int tmp_base_address = getAddressOf( arg0.c_str() ); */
+  /*     addAsm( str_LDY + "#<" + getNameOf(tmp_base_address) + commentmarker + "lo byte", 2, false ); // 4 cycles */
+  /*     addAsm( str_STY + "!+", 3, false ); // 4 cycles */
+  /*     addAsm( str_LDY + "#>" +  getNameOf(tmp_base_address) + commentmarker + "hi byte", 2, false ); // 4 cycles */
+  /*     addAsm( str_STY + "!++", 3, false ); // 4 cycles */
+  /*     addAsm( str_TAY, 1, false );  // 2 cycles */
+  /*     addAsm( str_PLA + commentmarker + "index", 1, false );  // 4 cycles */
+  /*     addAsm( str_ASL + commentmarker + "*2", 1, false );  // 2 cycles */
+  /*     addAsm( str_CLC, 1, false );  // 2 cycles */
+  /*     addAsm( str_ADC + "!+", 3, false ); // 4 cycles */
+  /*     addAsm( str_STA + "!+", 3, false );  // 4 cycles */
+  /*     addAsm( str_LDA + "#$00", 2, false );  // 2 cycles */
+  /*     addAsm( str_ADC + "!++", 3, false ); // 4 cycles */
+  /*     addAsm( str_STA + "!++", 3, false );  // 4 cycles */
+  /*     addAsm( str_CLC, 1, false );  // 2 cycles */
+  /*     addAsm( str_LDA + "#$01", 2, false );  // 2 cycles */
+  /*     addAsm( str_ADC + "!+", 3, false ); // 4 cycles */
+  /*     addAsm( str_STA + "!+++", 3, false );  // 4 cycles */
+  /*     addAsm( str_LDA + "#$00", 2, false );  // 2 cycles */
+  /*     addAsm( str_ADC + "!++", 3, false ); // 4 cycles */
+  /*     addAsm( str_STA + "!++++", 3, false );  // 4 cycles */
+  /*     addAsm( str_BYTE + "$8C" + commentmarker + "STY abs", 1, false );  // 4 cycles */
+  /*     addAsm( "!:\t" + str_BYTE + "$00" + commentmarker + "lo byte", 1, true ); */
+  /*     addAsm( "!:\t" + str_BYTE + "$00" + commentmarker + "hi byte", 1, true ); */
+  /*     addAsm( str_BYTE + "$8E" + commentmarker + "STX abs", 1, false );  // 4 cycles */
+  /*     addAsm( "!:\t" + str_BYTE + "$00" + commentmarker + "lo byte", 1, true ); */
+  /*     addAsm( "!:\t" + str_BYTE + "$00" + commentmarker + "hi byte", 1, true ); */
+  /*   } */
+  /* else if(isWordID(arg0.c_str()) && isA(arg1.c_str()) && isXA(arg2.c_str())) */
+  /*   { */
+  /*     addComment( "word array[A] = XA; (with an MRA) - new - 74 cycles" ); */
+  /*     int tmp_base_address = getAddressOf( arg0.c_str() ); */
+  /*     addAsm( str_STA + "!+", 3, false );   // 4 cycles */
+  /*     addAsm( str_STX + "!++", 3, false );   // 4 cycles */
+  /*     addAsm( str_PLA, 1, false );   // 4 cycles */
+  /*     addAsm( str_ASL, 1, false );   // 2 cycles */
+  /*     addAsm( str_TAY, 1, false );   // 2 cycles */
+  /*     addAsm( str_LDA + "$02", 2, false );   // 3 cycles */
+  /*     addAsm( str_PHA, 1, false );   // 3 cycles */
+  /*     addAsm( str_LDA + "$03", 2, false );  // 3 cycles */
+  /*     addAsm( str_PHA, 1, false );  // 3 cycles */
+  /*     addAsm( str_LDA + "#<" + getNameOf(tmp_base_address) + commentmarker + "lo byte", 2, false ); // 4 cycles */
+  /*     addAsm( str_STA + "$02", 2, false );  // 3 cycles */
+  /*     addAsm( str_LDA + "#>" +  getNameOf(tmp_base_address) + commentmarker + "hi byte", 2, false ); // 4 cycles */
+  /*     addAsm( str_STA + "$03", 3, false );  // 3 cycles ... 42 */
+  /*     addAsm( str_BYTE + "$A9" + commentmarker + "<-- LDA imm", 1, false );  // 2 cycles */
+  /*     addAsm( "!:\t" + str_BYTE + "$00" + commentmarker + "lo byte", 1, true); */
+  /*     addAsm( str_STA + "($02),Y", 2, false ); // 6 cycles */
+  /*     addAsm( str_BYTE + "$A9" + commentmarker + "<-- LDA imm", 1, false );  // 2 cycles */
+  /*     addAsm( "!:\t" + str_BYTE + "$00" + commentmarker + "hi byte", 1, true); */
+  /*     addAsm( str_INY, 1, false ); // 2 cycles */
+  /*     addAsm( str_STA + "($02),Y", 2, false );  // 6 cycles */
+  /*     addAsm( str_PLA, 1, false ); // 4 cycles */
+  /*     addAsm( str_STA + "$03", 2, false ); // 3 cycles */
+  /*     addAsm( str_PLA, 1, false ); // 4 cycles */
+  /*     addAsm( str_STA + "$02", 2, false ); // 3 cycles */
+  /*   } */
   else
     {
+      addCompilerMessage( "Array: " + arg0 + " " + arg1 + " " + arg2, 1 );
       addCompilerMessage( "Unable to initialise ARRAY", 3 );
     }
 };
