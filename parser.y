@@ -298,6 +298,7 @@
   int label_major=0;
 
   // command line arguments
+  bool arg_safe_loops=false;
   bool arg_show_opt=false;
   bool arg_memory_locations=false;
   bool arg_unsafe_ifs=false;
@@ -1562,11 +1563,11 @@
 	case 2:
 	  return string( "word" );
 	case 4:
-	  return string( "double" );
+	  //return string( "double" );
 	case 8:
 	  return string( "float" );
 	case 16:
-	  return string( "mob" );
+	  //return string( "mob" );
 	case 32:
 	  return string( "string" );
 	}
@@ -3454,19 +3455,6 @@ argumentlist:
       addAsm( str_STA + $2.name + " +3", 3, false );
       addAsm( str_PLA );
       addAsm( str_STA + $2.name + " +4", 3, false );
-
-      /* addAsm(str_PLA); */
-      /* addAsm(str_STA+$2.name+"+4", 3, false); */
-      /* addAsm(str_PLA); */
-      /* addAsm(str_STA+$2.name+"+3", 3, false); */
-      /* addAsm(str_PLA); */
-      /* addAsm(str_STA+$2.name+"+2", 3, false); */
-      /* addAsm(str_PLA); */
-      /* addAsm(str_STA+$2.name+" +1", 3, false); */
-      /* addAsm(str_PLA); */
-      /* addAsm(str_STA+$2.name, 3, false); */
-
-
       break;
     case 16:
       // MOB
@@ -3475,10 +3463,8 @@ argumentlist:
     default:
       break;
     }
-    
   function_argument_count++;
   strcpy($$.name, $4.name );
-
 }
 
 parameterlist: /* empty */
@@ -3708,6 +3694,7 @@ function: function function
     string s = string( "Function Definition: " ) + string( $2.name );
     addComment( s );
   }
+  addAsm( "// MARKED_FOR_DELETION", 0, true );
   addComment( "return address" );
   // this will make recursion (almost) impossible
   addAsm( "!rx:\t" + str_BYTE + "$00", 1, true );
@@ -3718,7 +3705,7 @@ function: function function
   addFunction( string($2.name), getLabel( label_vector[label_major]-1 ), getDataTypeValue($1.name));
 
 
-  addAsm( "// MARKED_FOR_DELETION", 0, true );
+  //  addAsm( "// MARKED_FOR_DELETION", 0, true );
   addAsm( str_PLA, 1, false );
   addAsm( str_STA + "!rx-", 3, false );
   addAsm( str_PLA, 1, false );
@@ -3737,6 +3724,7 @@ function: function function
     {
       deletePreviousAsmUntil( "// MARKED_FOR_DELETION" );
       addComment( "Deleted Mnemonics" );
+      addAsm( string($2.name) + ":", 0, true);
     }
   
 } '{' {} body return '}'
@@ -3785,13 +3773,15 @@ body: WHILE
   string s = gen_random_str(10);
   rnd_str_vector.push(s);
   
-  addComment( "Preserve $02/$03" );
-  addComment( string( "vvvv---- Paired with: " ) + s );
-  addAsm( str_LDA + "$02", 2, false);
-  addAsm( str_PHA );
-
-  addAsm( str_LDA + "$03", 2, false);
-  addAsm( str_PHA );
+  if( arg_safe_loops )
+    {
+      addComment( "Preserve $02/$03" );
+      addComment( string( "vvvv---- Paired with: " ) + s );
+      addAsm( str_LDA + "$02", 2, false);
+      addAsm( str_PHA );
+      addAsm( str_LDA + "$03", 2, false);
+      addAsm( str_PHA );
+    }
   
   pushScope("WHILE");
   addCommentSection( "WHILE LOOP" );
@@ -3811,13 +3801,15 @@ body: WHILE
   string s = rnd_str_vector.top();
   rnd_str_vector.pop();
   
-  addDebugComment( "Restore $02/$03" );
-  addAsm( str_PLA );
-  addAsm( str_STA + "$03", 2, false);
-  addAsm( str_PLA );
-  addAsm( str_STA + "$02", 2, false);
-
-  addDebugComment( string( "^^^^---- Paired with: " ) + s );
+  if( arg_safe_loops )
+    {
+      addDebugComment( "Restore $02/$03" );
+      addAsm( str_PLA );
+      addAsm( str_STA + "$03", 2, false);
+      addAsm( str_PLA );
+      addAsm( str_STA + "$02", 2, false);
+      addDebugComment( string( "^^^^---- Paired with: " ) + s );
+    }
 }
 '}'
 
@@ -3825,19 +3817,16 @@ body: WHILE
 {
   string s = gen_random_str(10);
   rnd_str_vector.push(s);
- 
-  addComment( "Preserve $02/$03" );
-  addDebugComment( string( "vvvv---- Paired with: " ) + s );
 
-  addAsm( str_LDA + "$02", 2, false);
-  addAsm( str_PHA );
-  addAsm( str_LDA + "$03", 2, false);
-  addAsm( str_PHA );
-  
-  //addComment( "Preserve Status Register" );
-  //addAsm( str_PHP );
-  
-  //addAsm( str_CLC );  
+  if( arg_safe_loops )
+    {
+      addDebugComment( string( "vvvv---- Paired with: " ) + s );
+      addComment( "Preserve $02/$03" );
+      addAsm( str_LDA + "$02", 2, false);
+      addAsm( str_PHA );
+      addAsm( str_LDA + "$03", 2, false);
+      addAsm( str_PHA );
+    }
   pushScope("FOR");
   addAsm( generateNewLabel(), 0, true );
 }
@@ -3899,23 +3888,18 @@ body: WHILE
     {
       popScope();
 
-      //addCommentBreak(2);
-      // 2023 06 27
       string s = rnd_str_vector.top();
       rnd_str_vector.pop();
 
-      // 2023 06 25
-      //addComment( "Restore status register" );
-      //addAsm( str_PLP );
-
-      addComment( "Restore $02/$03" );
-      addAsm( str_PLA );
-      addAsm( str_STA + "$03", 2, false);
-      addAsm( str_PLA );
-      addAsm( str_STA + "$02", 2, false);
-      addDebugComment( string( "^^^^---- Paired with: " ) + s );
-
-      //addCommentBreak(2);
+      if( arg_safe_loops )
+	{
+	  addComment( "Restore $02/$03" );
+	  addAsm( str_PLA );
+	  addAsm( str_STA + "$03", 2, false);
+	  addAsm( str_PLA );
+	  addAsm( str_STA + "$02", 2, false);
+	  addDebugComment( string( "^^^^---- Paired with: " ) + s );
+	}
 
     }
 };
@@ -27843,15 +27827,21 @@ int main(int argc, char *argv[])
 #endif
       if( a == "--memory-locations" ) arg_memory_locations  = true;
       if( a == "--no-optimize" ) arg_optimize = false;
+      if( a == "--optimize" ) arg_optimize = true;
       if( a == "--show-cycles" ) arg_show_cycles = true;
       if( a == "--no-asm-comments" ) arg_asm_comments = false;
+      if( a == "--asm-comments" ) arg_asm_comments = true;
       if( a == "--parser-comments" ) arg_parser_comments = true;
       //if( a == "--symbol-table" ) symbol_table_is_needed = true;
       if( a == "--no-labels" ) arg_show_labels = false;
+      if( a == "--labels" ) arg_show_labels = true;
       if( a == "--short-branches" ) long_branches = false;
+      if( a == "--long-branches" ) long_branches = true;
       if( a == "--show-opt" ) arg_show_opt = true; 
       if( a == "--debug" ) { debug_flag_is_on = true; arg_debug_comments = true; }
       if( a == "--basic" || a == "--basicupstart" ) basic_upstart = true;
+      if( a == "--safe-loops" ) arg_safe_loops = true;
+      if( a == "--unsafe-loops" ) arg_safe_loops = false;
       if( a == "--scanf-buffer-size" )
 	{
 	  scanf_buffer_size = atoi( argv[i+1] );
@@ -27866,10 +27856,17 @@ int main(int argc, char *argv[])
 	{
 	  arg_unsafe_ifs = true;
 	}
+      if( a == "--safe-ifs" )
+	{
+	  arg_unsafe_ifs = false;
+	}
+      if( a == "--safe-math" )
+	{
+	  arg_unsafe_math = false;
+	}
       if( a == "--unsafe-math" )
 	{
 	  arg_unsafe_math = true;
-	  addCompilerMessage( "Unsafe Math", 0);
 	}
       if( a == "--kick" )
 	{
@@ -27893,6 +27890,10 @@ int main(int argc, char *argv[])
 	  input_file_name = string( argv[i+1] );
 	  i++;
 	}
+
+
+
+      
       if( a == "--help" )
 	{
 	  cerr << "\n\nusage:" << endl << argv[0] << " <options> inputfile.c outputfile.asm\n\n"
@@ -27902,6 +27903,8 @@ int main(int argc, char *argv[])
 	       << "\t--no-asm-comments\twill supress most comments pertaining to flow of control\n" 
 	       << "\t--no-optimize\twill generate code with no post-compilation optimizations\n" 
 	       << "\t--parser-comments\twill show the comments intended to help debug the parser\n"
+	       << "\t--safe-loops\tsaves and restores $02/$03 before and after loops\n"
+	       << "\t--safe-ifs\tsaves and restores $02/$03 before and after if statements\n"
 	       << "\t--kick\t\t\tcreate .asm file that is compatible with Kick Assembler\n"
 	       << "\t--basic\t\t\tput BASIC Upstart code at $0801\n"
 	       << "\t--show-opt\t\t\twill show the optimisations that the compiler is performing (and also suggest some)\n"
@@ -27912,6 +27915,77 @@ int main(int argc, char *argv[])
 	  exit(-1);
 	}
     }
+
+  if( arg_asm_comments )
+    {
+      addCompilerMessage( "[asm comments]", 0 );
+    }
+  else
+    {
+      addCompilerMessage( "[no asm comments]", 0 );
+    }
+
+  if( arg_parser_comments )
+    {
+      addCompilerMessage( "[parser comments]", 0 );
+    }
+  else
+    {
+      addCompilerMessage( "[no parser comments]", 0 );
+    }
+  if( arg_debug_comments )
+    {
+      addCompilerMessage( "[debug comments]", 0 );
+    }
+  else
+    {
+      addCompilerMessage( "[no debug comments]", 0 );
+    }
+
+  if( arg_unsafe_math )
+    {
+      addCompilerMessage( "[unsafe math]", 0 );
+    }
+  else
+    {
+      addCompilerMessage( "[safe math]", 0 );
+    }
+  if( arg_unsafe_ifs )
+    {
+      addCompilerMessage( "[unsafe ifs]", 0 );
+    }
+  else
+    {
+      addCompilerMessage( "[safe ifs]", 0 );
+    }
+  if( arg_safe_loops )
+    {
+      addCompilerMessage( "[safe loops]", 0 );
+    }
+  else
+    {
+      addCompilerMessage( "[unsafe loops]", 0 );
+    }
+  if( arg_optimize )
+    {
+      addCompilerMessage( "[optimize]", 0 );
+    }
+  else
+    {
+      addCompilerMessage( "[no optimize]", 0 );
+    }
+  if( long_branches )
+    {
+      addCompilerMessage( "[long branches]", 0 );
+    }
+  else
+    {
+      addCompilerMessage( "[short branches]", 0 );
+    }
+  addCompilerMessage( "[scanf buffer size: " + to_string(scanf_buffer_size) + "]", 0 );
+      
+
+      
 
   //  FILE* file_pointer = fopen(input_file_name.c_str(), "a");
  
