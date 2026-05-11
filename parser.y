@@ -288,7 +288,9 @@
   bool sidrnd_is_needed = false;
   bool sidrnd_is_initialised = false;
   bool long_branches = true;
-
+  //bool function_return_value=false;
+  int if_depth = 0;
+  
   bool processing_includes = false;
   
   bool arg_debug_comments = false;
@@ -1732,12 +1734,12 @@
     return return_value;
   }
 
-  bool isMobID( string s )
-  {
-    bool return_value = false;
-    if( getTypeOf( s ) == 16 ) return_value = true;
-    return return_value;
-  }
+  //bool isMobID( string s )
+  //{
+  //bool return_value = false;
+  //if( getTypeOf( s ) == 16 ) return_value = true;
+  //return return_value;
+  //}
 
   bool isStringID( string s )
   {
@@ -2091,6 +2093,14 @@
     string tya = string("tya");
     string lbl = string("LBL");
     string sand = string("and");
+
+    string body = string("!body:");
+    string else1 = string("!else1:");
+    string else2 = string("!else2:");
+    string else3 = string("!else3:");
+    string else4 = string("!else4:");
+    string else5 = string("!else5:");
+    string else6 = string("!else6:");
     
     string cmt = string("// ");
 
@@ -2100,6 +2110,24 @@
 	  {
 	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+1);
 	  }
+      }
+
+    for( int i=0; i<asm_instr.size()-1; i++ )
+      {
+	if(
+	   cmpstr(asm_instr[i]->getString(),else1) && cmpstr(asm_instr[i+1]->getString(),else1) ||
+	   cmpstr(asm_instr[i]->getString(),else2) && cmpstr(asm_instr[i+1]->getString(),else2) ||
+	   cmpstr(asm_instr[i]->getString(),else3) && cmpstr(asm_instr[i+1]->getString(),else3) ||
+	   cmpstr(asm_instr[i]->getString(),else4) && cmpstr(asm_instr[i+1]->getString(),else4) ||
+	   cmpstr(asm_instr[i]->getString(),else5) && cmpstr(asm_instr[i+1]->getString(),else5) ||
+	   cmpstr(asm_instr[i]->getString(),else6) && cmpstr(asm_instr[i+1]->getString(),else6) ||
+	   cmpstr(asm_instr[i]->getString(),body) && cmpstr(asm_instr[i+1]->getString(),body)
+
+	   )
+	  {
+	    addOptimizationMessage( "Label doubled up - removing one", i);
+	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+1);
+	  }	
       }
     
     for( int i=0; i<asm_instr.size()-1; i++ )
@@ -3381,14 +3409,14 @@ argumentlist:
     {
     case 0:
     case 1: // 8-bit argument
-      addAsm(str_PLA);
+      addAsm( str_PLA, 1, false );
       addAsm( str_STA + $2.name, 3, false );
       break;
     case 2:
     case 3: // 16-bit argument
-      addAsm( str_PLA );
+      addAsm( str_PLA, 1, false );
       addAsm( str_STA + $2.name + " +1", 3, false );
-      addAsm( str_PLA );
+      addAsm( str_PLA, 1, false );
       addAsm( str_STA + $2.name, 3, false );
       break;
     case 4:
@@ -3396,7 +3424,7 @@ argumentlist:
       break;
     case 8:
       // floating point argument  -- same as stackToSwap functions
-      addAsm( str_PLA );
+      addAsm( str_PLA, 1, false );
       addAsm( str_STA + $2.name, 3, false );
       addAsm( str_PLA );
       addAsm( str_STA + $2.name + " +1", 3, false );
@@ -3427,15 +3455,15 @@ argumentlist:
     {
     case 0:
     case 1: // one byte argument
-      addAsm(str_PLA);
+      addAsm(str_PLA, 1, false );
       addAsm(str_STA+$2.name, 3, false);
 
       break;
     case 2:
     case 3:
-      addAsm(str_PLA);
-      addAsm(str_STA+$2.name+" +1", 3, false);
-      addAsm(str_PLA);
+      addAsm(str_PLA, 1, false );
+      addAsm(str_STA+$2.name + " +1", 3, false);
+      addAsm(str_PLA, 1, false );
       addAsm(str_STA+$2.name, 3, false);
       break;
     case 4:
@@ -3445,15 +3473,15 @@ argumentlist:
       // float
 
       // floating point argument  -- same as stackToSwap functions
-      addAsm( str_PLA );
+      addAsm( str_PLA, 1, false );
       addAsm( str_STA + $2.name, 3, false );
-      addAsm( str_PLA );
+      addAsm( str_PLA, 1, false );
       addAsm( str_STA + $2.name + " +1", 3, false );
-      addAsm( str_PLA );
+      addAsm( str_PLA, 1, false );
       addAsm( str_STA + $2.name + " +2", 3, false );
-      addAsm( str_PLA );
+      addAsm( str_PLA, 1, false );
       addAsm( str_STA + $2.name + " +3", 3, false );
-      addAsm( str_PLA );
+      addAsm( str_PLA, 1, false );
       addAsm( str_STA + $2.name + " +4", 3, false );
       break;
     case 16:
@@ -3475,28 +3503,28 @@ parameterlist: /* empty */
   if( isUintID($1.name))
     {
       addAsm( str_LDA + getNameOf(getAddressOf( $1.name )), 3, false );
-      addAsm( str_PHA );
+      addAsm( str_PHA, 1, false );
     }
   else if( isIntID($1.name) )
     {
       addAsm( str_LDA + getNameOf(getAddressOf( $1.name )), 3, false );
-      addAsm( str_PHA );
+      addAsm( str_PHA, 1, false );
     }
   else if( isA( $1.name ) )
     {
-      addAsm( str_PHA );
+      addAsm( str_PHA, 1, false );
     }
   else if( isXA( $1.name ) )
     {
-      addAsm( str_PHA );
-      addAsm( str_TXA );
-      addAsm( str_PHA );
+      addAsm( str_PHA, 1, false );
+      addAsm( str_TXA, 1, false );
+      addAsm( str_PHA, 1, false );
     }
   else if( isWordID( $1.name ) )
     {
       // 2024 04 14 - mkpellegrino
       addAsm( str_LDA + getNameOf(getAddressOf( $1.name )), 3, false );
-      addAsm( str_PHA );
+      addAsm( str_PHA, 1, false );
       addAsm( str_LDA + getNameOf(getAddressOf( $1.name )) + " +1", 3, false );
       addAsm( str_PHA );
     }
@@ -3507,21 +3535,21 @@ parameterlist: /* empty */
       int tmp_H = get_word_H(tmp_v);
       
       addAsm( str_LDA + "#$" + toHex( tmp_L ), 2, false );
-      addAsm( str_PHA );
+      addAsm( str_PHA, 1, false );
       addAsm( str_LDA + "#$" + toHex( tmp_H ), 2, false );
-      addAsm( str_PHA );
+      addAsm( str_PHA, 1, false );
     }
   else if( isIntIMM($1.name) )
     {
       int tmp_v = atoi(stripFirst($1.name).c_str());
       addAsm( str_LDA + "#$" + toHex( twos_complement(tmp_v)), 2, false );
-      addAsm( str_PHA );
+      addAsm( str_PHA, 1, false );
     }
   else if( isUintIMM($1.name))
     {
       int tmp_v = atoi(stripFirst($1.name).c_str());
       addAsm( str_LDA + "#$" + toHex( tmp_v ), 2, false );
-      addAsm( str_PHA );
+      addAsm( str_PHA, 1, false );
     }
   else if( isFloatID($1.name) )
     {
@@ -3536,19 +3564,19 @@ parameterlist: /* empty */
       // 2024 04 15 - mkpellegrino      
       addAsm( str_LDA + OP, 3, false );
 
-      addAsm( str_PHA );
+      addAsm( str_PHA, 1, false );
       addAsm( str_LDA + OP + " +1", 3, false );
 
-      addAsm( str_PHA );
+      addAsm( str_PHA, 1, false );
       addAsm( str_LDA + OP + " +2", 3, false );
       
-      addAsm( str_PHA );
+      addAsm( str_PHA, 1, false );
       addAsm( str_LDA + OP + " +3", 3, false );
       
-      addAsm( str_PHA );
+      addAsm( str_PHA, 1, false );
       addAsm( str_LDA + OP + " +4", 3, false );
       
-      addAsm( str_PHA );
+      addAsm( str_PHA, 1, false );
     }
   else if( isFloatIMM($1.name) )
     {
@@ -3567,27 +3595,27 @@ parameterlist: /* empty */
     {
       // 2024 04 14 - mkpellegrino
       addAsm( str_LDA + getNameOf(getAddressOf( $3.name )), 3, false );
-      addAsm( str_PHA );
+      addAsm( str_PHA, 1, false );
     }
   else if( isA($3.name) )
     {
-      addAsm( str_PHA );
+      addAsm( str_PHA, 1, false );
     }
   else if( isXA($3.name) )
     {
-      addAsm( str_PHA );
-      addAsm( str_TXA );
-      addAsm( str_PHA );
+      addAsm( str_PHA, 1, false );
+      addAsm( str_TXA, 1, false );
+      addAsm( str_PHA, 1, false );
     }
   else if( isWordID($3.name) )
     {
       // 2024 04 14 - mkpellegrino
       addAsm( str_LDA + getNameOf(getAddressOf( $3.name )), 3, false );
-      addAsm( str_PHA );
+      addAsm( str_PHA, 1, false );
 
       // 2024 04 14 - mkpellegrino
       addAsm( str_LDA + getNameOf(getAddressOf( $3.name )) + " +1", 3, false );
-      addAsm( str_PHA );
+      addAsm( str_PHA, 1, false );
     }
   else if( isWordIMM($3.name) )
     {
@@ -3596,21 +3624,21 @@ parameterlist: /* empty */
       int tmp_H = get_word_H(tmp_v);
       
       addAsm( str_LDA + "#$" + toHex( tmp_L ), 2, false );
-      addAsm( str_PHA );
+      addAsm( str_PHA, 1, false );
       addAsm( str_LDA + "#$" + toHex( tmp_H ), 2, false );
-      addAsm( str_PHA );
+      addAsm( str_PHA, 1, false );
     }
   else if( isUintIMM($3.name) )
     {
       int tmp_v = atoi(stripFirst($3.name).c_str());
       addAsm( str_LDA + "#$" + toHex( tmp_v ), 2, false );
-      addAsm( str_PHA );
+      addAsm( str_PHA, 1, false );
     }
   else if( isIntIMM( $3.name ) )
     {
       int tmp_v = atoi(stripFirst($3.name).c_str());
       addAsm( str_LDA + "#$" + toHex( twos_complement(tmp_v)), 2, false );
-      addAsm( str_PHA );
+      addAsm( str_PHA, 1, false );
     }
   else if( isFloatID($3.name) )
     {
@@ -3690,22 +3718,26 @@ function: function function
 | datatype ID
 {
 
+  if(strcmp($1.name,"void"))
   {
-    string s = string( "Function Definition: " ) + string( $2.name );
+    //function_return_value=true;
+  }
+  
+  {
+    string s = string( "Function: " ) + string($1.name) + ": " + string( $2.name );
     addComment( s );
   }
-  addAsm( "// MARKED_FOR_DELETION", 0, true );
-  addComment( "return address" );
+  //addAsm( "// MARKED_FOR_DELETION", 0, true );
+  addComment( "return address (OPTIMIZE)" );
   // this will make recursion (almost) impossible
   addAsm( "!rx:\t" + str_BYTE + "$00", 1, true );
   addAsm( "!ry:\t" + str_BYTE + "$00", 1, true );
-
   
   addAsm( string($2.name) + ":", 0, true);
   addFunction( string($2.name), getLabel( label_vector[label_major]-1 ), getDataTypeValue($1.name));
 
 
-  //  addAsm( "// MARKED_FOR_DELETION", 0, true );
+  addAsm( "// MARKED_FOR_DELETION", 0, true );
   addAsm( str_PLA, 1, false );
   addAsm( str_STA + "!rx-", 3, false );
   addAsm( str_PLA, 1, false );
@@ -3720,11 +3752,11 @@ function: function function
   addAsm( str_PHA, 1, false );
 
 
-  if( function_argument_count == 0 )
+  if( function_argument_count == 0  )
     {
       deletePreviousAsmUntil( "// MARKED_FOR_DELETION" );
       addComment( "Deleted Mnemonics" );
-      addAsm( string($2.name) + ":", 0, true);
+      //addAsm( string($2.name) + ":", 0, true);
     }
   
 } '{' {} body return '}'
@@ -3733,6 +3765,7 @@ function: function function
     // any time we come across the function with this ID
     // we can JSR to it
     defined_ids_vector.push_back( new id_and_line( $2.name, countn+1 ));
+    
     if( !previousAsm(str_RTS) )
       {
 	//             // we may want to consider
@@ -3740,7 +3773,7 @@ function: function function
    	addAsm(str_RTS); // add a return statement
 	
       }
-    
+    function_argument_count=0;
   };
 |
 ;
@@ -3845,6 +3878,8 @@ body: WHILE
       iterator_stack.push( asm_instr[asm_instr.size()-1] );
       s = iterator_stack.top()->getString();
       deletePreviousAsm();
+      addCompilerMessage( "Deleted Mnemonics", 0 );
+
     }
   addAsm( "// - - - - - - - moved iterator from here to down below", 0, true );
   
@@ -3871,7 +3906,8 @@ body: WHILE
     }
   // delete the TAG
   deletePreviousAsm();
-  
+  addCompilerMessage( "Deleted Mnemonics", 0 );
+
   addDebugComment( "// ^ ^ ^ ^ ^ ^ ^ moved iterator to here from above");
   
   addAsm( str_JMP + getLabel( ((int)label_vector[label_major]-3), false ), 3, false );
@@ -3905,7 +3941,7 @@ body: WHILE
 };
 | IF
 {
-
+  if_depth++;
   if( !arg_unsafe_ifs )
     {
       string s = gen_random_str(10);
@@ -3919,64 +3955,30 @@ body: WHILE
       addAsm( str_PHA );
     }
 
-  //addComment( "Preserve Status Register" );
-  //addAsm( str_PHP );
-
-  //addCommentBreak(2);
-
-  //addAsm( str_CLC );
 
   pushScope("IF");
-  // ***
-  //addAsm( generateNewLabel(), 0, true );
   
 }
 '(' condition ')'
 {
   jump_start = byte_count;
-  //addCommentBreak();
   addComment( "Body of If" );
-  addAsm( generateNewLabel(), 0, true );
+  //addAsm( generateNewLabel(), 0, true );
+  addAsm( "!body:", 0, true );
 }
 '{' body '}'
 {
   addAsm( "// MARKED_FOR_DELETION" );
-  addAsm( str_JMP + getLabel( label_vector[label_major]+1, false), 3, false);
-  addAsm( generateNewLabel(), 0, true );
+  addAsm( str_JMP + "!else" + toString(if_depth) + "++", 3, false);
+  addAsm( "!else" + toString(if_depth) + ":", 0, true );
 }
  else
    {
-     if( string($11.name) == "" )
-       {
-
-	 deletePreviousAsmUntil( "// MARKED_FOR_DELETION");
-
-	 // delete jump to else
-	 // deletePreviousAsm();
-	 // delete label
-	 //deletePreviousAsm();
-	 
-	 addComment( "Removed previous JMP instruction & a label" );
-	 if( arg_show_opt ) addCompilerMessage( "Removed an unneccessary JMP instruction and Label", 0 );
-
-	 if( (byte_count - jump_start) <= 255 )
-	   {
-	     // TODO: Figure out why byte count is 6 off!
-	     addComment( "^^^^ OPTIMIZE ^^^^ with a BRANCH the JMP that is only 0x" + toHex(6+byte_count-jump_start) + " (" + itos(6+byte_count-jump_start) + ") bytes above" );
-	     
-	   }
-	 addAsm( getLabel(label_vector[label_major]-1), 0, true );
-       }
-     else
-       {
-	 //addComment( "ELSE" );
-	 //addComment( $11.name );
-       }
+     addAsm( "!else" + toString(if_depth) + ":", 0, true);
      addParserComment( "post-process the ELSE" );
    }
 {
-  addAsm( generateNewLabel(), 0, true );
-    
+  if_depth--;  
   if( scope_stack.top() != string("IF") )
     {
       addCompilerMessage( "Scope out of Sync", 3 );
@@ -3986,10 +3988,6 @@ body: WHILE
   else
     {
       popScope();
-
-      //addComment( "Restore status register" );
-      //addAsm( str_PLP );
-
       if( !arg_unsafe_ifs )
 	{
 	  addComment( "Restore $02/$03" );
@@ -4000,9 +3998,7 @@ body: WHILE
 	  string s = rnd_str_vector.top();
 	  rnd_str_vector.pop();
 	  addComment( string( "^^^^---- Paired with: " ) + s );
-
-	}
-      
+	}      
     }
 };
 | statement ';'
@@ -6388,16 +6384,12 @@ body: WHILE
 	  if( memcpy_size > 255 ) addCompilerMessage("memcpy size out of range",3);
 	  addComment( "memcpy R->L" );
 	  // use the R->L memcpy
-	  //addAsm( str_SEI );
 	  addAsm( str_LDY + "#$00", 2, false );
-	  addAsm( generateNewLabel(), 0, true ); // top-of-loop
-	  addAsm( str_LDA + "$" + toHex(addr_src) + ",Y", 3, false );
+	  addAsm( "!:\t" + str_LDA + "$" + toHex(addr_src) + ",Y", 3, true );
 	  addAsm( str_STA + "$" + toHex(addr_dst) + ",Y", 3, false );
 	  addAsm( str_INY, 1, false );	  
 	  addAsm( str_CPY + "#$" + toHex(memcpy_size), 2, false );
-	  //addAsm( str_BEQ + getLabel( label_vector[label_major],false), 2, false );
-	  //addAsm( str_JMP + getLabel( label_vector[label_major]-1,false), 3, false );
-	  addAsm( str_BNE + getLabel( label_vector[label_major]-1,false), 3, false );
+	  addAsm( str_BNE + "!-", 2, false );
 	  //addAsm( generateNewLabel(), 0, true );
 	}
       else
@@ -6405,16 +6397,12 @@ body: WHILE
 	  if( memcpy_size > 254 ) addCompilerMessage("memcpy size out of range for L->R copy",3);
 	  addComment( "memcpy L->R" );	  
 	  // use the L->R memcpy
-	  //addAsm( str_SEI );
 	  addAsm( str_LDY + "#$" + toHex(memcpy_size-1), 2, false );
-	  addAsm( generateNewLabel(), 0, true );
-	  addAsm( str_LDA + "$" + toHex(addr_src) + ",Y", 3, false );
+	  addAsm( "!:\t" + str_LDA + "$" + toHex(addr_src) + ",Y", 3, true );
 	  addAsm( str_STA + "$" + toHex(addr_dst) + ",Y", 3, false );
-	  //addAsm( str_CPY + "#$00", 2, false );
-	  //addAsm( str_BEQ + getLabel( label_vector[label_major],false), 2, false );
 	  addAsm( str_DEY, 1, false );
-	  addAsm( str_BPL + getLabel( label_vector[label_major]-1,false), 3, false );
-	  addAsm( generateNewLabel(), 0, true );
+	  addAsm( str_BPL + "!-", 2, false );
+	  //addAsm( generateNewLabel(), 0, true );
 	}
       //popScope();
     }
@@ -6543,7 +6531,8 @@ body: WHILE
       //  deletePreviousAsm(); // delete the comment
       //}
       addComment( "deleted previous 3 instructions" );
-      
+      addCompilerMessage( "Deleted Mnemonics", 0 );
+
       addComment( "poke( XA, UIntID )" );
       
       int valu_addr = getAddressOf(param2);
@@ -6561,6 +6550,7 @@ body: WHILE
   else if( isXA(param1) && (isUintIMM(param2) || isIntIMM(param2)) )
     {
       deletePreviousAsmUntil( "// MARKED_FOR_DELETION");
+      addCompilerMessage( "Deleted Mnemonics", 0 );
 
       //deletePreviousAsm(); // JSR PUSH
       //deletePreviousAsm(); // TXA
@@ -6721,7 +6711,7 @@ body: WHILE
 	 }
 '{' body '}'
 {
-  
+  //addAsm( "!body:",0,true );
   $$.nd = mknode(NULL, $4.nd, $1.name);
 }
 |
@@ -6761,6 +6751,8 @@ condition: expression[LHS]
        )
     {
       deletePreviousAsmUntil("// MARKED_FOR_DELETION");
+      addCompilerMessage( "Deleted Mnemonics", 0 );
+
       addComment( "Deleted Mnemonics");
     }
 }
@@ -6823,8 +6815,14 @@ condition: expression[LHS]
   //addComment( tc );
   
   if( scope_stack.top() == "FOR" ) addAsm( generateNewLabel() + commentmarker + "Top of FOR Loop", 0, true );  
-  if( scope_stack.top() == "WHILE" ) addAsm( generateNewLabel() + commentmarker + "Top of WHILE Loop", 0, true );  
-  if( scope_stack.top() == "IF" ) addAsm( generateNewLabel() + commentmarker + "Top of IF statement", 0, true );  
+  if( scope_stack.top() == "WHILE" ) addAsm( generateNewLabel() + commentmarker + "Top of WHILE Loop", 0, true );
+  if( scope_stack.top() == "IF" )
+    {
+      // INCREASE IF-DEPTH BY 1
+      //if_depth++;
+      addComment( "condition" );
+      //addAsm( generateNewLabel() + commentmarker + "Top of IF statement", 0, true );
+    }
 
   
   // at this point, we need to look at the type of the variable that is located
@@ -6957,6 +6955,7 @@ condition: expression[LHS]
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
+      addCompilerMessage( "Deleted Mnemonics", 0 );
       cmpFACMEM( "#$19", "#$00" );
     }    
   else if( isA($LHS.name) && isIntID($RHS.name) )
@@ -7147,6 +7146,7 @@ condition: expression[LHS]
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
+      addCompilerMessage( "Deleted Mnemonics", 0 );
       
       cmpFACMEM( "#$19", "#$00" );
     }
@@ -7196,6 +7196,7 @@ condition: expression[LHS]
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
+      addCompilerMessage( "Deleted Mnemonics", 0 );
       cmpFACMEM( "#$19", "#$00" );
     }
   else if( isFAC($LHS.name) && isUintID($RHS.name) )
@@ -7241,6 +7242,7 @@ condition: expression[LHS]
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
+      addCompilerMessage( "Deleted Mnemonics", 0 );
       cmpFACMEM( "#$19", "#$00" );
     }
   else if( isFAC($LHS.name) && isWordID($RHS.name) )
@@ -7287,6 +7289,7 @@ condition: expression[LHS]
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
+      addCompilerMessage( "Deleted Mnemonics", 0 );
       cmpFACMEM( "#$19", "#$00" );
     }
   else if( isFAC($LHS.name) && isXA($RHS.name) )
@@ -7422,6 +7425,7 @@ condition: expression[LHS]
 	  deletePreviousAsm();
 	  deletePreviousAsm();
 	  deletePreviousAsm();
+	  addCompilerMessage( "Deleted Mnemonics", 0 );
 	  cmpFACMEM( "#$19", "#$00" );
 	}
     }
@@ -7432,6 +7436,7 @@ condition: expression[LHS]
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
+      addCompilerMessage( "Deleted Mnemonics", 0 );
       cmpFACMEM( "#$19", "#$00" );
     }
   else if( isFloatIMM($LHS.name) && isFloatID($RHS.name)) 
@@ -7441,6 +7446,7 @@ condition: expression[LHS]
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
+      addCompilerMessage( "Deleted Mnemonics", 0 );
       addAsm( str_LDA + "#<" + getNameOf(getAddressOf($RHS.name)), 2, false );
       addAsm( str_LDY + "#>" + getNameOf(getAddressOf($RHS.name)), 2, false );
       addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
@@ -7491,6 +7497,7 @@ condition: expression[LHS]
 	  deletePreviousAsm();
 	  deletePreviousAsm();
 	  deletePreviousAsm();
+	  addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_LDX + "#$00", 2, false );
 	  addAsm( str_LDY + getNameOf(getAddressOf($RHS.name)), 3, false );
 	  addAsm( str_BPL + "!+", 2, false );
@@ -7530,6 +7537,7 @@ condition: expression[LHS]
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
+      addCompilerMessage( "Deleted Mnemonics", 0 );
       addAsm( str_LDY + getNameOf(getAddressOf($RHS.name)), 3, false );
       addAsm( str_LDA + "#$00", 2, false );
       addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
@@ -7564,6 +7572,7 @@ condition: expression[LHS]
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
+      addCompilerMessage( "Deleted Mnemonics", 0 );
       addAsm( str_LDY + getNameOf(getAddressOf($RHS.name)), 3, false );
       addAsm( str_LDA + getNameOf(getAddressOf($RHS.name)) + " +1", 3, false );
       addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
@@ -7603,6 +7612,7 @@ condition: expression[LHS]
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
+      addCompilerMessage( "Deleted Mnemonics", 0 );
       cmpFACMEM("#$19", "#$00");
     }
   else if( isIntID($LHS.name) && isA($RHS.name) )
@@ -7740,6 +7750,7 @@ condition: expression[LHS]
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
+      addCompilerMessage( "Deleted Mnemonics", 0 );
       cmpFACMEM( "#$69", "#$00" );
       
     }
@@ -7885,6 +7896,7 @@ condition: expression[LHS]
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
+      addCompilerMessage( "Deleted Mnemonics", 0 );
       cmpFACMEM( "#$19", "#$00" );  
     }
   else if( isIntIMM($LHS.name) && isFloatID($RHS.name) )
@@ -8173,6 +8185,7 @@ condition: expression[LHS]
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
+      addCompilerMessage( "Deleted Mnemonics", 0 );
       cmpFACMEM( "#$19", "#$00" );
 
     }
@@ -8304,6 +8317,7 @@ condition: expression[LHS]
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
+      addCompilerMessage( "Deleted Mnemonics", 0 );
       cmpFACMEM( "#$19", "#$00" );
     }
   else if( isUintIMM($LHS.name) && isFloatID($RHS.name) )
@@ -8585,6 +8599,7 @@ condition: expression[LHS]
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
+      addCompilerMessage( "Deleted Mnemonics", 0 );
       cmpFACMEM( "#$19", "#$00" );
     }
   else if( isWordID($LHS.name) && isIntID($RHS.name) )
@@ -8631,7 +8646,7 @@ condition: expression[LHS]
       addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)) + " +1",3, false ); 
       addAsm( str_BNE + "!+", 2, false );
       addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
-      addAsm( str_CMP + "#$" + toHex(R), 3, false );
+      addAsm( str_CMP + "#$" + toHex(R), 2, false );
       addAsm( str_JMP + "!++", 3, false );
       addAsm( "!:\t" + str_LDA + "#$01", 2, true );
       addAsm( str_SEC, 1, false );
@@ -8699,6 +8714,7 @@ condition: expression[LHS]
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
+      addCompilerMessage( "Deleted Mnemonics", 0 );
       cmpFACMEM( "#$19", "#$00" );
     }
   else if( isWordIMM($LHS.name) && isFloatID($RHS.name) )
@@ -9018,6 +9034,7 @@ condition: expression[LHS]
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
+      addCompilerMessage( "Deleted Mnemonics", 0 );
       cmpFACMEM( "#$19", "#$00" );
     }
   else if( isXA($LHS.name) && isIntID($RHS.name) )
@@ -9128,7 +9145,7 @@ condition: expression[LHS]
 	      addComment( "short branch" );
 	      addAsm( str_BCC + getLabel( label_vector[label_major]+1, false) + commentmarker + "if c==0 jump to BODY", 2, false );
 	      //addAsm( str_BEQ + getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==1 jump to BODY", 2, false );
-	      addAsm( str_BNE + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR", 3, false );
+	      addAsm( str_BNE + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR", 2, false );
 	    }
 	  else
 	    {
@@ -9157,7 +9174,7 @@ condition: expression[LHS]
 	      //addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==1 jump to BODY", 3, false );
 	      //addAsm( "!_skip:", 0, true );
 	      //addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR (OPTIMIZE)", 3, false );
-	      addAsm( str_BEQ + getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==1 jump to BODY", 3, false );
+	      addAsm( str_BEQ + getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==1 jump to BODY", 2, false );
 	      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR (OPTIMIZE)", 3, false );
 	    }
 	}
@@ -9188,7 +9205,7 @@ condition: expression[LHS]
 	    {
 	      addComment( "short branch" );
 	      //addAsm( str_BCC + getLabel( label_vector[label_major]+1, false) + commentmarker + "if c==0 jump to BODY", 2, false );
-	      addAsm(str_BCS + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR", 3, false );
+	      addAsm(str_BCS + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR", 2, false );
 	    }
 	  else
 	    {
@@ -9205,7 +9222,7 @@ condition: expression[LHS]
 	    {
 	      addComment( "short branch" );
 	      //addAsm( str_BCS + getLabel( label_vector[label_major]+1, false) + commentmarker + "if c==1 jump to BODY", 2, false );
-	      addAsm( str_BCC + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR", 3, false );
+	      addAsm( str_BCC + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR", 2, false );
 	    }
 	  else
 	    {
@@ -9222,13 +9239,13 @@ condition: expression[LHS]
 	    {
 	      addComment( "short branch" );
 	      //addAsm( str_BNE + getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==0 jump to BODY" , 2, false );
-	      addAsm( str_BEQ + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR", 3, false );
+	      addAsm( str_BEQ + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR", 2, false );
 	    }
 	  else
 	    {
 	      addComment( "long branch" );
 	      addAsm( str_BEQ + "!+", 2, false );
-	      addAsm( str_JMP +  getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==0 jump to BODY", 3, false );
+	      addAsm( str_JMP +  getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==0 jump to BODY", 2, false );
 	      addAsm( "!:\t" + str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR (OPTIMIZE)", 3, true );
 	    }
 	}
@@ -9240,8 +9257,8 @@ condition: expression[LHS]
 	  if( !long_branches )
 	    {
 	      addComment( "short branch" );
-	      addAsm( str_BCC + getLabel( label_vector[label_major], false) + commentmarker + "if c==0 jump to BODY", 3, false );
-	      addAsm( str_BNE + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE", 3, false );
+	      addAsm( str_BCC + getLabel( label_vector[label_major], false) + commentmarker + "if c==0 jump to BODY", 2, false );
+	      addAsm( str_BNE + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE", 2, false );
 	      strcpy($$.name, "exp <= exp sb" );
 	    }
 	  else
@@ -9262,7 +9279,7 @@ condition: expression[LHS]
 	  if( !long_branches )
 	    {
 	      addComment( "short branch" );
-	      addAsm( str_BNE + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE", 3, false );
+	      addAsm( str_BNE + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE", 2, false );
 	      strcpy($$.name, "exp == exp sb" );
 	    }
 	  else
@@ -9290,7 +9307,7 @@ condition: expression[LHS]
 	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if c==0 jump to ELSE" , 3, false );
 	      addAsm( "!_skip:", 0, true );	      
 	      addAsm( str_BNE + "!_skip+", 2, false );
-	      addAsm(str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==1 jump to ELSE (OPTIMIZE)" , 3, false );
+	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==1 jump to ELSE (OPTIMIZE)" , 3, false );
 	      addAsm( "!_skip:", 0, true );
 	      strcpy($$.name, "exp > exp lb" ); // longbranches
 	    }
@@ -9301,7 +9318,7 @@ condition: expression[LHS]
 	    {
 	      addComment( "short branch" );
 	      //addAsm( str_BCC + getLabel( label_vector[label_major], false) + commentmarker + "if c==0 jump to BODY", 2, false );
-	      addAsm( str_BCS + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE", 3, false );
+	      addAsm( str_BCS + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE", 2, false );
 	      strcpy($$.name, "exp < exp sb" ); // shortbranches
 	    }
 	  else
@@ -9350,21 +9367,28 @@ condition: expression[LHS]
     }
   else if( scope_stack.top() == "IF" )
     {
+      pushScope("IF");
       if( string($OP.name) == string( "<=" ) )
 	{
 	  if( !long_branches )
 	    {
 	      addComment( "short branch" );
-	      addAsm( str_BCC + getLabel( label_vector[label_major], false) + commentmarker + "if c==0 jump to BODY", 3, false );
-	      addAsm( str_BNE + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE", 3, false );
+	      //addAsm( str_BCC + "!skip+" + commentmarker + "if c==0 jump to BODY", 2, false );
+	      addAsm( str_BCC + "!body+" + commentmarker + "if c==0 jump to BODY", 2, false );
+	      //addAsm( str_BNE + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE", 2, false );
+	      addAsm( str_BNE + "!else" + toString(if_depth) + "+" + commentmarker + "jump to ELSE", 2, false );
+	      //addAsm( "!skip:", 0, true );
 	      strcpy($$.name, "exp <= exp sb" );
 	    }
 	  else
 	    {
 	      addComment( "long branch" );
-	      addAsm( str_BCC + getLabel( label_vector[label_major], false) + commentmarker + "if c==0 jump to BODY", 3, false );
-	      addAsm( str_BEQ + getLabel( label_vector[label_major], false) + commentmarker + "if z==1 jump to BODY", 3, false );
-	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE (OPTIMIZE)", 3, false );
+	      //addAsm( str_BCC + "!skip+" + commentmarker + "if c==0 jump to BODY", 2, false );
+	      //addAsm( str_BEQ + "!skip+" + commentmarker + "if z==1 jump to BODY", 2, false );
+	      //addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE (OPTIMIZE)", 3, false );
+	      addAsm( str_BCC + "!body+" + commentmarker + "if c==0 jump to BODY", 2, false );
+	      addAsm( str_BEQ + "!body+" + commentmarker + "if z==1 jump to BODY", 2, false );
+	      addAsm( str_JMP + "!else" + toString(if_depth) + "+" + commentmarker + "jump to ELSE (OPTIMIZE)", 3, false );
 	      strcpy($$.name, "exp <= exp lb" );
 	    }
 	}   
@@ -9373,15 +9397,20 @@ condition: expression[LHS]
 	  if( !long_branches )
 	    {
 	      addComment( "short branch" );
-	      addAsm( str_BNE + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE", 3, false );
+	      //addAsm( str_BNE + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE", 2, false );
+	      addAsm( str_BNE + "!else" + toString(if_depth) + "+" + commentmarker + "jump to ELSE", 2, false );
 	      strcpy($$.name, "exp == exp sb" );
 	    }
 	  else
 	    {
+	      // 2026 05 10
 	      addComment( "long branch" );
-	      addAsm( str_BEQ + "!_skip+", 2, false );
-	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE (OPTIMIZE)", 3, false );
-	      addAsm( "!_skip:", 0, true );
+	      addAsm( str_BEQ + "!body+", 2, false );
+	      //popScope();
+	      //addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE (OPTIMIZE)", 3, false );
+	      addAsm( str_JMP + "!else" + toString(if_depth) + "+" + commentmarker + "jump to ELSE (OPTIMIZE)", 3, false );
+	      //pushScope("IF");
+	      //addAsm( "!body:\t// delete this if more than one condition (AND only!!!)", 0, true );
 	      strcpy($$.name, "exp == exp lb" );
 	    }
 	}
@@ -9390,19 +9419,28 @@ condition: expression[LHS]
 	  if( !long_branches )
 	    {
 	      addComment( "short branch" );
-	      addAsm( str_BCC + getLabel( label_vector[label_major]+1, false) + commentmarker + "if c==0 jump to ELSE", 2, false );
-	      addAsm( str_BEQ + getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==1 jump to ELSE", 2, false );
+	      //addAsm( str_BCC + getLabel( label_vector[label_major]+1, false) + commentmarker + "if c==0 jump to ELSE", 2, false );
+	      //addAsm( str_BEQ + getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==1 jump to ELSE", 2, false );
+	      addAsm( str_BCC + "!else" + toString(if_depth) + "+" + commentmarker + "if c==0 jump to ELSE", 2, false );
+	      addAsm( str_BEQ + "!else" + toString(if_depth) + "+" + commentmarker + "if z==1 jump to ELSE", 2, false );
 	      strcpy($$.name, "exp > exp sb" ); // shortbranches
 	    }
 	  else
 	    {
 	      addComment( "long branch" );
+	      //addAsm( str_BCS + "!_skip+", 2, false );
+	      //addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if c==0 jump to ELSE" , 3, false );
+	      //addAsm( "!_skip:", 0, true );	      
+	      //addAsm( str_BNE + "!_skip+", 2, false );
+	      //addAsm(str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==1 jump to ELSE (OPTIMIZE)" , 3, false );
+	      //addAsm( "!_skip:", 0, true );
+
 	      addAsm( str_BCS + "!_skip+", 2, false );
-	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if c==0 jump to ELSE" , 3, false );
+	      addAsm( str_JMP + "!else" + toString(if_depth) + "+" + commentmarker + "if c==0 jump to ELSE" , 3, false );
 	      addAsm( "!_skip:", 0, true );	      
-	      addAsm( str_BNE + "!_skip+", 2, false );
-	      addAsm(str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==1 jump to ELSE (OPTIMIZE)" , 3, false );
-	      addAsm( "!_skip:", 0, true );
+	      addAsm( str_BNE + "!body+", 2, false );
+	      addAsm(str_JMP + "!else" + toString(if_depth) + "+" + commentmarker + "if z==1 jump to ELSE (OPTIMIZE)" , 3, false );
+
 	      strcpy($$.name, "exp > exp lb" ); // longbranches
 	    }
 	}
@@ -9411,16 +9449,20 @@ condition: expression[LHS]
 	  if( !long_branches )
 	    {
 	      addComment( "short branch" );
-	      //addAsm( str_BCC + getLabel( label_vector[label_major], false) + commentmarker + "if c==0 jump to BODY", 2, false );
-	      addAsm( str_BCS + getLabel( label_vector[label_major]+1, false) + commentmarker + " jump to ELSE", 3, false );
+	      //addAsm( str_BCS + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE", 2, false );
+	      addAsm( str_BCS + "!else" + toString(if_depth) + "+" + commentmarker + "jump to ELSE", 2, false );
 	      strcpy($$.name, "exp < exp sb" ); // shortbranches
 	    }
 	  else
 	    {
 	      addComment( "long branch" );
-	      addAsm( str_BCC + "!_skip+", 2, false );
-	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE (OPTIMIZE)", 3, false );
-	      addAsm( "!_skip:", 0, true );
+	      //addAsm( str_BCC + "!_skip+", 2, false );
+	      //addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE (OPTIMIZE)", 3, false );
+	      //addAsm( "!_skip:", 0, true );
+
+	      addAsm( str_BCC + "!body+", 2, false );
+	      addAsm( str_JMP + "!else" + toString(if_depth) + "+" + commentmarker + "jump to ELSE (OPTIMIZE)", 3, false );
+
 	      strcpy($$.name, "exp < exp lb" ); // longbranches
 	    }
 	}
@@ -9429,15 +9471,18 @@ condition: expression[LHS]
 	  if( !long_branches )
 	    {
 	      addComment( "short branch" );
-	      addAsm( str_BCC + getLabel( label_vector[label_major]+1, false) + commentmarker + "if c==1 jump to ELSE", 2, false );	      
+	      //addAsm( str_BCC + getLabel( label_vector[label_major]+1, false) + commentmarker + "if c==1 jump to ELSE", 2, false );	      
+	      addAsm( str_BCC + "!else" + toString(if_depth) + "+" + commentmarker + "if c==1 jump to ELSE", 2, false );	      
 	      strcpy($$.name, "exp >= exp sb" ); // shortbranches
 	    }
 	  else
 	    {
 	      addComment( "long branch" );
-	      addAsm( str_BCS + "!_skip+", 2, false );
-	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if c==1 jump to ELSE (OPTIMIZE)", 3, false );
-	      addAsm( "!_skip:", 0, true );
+	      //addAsm( str_BCS + "!_skip+", 2, false );
+	      //addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if c==1 jump to ELSE (OPTIMIZE)", 3, false );
+	      //addAsm( "!_skip:", 0, true );
+	      addAsm( str_BCS + "!body+", 2, false );
+	      addAsm( str_JMP + "!else" + toString(if_depth) + "+" + commentmarker + "if c==1 jump to ELSE (OPTIMIZE)", 3, false );
 	      strcpy($$.name, "exp >= exp lb" ); // longbranches
 	    }
 	}
@@ -9446,17 +9491,24 @@ condition: expression[LHS]
 	  if( !long_branches )
 	    {
 	      addComment( "short branch" );
-	      addAsm( str_BEQ  + getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==1 jump to ELSE", 2, false );
+	      //addAsm( str_BEQ  + getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==1 jump to ELSE", 2, false );
+	      addAsm( str_BEQ  + "!else" + toString(if_depth) + "+" + commentmarker + "if z==1 jump to ELSE", 2, false );
 	      strcpy($$.name, "exp != exp sb" ); // shortbranches
 	    }
 	  else
 	    {
+	      // 2026 05 10
 	      addComment( "long branch" );
-	      addAsm( str_BNE + getLabel( label_vector[label_major], false), 2, false ); //jump to body
-	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==1 jump to ELSE (OPTIMIZE)", 3, false );
+	      //addAsm( str_BNE + "!skip+", 2, false ); //jump to body
+	      addAsm( str_BNE + "!body+", 2, false ); //jump to body
+	      //addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==1 jump to ELSE (OPTIMIZE)", 3, false );
+	      addAsm( str_JMP + "!else" + toString(if_depth) + "+" + commentmarker + "if z==1 jump to ELSE (OPTIMIZE)", 3, false );
+	      //addAsm( "!skip:", 0, true );
+	      //addAsm( "!body:\t// delete this if more than one condition (AND only!!!)", 0, true );
 	      strcpy($$.name, "exp != exp lb" ); // longbranches
 	    }
 	}
+      popScope();
     }
   else
     {
@@ -9467,106 +9519,119 @@ condition: expression[LHS]
 }
 | condition
 {
+  addAsm( "!else" + toString(if_depth) + ":\t// (||)", 0, true );
+  //addAsm( "// (||)", 0, false );
   string _tmpCond = $1.name;
-  if( _tmpCond == "exp == exp" )
+  if( 0 )
     {
-      // 7 bytes
-      if( arg_asm_comments )
+      if( _tmpCond == "exp == exp" )
 	{
+	  // TODO CHECK THIS ONE (there may be a comment in there that it's deleting w/o checking to see if comments are on
+	  if( arg_asm_comments )
+	    {
+	      deletePreviousAsm();
+	    }
 	  deletePreviousAsm();
-	}
-      deletePreviousAsm();
-      deletePreviousAsm();
-      deletePreviousAsm();
-      addComment( "deleted previous 3 instructions" );
-      addAsm( str_BEQ + getLabel( label_vector[label_major]+1, false), 2, false);    
-    }
-  else if( _tmpCond == "exp > exp lb" )
-    {
-      // 14 bytes
-      if( arg_asm_comments )
-	{
 	  deletePreviousAsm();
-	}
-      deletePreviousAsm();
-      deletePreviousAsm();
-      deletePreviousAsm();
-      deletePreviousAsm();
-      deletePreviousAsm();
-      addComment( "deleted previous 5 instructions" );
+	  addComment( "deleted previous 2 instructions" );
+	  addCompilerMessage( "Deleted Mnemonics", 0 );
 
-      addAsm( str_JMP + getLabel( label_vector[label_major], false) + commentmarker + "if z==1 jump to 2nd condition", 3, false );
-      addAsm( "!_skip:", 0, true );
-      addAsm( str_BNE + getLabel( label_vector[label_major]+1, false) + commentmarker + "branch to body of IF", 2, false );
-      addAsm( str_JMP + getLabel( label_vector[label_major], false) + commentmarker + "if z==1 jump to 2nd condition (OPTIMIZE)", 3, false );
-    }
-  else if( _tmpCond == "exp < exp lb" )
-    {
-      // 9 bytes
-      if( arg_asm_comments )
-	{
-	  deletePreviousAsm();
+	  //deletePreviousAsm();
+	  addAsm( str_JMP + getLabel( label_vector[label_major]+2, false), 3, false);
+	  addAsm( "!_skip:", 0, true );
 	}
-      deletePreviousAsm();
-      deletePreviousAsm();
-      deletePreviousAsm();
-      addComment( "deleted previous 3 instructions" );
-
-      addAsm( str_BCC + getLabel( label_vector[label_major]+1, false) + commentmarker + "branch to body of IF", 2, false );
-    }
-  else if( _tmpCond == "exp >= exp lb" )
-    {
-      // 9 bytes
-      if( arg_asm_comments )
+      else if( _tmpCond == "exp > exp lb" )
 	{
+	  if( arg_asm_comments )
+	    {
+	      deletePreviousAsm();
+	    }
 	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  addComment( "deleted previous 5 instructions" );
+ 
+	  addAsm( str_JMP + getLabel( label_vector[label_major]+2, false), 3, false);
+	  addAsm( "!_skip:", 0, true );
+	  addAsm( str_BNE + "!_skip+", 2, false );
+	  addAsm( str_JMP + getLabel( label_vector[label_major]+2, false), 3, false);
+	  addAsm( "!_skip:", 0, true ); 
 	}
-      deletePreviousAsm();
-      deletePreviousAsm();
-      deletePreviousAsm();
-      addComment( "deleted previous 3 instructions" );
-
-      addAsm( str_BCS + getLabel( label_vector[label_major]+1, false) + commentmarker + "branch to body of IF", 2, false );
-    }
-  else if( _tmpCond == "exp <= exp lb" )
-    {
-      if( arg_show_opt ) addCompilerMessage( "you could save 3 bytes by swapping operands in condition and changing it to: '>'", 0 );
-      // 17 bytes
-      if( arg_asm_comments )
+      else if( _tmpCond == "exp <= exp lb" )
 	{
-	  deletePreviousAsm();
-	}
-      deletePreviousAsm();
-      deletePreviousAsm();
-      deletePreviousAsm();
-      deletePreviousAsm();
-      deletePreviousAsm();
-      deletePreviousAsm();
-      addComment( "deleted previous 5 instructions" );
-
-      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "Jump to body of IF", 2, false );
-      addAsm( "!_skip:", 0, true );
-      addAsm( str_BNE + "!_skip+", 2, false );
-      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "Jump to body of IF (OPTIMIZE)", 2, false );
-      addAsm( "!_skip:", 0, true );
+	  if( arg_asm_comments )
+	    {
+	      deletePreviousAsm();
+	    }
       
-    }
-  else if( _tmpCond == "exp != exp lb" )
-    {
-      // 9 bytes
-      if( arg_asm_comments )
-	{
 	  deletePreviousAsm();
-	}
-      deletePreviousAsm();
-      deletePreviousAsm();
-      deletePreviousAsm();
-      addComment( "deleted previous 3 instructions" );
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  addComment( "deleted previous 5 instructions" );
 
-      addAsm( str_BNE + getLabel( label_vector[label_major]+1, false) + commentmarker + "branch to body of IF", 2, false );
+	  addAsm( str_JMP + getLabel( label_vector[label_major], false), 3, false);
+	  addAsm( "!_skip:", 0, true );
+	  addAsm( str_BNE + "!_skip+", 2, false );
+	  addAsm( str_JMP + getLabel( label_vector[label_major], false), 3, false);
+	  addAsm( "!_skip:", 0, true );
+	  addAsm( str_JMP + getLabel( label_vector[label_major]+2, false), 3, false);
+      
+	}
+      else if( _tmpCond == "exp >= exp lb" )
+	{
+	  if( arg_asm_comments )
+	    {
+	      deletePreviousAsm();
+	    }
+	  
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  addComment( "deleted previous 2 instructions" );
+ 
+	  addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "JMP to else (OPTIMIZE)", 3, false);
+	  addAsm( "!_skip:", 0, true );
+	}
+      else if( _tmpCond == "exp < exp lb" )
+	{
+	  if( arg_asm_comments )
+	    {
+	      deletePreviousAsm();
+	    }
+	  
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  addComment( "deleted previous 2 instructions" );
+      
+	  addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "JMP to else (OPTIMIZE)", 3, false);
+	  addAsm( "!_skip:", 0, true );
+	}
+      else if( _tmpCond == "exp != exp lb" )
+	{
+	  if( arg_asm_comments )
+	    {
+	      deletePreviousAsm();
+	    }
+	  
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  addCompilerMessage( "Deleted 2 Mnemonics", 0 );
+	  addComment( "deleted previous 2 instructions" );
+      
+	  addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "JMP to else (OPTIMIZE)", 3, false);
+	  addAsm( "!_skip:", 0, true );
+	}
+
+      // TODO: Implement the rest of these to coincide with all of the exp relop exp's
     }
-  
-  //addAsm( str_BEQ + getLabel( label_vector[label_major]+1, false), 3, false);
 
 } tOR {} condition {}
 {
@@ -9574,114 +9639,123 @@ condition: expression[LHS]
 }
 | condition
 {
+  addAsm( "!body:\t// (&&)", 0, true );
   string _tmpCond = $1.name;
-  if( _tmpCond == "exp == exp" )
+  if( 0 )
     {
-      // TODO CHECK THIS ONE (there may be a comment in there that it's deleting w/o checking to see if comments are on
-      if( arg_asm_comments )
+      if( _tmpCond == "exp == exp" )
 	{
+	  // TODO CHECK THIS ONE (there may be a comment in there that it's deleting w/o checking to see if comments are on
+	  if( arg_asm_comments )
+	    {
+	      deletePreviousAsm();
+	    }
 	  deletePreviousAsm();
-	}
-      deletePreviousAsm();
-      deletePreviousAsm();
-      addComment( "deleted previous 2 instructions" );
+	  deletePreviousAsm();
+	  addComment( "deleted previous 2 instructions" );
+	  addCompilerMessage( "Deleted Mnemonics", 0 );
 
-      //deletePreviousAsm();
-      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false), 3, false);
-      addAsm( "!_skip:", 0, true );
-    }
-  else if( _tmpCond == "exp > exp lb" )
-    {
-      if( arg_asm_comments )
-	{
-	  deletePreviousAsm();
+	  //deletePreviousAsm();
+	  addAsm( str_JMP + getLabel( label_vector[label_major]+2, false), 3, false);
+	  addAsm( "!_skip:", 0, true );
 	}
-      deletePreviousAsm();
-      deletePreviousAsm();
-      deletePreviousAsm();
-      deletePreviousAsm();
-      deletePreviousAsm();
-      addComment( "deleted previous 5 instructions" );
+      else if( _tmpCond == "exp > exp lb" )
+	{
+	  if( arg_asm_comments )
+	    {
+	      deletePreviousAsm();
+	    }
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  addComment( "deleted previous 5 instructions" );
  
-      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false), 3, false);
-      addAsm( "!_skip:", 0, true );
-      addAsm( str_BNE + "!_skip+", 2, false );
-      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false), 3, false);
-      addAsm( "!_skip:", 0, true ); 
-    }
-  else if( _tmpCond == "exp <= exp lb" )
-    {
-      if( arg_asm_comments )
-      	{
-	  deletePreviousAsm();
+	  addAsm( str_JMP + getLabel( label_vector[label_major]+2, false), 3, false);
+	  addAsm( "!_skip:", 0, true );
+	  addAsm( str_BNE + "!_skip+", 2, false );
+	  addAsm( str_JMP + getLabel( label_vector[label_major]+2, false), 3, false);
+	  addAsm( "!_skip:", 0, true ); 
 	}
-      
-      deletePreviousAsm();
-      deletePreviousAsm();
-      deletePreviousAsm();
-      deletePreviousAsm();
-      deletePreviousAsm();
-      deletePreviousAsm();
-      addComment( "deleted previous 5 instructions" );
-
-      addAsm( str_JMP + getLabel( label_vector[label_major], false), 3, false);
-      addAsm( "!_skip:", 0, true );
-      addAsm( str_BNE + "!_skip+", 2, false );
-      addAsm( str_JMP + getLabel( label_vector[label_major], false), 3, false);
-      addAsm( "!_skip:", 0, true );
-      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false), 3, false);
-      
-    }
-  else if( _tmpCond == "exp >= exp lb" )
-    {
-      if( arg_asm_comments )
+      else if( _tmpCond == "exp <= exp lb" )
 	{
+	  if( arg_asm_comments )
+	    {
+	      deletePreviousAsm();
+	    }
+      
 	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  addComment( "deleted previous 5 instructions" );
+
+	  addAsm( str_JMP + getLabel( label_vector[label_major], false), 3, false);
+	  addAsm( "!_skip:", 0, true );
+	  addAsm( str_BNE + "!_skip+", 2, false );
+	  addAsm( str_JMP + getLabel( label_vector[label_major], false), 3, false);
+	  addAsm( "!_skip:", 0, true );
+	  addAsm( str_JMP + getLabel( label_vector[label_major]+2, false), 3, false);
+      
 	}
+      else if( _tmpCond == "exp >= exp lb" )
+	{
+	  if( arg_asm_comments )
+	    {
+	      deletePreviousAsm();
+	    }
 	  
-      deletePreviousAsm();
-      deletePreviousAsm();
-      addComment( "deleted previous 2 instructions" );
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  addComment( "deleted previous 2 instructions" );
  
-      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "JMP to else (OPTIMIZE)", 3, false);
-      addAsm( "!_skip:", 0, true );
-    }
-  else if( _tmpCond == "exp < exp lb" )
-    {
-      if( arg_asm_comments )
-	{
-	  deletePreviousAsm();
+	  addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "JMP to else (OPTIMIZE)", 3, false);
+	  addAsm( "!_skip:", 0, true );
 	}
+      else if( _tmpCond == "exp < exp lb" )
+	{
+	  if( arg_asm_comments )
+	    {
+	      deletePreviousAsm();
+	    }
 	  
-      deletePreviousAsm();
-      deletePreviousAsm();
-      addComment( "deleted previous 2 instructions" );
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  addComment( "deleted previous 2 instructions" );
       
-      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "JMP to else (OPTIMIZE)", 3, false);
-      addAsm( "!_skip:", 0, true );
-    }
-  else if( _tmpCond == "exp != exp lb" )
-    {
-      if( arg_asm_comments )
-	{
-	  deletePreviousAsm();
+	  addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "JMP to else (OPTIMIZE)", 3, false);
+	  addAsm( "!_skip:", 0, true );
 	}
+      else if( _tmpCond == "exp != exp lb" )
+	{
+	  if( arg_asm_comments )
+	    {
+	      deletePreviousAsm();
+	    }
 	  
-      deletePreviousAsm();
-      deletePreviousAsm();
-      addComment( "deleted previous 2 instructions" );
-     
-      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "JMP to else (OPTIMIZE)", 3, false);
-      addAsm( "!_skip:", 0, true );
-    }
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  addCompilerMessage( "Deleted 2 Mnemonics", 0 );
+	  addComment( "deleted previous 2 instructions" );
+      
+	  addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "JMP to else (OPTIMIZE)", 3, false);
+	  addAsm( "!_skip:", 0, true );
+	}
 
-  // TODO: Implement the rest of these to coincide with all of the exp relop exp's
+      // TODO: Implement the rest of these to coincide with all of the exp relop exp's
+    }
   
 } tAND {} condition {}
 {
   addComment( "condition tAND condition" );
-  //addAsm( "!_body:", 0, true );
-  //addCompilerMessage( "Logical anding of 2 conditions is very poorly implemented. (if A && B)", 1 );
+ 
 };
 
 //| TRUE { add('K'); $$.nd = NULL; }
@@ -15602,6 +15676,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  inlineFloat($1.name);
 	  deletePreviousAsm();
+	  addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fMultT();
 	  strcpy($$.name, "_FAC" );
@@ -15613,6 +15688,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  inlineFloat($1.name);
 	  deletePreviousAsm();
+	  addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fAddT();
 	  strcpy($$.name, "_FAC" );
@@ -15624,6 +15700,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  inlineFloat($1.name);
 	  deletePreviousAsm();
+	  addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fSubT();
 	  strcpy($$.name, "_FAC" );
@@ -15635,6 +15712,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  inlineFloat($1.name);
 	  deletePreviousAsm();
+	  addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fDivT();
 	  strcpy($$.name, "_FAC" );
@@ -15646,6 +15724,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  inlineFloat($1.name);
 	  deletePreviousAsm();
+	  addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fPwrT();
 	  strcpy($$.name, "_FAC" );
@@ -15662,6 +15741,7 @@ arithmetic[MATHOP] expression[OP2]
 	{
 	  inlineFloat($1.name);
 	  deletePreviousAsm();
+	  addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fAddT();
 	}
@@ -15669,6 +15749,7 @@ arithmetic[MATHOP] expression[OP2]
 	{
 	  inlineFloat($1.name);
 	  deletePreviousAsm();
+	  addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fSubT();
 	}
@@ -15676,6 +15757,7 @@ arithmetic[MATHOP] expression[OP2]
 	{
 	  inlineFloat($1.name);
 	  deletePreviousAsm();
+	  addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fSubT();
 	}
@@ -15683,6 +15765,7 @@ arithmetic[MATHOP] expression[OP2]
 	{
 	  inlineFloat($1.name);
 	  deletePreviousAsm();
+	  addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fDivT();
 	}
@@ -15690,6 +15773,7 @@ arithmetic[MATHOP] expression[OP2]
 	{
 	  inlineFloat($1.name);
 	  deletePreviousAsm();
+	  addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fPwrT();
 	}
@@ -15709,6 +15793,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
 	  inlineFloat($1.name);
 	  deletePreviousAsm();
+	  addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fMultT();
 	}
@@ -15719,6 +15804,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
 	  inlineFloat($1.name);
 	  deletePreviousAsm();
+	  addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fAddT();
 	}
@@ -15729,6 +15815,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
 	  inlineFloat($1.name);
 	  deletePreviousAsm();
+	  addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fSubT();
 	}
@@ -15739,6 +15826,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
 	  inlineFloat($1.name);
 	  deletePreviousAsm();
+	  addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fDivT();
 	}
@@ -15749,6 +15837,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
 	  inlineFloat($1.name);
 	  deletePreviousAsm();
+	  addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fPwrT();
 	}
@@ -15815,6 +15904,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  inlineFloat( $1.name );
 	  deletePreviousAsm();
+	  addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fAddT();
 	}
@@ -15829,6 +15919,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  inlineFloat( $1.name );
 	  deletePreviousAsm();
+	  addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fAddT();
 
@@ -15847,6 +15938,7 @@ arithmetic[MATHOP] expression[OP2]
 	  // OP1 -> FAC
 	  inlineFloat( $1.name );
 	  deletePreviousAsm();
+	  addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fMultT();
 	}
@@ -15860,6 +15952,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_TXA, 1, false );	  
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  inlineFloat( $1.name );
+	  addCompilerMessage( "Deleted Mnemonics", 0 );
 	  deletePreviousAsm();
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fDivT();	  
@@ -15878,6 +15971,7 @@ arithmetic[MATHOP] expression[OP2]
 	  // OP1 -> FAC
 	  inlineFloat( $1.name );
 	  deletePreviousAsm();
+	  addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fPwrT();
 	}
@@ -15999,6 +16093,7 @@ arithmetic[MATHOP] expression[OP2]
 	  // OP1 -> FAC
 	  inlineFloat( $1.name );
 	  deletePreviousAsm();
+	  addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fSubT();
 	}
@@ -16012,6 +16107,7 @@ arithmetic[MATHOP] expression[OP2]
 	  // OP1 -> FAC
 	  inlineFloat( $1.name );
 	  deletePreviousAsm();
+	  addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fMultT();
 	}
@@ -16025,6 +16121,7 @@ arithmetic[MATHOP] expression[OP2]
 	  // OP1 -> FAC
 	  inlineFloat( $1.name );
 	  deletePreviousAsm();
+	  addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fDivT();
 	}
@@ -16038,6 +16135,7 @@ arithmetic[MATHOP] expression[OP2]
 	  // OP1 -> FAC
 	  inlineFloat( $1.name );
 	  deletePreviousAsm();
+	  addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fPwrT();
 	}
@@ -16104,6 +16202,7 @@ arithmetic[MATHOP] expression[OP2]
 	  // OP1 -> FAC
 	  inlineFloat( $1.name );
 	  deletePreviousAsm();
+	  addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fAddT();
 	}
@@ -16116,6 +16215,7 @@ arithmetic[MATHOP] expression[OP2]
 	  // OP1 -> FAC
 	  inlineFloat( $1.name );
 	  deletePreviousAsm();
+	  addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fSubT();
 	}
@@ -16129,6 +16229,7 @@ arithmetic[MATHOP] expression[OP2]
 	  // OP1 -> FAC
 	  inlineFloat( $1.name );
 	  deletePreviousAsm();
+	  addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fMultT();
 	}
@@ -16142,6 +16243,7 @@ arithmetic[MATHOP] expression[OP2]
 	  // OP1 -> FAC
 	  inlineFloat( $1.name );
 	  deletePreviousAsm();
+	  addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fDivT();
 	}
@@ -16155,6 +16257,7 @@ arithmetic[MATHOP] expression[OP2]
 	  // OP1 -> FAC
 	  inlineFloat( $1.name );
 	  deletePreviousAsm();
+	  addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fPwrT();
 	}
@@ -16178,6 +16281,7 @@ arithmetic[MATHOP] expression[OP2]
 	  // OP1 -> FAC
 	  inlineFloat( $1.name );
 	  deletePreviousAsm();
+	  addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fAddT();
 	}
@@ -16190,7 +16294,8 @@ arithmetic[MATHOP] expression[OP2]
 	  
 	  // OP1 -> FAC
 	  inlineFloat( $1.name );
-	  deletePreviousAsm();	  
+	  deletePreviousAsm();
+	  addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fSubT();
 	}
@@ -16203,7 +16308,8 @@ arithmetic[MATHOP] expression[OP2]
 	  
 	  // OP1 -> FAC
 	  inlineFloat( $1.name );
-	  deletePreviousAsm();	  
+	  deletePreviousAsm();
+	  addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fMultT();
 	}
@@ -16217,6 +16323,7 @@ arithmetic[MATHOP] expression[OP2]
 	  // OP1 -> FAC
 	  inlineFloat( $1.name );
 	  deletePreviousAsm();
+	  addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fDivT();
 	}
@@ -16230,6 +16337,7 @@ arithmetic[MATHOP] expression[OP2]
 	  // OP1 -> FAC
 	  inlineFloat( $1.name );
 	  deletePreviousAsm();
+	  addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fPwrT();
 	}
@@ -27687,7 +27795,6 @@ return: RETURN ';'
     addAsm( str_STA + "!rx-", 3, false );
     addAsm( str_PLA, 1, false );
     addAsm( str_STA + "!ry-", 3, false );
-
     int v = getAddressOf($3.name);
     if( isUintID($3.name) || isIntID($3.name) )
       {
@@ -27773,7 +27880,7 @@ return: RETURN ';'
 	addCompilerMessage( "invalid return type", 3 );
       }
 
-    addComment( "Restore return address" );
+    addComment( "Restore return address locally" );
     addAsm( str_LDA + "!ry-", 3, false );
     addAsm( str_PHA, 1, false );
     addAsm( str_LDA + "!rx-", 3, false );
