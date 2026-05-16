@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include <string>
+#include <ranges>
 #include <stdlib.h>
 #include <ctype.h>
 #include <cctype>
@@ -348,7 +349,17 @@
   vector <string> node_vector;
 
   // taken from: https://stackoverflow.com/questions/440133/how-do-i-create-a-random-alpha-numeric-string-in-c
-  
+string replaceAll(string str, const string &from, const string &to)
+{
+    size_t start_pos = 0;
+    while ((start_pos = str.find(from, start_pos)) != string::npos)
+    {
+        str.replace(start_pos, from.length(), to);
+        start_pos += to.length(); // Handles case where 'to' is a substring of 'from'
+    }
+    return str;
+}
+
   bool cmpstr( string a, string b )
   {
     bool return_value = false;
@@ -1479,21 +1490,22 @@
 
   ostream & operator << (ostream &out, const asm_string &a) 
     {
+      // TODO: Make this output '.text "THE STRING", $00
       out << commentmarker << "; $" << std::hex << a.address << "\t\t\t\"" << a.text << "\"" << endl;
+
       out << a.name << ":\n\t" << str_BYTE << " ";
       for( int i = 0; i<a.text.size(); i++ )
-	{
-	  if( a.text[i] == '\\' && a.text[i+1] == 'n')
-	    {
-	      out << "$0D, ";
-	      i++;
-	    }
-	  else
-	    {
-	      out << "$" << toHex((int)a.text[i]) << ", ";
-	    }
-	 
-	}
+      {
+       if( a.text[i] == '\\' && a.text[i+1] == 'n')
+         {
+           out << "$0D, ";
+           i++;
+         }
+       else
+         {
+           out << "$" << toHex((int)a.text[i]) << ", ";
+         }	 
+      }
       out << "$00" << endl;
       return out;
     }
@@ -2084,6 +2096,7 @@
     string sec = string("sec");
     string sta = string("sta");
     string jmp = string("jmp");
+    string jsr = string("jsr");
     string rts = string("rts");
     string sei = string("sei");
     string cli = string("cli");
@@ -2093,6 +2106,7 @@
     string tya = string("tya");
     string lbl = string("LBL");
     string sand = string("and");
+    string lda = string("lda");
 
     string body = string("!body:");
     string else1 = string("!else1:");
@@ -2101,13 +2115,63 @@
     string else4 = string("!else4:");
     string else5 = string("!else5:");
     string else6 = string("!else6:");
-    
+
+    string cmpZero = string("cmp #$00");
+    string adc = string("adc");
+    string sbc = string("sbc");
+  
     string cmt = string("// ");
 
     for( int i=0; i<asm_instr.size(); i++ )
       {
+	if(
+	   cmpstr(asm_instr[i]->getString(),adc) && cmpstr(asm_instr[i+1]->getString(),cmpZero) ||
+	   cmpstr(asm_instr[i]->getString(),sbc) && cmpstr(asm_instr[i+1]->getString(),cmpZero)
+
+	   )
+	  {
+	    addOptimizationMessage( "commenting out unnecessary cmp #$00", i);
+	    asm_instr[i+1]->setString( string("//cmp #$00") );
+	    asm_instr[i+1]->setSize( 0 );
+	  }
+      }
+
+
+    for( int i=0; i<asm_instr.size(); i++ )
+      {
+	if( cmpstr(asm_instr[i]->getString(),pha) &&
+	    cmpstr(asm_instr[i+1]->getString(),txa) &&
+	    cmpstr(asm_instr[i+2]->getString(),tax) &&
+	    cmpstr(asm_instr[i+3]->getString(),pla) )
+	  {
+	    addOptimizationMessage( "removing pha-txa-tax-pla", i);
+
+	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+3);
+
+	  }
+      }
+
+    
+    
+    
+    // JSR + RTS chain
+    for( int i=0; i<asm_instr.size(); i++ )
+      {
+	if(cmpstr(asm_instr[i]->getString(),jsr) && cmpstr(asm_instr[i+1]->getString(),rts))
+	  {
+	    string tmp_str = asm_instr[i]->getString() + " // JSR+RTS chain (OPTIMIZE)";
+	    addOptimizationMessage( "found JSR+RTS chain... further investigation needed", i);
+	    asm_instr[i]->setString( tmp_str );
+	  }
+      }
+
+    
+    for( int i=0; i<asm_instr.size(); i++ )
+      {
 	if( cmpstr( asm_instr[i]->getString(), string( "// MARKED_FOR_DELETION") ) )
 	  {
+	    addOptimizationMessage( "removing deletion tag", i);
+
 	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+1);
 	  }
       }
@@ -2127,7 +2191,7 @@
 	  {
 	    addOptimizationMessage( "Label doubled up - removing one", i);
 	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+1);
-	  }	
+	  }
       }
     
     for( int i=0; i<asm_instr.size()-1; i++ )
@@ -2281,7 +2345,7 @@
 	    asm_instr[i+1]->setString( str_TAY );
 	    asm_instr[i+1]->setSize( 1 );
 		
-	    addOptimizationMessage( "replacing LDX #$00 with TAY", i);
+	    addOptimizationMessage( "replacing LDY #$00 with TAY", i);
 	  }
       }
 
@@ -13954,17 +14018,45 @@ arithmetic[MATHOP] expression[OP2]
 	}
       else if( op == string( "*" ) )
 	{
-	  mul16_is_needed = true;
-	  addComment( "A * UintIMM --> XA" );
-	  addAsm( str_STA + "_MUL16_FD", 3, false);
-	  addAsm( str_LDA + "#$00", 2, false  ); 
-	  addAsm( str_STA + "_MUL16_FE", 3, false);
-	  addAsm( str_STA + "_MUL16_FC", 3, false);
-	  addAsm( str_LDA + "#$" + toHex(tmp_v), 2, false  );
-	  addAsm( str_STA + "_MUL16_FB", 3, false);
-	  addAsm( str_JSR + "MUL16", 3, false );
-	  addAsm( str_LDA + "MUL16R", 3, false );
-	  addAsm( str_LDX + "MUL16R+1", 3, false );
+	  switch( tmp_v )
+	    {
+	    case 4:
+	      addComment( "A * 4 --> XA" );
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_LDA + "#$00", 2, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );	      
+	      break;
+	    case 2:
+	      addComment( "A * 2 --> XA" );
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_LDA + "#$00", 2, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );
+	      break;
+	    default:
+	      mul16_is_needed = true;
+	      addComment( "A * UintIMM --> XA" );
+	      addAsm( str_STA + "_MUL16_FD", 3, false);
+	      addAsm( str_LDA + "#$00", 2, false  ); 
+	      addAsm( str_STA + "_MUL16_FE", 3, false);
+	      addAsm( str_STA + "_MUL16_FC", 3, false);
+	      addAsm( str_LDA + "#$" + toHex(tmp_v), 2, false  );
+	      addAsm( str_STA + "_MUL16_FB", 3, false);
+	      addAsm( str_JSR + "MUL16", 3, false );
+	      addAsm( str_LDA + "MUL16R", 3, false );
+	      addAsm( str_LDX + "MUL16R+1", 3, false );
+	    }
 	  strcpy($$.name, "_XA" );
 	}
       else if( op == string( "/" ) )
@@ -14164,14 +14256,38 @@ arithmetic[MATHOP] expression[OP2]
       else if( op == string( "*" ) )
 	{
 	  int O2 = atoi(stripFirst($4.name).c_str());
-	  if( O2 = 256 )
+	  switch( O2 )
 	    {
+	    case 256:
 	      addComment( "A * WordIMM --> XA (special case: 0x0100)" );
 	      addAsm( str_TAX, 1, false );
 	      addAsm( str_LDA + "#$00", 2, false );	      
-	    }
-	  else
-	    {
+	      break;
+	    case 2:
+	      addComment( "A * WordIMM --> XA (special case: 0x0002)" );
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_LDA + "#$00", 2, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );
+	      break;
+	    case 4:
+	      addComment( "A * WordIMM --> XA (special case: 0x0004)" );
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_LDA + "#$00", 2, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );
+	      break;
+	    default:
 	      int O2L = get_word_L(atoi(stripFirst($4.name).c_str()));
 	      int O2H = get_word_H(atoi(stripFirst($4.name).c_str()));
 	      addComment( "A * WordIMM --> XA" );
@@ -14351,7 +14467,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_STA + "_MUL16_FC", 3, false);
 	  addAsm( str_JSR + "MUL16", 3, false );
 	  addAsm( str_LDA + "MUL16R", 3, false );
-	  addAsm( str_LDX + "MUL16R+1", 3, false );
+	  addAsm( str_LDX + "MUL16R +1", 3, false );
 	  strcpy($$.name, "_XA");
 	}
       else if( op == string( "/" ) )
@@ -19478,11 +19594,10 @@ arithmetic[MATHOP] expression[OP2]
 	    {
 	      addComment( "Special Case: UintID * #$08" );
 	      addAsm( str_LDA + O1, sizeOP1A, false);
-	      addAsm( str_LDX + "#$00", 2, false );
 
 	      addAsm( str_ASL, 1, false );
 	      addAsm( str_TAY, 1, false );
-	      addAsm( str_TXA, 1, false );
+	      addAsm( str_LDA + "#$00", 2, false );
 	      addAsm( str_ROL, 1, false );
 	      addAsm( str_TAX, 1, false );
 	      addAsm( str_TYA, 1, false );
@@ -19665,7 +19780,8 @@ arithmetic[MATHOP] expression[OP2]
 	  int op2 = atoi(stripFirst($4.name).c_str());
 	  if( op2 == 10 )
 	    {
-	      addComment( "Special Case ... / 10" );
+	      addComment( "Special Case UintID / 10" );
+	      addAsm( str_LDA + O1, sizeOP1A, false );
 	      addAsm( str_LSR );
 	      addAsm( str_STA + "$2A", 2, false );
 	      addAsm( str_LSR );
@@ -19680,6 +19796,81 @@ arithmetic[MATHOP] expression[OP2]
 	      addAsm( str_LSR );
 	      addAsm( str_LSR );
 	      addAsm( str_LDX + "#$00", 2, false );
+	    }
+	  else if( op2 == 2 )
+	    {
+	      addComment( "Special Case UintID / 2" );
+	      addAsm( str_LDA + O1, sizeOP1A, false );
+	      addAsm( str_LSR );
+	      addAsm( str_LDX + "#$00", 2, false );
+	    }
+	  else if( op2 == 4 )
+	    {
+	      addComment( "Special Case UintID / 4" );
+	      addAsm( str_LDA + O1, sizeOP1A, false );
+	      addAsm( str_LSR );
+	      addAsm( str_LSR );
+	      addAsm( str_LDX + "#$00", 2, false );
+	    }
+	  else if( op2 == 8 )
+	    {
+	      addComment( "Special Case UintID / 8" );
+	      addAsm( str_LDA + O1, sizeOP1A, false );
+	      addAsm( str_LSR );
+	      addAsm( str_LSR );
+	      addAsm( str_LSR );
+	      addAsm( str_LDX + "#$00", 2, false );
+	    }
+	  else if( op2 == 16 )
+	    {
+	      addComment( "Special Case UintID / 16" );
+	      addAsm( str_LDA + O1, sizeOP1A, false );
+	      addAsm( str_LSR );
+	      addAsm( str_LSR );
+	      addAsm( str_LSR );
+	      addAsm( str_LSR );
+	      addAsm( str_LDX + "#$00", 2, false );
+	    }
+	  else if( op2 == 32 )
+	    {
+	      addComment( "Special Case UintID / 32" );
+	      addAsm( str_LDA + O1, sizeOP1A, false );
+	      addAsm( str_LSR );
+	      addAsm( str_LSR );
+	      addAsm( str_LSR );
+	      addAsm( str_LSR );
+	      addAsm( str_LSR );
+	      addAsm( str_LDX + "#$00", 2, false );
+	    }
+	  else if( op2 == 64 )
+	    {
+	      addComment( "Special Case UintID / 64" );
+	      addAsm( str_LDA + O1, sizeOP1A, false );
+	      addAsm( str_LSR );
+	      addAsm( str_LSR );
+	      addAsm( str_LSR );
+	      addAsm( str_LSR );
+	      addAsm( str_LSR );
+	      addAsm( str_LSR );
+	      addAsm( str_LDX + "#$00", 2, false );
+	    }
+	  else if( op2 == 128 )
+	    {
+	      addComment( "Special Case UintID / 128" );
+	      addAsm( str_LDA + O1, sizeOP1A, false );
+	      addAsm( str_LSR );
+	      addAsm( str_LSR );
+	      addAsm( str_LSR );
+	      addAsm( str_LSR );
+	      addAsm( str_LSR );
+	      addAsm( str_LSR );
+	      addAsm( str_LSR );
+	      addAsm( str_LDX + "#$00", 2, false );
+	    }
+	  else if( op2 == 256 )
+	    {
+	      addComment( "Special Case UintID / 256" );
+	      addAsm( str_LAX + "#$00", 2, false );
 	    }
 	  else
 	    {
@@ -20651,47 +20842,53 @@ arithmetic[MATHOP] expression[OP2]
 	    {
 	      // tested for 0 - 254
 	      addComment( "Special Case: 2 * UintID -> XA" );
-	      addAsm( str_LDX + "#$00", 2, false );
 	      addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false );
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_LDA + "#$00", 2, false );
 	      addAsm( str_ROL, 1, false );
-	      addAsm( str_BCC + "!+", 2, false );
-	      addAsm( str_INX, 1, false );
-	      addAsm( "!:", 0, true );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );
 	    }
 	  else if( tmp_int == 4 )
 	    {
 	      addComment( "Special Case: 4 * UintID -> XA" );
-	      addAsm( str_LDX + "#$00", 2, false );
 	      addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false );
-	      
-	      addAsm( str_ROL + commentmarker + "(2)", 1, false );	      
-	      addAsm( str_TAY + commentmarker + "(2)", 1, false );
-	      addAsm( str_TXA + commentmarker + "(2)", 1, false );
-	      addAsm( str_ROL + commentmarker + "(2)", 1, false );
-	      addAsm( str_TAX + commentmarker + "(2)", 1, false );
-	      addAsm( str_TYA + commentmarker + "(2)", 1, false );
-	      
-	      addAsm( str_ROL + commentmarker + "(2)", 1, false );
-	      addAsm( str_TAY + commentmarker + "(2)", 1, false );
-	      addAsm( str_TXA + commentmarker + "(2)", 1, false );
-	      addAsm( str_ROL + commentmarker + "(2)", 1, false );
-	      addAsm( str_TAX + commentmarker + "(2)", 1, false );
-	      addAsm( str_TYA + commentmarker + "(2)", 1, false );
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_LDA + "#$00", 2, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );	      
 	    }
 	  else if( tmp_int == 8 )
 	    {
 	      addComment( "Special Case: 8 * UintID -> XA" );
-	      addAsm( str_LDX + "#$00", 2, false );
 	      addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false );
-	      addAsm( str_LDY + "#$03" + commentmarker + "(2)", 2, false );
-	      addAsm( "!:\t" + str_ROL, 1, true );
-	      addAsm( str_PHA + commentmarker + "(3)", 1, false );
-	      addAsm( str_TXA + commentmarker + "(2)", 1, false );
-	      addAsm( str_ROL + commentmarker + "(2)", 1, false );
-	      addAsm( str_TAX + commentmarker + "(2)", 1, false );
-	      addAsm( str_PLA + commentmarker + "(4)", 1, false );
-	      addAsm( str_DEY + commentmarker + "(2)", 1, false );
-	      addAsm( str_BNE + "!-" + commentmarker + "(2)", 2, false );
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_LDA + "#$00", 2, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );	      
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );	      
 	    }
 	  else if( tmp_int == 16 )
 	    {
