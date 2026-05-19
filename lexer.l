@@ -9,8 +9,12 @@ digit [0-9]
 frmt  [{\t}|{\n}]
 
 %%
+"#longbranches"     { strcpy(yylval.nd_obj.name,(yytext)); return tBL; }
+"#shortbranches"     { strcpy(yylval.nd_obj.name,(yytext)); return tBS; }
 "needs"     { strcpy(yylval.nd_obj.name,(yytext)); return tNEEDS; }
 "inline"     { strcpy(yylval.nd_obj.name,(yytext)); return tINLINE; }
+"Math.PI"       {strcpy(yylval.nd_obj.name,(yytext)); return tPI; }
+"Math.E"       {strcpy(yylval.nd_obj.name,(yytext)); return tE; }
 "xxx"     { strcpy(yylval.nd_obj.name,(yytext)); return tXXX; }
 "fchrin"     { strcpy(yylval.nd_obj.name,(yytext)); return tFCHRIN; }
 "fchrout"     { strcpy(yylval.nd_obj.name,(yytext)); return tFCHROUT; }
@@ -32,8 +36,8 @@ frmt  [{\t}|{\n}]
 "seed"              { strcpy(yylval.nd_obj.name,(yytext)); return tSEED; }
 "memcpy"              { strcpy(yylval.nd_obj.name,(yytext)); return tMEMCPY; }
 "NULL"                { strcpy(yylval.nd_obj.name,(yytext)); return tNULL; }
-"push"                { strcpy(yylval.nd_obj.name,(yytext)); return tPUSH; }
-"pop"                { strcpy(yylval.nd_obj.name,(yytext)); return tPOP; }
+ /* "push"                { strcpy(yylval.nd_obj.name,(yytext)); return tPUSH; } */
+ /* "pop"                { strcpy(yylval.nd_obj.name,(yytext)); return tPOP; } */
 "screen"                { strcpy(yylval.nd_obj.name,(yytext)); return tSCREEN; }
 "asmcomment"                { strcpy(yylval.nd_obj.name,(yytext)); return tCOMMENT; }
 "data"                { strcpy(yylval.nd_obj.name,(yytext)); return tDATA; }
@@ -49,6 +53,7 @@ frmt  [{\t}|{\n}]
 "dec"               { strcpy(yylval.nd_obj.name,(yytext)); return tDEC; }
 "inc"               { strcpy(yylval.nd_obj.name,(yytext)); return tINC; }
 "plot"              { strcpy(yylval.nd_obj.name,(yytext)); return tPLOT; }
+"getpc"            { strcpy(yylval.nd_obj.name,(yytext)); return tGETPC; }
 "getbmp_addr"            { strcpy(yylval.nd_obj.name,(yytext)); return tGETBMP; }
 "getscr_addr"            { strcpy(yylval.nd_obj.name,(yytext)); return tGETSCR; }
 "setscr_addr"            { strcpy(yylval.nd_obj.name,(yytext)); return tSETSCR; }
@@ -79,6 +84,8 @@ frmt  [{\t}|{\n}]
 "getchar"           { strcpy(yylval.nd_obj.name,(yytext)); return tGETCHAR; }
 "sqrt"                   { strcpy(yylval.nd_obj.name,(yytext)); return tSQRT; }
 "tan"                    { strcpy(yylval.nd_obj.name,(yytext)); return tTAN; }
+"ln"                    { strcpy(yylval.nd_obj.name,(yytext)); return tLN; }
+"abs"                    { strcpy(yylval.nd_obj.name,(yytext)); return tABS; }
 "sin"                    { strcpy(yylval.nd_obj.name,(yytext)); return tSIN; }
 "cos"                    { strcpy(yylval.nd_obj.name,(yytext)); return tCOS; }
 "jsr"                    { strcpy(yylval.nd_obj.name,(yytext)); return tJSR; }

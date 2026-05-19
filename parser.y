@@ -76,6 +76,7 @@
   string str_TYA;
   string str_XAA;
   string str_BYTE;
+  string str_TEXT;
   string commentmarker;
 		   
   void setKickDialect()
@@ -142,6 +143,7 @@
     str_TYA = string( "tya " );
     str_XAA = string( "xaa " );
     str_BYTE = string( ".byte " );
+    str_TEXT = string( ".text " );
     commentmarker = " // ";
 
 
@@ -212,6 +214,7 @@
     str_TYA = string( "TYA " );
     str_XAA = string( "XAA " );// OPDCODE: $8B IMM :  2 cycles
     str_BYTE = string( ".BYTE " );
+    str_TEXT = string( ".BYTE " );
     commentmarker = " ; ";
 
     return;
@@ -3108,7 +3111,7 @@ string replaceAll(string str, const string &from, const string &to)
 
 //%parse-param { FILE* fp }
 %token VOID 
-%token <nd_obj> CHAR tFCLOSE tFOPEN tFCLRCHN tFCHROUT tFCHRIN tFREADST tFCHKOUT tFCHKIN tSETLFS tSETNAM tSAVE tLOAD tIMPORT tSPRPTR tPUSH tPOP tCOMMENT tDATA tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tLN tABS tSIN tCOS tTAN tMOB tSIDIRQ tSIDOFF tSTRTOFLOAT tSTRTOWORD tTOFLOAT tINTTOWORD tTOUINT tTOWORD tTOBIT tDEC tINC tROL tROR tLSR tGETPC tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJUMP tSETSCR tJSR tIRQ tROMOUT tROMIN tLDA tASL tSPRITESET  tSPRITEOFF tSPRITETOGGLE tRND tXXX tINLINE tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tPEEK tPOKE NEWLINE CHARACTER tPRINTS PRINTFF SCANFF INT FLOAT WHILE FOR IF ELSE TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE EXPONENT tSQRT UNARY INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL tSCREEN tNULL tMEMCPY tSEED tNEEDS tPI tE tBL tBS
+%token <nd_obj> CHAR tFCLOSE tFOPEN tFCLRCHN tFCHROUT tFCHRIN tFREADST tFCHKOUT tFCHKIN tSETLFS tSETNAM tSAVE tLOAD tIMPORT tSPRPTR /* tPUSH tPOP */ tCOMMENT tDATA tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tLN tABS tSIN tCOS tTAN tMOB tSIDIRQ tSIDOFF tSTRTOFLOAT tSTRTOWORD tTOFLOAT tINTTOWORD tTOUINT tTOWORD tTOBIT tDEC tINC tROL tROR tLSR tGETPC tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJUMP tSETSCR tJSR tIRQ tROMOUT tROMIN tLDA tASL tSPRITESET  tSPRITEOFF tSPRITETOGGLE tRND tXXX tINLINE tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tPEEK tPOKE NEWLINE CHARACTER tPRINTS PRINTFF SCANFF INT FLOAT WHILE FOR IF ELSE TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE EXPONENT tSQRT UNARY INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL tSCREEN tNULL tMEMCPY tSEED tNEEDS tPI tE tBL tBS
 %type <nd_obj> headers main body return function datatype statement arithmetic relop program else 
    %type <nd_obj2> init value expression /*charlist*/ numberlist parameterlist argumentlist
       %type <nd_obj3> condition
@@ -3119,12 +3122,13 @@ string replaceAll(string str, const string &from, const string &to)
 
 headers: 
 | /* empty */
+;
 | INCLUDE STR
 {
   string tmp_str = stripQuotes($2.name);
   addCompilerMessage( string( "including: " ) + $2.name, 0 );
   addIncludeFile( tmp_str );   
-}
+};
 | tNEEDS '('  STR  ')' ';'
 {
   bool correct_usage = false;
@@ -3793,17 +3797,16 @@ function: function function
     string s = string( "Function: " ) + string($1.name) + ": " + string( $2.name );
     addComment( s );
   }
-  //addAsm( "// MARKED_FOR_DELETION", 0, true );
   addComment( "return address (OPTIMIZE)" );
   // this will make recursion (almost) impossible
   addAsm( "!rx:\t" + str_BYTE + "$00", 1, true );
   addAsm( "!ry:\t" + str_BYTE + "$00", 1, true );
-  
+  addAsm( "// MARKED_FOR_DELETION", 0, true );  
   addAsm( string($2.name) + ":", 0, true);
   addFunction( string($2.name), getLabel( label_vector[label_major]-1 ), getDataTypeValue($1.name));
 
 
-  addAsm( "// MARKED_FOR_DELETION", 0, true );
+  //addAsm( "// MARKED_FOR_DELETION", 0, true );
   addAsm( str_PLA, 1, false );
   addAsm( str_STA + "!rx-", 3, false );
   addAsm( str_PLA, 1, false );
@@ -3821,7 +3824,9 @@ function: function function
   if( function_argument_count == 0  )
     {
       deletePreviousAsmUntil( "// MARKED_FOR_DELETION" );
-      addComment( "Deleted Mnemonics" );
+      //addComment( "Deleted Mnemonics" );
+      //addAsm( commentmarker + "NO ARGUMENTS HERE!" );
+      addAsm( string($2.name) + ":", 0, true);
       //addAsm( string($2.name) + ":", 0, true);
     }
   
@@ -3832,13 +3837,14 @@ function: function function
     // we can JSR to it
     defined_ids_vector.push_back( new id_and_line( $2.name, countn+1 ));
     
-    if( !previousAsm(str_RTS) )
-      {
+    //if( !previousAsm(str_RTS) )
+    //{
 	//             // we may want to consider
 	//             // adding a return value here
-   	addAsm(str_RTS); // add a return statement
+	//addComment( "*** Testing 1 2 3 ***" );
+   	//addAsm(str_RTS); // add a return statement
 	
-      }
+    //}
     function_argument_count=0;
   };
 |
@@ -3859,8 +3865,6 @@ tDOUBLE {addParserComment( string("RULE: datatype: ") + $$.name); current_variab
 |
 FLOAT {addParserComment( string("RULE: datatype: ") + $$.name); current_variable_type=8;strcpy($$.name, "FLOAT");}
 |
-//tMOB {addParserComment( string("RULE: datatype: ") + $$.name); current_variable_type=16;strcpy($$.name, "MOB");}
-//|
 VOID {addParserComment( string("RULE: datatype: ") + $$.name); current_variable_type=32;strcpy($$.name, "VOID");}
 |
 STR {addParserComment( string("RULE: datatype: ") + $$.name); current_variable_type=64;strcpy($$.name, "STRING");}
@@ -4149,26 +4153,26 @@ body: WHILE
     }
 };
 // STATEMENT
-| tPUSH '(' expression ')' ';'
-{
-  stack_is_needed = true;
-
-  // merely for testing out the software stack
-  if( isA($3.name) )
-    {
-      addAsm( str_JSR + "PUSH", 3, false );
-    }
-  else if( isUintID($3.name) || isIntID($3.name) )
-    {
-      addAsm( str_LDA + getNameOf(getAddressOf( $3.name )), 3, false );
-      addAsm( str_JSR + "PUSH", 3, false );
-    }
-  else if( isUintIMM($3.name) || isIntIMM($3.name) )
-    {
-      addAsm( str_LDA + "#$" + toHex( atoi( stripFirst($3.name).c_str() )), 2, false );
-      addAsm( str_JSR + "PUSH", 3, false );
-    }
-};
+//| tPUSH '(' expression ')' ';'
+//{
+//  stack_is_needed = true;
+//
+//  // merely for testing out the software stack
+//  if( isA($3.name) )
+//    {
+//      addAsm( str_JSR + "PUSH", 3, false );
+//    }
+//  else if( isUintID($3.name) || isIntID($3.name) )
+//    {
+//      addAsm( str_LDA + getNameOf(getAddressOf( $3.name )), 3, false //);
+//      addAsm( str_JSR + "PUSH", 3, false );
+//    }
+//  else if( isUintIMM($3.name) || isIntIMM($3.name) )
+//    {
+//      addAsm( str_LDA + "#$" + toHex( atoi( stripFirst($3.name).c_str() )), 2, false );
+//      addAsm( str_JSR + "PUSH", 3, false );
+//    }
+//};
 // STATEMENT
 | tSEED '(' ')' ';' 
 {
@@ -4186,83 +4190,190 @@ body: WHILE
 };
 
 // STATEMENT
-// TODO: backspace is not working!
 | SCANFF '(' expression ')' ';'
 {
+  addAsm( str_LDA + "#$" + toHex(scanf_buffer_size), 2, false );
+  addAsm( str_STA + "_scanfmaxchars", 3, false );
+  getkey_is_needed=true;
+  scanf_is_needed=true;
+  memcpy_is_needed=true;
   if( isWordID( $3.name ) )
     {
       addComment("scanf(WordID)");
-      getkey_is_needed=true;
-      scanf_is_needed=true;
-      memcpy_is_needed=true;
-      addAsm( str_JSR + "SCANF", 3, false );  
-      addAsm( str_LDA + "#<SCANFBUF-2", 2, false );
-      addAsm( str_STA + "$FB", 2, false );
-      addAsm( str_LDA + "#>SCANFBUF-2", 2, false );
-      addAsm( str_STA + "$FC", 2, false );
+      addAsm( str_JSR + "_scanf", 3, false );
       int addr = getAddressOf($3.name);
-
       addAsm( str_LDA + getNameOf(addr), 2, false );
-      //addAsm( str_LDA + $3.name, 2, false);
-
       addAsm( str_STA + "$FD", 2, false );
       addAsm( str_LDA + getNameOf(addr) + " +1", 2, false);
-      //addAsm( str_LDA + $3.name + " +1", 2, false);
       addAsm( str_STA + "$FE", 2, false ); 
-      addAsm( str_LDA + "#$" + toHex(scanf_buffer_size), 2, false );
-      addAsm( str_PHA );
-      addAsm( str_JSR + "MEMCPY", 3, false );
+      addAsm( str_JSR + "_memcpy", 3, false );
     }
   else if( isWordIMM( $3.name ) )
     {
       int tmp_v = atoi(stripFirst($3.name).c_str());
       int tmp_L = get_word_L(tmp_v);
-      int tmp_H = get_word_H(tmp_v);
-      
+      int tmp_H = get_word_H(tmp_v);      
       addComment("scanf(WordIMM)");
-      getkey_is_needed=true;
-      scanf_is_needed=true;
-      memcpy_is_needed=true;
-      addAsm( str_JSR + "SCANF", 3, false );  
-      addAsm( str_LDA + "#<SCANFBUF-2", 2, false );
-      addAsm( str_STA + "$FB", 2, false );
-      addAsm( str_LDA + "#>SCANFBUF-2", 2, false );
-      addAsm( str_STA + "$FC", 2, false );
+      addAsm( str_JSR + "_scanf", 3, false );
       int addr = getAddressOf($3.name);
       addAsm( str_LDA + "#$" + toHex(tmp_L), 2, false);
       addAsm( str_STA + "$FD", 2, false );
       addAsm( str_LDA + "#$" + toHex(tmp_H), 2, false);
       addAsm( str_STA + "$FE", 2, false ); 
-      addAsm( str_LDA + "#$" + toHex(scanf_buffer_size), 2, false );
-      addAsm( str_PHA );
-      addAsm( str_JSR + "MEMCPY", 3, false );
+      addAsm( str_JSR + "_memcpy", 3, false );
     }
   else if( isXA($3.name) )
     {
       addComment("scanf(XA)");
-      getkey_is_needed=true;
-      scanf_is_needed=true;
-      memcpy_is_needed=true;
       addAsm( str_STA + "$FD", 2, false );
-      addAsm( str_STX + "$FE", 2, false );
-      
-      addAsm( str_JSR + "SCANF", 3, false );  
-      addAsm( str_LDA + "#<SCANFBUF-2", 2, false );
-      addAsm( str_STA + "$FB", 2, false );
-      addAsm( str_LDA + "#>SCANFBUF-2", 2, false );
-      addAsm( str_STA + "$FC", 2, false );
+      addAsm( str_STX + "$FE", 2, false );      
+      addAsm( str_JSR + "_scanf", 3, false );
       int addr = getAddressOf($3.name);
+      addAsm( str_JSR + "_memcpy", 3, false );
+    }
+  else
+    {
+      addCompilerMessage( "scanf of this type not supported... use WordID, WordIMM, or XA", 3 );
+    }  
+}
+| SCANFF '(' expression
+{
+  // after $3.name
+  if( isXA($3.name) )
+    {
+      addAsm("// MARKED_FOR_DELETION", 0, true);
+      addAsm( str_PHA, 1, false );
+      addAsm( str_TXA, 1, false );
+      addAsm( str_PHA, 1, false );
+    }
+
+} ',' expression ')' ';'
+{
+
+  if( isUintIMM($6.name) )
+    {
+      if( isXA($3.name) ) deletePreviousAsmUntil( "// MARKED_FOR_DELETION" );
+      int tmp = atoi( stripFirst($6.name).c_str() );
+      if( tmp > scanf_buffer_size )
+	{
+	  addCompilerMessage( "scanf character limit exceeds buffersize... use --scanf-buffer-size [1-254]", 3 );
+	}
+      addAsm( str_LDA + "#$" + toHex(tmp), 2, false );
+      addAsm( str_STA + "_scanfmaxchars", 3, false );
+    }
+  else if( isUintID($6.name) )
+    {
+      if( isXA($3.name) ) deletePreviousAsmUntil( "// MARKED_FOR_DELETION" );
+      string OP6 = getNameOf(getAddressOf( $6.name ));
+      addAsm( str_LDA + "#$" + OP6, 2, false );
+      addAsm( str_STA + "_scanfmaxchars", 3, false );
+    }
+  else if( isIntID($6.name) )
+    {
+      if( isXA($3.name) ) deletePreviousAsmUntil( "// MARKED_FOR_DELETION" );
+      addCompilerMessage( "NYI", 3 );
+    }
+  else if( isIntIMM($6.name) )
+    {
+      if( isXA($3.name) ) deletePreviousAsmUntil( "// MARKED_FOR_DELETION" );
+      addCompilerMessage( "scanf character limit cannot be < 0", 3 );
+    }
+  else if( isWordID($6.name) )
+    {
+      if( isXA($3.name) ) deletePreviousAsmUntil( "// MARKED_FOR_DELETION" );
+      addCompilerMessage( "using low-byte to set scanf character limit", 1 );
+      string OP5 = getNameOf(getAddressOf( $6.name ));
+      addAsm( str_LDA + "#$" + OP5, 2, false );
+      addAsm( str_STA + "_scanfmaxchars", 3, false );
+    }
+  else if( isWordIMM($6.name) )
+    {
+      if( isXA($3.name) ) deletePreviousAsmUntil( "// MARKED_FOR_DELETION" );
+      int tmp = atoi( stripFirst($6.name).c_str() );
+      if( tmp > scanf_buffer_size )
+	{
+	  addCompilerMessage( "scanf character limit exceeds buffersize... use --scanf-buffer-size [1-254]", 3 );
+	}
+      addAsm( str_LDA + "#$" + toHex(tmp), 2, false );
+      addAsm( str_STA + "_scanfmaxchars", 3, false );
+
+    }
+  else if( isA($6.name) )
+    {
+      addAsm( str_STA + "_scanfmaxchars", 3, false );
+      addAsm( str_PLA, 1, false );
+      addAsm( str_TAX, 1, false );
+      addAsm( str_PLA, 1, false );
       
-      addAsm( str_LDA + "#$" + toHex(scanf_buffer_size), 2, false );
-      addAsm( str_PHA );
-      addAsm( str_JSR + "MEMCPY", 3, false );
+    }
+  else if( isXA($6.name) )
+    {
+      addCompilerMessage( "scanf character limit is a byte.  losing hi-byte in XA", 1 );
+      addAsm( str_STA + "_scanfmaxchars", 3, false );
+      addAsm( str_PLA, 1, false );
+      addAsm( str_TAX, 1, false );
+      addAsm( str_PLA, 1, false );
+    }
+  else if( isFloatID($6.name) )
+    {
+      addCompilerMessage( "argument cannot be a Floating Point Number (use a uint)", 3);
+    }
+  else if( isFloatIMM($6.name) )
+    {
+      addCompilerMessage( "argument cannot be a FloatIMM (use a uint)", 3 );
+    }
+  else if( isFAC($6.name) )
+    {
+      addCompilerMessage( "argument cannot be a Floating Point Number (use a uint)", 3);
+    }
+  else
+    {
+      addCompilerMessage( "unrecognised argument type", 3 );
+    }
+  getkey_is_needed=true;
+  scanf_is_needed=true;
+  memcpy_is_needed=true;
+  if( isWordID( $3.name ) )
+    {
+      addComment("scanf(WordID)");
+      addAsm( str_JSR + "_scanf", 3, false );
+      int addr = getAddressOf($3.name);
+      addAsm( str_LDA + getNameOf(addr), 2, false );
+      addAsm( str_STA + "$FD", 2, false );
+      addAsm( str_LDA + getNameOf(addr) + " +1", 2, false);
+      addAsm( str_STA + "$FE", 2, false ); 
+      addAsm( str_JSR + "_memcpy", 3, false );
+    }
+  else if( isWordIMM( $3.name ) )
+    {
+      int tmp_v = atoi(stripFirst($3.name).c_str());
+      int tmp_L = get_word_L(tmp_v);
+      int tmp_H = get_word_H(tmp_v);      
+      addComment("scanf(WordIMM)");
+      addAsm( str_JSR + "_scanf", 3, false );
+      int addr = getAddressOf($3.name);
+      addAsm( str_LDA + "#$" + toHex(tmp_L), 2, false);
+      addAsm( str_STA + "$FD", 2, false );
+      addAsm( str_LDA + "#$" + toHex(tmp_H), 2, false);
+      addAsm( str_STA + "$FE", 2, false ); 
+      addAsm( str_JSR + "_memcpy", 3, false );
+    }
+  else if( isXA($3.name) )
+    {
+      addComment("scanf(XA)");
+      addAsm( str_STA + "$FD", 2, false );
+      addAsm( str_STX + "$FE", 2, false );      
+      addAsm( str_JSR + "_scanf", 3, false );
+      int addr = getAddressOf($3.name);
+      addAsm( str_JSR + "_memcpy", 3, false );
     }
   else
     {
       addCompilerMessage( "scanf of this type not supported... use WordID, WordIMM, or XA", 3 );
     }
-  
-};
+}
+
+;
 // STATEMENT
 | tPRINTS '(' expression ')' ';'
 {
@@ -25207,13 +25318,13 @@ arithmetic[MATHOP] expression[OP2]
 {
   strcpy( $$.name, "NULL" );
 };
-| tPOP '(' ')'
-{
-  // merely for testing out the software stack
-  stack_is_needed = true;
-  addAsm( str_JSR + "POP", 3, false );
-  strcpy( $$.name, "_A" );
-};
+//| tPOP '(' ')'
+//{
+// // merely for testing out the software stack
+// stack_is_needed = true;
+//addAsm( str_JSR + "POP", 3, false );
+//strcpy( $$.name, "_A" );
+//};
 | tSPRPTR '(' expression ')'
 {
   addComment( "sprptr(exp)" );
@@ -27632,7 +27743,10 @@ arithmetic[MATHOP] expression[OP2]
     }
   else if( isFloatIMM($3.name) )
     {
-      addCompilerMessage( "NYI", 3 );
+      float v = atof(stripFirst($3.name).c_str());
+      v = std::sqrt(v);
+      inlineFloat("f" + std::to_string(v));
+      strcpy($$.name, "_FAC");
     }
   else if( isUintIMM($3.name) )
     {
@@ -27681,18 +27795,57 @@ arithmetic[MATHOP] expression[OP2]
     }
   else if( isA( $3.name ) )
     {
-      sqrrt8_is_needed = true;
-      addAsm( str_TAX, 1, false );
-      addAsm( str_LDA + "_sqrrt8,X", 3, false );
-      strcpy($$.name, "_A");
+
+      if( arg_experimental_math )
+	{
+	  addComment( "sqrt(A) optimized for size, not speed") ;
+	  addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );      
+	  addAsm( str_CMP + "#$E1", 2, false );
+	  addAsm( str_BCC + "!+", 2, false );
+	  addAsm( str_LDY + "#$0F", 2, false );
+	  addAsm( str_JMP + "!++++ +1", 2, false );
+	  addAsm( "!:\t" + str_STA + "$02", 2, true );
+	  addAsm( str_LDX + "#$01", 2, false );
+	  addAsm( str_LDA + "#$00", 2, false );	  
+	  addAsm( str_STA + "$03", 2, false );
+	  addAsm( str_TAY, 1, false );
+	  addAsm( "!:\t" + str_CMP + "$02", 2, true );
+	  addAsm( str_BCC + "!+", 2, false );
+	  addAsm( str_BNE + "!++", 2, false );
+	  addAsm( "!:\t" + str_STX + "$03", 2, true );
+	  addAsm( str_CLC, 1, false );
+	  addAsm( str_ADC + "$03", 2, false );
+	  //addAsm( str_LDA + "#$00", 2, false );	  
+	  addAsm( str_INX, 1, false );
+	  addAsm( str_INX, 1, false );
+	  addAsm( str_INY, 1, false );
+	  addAsm( str_JMP + "!--", 3, false );
+	  addAsm( "!:\t" + str_DEY, 1, true );
+	  addAsm( str_TYA, 1, false );
+	  strcpy($$.name, "_A");
+	}
+      else
+	{
+	  sqrrt8_is_needed = true;
+	  addAsm( str_TAX, 1, false );
+	  addAsm( str_LDA + "_sqrrt8,X", 3, false );
+	  strcpy($$.name, "_A");
+	}
+      
     }
   else if( isWordID( $3.name ) )
     {
       addCompilerMessage( "NYI: sqrt(WordID)", 3 );
+      strcpy($$.name, "_XA");
     }
   else if( isWordIMM( $3.name ) )
     {
-      addCompilerMessage( "NYI: sqrt(WordIMM)", 3 );
+      int v = atoi(stripFirst($3.name).c_str());
+      v = std::sqrt(v);
+      addAsm( str_LDA + "#$" + toHex(get_word_L(v)), 2, false );
+      addAsm( str_LDX + "#$" + toHex(get_word_H(v)), 2, false );
+      strcpy($$.name, "_XA");
+
     }
   else if( isXA( $3.name ) )
     {
@@ -27700,7 +27853,7 @@ arithmetic[MATHOP] expression[OP2]
     }
   else
     {
-      addCompilerMessage( "sqrt takes a float as its argument", 3 );
+      addCompilerMessage( "sqrt unknown argument type", 3 );
     }
 };
 | ID '(' parameterlist ')' 
@@ -27719,7 +27872,7 @@ arithmetic[MATHOP] expression[OP2]
   // 
   
   // THIS DOES NOT ACCOUNT FOR RETURNING ANYTHING OVER 2 BYTES
-  // Like Doubles, Floats, or MOBs
+  // Like Doubles, or Floats
   addComment( "OPTIMIZE - pop the correct number of bytes off" );
   addComment( "the stack.  This can be hardcoded to match the" );
   addComment( "function." );
@@ -27913,13 +28066,15 @@ value: FLOAT_NUM
       strcpy( $$.name, return_value.c_str() );
     }
 };
-| INT
-{
+//| INT
+//{
   //addDebugComment(string("RULE: value: INT :") +  string($1.name));
-  strcpy($$.name, $1.name);
-};
+//  addComment( "INT: ..." );
+//  strcpy($$.name, $1.name);
+//};
 | NUMBER
 {
+  addComment( "found a #!" );
   int v = atoi($1.name);
 
   if( getTypeOf($1.name) != -1 )
@@ -28018,35 +28173,25 @@ value: FLOAT_NUM
 
 return: RETURN ';'
   {
+    addComment("return: RETURN ';'");	       
     addAsm( str_RTS );
-    
-
   }
-| RETURN
+| RETURN {} expression
 {
-  addAsm( "// MARKED_FOR_DELETION", 0, true );
-  stack_is_needed = true;
-  addAsm( str_TAY );
-  addAsm( str_TXA );
-  addAsm( str_JSR + "PUSH",3,false);
-  addAsm( str_TYA );
-  addAsm( str_JSR + "PUSH",3,false);} expression ';'
+  if( isXA($3.name) || isA($3.name))
+    {
+      addAsm( str_TAY + commentmarker + " <-- move A out of the way", 1, false );
+    }  
+}
+';'
   {
-
-
-    // if $3.name is NOT an XA ... remove the previous 5 lines
-    if( !isXA($3.name) )
-      {
-	deletePreviousAsmUntil( "// MARKED_FOR_DELETION");
-	addCompilerMessage( "Deleted Mnemonics", 0 );
-      }
-    addComment( "Deleted Mnemonics" );
     addComment( "Save return address locally" );
     addAsm( str_PLA, 1, false );
     addAsm( str_STA + "!rx-", 3, false );
     addAsm( str_PLA, 1, false );
     addAsm( str_STA + "!ry-", 3, false );
     int v = getAddressOf($3.name);
+    addComment( "Push the Return Value onto the Stack" );
     if( isUintID($3.name) || isIntID($3.name) )
       {
 	addAsm( str_LDA + getNameOf(v), 3, false );
@@ -28098,13 +28243,19 @@ return: RETURN ';'
 	addAsm( str_LDA + "#$02", 2, false );
 	addAsm( str_PHA );
       }
+    else if( isA($3.name) )
+      {
+	addAsm( str_TYA, 1, false );	
+	addAsm( str_PHA, 1, false );
+	addAsm( str_LDA + "#$01", 2, false );
+	addAsm( str_PHA );
+      }
     else if( isXA($3.name) )
       {
-	stack_is_needed = true;
-	addAsm( str_JSR + "POP", 3, false );
-	addAsm( str_PHA );
-	addAsm( str_JSR + "POP", 3, false );
-	addAsm( str_PHA );
+	addAsm( str_TYA, 1, false );
+	addAsm( str_PHA, 1, false );
+	addAsm( str_TXA, 1, false );
+	addAsm( str_PHA, 1, false );
 	addAsm( str_LDA + "#$02", 2, false );
 	addAsm( str_PHA );
       }
@@ -28137,8 +28288,6 @@ return: RETURN ';'
     addAsm( str_LDA + "!rx-", 3, false );
     addAsm( str_PHA, 1, false );
     addAsm( str_RTS );
-    addAsm( string( "// returned: ") + getNameOf(getAddressOf($3.name)), 0, true );
-    addComment( "Returning a value via the stack" );
   }
 |
 {
@@ -28203,10 +28352,16 @@ int main(int argc, char *argv[])
       if( a == "--scanf-buffer-size" )
 	{
 	  scanf_buffer_size = atoi( argv[i+1] );
-	  if( scanf_buffer_size > 254 || scanf_buffer_size < 1 )
+	  if( scanf_buffer_size < 1 )
 	    {
-	      addCompilerMessage( "invalid scanf buffer size, defaulting to 16.", 0 );
+	      addCompilerMessage( "invalid scanf buffer size, setting to 16.", 0 );
 	      scanf_buffer_size = 16;
+	    }
+	  if( scanf_buffer_size > 254 )
+	    {
+	      addCompilerMessage( "invalid scanf buffer size, setting to 254 (max).", 0 );
+	      scanf_buffer_size = 254;
+
 	    }
 	  i++;
 	}
@@ -28273,7 +28428,7 @@ int main(int argc, char *argv[])
 	       << "\t--help\t\t\tthis message\n" 
 	       << "\t--code-segment address\tsets the start of code segment to a memory address (default is 49152)\n"
 	       << "\t--data-segment address\tsets the start of data segment to a memory address (default is 828)\n"
-	       << "\t--scanf_buffer_size (1-254)\tthe size of the buffer needed for scanf... default is 16.\n\n" << endl;
+	       << "\t--scanf-buffer-size (1-254)\tthe size of the buffer needed for scanf... default is 16.\n\n" << endl;
 	  exit(-1);
 	}
     }
@@ -29844,51 +29999,19 @@ int main(int argc, char *argv[])
       addAsm( str_BNE + "!-", 2, false );
       addAsm( str_RTS );
     }
-  if( mobcpy_is_needed  )
-    {
-      // a QUICK and DIRTY MEMCPY of 63 BYTES
-      addAsm( string("MOBCPY:\t\t") + commentmarker + "Copy 63 bytes from $FB/$FC to $FD/$FE", 0, true );
-      addAsm( str_SEI );
-      addAsm( str_LDY + "#$3F", 2, false );
-      addAsm( "!:\t" + str_CPY + "#$FF", 2, true );
-      addAsm( str_BEQ + "!+", 2, false );
-      addAsm( str_LDA + "($FB),Y", 2, false );
-      addAsm( str_STA + "($FD),Y", 2, false );
-      addAsm( str_DEY  );
-      addAsm( str_JMP + "!-", 3, false );
-      addAsm( "!:\t" + str_CLI,1, true);
-      addAsm( str_RTS );
-    }
   if( memcpy_is_needed )
     {
-      return_addresses_needed = true;
-
-      // this is the template to use for a built-in function
-      addAsm( string("MEMCPY:\t\t") + commentmarker + "Copy STACK[0] bytes from $FB/$FC to $FD/$FE", 0, true );
-      // save return address from the stack
-      //saveReturnAddress();
-      stack_is_needed = true;
-      addAsm( str_PLA, 1, false );
-      addAsm( str_TAX, 1, false );
-      addAsm( str_PLA, 1, false );
-      addAsm( str_JSR + "PUSH", 3, false );
-      
-      //==================================================================================
-      addAsm( str_PLA );
-      addAsm( str_TAY );
+      addAsm( string("_memcpy:\t\t") + commentmarker + "Copy \"buffersize\" bytes from $FB/$FC to $FD/$FE", 0, true );
+      addComment( "-------------" );
+      addAsm( str_LDY + "#$" + toHex(scanf_buffer_size), 2, false );
       addAsm( "!:\t" + str_CPY + "#$FF", 2, true );
       addAsm( str_BEQ + "!+", 2, false );
       addAsm( str_LDA + "($FB),Y", 2, false );
       addAsm( str_STA + "($FD),Y", 2, false );
       addAsm( str_DEY, 1, false );
       addAsm( str_JMP + "!-", 3, false );
-      //==================================================================================
-      //restoreReturnAddress();
-      addAsm( "!:\t" + str_JSR + "POP", 3, true );
-      addAsm( str_PHA, 1, false );
-      addAsm( str_TXA, 1, false );
-      addAsm( str_PHA, 1, false );
-      addAsm( str_RTS );
+      addComment( "-------------" );      
+      addAsm( "!:\t" + str_RTS, 1, true);
     }
   if( twos_complement_is_needed )
     {
@@ -29930,118 +30053,94 @@ int main(int argc, char *argv[])
   if( scanf_is_needed )
     {
       addComment( "Robust Scanf" );
-      addAsm( string("SCANF:"), 0, true );
+      addAsm( "_scanf:", 0, true );
       addComment( "Taken from: https://codebase64.org/doku.php?id=base:robust_string_input" );
       addComment( "Code by: Schema" );
       addComment( "I modified it _slightly_ to make the naming conventions of the labels" );
       addComment( "consistent with the rest of the code." );
-      addAsm( str_LDA + "#>TEXT", 2, false );
-      addAsm( str_LDX + "#<TEXT", 2, false );
-      addAsm( str_LDY + "#38", 2, false );
-
-      //addAsm( "FINPUT:", 0, true );
-      addAsm( str_STY + "MAXCHARS", 3, false );
-      addAsm( str_STX + "CHECKALLOWED +1", 3, false ); 
-      addAsm( str_STA + "CHECKALLOWED +2", 3, false );
+      addAsm( str_LDA + "#>_acceptable_text", 2, false );
+      addAsm( str_LDX + "#<_acceptable_text", 2, false );
+      //addAsm( str_LDY + "#$26", 2, false );
+      //addComment( "FINPUT");
+      //addAsm( str_STY + "_scanfmaxchars", 3, false );
+      addAsm( str_STX + "!++ +1", 3, false ); 
+      addAsm( str_STA + "!++ +2", 3, false );
 
       addAsm( str_LDA + "#$00", 2, false );
-      addAsm( str_STA + "INPUTY", 3, false );
+      addAsm( str_STA + "_inputy", 3, false );
 
-      addAsm("INPUTGET:", 0, true );
-      addAsm( str_JSR + "$FFE4", 3, false );
-
-      
-      //addAsm("beq INPUTGET", 2, false );
-      addAsm( str_BYTE + "$F0, $FB" + commentmarker + "BEQ -4", 2, false );
-      addAsm( str_STA + "LASTCHAR", 3, false );
-
+      addComment("INPUTGET");
+      addAsm( "!:\t" + str_JSR + "$FFE4", 3, true );
+      addAsm( str_BEQ + "!-", 2, false );
+      addAsm( str_STA + "_lastchar", 3, false );
       addAsm( str_CMP + "#$14" + commentmarker + "Delete key", 2, false );
-      
-      addAsm( str_BYTE + "$F0, $39" + commentmarker + "BEQ +57", 2, false );
-      //addAsm("beq DELETE", 2, false );
-      addAsm( str_CMP + "#$0d" + commentmarker + "Return", 2, false );
-      //addAsm("beq INPUTDONE", 2, false );
-      addAsm( str_BYTE + "$F0, $2A" + commentmarker + "BEQ +42", 2, false );
+      addAsm( str_BEQ + "!++++", 2, false );
+      addAsm( str_CMP + "#$0D" + commentmarker + "Carriage Return", 2, false );
+      addAsm( str_BEQ + "!+++", 2, false );
       addAsm( str_LDX + "#$00", 2, false );
-      addAsm("CHECKALLOWED:", 0, true );
-      addAsm( str_LDA + "$FFFF,X" + commentmarker + "Overwritten", 3, false );
-
-      //addAsm("beq INPUTGET;Reached end of list (NULL)", 2, false );
-      addAsm( str_BYTE + "$F0, $E8" + commentmarker + "BEQ -23 (i think)", 2, false );
-      addAsm( str_CMP + "LASTCHAR", 3, false );
-      //addAsm("beq INPUTOK;Match found", 2, false );
-      //addAsm( str_BYTE + "$F0, $04" + commentmarker + "BEQ 4", 2, false );
+      addComment("CHECKALLOWED");
+      
+      addAsm( "!:\t" + str_LDA + "$FFFF,X" + commentmarker + "Address will be Overwritten", 3, true );
+      addAsm( str_BEQ + "!--" + commentmarker + "Reached end of list (NULL)", 0, false );
+      addAsm( str_CMP + "_lastchar", 3, false );
       addAsm( str_BEQ + "!+", 2, false );
       addAsm( str_INX );
-      addAsm( str_JMP + "CHECKALLOWED", 3, false );
-      //addAsm("INPUTOK:", 0, true );
-      addComment( "Input is OK" );
-      addAsm( "!:\t" + str_LDA + "LASTCHAR" + commentmarker + "Get the char back", 3, true );
-      addAsm( str_LDY + "INPUTY", 3, false );
-      addAsm( str_STA + "GOTINPUT,y" + commentmarker + "Add it to string", 3, false );
+      addAsm( str_JMP + "!-", 3, false );
+      addComment("INPUTOK");
+      addAsm( "!:\t" + str_LDA + "_lastchar" + commentmarker + "Get the char back", 3, true );
+      addAsm( str_LDY + "_inputy", 3, false );
+      addAsm( str_STA + "_gotinput,y" + commentmarker + "Add it to string", 3, false );
       addAsm( str_JSR + "$FFD2" + commentmarker + "Print it", 3, false );
+      addAsm( str_INC + "_inputy" + commentmarker + "Next character", 3, false );
+      addAsm( str_LDA + "_inputy", 3, false );
+      addAsm( str_CMP + "_scanfmaxchars", 3, false );
+      //addAsm( str_BEQ + "!+", 2, false );
+      //addAsm( str_JMP + "!---", 3, false );
+      addAsm( str_BNE + "!---", 3, false );
+      addComment("INPUTDONE");
+      addAsm("!:\t" + str_LDY + "_inputy", 3, true );
+      addAsm( str_LDA + "#$00", 2, false );
+      addAsm( str_STA + "_gotinput,Y" + commentmarker + "Zero-terminate", 3, false );
+
+      addComment( "this is for the memcpy after the RTS" );
+      addAsm( str_LDA + "#<_scanfbuf -2", 2, false );
+      addAsm( str_STA + "$FB", 2, false );
+      addAsm( str_LDA + "#>_scanfbuf -2", 2, false );
+      addAsm( str_STA + "$FC", 2, false );
+      addAsm( str_RTS, 1, false );
       
-      addAsm( str_INC + "INPUTY" + commentmarker + "Next character", 3, false );
-
-      addAsm("lda INPUTY", 3, false );
-      addAsm("cmp MAXCHARS", 3, false );
-      //addAsm("beq INPUTDONE", 2, false );
-      addAsm(str_BYTE + "$F0, $03" + commentmarker + "BEQ +3", 2, false );
-      //addAsm(".byte #$F0, #$03; BEQ +3", 2, false );
-     
-      addAsm("jmp INPUTGET", 3, false );
-
-      addAsm("INPUTDONE:", 0, true );
-      addAsm("ldy INPUTY", 3, false );
-      addAsm("lda #$00", 2, false );
-      addAsm("sta GOTINPUT,y" + commentmarker + "Zero-terminate", 3, false );
-
-      addAsm(str_RTS );	
-      addAsm("DELETE:", 0, true );
-      addAsm("lda INPUTY", 3, false );
-      //addAsm( str_BNE + "+3", 2, false ); // BNE +3
-
-      addAsm( str_BYTE + "$D0, $03", 2, false );
-      //addAsm("bne DELETEOK", 2, false );
-      addAsm("jmp INPUTGET", 3, false );
-
-      
-      //addAsm("DELETEOK:", 0, true );
-      addAsm("dec INPUTY", 3, false );
-      addAsm("ldy INPUTY", 3, false );
-      addAsm("lda #$00", 2, false );
-      addAsm("sta GOTINPUT,y", 3, false );
-      addAsm("lda #$14", 2, false );
-      addAsm("jsr $ffd2", 3, false );
-      addAsm("jmp INPUTGET", 3, false );
+      addComment("DELETE");
+      addAsm( "!:\t" + str_LDA + "_inputy", 3, true );
+      //addAsm( str_BNE + "!+", 2, false );
+      //addAsm( str_JMP + "!-----", 3, false );
+      addAsm( str_BEQ + "!-----", 3, false );
+      addComment("DELETEOK");
+      addAsm( "!:\t" + str_DEC + "_inputy", 3, true );
+      addAsm( str_LDY + "_inputy", 3, false );
+      addAsm( str_LDA + "#$00", 2, false );
+      addAsm( str_STA + "_gotinput,y", 3, false );
+      addAsm( str_LDA + "#$14", 2, false );
+      addAsm( str_JSR + "$FFD2", 3, false );
+      addAsm( str_JMP + "!------", 3, false );
 
 
-      addAsm("TEXT:", 0, true );
+      addAsm("_acceptable_text:", 0, true );
       // these are the acceptable characters for scanf
-      //              123456789 123456789 123456789 123456789 123456789 
-
-
       addComment( "acceptable PETSCII characters for input" );
       if( kick )
 	{
-	  addAsm( str_BYTE + "$20, $41, $42, $43, $44, $45, $46, $47, $48, $49, $4A, $4B, $4C, $4D, $4E, $4F, $50, $51, $52, $53, $54, $55, $56, $57, $58, $59, $5A, $31, $32, $33, $34, $35, $36, $37, $38, $39, $30, $2E, $2C, $2D, $2B, $21, $23, $24, $25, $26, $28, $29, $2A", 49, false );
+	  addAsm( str_TEXT + "\" ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890.,-+!#$%&()*\"", 49, false );
 	}
       else
 	{
 	  addAsm( str_BYTE + "\" ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890.,-+!#$%&()*\"", 49, false );
 	}
       addAsm( str_BYTE + "$00", 1, false );
-      addAsm("MAXCHARS:", 0, true );
-      addAsm(str_BYTE + "$00", 1, false );
-
-      addAsm("LASTCHAR:", 0, true );
-      addAsm(str_BYTE + "$00", 1, false );
-      addAsm("INPUTY:", 0, true );
-      addAsm(str_BYTE + "$00", 1, false );
-
-      addAsm("GOTINPUT:", 0, true );
-      addAsm(str_BYTE + "$39", 1, false );
-      addAsm("SCANFBUF:", 0, true );
+      addAsm( "_scanfmaxchars:\t" + str_BYTE + "$00", 1, true );
+      addAsm( "_lastchar:\t" + str_BYTE + "$00", 1, true );
+      addAsm( "_inputy:\t" + str_BYTE + "$00", 1, true );
+      addAsm( "_gotinput:\t" + str_BYTE + "$39", 1, true );
+      addAsm( "_scanfbuf:", 0, true );
       if( kick )
 	{
 	  string sbs = str_BYTE;
