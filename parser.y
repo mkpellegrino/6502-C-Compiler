@@ -1,4 +1,16 @@
 %{
+/*
+  parser.y is the Bison/Yacc source for the 64c compiler.
+
+  This file is intentionally stateful: grammar actions emit 6502 assembly
+  directly into global vectors, set runtime-helper flags, track symbols, and
+  then main() runs optimization/address/string/data post-processing before
+  printing assembly to stdout.
+
+  See docs/parser-y.md for the architecture map, type-tag conventions, parser
+  rule responsibilities, CLI flags, and editing checklist.
+*/
+
 #include <stdio.h>
 #include <iostream>
 
@@ -306,14 +318,14 @@
 
   // command line arguments
   bool arg_safe_loops=false;
-  bool arg_show_opt=false;
+  bool arg_show_opt=true;
   bool arg_memory_locations=false;
   bool arg_unsafe_ifs=false;
   bool arg_unsafe_math=false;
   bool arg_show_labels=true;
   bool arg_asm_comments=true;
   bool arg_show_cycles=false;
-  bool arg_optimize=true;
+  bool arg_optimize=false;
   bool arg_parser_comments=false;
   bool arg_experimental_math=false;
   int scanf_buffer_size=16;
@@ -570,6 +582,9 @@ string replaceAll(string str, const string &from, const string &to)
 
     switch( level )
       {
+      case -1:
+	if( arg_show_opt ) cerr <<  "\e[2m*** " << msg << " ***\e[22m" << endl;
+	break;
       case 0:
 	if( arg_show_opt ) cerr << "\e[2m*** message *** asm instruction number: " << linen << " *** " << msg << " ***\e[22m" << endl;
 	break;
@@ -896,6 +911,12 @@ string replaceAll(string str, const string &from, const string &to)
     return return_value;
   }
 
+  string character2value( char a )
+  {
+    
+
+
+  }
   string ascii2petscii( int a )
   {
     // for use in CHARACTER
@@ -1778,7 +1799,7 @@ string replaceAll(string str, const string &from, const string &to)
       };
     asm_instruction()
       {
-	text=string("NOP");
+	text=str_NOP;//string("NOP");
 	b_label=false;
 	memory_address = 0x0000;
 	size=4;
@@ -1792,7 +1813,7 @@ string replaceAll(string str, const string &from, const string &to)
     int getAddress(){ return memory_address; };
     void setSize( int s ){ size = s; };
     int getSize(){ return size; };
-
+    int getCycles(){ /* not yet implemented */ return cycles; };
     bool hasLabel(){ return has_label; };
     void hasLabel( bool b ){ has_label = b;  };
 
@@ -1890,7 +1911,6 @@ string replaceAll(string str, const string &from, const string &to)
       {
 	addAsm( string("; ") + s, 0, true );
       }
-    //if( arg_asm_comments ) addAsm( commentmarker + s, 0, true );
     return;
   }
 
@@ -2083,9 +2103,41 @@ string replaceAll(string str, const string &from, const string &to)
     return;
   }
 
-  void Optimize()
+
+  void removetags()
   {
-    if( arg_show_opt ) addCompilerMessage( "*** *** OPTIMIZATION PHASE *** ***", 0 );
+    if( asm_instr.size() > 2 )
+      {
+	for( int i=0; i<asm_instr.size(); i++ )
+	  {
+	    if( cmpstr( asm_instr[i]->getString(), string( "// MARKED_FOR_DELETION") ) )
+	      {
+		asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+1);
+	      }
+	  }
+
+      }
+
+    if( asm_instr.size() > 2 && 1 )
+      {
+	for( int j = 0; j < 3; j++ )
+	  {
+	    for( int i=0; i<asm_instr.size()-1; i++ )
+	      {
+		if( cmpstr( asm_instr[i]->getString(), str_RTS ) &&
+		    cmpstr( asm_instr[i+1]->getString(), str_RTS ))
+		  {
+		    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+1);
+		  }
+	      }
+	  }
+      }
+
+  }
+  void Optimize(int x)
+  {
+    
+    if( arg_show_opt ) addCompilerMessage( "*** *** PEEPHOLE OPTIMIZATION PHASE *** ***", 0 );
     string plp = string("plp");
     string pla = string("pla");
     string sta03 = string("sta $03");
@@ -2126,515 +2178,1133 @@ string replaceAll(string str, const string &from, const string &to)
     string sbc = string("sbc");
   
     string cmt = string("// ");
-
-    for( int i=0; i<asm_instr.size(); i++ )
+    if( asm_instr.size() > 10 && 1 )
       {
-	if(
-	   cmpstr(asm_instr[i]->getString(),adc) && cmpstr(asm_instr[i+1]->getString(),cmpZero) ||
-	   cmpstr(asm_instr[i]->getString(),sbc) && cmpstr(asm_instr[i+1]->getString(),cmpZero)
-
-	   )
+	addOptimizationMessage( "checking for: adc -> mem", 0, -1);
+	for( int i=0; i<asm_instr.size()-1; i++ )
 	  {
-	    addOptimizationMessage( "commenting out unnecessary cmp #$00", i);
-	    asm_instr[i+1]->setString( string("//cmp #$00") );
-	    asm_instr[i+1]->setSize( 0 );
-	  }
-      }
+	    if(
+	       cmpstr(asm_instr[i]->getString(), str_CLC) &&
+	       cmpstr(asm_instr[i+1]->getString(), str_LDA) &&
+	       cmpstr(asm_instr[i+2]->getString(), str_ADC) &&
+	       cmpstr(asm_instr[i+3]->getString(), str_TAY) &&	       
+	       cmpstr(asm_instr[i+4]->getString(), str_LDA) &&
+	       cmpstr(asm_instr[i+5]->getString(), str_ADC) &&
+	       cmpstr(asm_instr[i+6]->getString(), str_TAX) &&
+	       cmpstr(asm_instr[i+7]->getString(), str_TYA) &&
+	       cmpstr(asm_instr[i+8]->getString(), str_STA) &&
+	       cmpstr(asm_instr[i+9]->getString(), str_STX) 
+	       )
+	      {
+		addOptimizationMessage( "removing extra register manipulations from adc -> mem (1)", i, 1);
+		asm_instr[i]->setString(asm_instr[i]->getString() );
+		asm_instr[i+3]->setString( asm_instr[i+8]->getString() );
+		asm_instr[i+3]->setSize(3);
 
-
-    for( int i=0; i<asm_instr.size(); i++ )
-      {
-	if( cmpstr(asm_instr[i]->getString(),pha) &&
-	    cmpstr(asm_instr[i+1]->getString(),txa) &&
-	    cmpstr(asm_instr[i+2]->getString(),tax) &&
-	    cmpstr(asm_instr[i+3]->getString(),pla) )
-	  {
-	    addOptimizationMessage( "removing pha-txa-tax-pla", i);
-
-	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+3);
-
-	  }
-      }
-
-    
-    
-    
-    // JSR + RTS chain
-    for( int i=0; i<asm_instr.size(); i++ )
-      {
-	if(cmpstr(asm_instr[i]->getString(),jsr) && cmpstr(asm_instr[i+1]->getString(),rts))
-	  {
-	    string tmp_str = asm_instr[i]->getString() + " // JSR+RTS chain (OPTIMIZE)";
-	    addOptimizationMessage( "found JSR+RTS chain... further investigation needed", i);
-	    asm_instr[i]->setString( tmp_str );
-	  }
-      }
-
-    
-    for( int i=0; i<asm_instr.size(); i++ )
-      {
-	if( cmpstr( asm_instr[i]->getString(), string( "// MARKED_FOR_DELETION") ) )
-	  {
-	    addOptimizationMessage( "removing deletion tag", i);
-
-	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+1);
-	  }
-      }
-
-    for( int i=0; i<asm_instr.size()-1; i++ )
-      {
-	if(
-	   cmpstr(asm_instr[i]->getString(),else1) && cmpstr(asm_instr[i+1]->getString(),else1) ||
-	   cmpstr(asm_instr[i]->getString(),else2) && cmpstr(asm_instr[i+1]->getString(),else2) ||
-	   cmpstr(asm_instr[i]->getString(),else3) && cmpstr(asm_instr[i+1]->getString(),else3) ||
-	   cmpstr(asm_instr[i]->getString(),else4) && cmpstr(asm_instr[i+1]->getString(),else4) ||
-	   cmpstr(asm_instr[i]->getString(),else5) && cmpstr(asm_instr[i+1]->getString(),else5) ||
-	   cmpstr(asm_instr[i]->getString(),else6) && cmpstr(asm_instr[i+1]->getString(),else6) ||
-	   cmpstr(asm_instr[i]->getString(),body) && cmpstr(asm_instr[i+1]->getString(),body)
-
-	   )
-	  {
-	    addOptimizationMessage( "Label doubled up - removing one", i);
-	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+1);
-	  }
-      }
-    
-    for( int i=0; i<asm_instr.size()-1; i++ )
-      {
-	if( cmpstr( asm_instr[i]->getString(), txa ) &&
-	    cmpstr( asm_instr[i+1]->getString(), sand ) )
-	  {
-	    addOptimizationMessage( "found txa, and.  replace txa, and IMM with xaa IMM for more efficiency.", i);
-	  }
-      }
-
-    for( int i=0; i<asm_instr.size(); i++ )
-      {
-	if(
-	   cmpstr( asm_instr[i]->getString(), plp ) &&
-	   cmpstr( asm_instr[i+1]->getString(), php) )
-	  {
-	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+2);
-	    addOptimizationMessage( "removing PLP-PHP", i);
-	  }
-	
-	if(
-	   cmpstr( asm_instr[i]->getString(), string("// Restore status register") ) &&
-	   cmpstr( asm_instr[i+1]->getString(), plp ) &&
-	   cmpstr( asm_instr[i+2]->getString(), string("// Preserve Status Register") ) &&
-	   cmpstr( asm_instr[i+3]->getString(), php) )
-	  {
-	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+4);
-	    addOptimizationMessage( "removing PLP-PHP", i);
-
-	  }
-	// POP-PUSH removal (IFIF)
-	if(
-	   cmpstr( asm_instr[i]->getString(), plp ) &&
-	   cmpstr( asm_instr[i+1]->getString(), pla ) &&
-	   cmpstr( asm_instr[i+2]->getString(), sta03 ) &&
-	   cmpstr( asm_instr[i+3]->getString(), pla ) &&
-	   cmpstr( asm_instr[i+4]->getString(), sta02 ) &&
-	   cmpstr( asm_instr[i+5]->getString(), lda02 ) &&
-	   cmpstr( asm_instr[i+6]->getString(), pha ) &&
-	   cmpstr( asm_instr[i+7]->getString(), lda03 ) &&
-	   cmpstr( asm_instr[i+8]->getString(), pha ) &&
-	   cmpstr( asm_instr[i+9]->getString(), php )
-	   )
-	  {
-	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+10);
-	    addOptimizationMessage( "removing POP-PUSH IFIF", i);
-	  }
-
-	// POP-PUSH removal ($03)
-	if(
-	   cmpstr( asm_instr[i]->getString(), pla ) &&
-	   cmpstr( asm_instr[i+1]->getString(), sta03 ) &&
-	   cmpstr( asm_instr[i+2]->getString(), lda03 ) &&
-	   cmpstr( asm_instr[i+3]->getString(), pha )
-	   )
-	  {
-	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+4);
-	    addOptimizationMessage( "removing POP-PUSH $03", i);
-	  }
-	// POP-PUSH removal ($02)
-	if(
-	   cmpstr( asm_instr[i]->getString(), pla ) &&
-	   cmpstr( asm_instr[i+1]->getString(), sta02 ) &&
-	   cmpstr( asm_instr[i+2]->getString(), lda02 ) &&
-	   cmpstr( asm_instr[i+3]->getString(), pha )
-	   )
-	  {
-	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+4);
-	    addOptimizationMessage( "removing POP-PUSH $02", i);
-	  }
-	
-	// PUSH-POP removal ($02)
-	if(
-	   cmpstr( asm_instr[i]->getString(), lda02 ) &&
-	   cmpstr( asm_instr[i+1]->getString(), pha ) &&
-	   cmpstr( asm_instr[i+2]->getString(), pla ) &&
-	   cmpstr( asm_instr[i+3]->getString(), sta02 )
-	   )
-	  {
-	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+4);
-	    addOptimizationMessage( "removing PUSH-POP $02", i);
-	  }
-	// PUSH-POP removal ($03)
-	if(
-	   cmpstr( asm_instr[i]->getString(), lda03 ) &&
-	   cmpstr( asm_instr[i+1]->getString(), pha ) &&
-	   cmpstr( asm_instr[i+2]->getString(), pla ) &&
-	   cmpstr( asm_instr[i+3]->getString(), sta03 )
-	   )
-	  {
-	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+4);
-	    addOptimizationMessage( "removing PUSH-POP $03", i);
-	  }
-
-	
-      }
-
-
-    for( int i=0; i<asm_instr.size()-1; i++ )
-      {	
-	if( cmpstr( asm_instr[i]->getString(), cmt ) &&
-	    cmpstr( asm_instr[i+1]->getString(), pha ) &&
-	    cmpstr( asm_instr[i+2]->getString(), txa ) &&
-	    cmpstr( asm_instr[i+3]->getString(), pha ) &&
-	    cmpstr( asm_instr[i+4]->getString(), cmt ) &&
-	    cmpstr( asm_instr[i+5]->getString(), pla ) &&
-	    cmpstr( asm_instr[i+6]->getString(), tax ) &&
-	    cmpstr( asm_instr[i+7]->getString(), pla ) && 
-	    cmpstr( asm_instr[i+8]->getString(), cmt ) )
-	  {
-	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+9);
-	    addOptimizationMessage( "removing lack of ?? math FAC artifact (2a)", i);
-	  }
-      }
-
-    for( int i=0; i<asm_instr.size()-1; i++ )
-      {	
-	if( cmpstr( asm_instr[i]->getString(), cmt ) &&
-	    cmpstr( asm_instr[i+1]->getString(), pha ) &&
-	    cmpstr( asm_instr[i+2]->getString(), cmt ) &&
-	    cmpstr( asm_instr[i+3]->getString(), pla ) )
-	  {
-	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+4);
-	    addOptimizationMessage( "removing lack of ?? math FAC artifact (2b)", i);
-	  }
-      }
-
-    
-    for( int i=0; i<asm_instr.size()-1; i++ )
-      {
-	if( cmpstr( asm_instr[i]->getString(), ldaZero ) &&
-	    cmpstr( asm_instr[i+1]->getString(), ldxZero ) )
-	  {
-
-	    //asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+1);
-
-	    //asm_instr[i]->setString( "lax #$00" );
-	    //asm_instr[i+1]->setString( str_TAX );
-	    //asm_instr[i]->setSize( 2 );
-	    
-	    //addOptimizationMessage( "replacing LDA #$00, LDX #$00 with LAX #$00", i);
-	  }
-      }
-
-    for( int i=0; i<asm_instr.size()-1; i++ )
-      {
-	if( cmpstr( asm_instr[i]->getString(), ldaZero ) &&
-	    cmpstr( asm_instr[i+1]->getString(), ldyZero ) )
-	  {
-	    asm_instr[i+1]->setString( str_TAY );
-	    asm_instr[i+1]->setSize( 1 );
+		// replace the "stx" in asm_instr[i+9] with "sta"		
+		string tmp_string = asm_instr[i+9]->getString();
+		tmp_string.replace(0, 4, str_STA);
 		
-	    addOptimizationMessage( "replacing LDY #$00 with TAY", i);
+		asm_instr[i+6]->setString( tmp_string );
+		asm_instr[i+6]->setSize(3);
+		asm_instr.erase(asm_instr.begin()+i+7,asm_instr.begin()+i+10);
+	      }
 	  }
       }
 
-    for( int i=0; i<asm_instr.size(); i++ )
+    if( asm_instr.size() > 10 && 1 )
       {
-	if( cmpstr( asm_instr[i]->getString(), jmp ) &&
-	    cmpstr( asm_instr[i+1]->getString(), lbl ) &&
-	    cmpstr( asm_instr[i+2]->getString(), lbl ) )
+	addOptimizationMessage( "checking for: adc -> mem", 0, -1);
+	for( int i=0; i<asm_instr.size()-1; i++ )
 	  {
-	    // it's a jmp-lbl-lbl
-	    // todo: now we need to check to make sure that the jump is to one of the
-	    // two labels
-	    // split the jmp line by spaces
-	    // split the lbl lines by colons
-	    // compare
-	    //asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+1);
-	    //addOptimizationMessage( "removing unnecessary JMP (keeping the labels)", i);
+	    if(
+	       cmpstr(asm_instr[i]->getString(), str_CLC) &&
+	       cmpstr(asm_instr[i+1]->getString(), str_LDA) &&
+	       cmpstr(asm_instr[i+2]->getString(), str_ADC) &&
+	       cmpstr(asm_instr[i+3]->getString(), str_TAY) &&	       
+	       cmpstr(asm_instr[i+4]->getString(), str_TXA) &&
+	       cmpstr(asm_instr[i+5]->getString(), str_ADC) &&
+	       cmpstr(asm_instr[i+6]->getString(), str_TAX) &&
+	       cmpstr(asm_instr[i+7]->getString(), str_TYA) &&
+	       cmpstr(asm_instr[i+8]->getString(), str_STA) &&
+	       cmpstr(asm_instr[i+9]->getString(), str_STX) 
+	       )
+	      {
+		addOptimizationMessage( "removing extra register manipulations from adc -> mem (2)", i, 1);
+		asm_instr[i]->setString(asm_instr[i]->getString() );
+		asm_instr[i+3]->setString( asm_instr[i+8]->getString() );
+		asm_instr[i+3]->setSize(3);
+
+		// replace the "stx" in asm_instr[i+9] with "sta"		
+		string tmp_string = asm_instr[i+9]->getString();
+		tmp_string.replace(0, 4, str_STA);
+		
+		asm_instr[i+6]->setString( tmp_string );
+		asm_instr[i+6]->setSize(3);
+		asm_instr.erase(asm_instr.begin()+i+7,asm_instr.begin()+i+10);
+	      }
+	  }
+      }
+    if( asm_instr.size() > 10 && 1 )
+      {
+	addOptimizationMessage( "checking for: adc -> mem (split by comments)", 0, -1);
+	for( int i=0; i<asm_instr.size()-1; i++ )
+	  {
+	    if(
+	       cmpstr(asm_instr[i]->getString(), str_CLC) &&
+	       cmpstr(asm_instr[i+1]->getString(), str_LDA) &&
+	       cmpstr(asm_instr[i+2]->getString(), str_ADC) &&
+	       cmpstr(asm_instr[i+3]->getString(), str_TAY) &&	       
+	       cmpstr(asm_instr[i+4]->getString(), str_LDA) &&
+	       cmpstr(asm_instr[i+5]->getString(), str_ADC) &&
+	       cmpstr(asm_instr[i+6]->getString(), str_TAX) &&
+	       cmpstr(asm_instr[i+7]->getString(), str_TYA) &&
+	       cmpstr(asm_instr[i+8]->getString(), cmt) &&
+	       cmpstr(asm_instr[i+9]->getString(), cmt) &&
+	       cmpstr(asm_instr[i+10]->getString(), str_STA) &&
+	       cmpstr(asm_instr[i+11]->getString(), str_STX) 
+	       )
+	      {
+		addOptimizationMessage( "removing extra register manipulations from adc -> mem (3)", i, 1);
+		asm_instr[i]->setString(asm_instr[i]->getString() );
+		asm_instr[i+3]->setString( asm_instr[i+10]->getString() );
+		asm_instr[i+3]->setSize(3);
+
+		// replace the "stx" in asm_instr[i+9] with "sta"		
+		string tmp_string = asm_instr[i+11]->getString();
+		tmp_string.replace(0, 4, str_STA);
+		
+		asm_instr[i+6]->setString( tmp_string );
+		asm_instr[i+6]->setSize(3);
+		asm_instr.erase(asm_instr.begin()+i+7,asm_instr.begin()+i+12);
+	      }
+	  }
+      }
+    if( asm_instr.size() > 10 && 1 )
+      {
+	addOptimizationMessage( "checking for: adc -> mem (split by comments)", 0, -1);
+	for( int i=0; i<asm_instr.size()-1; i++ )
+	  {
+	    if(
+	       cmpstr(asm_instr[i]->getString(), str_CLC) &&
+	       cmpstr(asm_instr[i+1]->getString(), str_LDA) &&
+	       cmpstr(asm_instr[i+2]->getString(), str_ADC) &&
+	       cmpstr(asm_instr[i+3]->getString(), str_TAY) &&	       
+	       cmpstr(asm_instr[i+4]->getString(), str_TXA) &&
+	       cmpstr(asm_instr[i+5]->getString(), str_ADC) &&
+	       cmpstr(asm_instr[i+6]->getString(), str_TAX) &&
+	       cmpstr(asm_instr[i+7]->getString(), str_TYA) &&
+	       cmpstr(asm_instr[i+8]->getString(), cmt) &&
+	       cmpstr(asm_instr[i+9]->getString(), cmt) &&
+	       cmpstr(asm_instr[i+10]->getString(), str_STA) &&
+	       cmpstr(asm_instr[i+11]->getString(), str_STX) 
+	       )
+	      {
+		addOptimizationMessage( "removing extra register manipulations from adc -> mem (4)", i, 1);
+		asm_instr[i]->setString(asm_instr[i]->getString() );
+		asm_instr[i+3]->setString( asm_instr[i+10]->getString() );
+		asm_instr[i+3]->setSize(3);
+
+		// replace the "stx" in asm_instr[i+9] with "sta"		
+		string tmp_string = asm_instr[i+11]->getString();
+		tmp_string.replace(0, 4, str_STA);
+		
+		asm_instr[i+6]->setString( tmp_string );
+		asm_instr[i+6]->setSize(3);
+		asm_instr.erase(asm_instr.begin()+i+7,asm_instr.begin()+i+12);
+	      }
+	  }
+      }
+    // ================  SEC & SBC vvv
+    if( asm_instr.size() > 10 && 1 )
+      {
+	addOptimizationMessage( "checking for: sbc -> mem", 0, -1);
+	for( int i=0; i<asm_instr.size()-1; i++ )
+	  {
+	    if(
+	       cmpstr(asm_instr[i]->getString(), str_SEC) &&
+	       cmpstr(asm_instr[i+1]->getString(), str_LDA) &&
+	       cmpstr(asm_instr[i+2]->getString(), str_SBC) &&
+	       cmpstr(asm_instr[i+3]->getString(), str_TAY) &&	       
+	       cmpstr(asm_instr[i+4]->getString(), str_LDA) &&
+	       cmpstr(asm_instr[i+5]->getString(), str_SBC) &&
+	       cmpstr(asm_instr[i+6]->getString(), str_TAX) &&
+	       cmpstr(asm_instr[i+7]->getString(), str_TYA) &&
+	       cmpstr(asm_instr[i+8]->getString(), str_STA) &&
+	       cmpstr(asm_instr[i+9]->getString(), str_STX) 
+	       )
+	      {
+		addOptimizationMessage( "removing extra register manipulations from sbc -> mem (1)", i, 1);
+		asm_instr[i]->setString(asm_instr[i]->getString() );
+		asm_instr[i+3]->setString( asm_instr[i+8]->getString() );
+		asm_instr[i+3]->setSize(3);
+
+		// replace the "stx" in asm_instr[i+9] with "sta"		
+		string tmp_string = asm_instr[i+9]->getString();
+		tmp_string.replace(0, 4, str_STA);
+		
+		asm_instr[i+6]->setString( tmp_string );
+		asm_instr[i+6]->setSize(3);
+		asm_instr.erase(asm_instr.begin()+i+7,asm_instr.begin()+i+10);
+	      }
+	  }
+      }
+    if( asm_instr.size() > 10 && 1 )
+      {
+	addOptimizationMessage( "checking for: sbc -> mem", 0, -1);
+	for( int i=0; i<asm_instr.size()-1; i++ )
+	  {
+	    if(
+	       cmpstr(asm_instr[i]->getString(), str_SEC) &&
+	       cmpstr(asm_instr[i+1]->getString(), str_LDA) &&
+	       cmpstr(asm_instr[i+2]->getString(), str_SBC) &&
+	       cmpstr(asm_instr[i+3]->getString(), str_TAY) &&	       
+	       cmpstr(asm_instr[i+4]->getString(), str_TXA) &&
+	       cmpstr(asm_instr[i+5]->getString(), str_SBC) &&
+	       cmpstr(asm_instr[i+6]->getString(), str_TAX) &&
+	       cmpstr(asm_instr[i+7]->getString(), str_TYA) &&
+	       cmpstr(asm_instr[i+8]->getString(), str_STA) &&
+	       cmpstr(asm_instr[i+9]->getString(), str_STX) 
+	       )
+	      {
+		addOptimizationMessage( "removing extra register manipulations from sbc -> mem (2)", i, 1);
+		asm_instr[i]->setString(asm_instr[i]->getString() );
+		asm_instr[i+3]->setString( asm_instr[i+8]->getString() );
+		asm_instr[i+3]->setSize(3);
+
+		// replace the "stx" in asm_instr[i+9] with "sta"		
+		string tmp_string = asm_instr[i+9]->getString();
+		tmp_string.replace(0, 4, str_STA);
+		
+		asm_instr[i+6]->setString( tmp_string );
+		asm_instr[i+6]->setSize(3);
+		asm_instr.erase(asm_instr.begin()+i+7,asm_instr.begin()+i+10);
+	      }
+	  }
+      }
+    if( asm_instr.size() > 10 && 1 )
+      {
+	addOptimizationMessage( "checking for: sbc -> mem (split by comments)", 0, -1);
+	for( int i=0; i<asm_instr.size()-1; i++ )
+	  {
+	    if(
+	       cmpstr(asm_instr[i]->getString(), str_SEC) &&
+	       cmpstr(asm_instr[i+1]->getString(), str_LDA) &&
+	       cmpstr(asm_instr[i+2]->getString(), str_SBC) &&
+	       cmpstr(asm_instr[i+3]->getString(), str_TAY) &&	       
+	       cmpstr(asm_instr[i+4]->getString(), str_LDA) &&
+	       cmpstr(asm_instr[i+5]->getString(), str_SBC) &&
+	       cmpstr(asm_instr[i+6]->getString(), str_TAX) &&
+	       cmpstr(asm_instr[i+7]->getString(), str_TYA) &&
+	       cmpstr(asm_instr[i+8]->getString(), cmt) &&
+	       cmpstr(asm_instr[i+9]->getString(), cmt) &&
+	       cmpstr(asm_instr[i+10]->getString(), str_STA) &&
+	       cmpstr(asm_instr[i+11]->getString(), str_STX) 
+	       )
+	      {
+		addOptimizationMessage( "removing extra register manipulations from sbc -> mem (3)", i, 1);
+		asm_instr[i]->setString(asm_instr[i]->getString() );
+		asm_instr[i+3]->setString( asm_instr[i+10]->getString() );
+		asm_instr[i+3]->setSize(3);
+
+		// replace the "stx" in asm_instr[i+9] with "sta"		
+		string tmp_string = asm_instr[i+11]->getString();
+		tmp_string.replace(0, 4, str_STA);
+		
+		asm_instr[i+6]->setString( tmp_string );
+		asm_instr[i+6]->setSize(3);
+		asm_instr.erase(asm_instr.begin()+i+7,asm_instr.begin()+i+12);
+	      }
+	  }
+      }
+    if( asm_instr.size() > 10 && 1 )
+      {
+	addOptimizationMessage( "checking for: sbc -> mem (split by comments)", 0, -1);
+	for( int i=0; i<asm_instr.size()-1; i++ )
+	  {
+	    if(
+	       cmpstr(asm_instr[i]->getString(), str_SEC) &&
+	       cmpstr(asm_instr[i+1]->getString(), str_LDA) &&
+	       cmpstr(asm_instr[i+2]->getString(), str_SBC) &&
+	       cmpstr(asm_instr[i+3]->getString(), str_TAY) &&	       
+	       cmpstr(asm_instr[i+4]->getString(), str_TXA) &&
+	       cmpstr(asm_instr[i+5]->getString(), str_SBC) &&
+	       cmpstr(asm_instr[i+6]->getString(), str_TAX) &&
+	       cmpstr(asm_instr[i+7]->getString(), str_TYA) &&
+	       cmpstr(asm_instr[i+8]->getString(), cmt) &&
+	       cmpstr(asm_instr[i+9]->getString(), cmt) &&
+	       cmpstr(asm_instr[i+10]->getString(), str_STA) &&
+	       cmpstr(asm_instr[i+11]->getString(), str_STX) 
+	       )
+	      {
+		addOptimizationMessage( "removing extra register manipulations from sbc -> mem (4)", i, 1);
+		asm_instr[i]->setString(asm_instr[i]->getString() );
+		asm_instr[i+3]->setString( asm_instr[i+10]->getString() );
+		asm_instr[i+3]->setSize(3);
+
+		// replace the "stx" in asm_instr[i+9] with "sta"		
+		string tmp_string = asm_instr[i+11]->getString();
+		tmp_string.replace(0, 4, str_STA);
+		
+		asm_instr[i+6]->setString( tmp_string );
+		asm_instr[i+6]->setSize(3);
+		asm_instr.erase(asm_instr.begin()+i+7,asm_instr.begin()+i+12);
+	      }
 	  }
       }
 
-    // clc lbl clc
-    for( int i=0; i<asm_instr.size(); i++ )
+    
+    //==================    
+    if( asm_instr.size() > 2 && 1 )
       {
-	if( cmpstr( asm_instr[i]->getString(), clc ) &&
-	    cmpstr( asm_instr[i+1]->getString(), lbl ) &&
-	    cmpstr( asm_instr[i+2]->getString(), clc ) )
+	addOptimizationMessage( "checking for: adc/cmp 0, sbc/cmp 0", 0, -1);
+	for( int i=0; i<asm_instr.size()-1; i++ )
 	  {
-	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+1);
-	    addOptimizationMessage( "removing doubled up CLC's (split by label)", i);
-
+	    if(cmpstr(asm_instr[i]->getString(), adc) && cmpstr(asm_instr[i+1]->getString(), cmpZero) ||
+	       cmpstr(asm_instr[i]->getString(), sbc) && cmpstr(asm_instr[i+1]->getString(), cmpZero))
+	      {
+		addOptimizationMessage( "commenting out unnecessary cmp #$00", i, 1);
+		asm_instr[i+1]->setString( string("//cmp #$00") );
+		asm_instr[i+1]->setSize( 0 );
+	      }
 	  }
       }
 
-    // clc lbl sec
-    for( int i=0; i<asm_instr.size(); i++ )
+    if( asm_instr.size() > 4 && 1 )
       {
-	if( cmpstr( asm_instr[i]->getString(), clc ) &&
-	    cmpstr( asm_instr[i+1]->getString(), lbl ) &&
-	    cmpstr( asm_instr[i+2]->getString(), sec ) )
+	addOptimizationMessage( "checking for: pha/txa/tax/pla, pha/tax/txa/pla", 0, -1);
+	for( int j = 0; j < 3; j++ )
 	  {
-	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+1);
-	    addOptimizationMessage( "removing CLC paired with SEC (split by label)", i);
-
-	  }
-      }
-
-    for( int i=0; i<asm_instr.size()-2; i++ )
-      {
-	if( cmpstr( asm_instr[i]->getString(), rts ) &&
-	    cmpstr( asm_instr[i+1]->getString(), cmt ) &&
-	    cmpstr( asm_instr[i+2]->getString(), rts ) )
-	  {
-	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+1);
-	    addOptimizationMessage( "removing double rts' (split by comment)", i);
-
-	  }
-      }
-
-    for( int i=0; i<asm_instr.size(); i++ )
-      {
-	if( cmpstr( asm_instr[i]->getString(), clc ) &&
-	    cmpstr( asm_instr[i+1]->getString(), sec ) )
-	  {
-	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+1);
-	    addOptimizationMessage( "removing CLC paired with SEC (removing clc)", i);
-	  }
-      }
-
-    for( int i=0; i<asm_instr.size(); i++ )
-      {
-	if( cmpstr( asm_instr[i]->getString(), sec ) &&
-	    cmpstr( asm_instr[i+1]->getString(), clc ) )
-	  {
-	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+1);
-	    addOptimizationMessage( "removing CLC paired with SEC (removing sec)", i);
+	    for( int i=0; i<asm_instr.size()-3; i++ )
+	      {
+		if( cmpstr(asm_instr[i]->getString(), pha) &&
+		    cmpstr(asm_instr[i+1]->getString(), txa) &&
+		    cmpstr(asm_instr[i+2]->getString(), tax) &&
+		    cmpstr(asm_instr[i+3]->getString(), pla ) )
+		  {
+		    addOptimizationMessage( "removing pha-txa-tax-pla", i, 1);
+		    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+4);
+		  }
+	      }
+	    for( int i=0; i<asm_instr.size()-3; i++ )
+	      {
+		if( cmpstr(asm_instr[i]->getString(), pha) &&
+		    cmpstr(asm_instr[i+1]->getString(), tax) &&
+		    cmpstr(asm_instr[i+2]->getString(), txa) &&
+		    cmpstr(asm_instr[i+3]->getString(), pla ) )
+		  {
+		    addOptimizationMessage( "removing pha-tax-txa-pla", i, 1);
+		    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+4);
+		  }
+	      }
 	  }
       }
     
-    
-    for( int i=0; i<asm_instr.size(); i++ )
+    if( asm_instr.size() > 2 && x )
       {
-	if( cmpstr( asm_instr[i]->getString(), jmp ) &&
-	    cmpstr( asm_instr[i+1]->getString(), rts ) )
+	addOptimizationMessage( "checking for: jsr/rts chains", 0, -1);
+	for( int i=0; i<asm_instr.size()-1; i++ )
 	  {
-	    asm_instr.erase(asm_instr.begin()+i+1,asm_instr.begin()+i+2);
-	    addOptimizationMessage( "removing jump return (jump remains)", i);
+	    if(cmpstr(asm_instr[i]->getString(), jsr) &&
+	       cmpstr(asm_instr[i+1]->getString(), rts))
+	      {
+		string tmp_str = asm_instr[i]->getString() + " // JSR+RTS chain (OPTIMIZE)";
+		addOptimizationMessage( "found JSR+RTS chain... further investigation needed", i, 1);
+		asm_instr[i]->setString( tmp_str );
+	      }
 	  }
       }
 
-    for( int i=0; i<asm_instr.size(); i++ )
+    if( asm_instr.size() > 2 && 0 )
       {
-	if( cmpstr( asm_instr[i]->getString(), cli ) &&
-	    cmpstr( asm_instr[i+1]->getString(), sei ) )
+	addOptimizationMessage( "removing leftover deletion tags", 0, 1);
+	for( int i=0; i<asm_instr.size(); i++ )
 	  {
-	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+1);
-	    addComment( "(OPTIMIZE)" );
-	    addOptimizationMessage( "clisei (cli removed))", i);
+	    if( cmpstr( asm_instr[i]->getString(), string( "// MARKED_FOR_DELETION") ) )
+	      {
+		asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+1);
+	      }
 	  }
-      }
 
-    for( int i=0; i<asm_instr.size(); i++ )
-      {
-	if( cmpstr( asm_instr[i]->getString(), tay ) &&
-	    cmpstr( asm_instr[i+1]->getString(), tya ) )
-	  {
-	    asm_instr.erase(asm_instr.begin()+i+1,asm_instr.begin()+i+2);
-	    addOptimizationMessage( "tay-tya (tya removed))", i);
-	  }
       }
+    if( asm_instr.size() > 2 && 1 )
+      {
+	addOptimizationMessage( "checking for: !body: doubles, double !else#:", 0, -1);
+	for( int i=0; i<asm_instr.size()-1; i++ )
+	  {
+	    if(
+	       cmpstr(asm_instr[i]->getString(),else1) && cmpstr(asm_instr[i+1]->getString(),else1) ||
+	       cmpstr(asm_instr[i]->getString(),else2) && cmpstr(asm_instr[i+1]->getString(),else2) ||
+	       cmpstr(asm_instr[i]->getString(),else3) && cmpstr(asm_instr[i+1]->getString(),else3) ||
+	       cmpstr(asm_instr[i]->getString(),else4) && cmpstr(asm_instr[i+1]->getString(),else4) ||
+	       cmpstr(asm_instr[i]->getString(),else5) && cmpstr(asm_instr[i+1]->getString(),else5) ||
+	       cmpstr(asm_instr[i]->getString(),else6) && cmpstr(asm_instr[i+1]->getString(),else6) ||
+	       cmpstr(asm_instr[i]->getString(),body) && cmpstr(asm_instr[i+1]->getString(),body)
 
-    for( int i=0; i<asm_instr.size(); i++ )
-      {
-	if( cmpstr( asm_instr[i]->getString(), tya ) &&
-	    cmpstr( asm_instr[i+1]->getString(), tay ) )
-	  {
-	    asm_instr.erase(asm_instr.begin()+i+1,asm_instr.begin()+i+2);
-	    addOptimizationMessage( "tya-tay (tay removed))", i);
-	  }
-      }
-
-    
-    for( int i=0; i<asm_instr.size(); i++ )
-      {
-	if( cmpstr( asm_instr[i]->getString(), sei ) &&
-	    cmpstr( asm_instr[i+1]->getString(), cli ) )
-	  {
-	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+1);
-	    addOptimizationMessage( "seicli (sei removed))", i);
-	  }
-      }
-
-    for( int i=0; i<asm_instr.size(); i++ )
-      {
-	if( cmpstr( asm_instr[i]->getString(), pla ) &&
-	    cmpstr( asm_instr[i+1]->getString(), pha ) )
-	  {
-	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+2);
-	    addOptimizationMessage( "removing pop pushes", i);
-	  }
-      }
-    
-    for( int i=0; i<asm_instr.size(); i++ )
-      {
-	if( cmpstr( asm_instr[i]->getString(), string("pla") ) &&
-	    cmpstr( asm_instr[i+1]->getString(), string("pha") ) )
-	  {
-	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+2);
-	    addOptimizationMessage( "removing pop pushes", i);
-	  }
-      }
-
-    for( int i=0; i<asm_instr.size(); i++ )
-      {
-	if( cmpstr( asm_instr[i]->getString(), pha ) &&
-	    cmpstr( asm_instr[i+1]->getString(), pla ) )
-	  {
-	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+2);
-	    addOptimizationMessage( "removing push pops" , i);
-	  }
-      }
-    for( int i=0; i<asm_instr.size(); i++ )
-      {
-	if( cmpstr( asm_instr[i]->getString(), sta02 ) &&
-	    cmpstr( asm_instr[i+1]->getString(), lda02 ) )
-	  {
-	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+2);
-	    addOptimizationMessage( "removing sta02-lda02's", i);
-	  }
-      }
-    for( int i=0; i<asm_instr.size(); i++ )
-      {
-	if( cmpstr( asm_instr[i]->getString(), sta03 ) &&
-	    cmpstr( asm_instr[i+1]->getString(), lda03 ) )
-	  {
-	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+2);
-	    addOptimizationMessage( "removing sta03-lda03's", i);
-	  }
-      }
-
-    for( int i=0; i<asm_instr.size(); i++ )
-      {
-	if( cmpstr( asm_instr[i]->getString(), clc ) &&
-	    cmpstr( asm_instr[i+1]->getString(), clc ) )
-	  {
-	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+2);
-	    addOptimizationMessage( "removing doubled up CLC's", i);
-	  }
-      }
-
-    // lda #$00, sta, lda#$00
-    for( int i=0; i<asm_instr.size(); i++ )
-      {
-	if(
-	   cmpstr( asm_instr[i]->getString(), ldaZero ) &&
-	   cmpstr( asm_instr[i+1]->getString().substr(0,3), string("sta") ) &&
-	   cmpstr( asm_instr[i+2]->getString(), ldaZero )
-	   )
-	  {
-	    addOptimizationMessage( "removing redundant lda #$00", i);
-	    asm_instr.erase(asm_instr.begin()+i+2,asm_instr.begin()+i+3);
-	  }
-      }
-    for( int i=0; i<asm_instr.size(); i++ )
-      {
-	if(
-	   cmpstr( asm_instr[i]->getString(), ldaZero ) &&
-	   cmpstr( asm_instr[i+1]->getString().substr(0,3), string("sta") ) &&
-	   cmpstr( asm_instr[i+2]->getString().substr(0,3), string("sta") ) &&
-	   cmpstr( asm_instr[i+3]->getString(), ldaZero )
-	   )
-	  {
-	    addOptimizationMessage( "removing redundant lda #$00 (2)", i);
-	    asm_instr.erase(asm_instr.begin()+i+3,asm_instr.begin()+i+4);
-	  }
-      }
-    for( int i=0; i<asm_instr.size(); i++ )
-      {
-	if(
-	   cmpstr( asm_instr[i]->getString(), ldaZero ) &&
-	   cmpstr( asm_instr[i+1]->getString().substr(0,3), string("sta") ) &&
-	   cmpstr( asm_instr[i+2]->getString().substr(0,3), string("sta") ) &&
-	   cmpstr( asm_instr[i+3]->getString().substr(0,3), string("sta") ) &&
-	   cmpstr( asm_instr[i+4]->getString(), ldaZero )
-	   )
-	  {
-	    addOptimizationMessage( "removing redundant lda #$00 (3)", i);
-	    asm_instr.erase(asm_instr.begin()+i+4,asm_instr.begin()+i+5);
-	  }
-      }
-
-    for( int i=0; i<asm_instr.size(); i++ )
-      {
-	if(
-	   cmpstr( asm_instr[i]->getString(), ldaZero ) &&
-	   cmpstr( asm_instr[i+1]->getString().substr(0,3), string("sta") ) &&
-	   cmpstr( asm_instr[i+2]->getString().substr(0,3), string("sta") ) &&
-	   cmpstr( asm_instr[i+3]->getString().substr(0,3), string("sta") ) &&
-	   cmpstr( asm_instr[i+4]->getString().substr(0,3), string("sta") ) &&
-	   cmpstr( asm_instr[i+5]->getString(), ldaZero )
-	   )
-	  {
-	    addOptimizationMessage( "removing redundant lda #$00 (4)", i);
-	    asm_instr.erase(asm_instr.begin()+i+5,asm_instr.begin()+i+6);
+	       )
+	      {
+		addOptimizationMessage( "Label doubled up - removing one", i, 1);
+		asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+1);
+	      }
 	  }
       }
 
     
-    // round 2
-    for( int i=0; i<asm_instr.size(); i++ )
+    if( asm_instr.size() > 2 && 1 )
       {
-	if( cmpstr( asm_instr[i]->getString(), string("pla") ) &&
-	    cmpstr( asm_instr[i+1]->getString(), string("pha") ) )
+	addOptimizationMessage( "checking for: txa/and", 0, -1);
+	for( int i=0; i<asm_instr.size()-1; i++ )
 	  {
-	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+2);
-	    addOptimizationMessage( "removing pop pushes (round 2)", i);
-	  }
-      }
-    for( int i=0; i<asm_instr.size(); i++ )
-      {
-	if( cmpstr( asm_instr[i]->getString(), string("pha") ) &&
-	    cmpstr( asm_instr[i+1]->getString(), string("pla") ) )
-	  {
-	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+2);
-	    addOptimizationMessage( "removing pop pushes (round 2)", i);
+	    if( cmpstr( asm_instr[i]->getString(), str_TXA ) &&
+		cmpstr( asm_instr[i+1]->getString(), str_AND ) )
+	      {
+		addOptimizationMessage( "found txa, and.  replace txa, and IMM with xaa IMM for more efficiency. (this doesn't actually do it).", i);
+		asm_instr[i]->setString(asm_instr[i]->getString() + commentmarker + "<--  replace with xaa" );	    
+		asm_instr[i+1]->setString(asm_instr[i+1]->getString() + commentmarker + "<-- replace with xaa" );
+	      }
 	  }
       }
 
-    for( int i=0; i<asm_instr.size(); i++ )
+    if( asm_instr.size() > 2 && 1 )
       {
-	// unnecessary stack manipulations
-	if(
-	   cmpstr( asm_instr[i+0]->getString(), pla ) &&
-	   cmpstr( asm_instr[i+1]->getString(), tax ) &&
-	   cmpstr( asm_instr[i+2]->getString(), pla ) &&
-	   cmpstr( asm_instr[i+3]->getString(), tay ) &&
-	   cmpstr( asm_instr[i+4]->getString(), pha ) &&
-	   cmpstr( asm_instr[i+5]->getString(), txa ) &&
-	   cmpstr( asm_instr[i+6]->getString(), pha )
-	   )
+	
+	addOptimizationMessage( "checking for: plp/php", 0, -1);
+	for( int i=0; i<asm_instr.size()-1; i++ )
 	  {
-	    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+7);
-	    addOptimizationMessage( "removing Unecesary Stack Manipulations", i);
+	    if(
+	       cmpstr( asm_instr[i]->getString(), plp ) &&
+	       cmpstr( asm_instr[i+1]->getString(), php ) )
+	      {
+		asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+2);
+		addOptimizationMessage( "removing PLP-PHP", i, 1);
+	      }
 	  }
       }
+
+    if( asm_instr.size() > 4 && 1 )
+      {
+	
+	addOptimizationMessage( "checking for: cmt/plp/cmt/php", 0, -1);
+	for( int i=0; i<asm_instr.size()-3; i++ )
+	  {
+	    if(
+	       cmpstr( asm_instr[i]->getString(), string("// Restore status register") ) &&
+	       cmpstr( asm_instr[i+1]->getString(), str_PLP ) &&
+	       cmpstr( asm_instr[i+2]->getString(), string("// Preserve Status Register") ) &&
+	       cmpstr( asm_instr[i+3]->getString(), str_PHP ) )
+	      {
+		asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+4);
+		addOptimizationMessage( "removing PLP-PHP (interspersed with the meat)", i, 1);
+	      }
+	  }
+      }
+
+
+    
+    if( asm_instr.size() > 10 && 1 )
+      {
+	addOptimizationMessage( "checking for: pops/pushes (ifif)", 0, -1);
+	for( int i=0; i<asm_instr.size()-9; i++ )
+	  {
+	    // POP-PUSH removal (IFIF)
+	    if(
+	       cmpstr( asm_instr[i]->getString(), plp ) &&
+	       cmpstr( asm_instr[i+1]->getString(), pla ) &&
+	       cmpstr( asm_instr[i+2]->getString(), sta03 ) &&
+	       cmpstr( asm_instr[i+3]->getString(), pla ) &&
+	       cmpstr( asm_instr[i+4]->getString(), sta02 ) &&
+	       cmpstr( asm_instr[i+5]->getString(), lda02 ) &&
+	       cmpstr( asm_instr[i+6]->getString(), pha ) &&
+	       cmpstr( asm_instr[i+7]->getString(), lda03 ) &&
+	       cmpstr( asm_instr[i+8]->getString(), pha ) &&
+	       cmpstr( asm_instr[i+9]->getString(), php )
+	       )
+	      {
+		asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+10);
+		addOptimizationMessage( "removing POP-PUSH IFIF", i, 1);
+	      }
+	  }
+      }
+
+	
+    if( asm_instr.size() > 4 && 1 )
+      {
+	addOptimizationMessage( "checking for: pop/push $03", 0, -1);
+	for( int i=0; i<asm_instr.size()-3; i++ )
+	  {
+	    if(
+	       cmpstr( asm_instr[i]->getString(), pla ) &&
+	       cmpstr( asm_instr[i+1]->getString(), sta03 ) &&
+	       cmpstr( asm_instr[i+2]->getString(), lda03 ) &&
+	       cmpstr( asm_instr[i+3]->getString(), pha )
+	       )
+	      {
+		asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+4);
+		addOptimizationMessage( "removing POP-PUSH $03", i, 1);
+	      }
+	  }
+      }
+
+
+    if( asm_instr.size() > 4 && 1 )
+      {
+		
+	addOptimizationMessage( "checking for: pop/push $02", 0, -1);
+	for( int i=0; i<asm_instr.size()-3; i++ )
+	  {
+	    if(
+	       cmpstr( asm_instr[i]->getString(), pla ) &&
+	       cmpstr( asm_instr[i+1]->getString(), sta02 ) &&
+	       cmpstr( asm_instr[i+2]->getString(), lda02 ) &&
+	       cmpstr( asm_instr[i+3]->getString(), pha )
+	       )
+	      {
+		asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+4);
+		addOptimizationMessage( "removing POP-PUSH $02", i, 1);
+	      }
+	  }
+      }
+
+
+    if( asm_instr.size() > 4 && 1 )
+      {
+	
+	addOptimizationMessage( "checking for: push/pop $02", 0, -1);
+	for( int i=0; i<asm_instr.size()-3; i++ )
+	  {
+	    if(
+	       cmpstr( asm_instr[i]->getString(), lda02 ) &&
+	       cmpstr( asm_instr[i+1]->getString(), pha ) &&
+	       cmpstr( asm_instr[i+2]->getString(), pla ) &&
+	       cmpstr( asm_instr[i+3]->getString(), sta02 )
+	       )
+	      {
+		asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+4);
+		addOptimizationMessage( "removing PUSH-POP $02", i, 1);
+	      }
+	  }
+      }
+
+
+    if( asm_instr.size() > 4 && 1 )
+      {
+		
+	addOptimizationMessage( "checking for: push/pop $03", 0, -1);
+	for( int i=0; i<asm_instr.size()-3; i++ )
+	  {
+	    if(
+	       cmpstr( asm_instr[i]->getString(), lda03 ) &&
+	       cmpstr( asm_instr[i+1]->getString(), str_PHA ) &&
+	       cmpstr( asm_instr[i+2]->getString(), str_PLA ) &&
+	       cmpstr( asm_instr[i+3]->getString(), sta03 )
+	       )
+	      {
+		asm_instr.erase(asm_instr.begin()+i+0,asm_instr.begin()+i+4);
+		addOptimizationMessage( "removing PUSH-POP $03", i, 1);
+	      }
+	  }
+
+      }
+
+    if( asm_instr.size() > 9 && 1 )
+      {
+	
+	addOptimizationMessage( "checking for: cmt/pha/txa/pha/cmt/platax/pla/cmt... please don't ask why", 0, -1);
+	for( int i=0; i<asm_instr.size()-8; i++ )
+	  {	
+	    if( cmpstr( asm_instr[i]->getString(), cmt ) &&
+		cmpstr( asm_instr[i+1]->getString(), pha ) &&
+		cmpstr( asm_instr[i+2]->getString(), txa ) &&
+		cmpstr( asm_instr[i+3]->getString(), pha ) &&
+		cmpstr( asm_instr[i+4]->getString(), cmt ) &&
+		cmpstr( asm_instr[i+5]->getString(), pla ) &&
+		cmpstr( asm_instr[i+6]->getString(), tax ) &&
+		cmpstr( asm_instr[i+7]->getString(), pla ) && 
+		cmpstr( asm_instr[i+8]->getString(), cmt ) )
+	      {
+		asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+9);
+		addOptimizationMessage( "removing lack of ?? math FAC artifact (2a)", i, 1);
+	      }
+	  }
+      }
+
+
+	
+    if( asm_instr.size() > 4 && 1 )
+      {
+
+	addOptimizationMessage( "checking for: cmt/pha/cmt/pla", 0, -1);
+	for( int i=0; i<asm_instr.size()-3; i++ )
+	  {	
+	    if( cmpstr( asm_instr[i]->getString(), cmt ) &&
+		cmpstr( asm_instr[i+1]->getString(), pha ) &&
+		cmpstr( asm_instr[i+2]->getString(), cmt ) &&
+		cmpstr( asm_instr[i+3]->getString(), pla ) )
+	      {
+		asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+4);
+		addOptimizationMessage( "removing lack of ?? math FAC artifact (2b)", i, 1);
+	      }
+	  }
+      }
+    
+    if( asm_instr.size() > 2 && 1 )
+      {
+	
+	addOptimizationMessage( "checking for: ldy #$00/lda #$00", 0, -1);
+	for( int i=0; i<asm_instr.size()-1; i++ )
+	  {
+	    if( cmpstr( asm_instr[i]->getString(), ldyZero ) &&
+		cmpstr( asm_instr[i+1]->getString(), ldaZero ) )
+	      {
+		asm_instr[i+1]->setString( str_TYA );
+		asm_instr[i+1]->setSize( 1 );
+		addOptimizationMessage( "replacing LDA #$00 with TYA", i, 1);
+	      }
+	  }
+      }
+
+
+    if( asm_instr.size() > 2 && 1 )
+      {
+	
+	addOptimizationMessage( "checking for: lda #$00/ldy #$00", 0, -1);    
+	for( int i=0; i<asm_instr.size()-1; i++ )
+	  {
+	    if( cmpstr( asm_instr[i]->getString(), ldaZero ) &&
+		cmpstr( asm_instr[i+1]->getString(), ldyZero ) )
+	      {
+		asm_instr[i+1]->setString( str_TAY );
+		asm_instr[i+1]->setSize( 1 );
+		addOptimizationMessage( "replacing LDY #$00 with TAY", i, 1);
+	      }
+	  }
+      }
+
+
+    if( asm_instr.size() > 3 && 1 )
+      {
+	addOptimizationMessage( "checking for: clc/lbl/clc", 0, -1);
+	for( int i=0; i<asm_instr.size(); i++ )
+	  {
+	    if( cmpstr( asm_instr[i]->getString(), clc ) &&
+		cmpstr( asm_instr[i+1]->getString(), lbl ) &&
+		cmpstr( asm_instr[i+2]->getString(), clc ) )
+	      {
+		asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+1);
+		addOptimizationMessage( "removing doubled up CLC's (split by label)", i, 1);
+	      }
+	  }
+      }
+
+
+    
+    if( asm_instr.size() > 3 && 1 )
+      {
+	addOptimizationMessage( "checking for: clc/lbl/sec", 0, -1);
+	for( int i=0; i<asm_instr.size()-2; i++ )
+	  {
+	    if( cmpstr( asm_instr[i]->getString(), clc ) &&
+		cmpstr( asm_instr[i+1]->getString(), lbl ) &&
+		cmpstr( asm_instr[i+2]->getString(), sec ) )
+	      {
+		asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+1);
+		addOptimizationMessage( "removing CLC paired with SEC (split by label)", i, 1);
+	      }
+	  }
+      }
+    
+
+
+    if( asm_instr.size() > 3 && 1 )
+      {
+	addOptimizationMessage( "checking for: rts/cmt/rts", 0, -1);
+	for( int i=0; i<asm_instr.size()-2; i++ )
+	  {
+	    if( cmpstr( asm_instr[i]->getString(), str_RTS ) &&
+		cmpstr( asm_instr[i+1]->getString(), cmt ) &&
+		cmpstr( asm_instr[i+2]->getString(), str_RTS ) )
+	      {
+		asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+1);
+		addOptimizationMessage( "removing double rts (split by comment)", i, 1);
+	      }
+	  }
+      }
+
+
+
+
+    if( asm_instr.size() > 2 && 1 )
+      {
+
+	addOptimizationMessage( "checking for: clc/sec", 0, -1);
+	for( int i=0; i<asm_instr.size()-1; i++ )
+	  {
+	    if( cmpstr( asm_instr[i]->getString(), clc ) &&
+		cmpstr( asm_instr[i+1]->getString(), sec ) )
+	      {
+		asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+1);
+		addOptimizationMessage( "removing CLC paired with SEC (removing clc)", i, 1);
+	      }
+	  }
+      }
+
+
+
+    if( asm_instr.size() > 2 && 1 )
+      {
+
+	addOptimizationMessage( "checking for: sec/clc", 0, -1);
+	for( int i=0; i<asm_instr.size()-1; i++ )
+	  {
+	    if( cmpstr( asm_instr[i]->getString(), sec ) &&
+		cmpstr( asm_instr[i+1]->getString(), clc ) )
+	      {
+		asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+1);
+		addOptimizationMessage( "removing CLC paired with SEC (removing sec)", i, 1);
+	      }
+	  }
+      }
+
+    if( asm_instr.size() > 2 && 1 )
+      {
+	
+	addOptimizationMessage( "checking for: jmp/rts", 0, -1);
+	for( int i=0; i<asm_instr.size()-1; i++ )
+	  {
+	    if( cmpstr( asm_instr[i]->getString(), jmp ) &&
+		cmpstr( asm_instr[i+1]->getString(), rts ) )
+	      {
+		asm_instr.erase(asm_instr.begin()+i+1,asm_instr.begin()+i+2);
+		addOptimizationMessage( "removing jump return (jump remains)", i, 1);
+	      }
+	  }
+      }
+
+    if( asm_instr.size() > 2 && 1 )
+      {
+
+	addOptimizationMessage( "checking for: cli/sei", 0, -1);
+	for( int i=0; i<asm_instr.size()-1; i++ )
+	  {
+	    if( cmpstr( asm_instr[i]->getString(), cli ) &&
+		cmpstr( asm_instr[i+1]->getString(), sei ) )
+	      {
+		asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+1);
+		addComment( "(OPTIMIZE)" );
+		addOptimizationMessage( "clisei (cli removed))", i, 1);
+	      }
+	  }
+      }
+
+    if( asm_instr.size() > 2 && 1 )
+      {
+	addOptimizationMessage( "checking for: tay/tya", 0, -1);
+	for( int i=0; i<asm_instr.size()-1; i++ )
+	  {
+	    if( cmpstr( asm_instr[i]->getString(), tay ) &&
+		cmpstr( asm_instr[i+1]->getString(), tya ) )
+	      {
+		asm_instr.erase(asm_instr.begin()+i+1,asm_instr.begin()+i+2);
+		addOptimizationMessage( "tay-tya (tya removed))", i, 1);
+	      }
+	  }
+      }
+
+
+    if( asm_instr.size() > 2 && 1 )
+      {
+
+	addOptimizationMessage( "checking for: tya/tay", 0, -1);
+	for( int i=0; i<asm_instr.size()-1; i++ )
+	  {
+	    if( cmpstr( asm_instr[i]->getString(), tya ) &&
+		cmpstr( asm_instr[i+1]->getString(), tay ) )
+	      {
+		asm_instr.erase(asm_instr.begin()+i+1,asm_instr.begin()+i+2);
+		addOptimizationMessage( "tya-tay (tay removed))", i, 1);
+	      }
+	  }
+      }
+
+
+	
+    if( asm_instr.size() > 2 && 1 )
+      {
+	addOptimizationMessage( "checking for: sei/cli", 0, -1);
+	for( int i=0; i<asm_instr.size()-1; i++ )
+	  {
+	    if( cmpstr( asm_instr[i]->getString(), sei ) &&
+		cmpstr( asm_instr[i+1]->getString(), cli ) )
+	      {
+		asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+1);
+		addOptimizationMessage( "seicli (sei removed))", i, 1);
+	      }
+	  }
+      }
+
+	
+    if( asm_instr.size() > 2 && 1 )
+      {
+	addOptimizationMessage( "checking for: more pop/pushes ", 0, -1);
+	for( int j = 0; j < 10; j++ )
+	  {
+	    for( int i=0; i<asm_instr.size()-1; i++ )
+	      {
+		if( cmpstr( asm_instr[i]->getString(), pla ) &&
+		    cmpstr( asm_instr[i+1]->getString(), pha ) )
+		  {
+		    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+2);
+		    addOptimizationMessage( "removing pop pushes", i, 1);
+		  }
+	      }
+	  }
+      }
+
+
+	
+    if( asm_instr.size() > 2 && 1 )
+      {
+	addOptimizationMessage( "checking for: store/load $02", 0, -1);
+	for( int i=0; i<asm_instr.size()-1; i++ )
+	  {
+	    if( cmpstr( asm_instr[i]->getString(), sta02 ) &&
+		cmpstr( asm_instr[i+1]->getString(), lda02 ) )
+	      {
+		asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+2);
+		addOptimizationMessage( "removing sta02-lda02's", i, 1);
+	      }
+	  }
+      }
+
+
+    if( asm_instr.size() > 2 && 1 )
+      {
+	
+	addOptimizationMessage( "checking for: store/load $03", 0, -1);
+	for( int i=0; i<asm_instr.size()-1; i++ )
+	  {
+	    if( cmpstr( asm_instr[i]->getString(), sta03 ) &&
+		cmpstr( asm_instr[i+1]->getString(), lda03 ) )
+	      {
+		asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+2);
+		addOptimizationMessage( "removing sta03-lda03's", i, 1);
+	      }
+	  }
+      }
+
+
+	
+    // remove redundant labels
+    if( asm_instr.size() > 3 && 1 )
+      {
+	addOptimizationMessage( "checking for: more doubled up !else1: labels", 0, -1);
+	for( int j=0; j<3; j++ )
+	  {
+	    for( int i=0; i<asm_instr.size()-2; i++ )
+	      {
+		if(asm_instr[i]->getString() == else1 &&
+		   asm_instr[i+1]->getString()[0] == '/' &&
+		   asm_instr[i+1]->getString()[1] == '/' &&
+		   asm_instr[i+2]->getString() == else1 &&
+		   cmpstr(asm_instr[i]->getString(),asm_instr[i+2]->getString() ))
+		  {
+		    asm_instr.erase(asm_instr.begin()+i+1,asm_instr.begin()+i+2);
+		    addOptimizationMessage( "!else1: Label Doubled Up (split by comment) (removing one of them)", i, 1);
+		  }
+	      }
+	    for( int i=0; i<asm_instr.size()-1; i++ )
+	      {
+		if(asm_instr[i]->getString() == else1 &&
+		   asm_instr[i+1]->getString() == else1 &&
+		   cmpstr(asm_instr[i]->getString(),asm_instr[i+1]->getString() ))
+		  {
+		    asm_instr.erase(asm_instr.begin()+i+0,asm_instr.begin()+i+1);
+		    addOptimizationMessage( "!else1: Label Doubled Up (removing one of them)", i, 1);
+		  }
+	      }
+	  }
+      }
+  
+
+
+  
+    if( asm_instr.size() > 3 && 1 )
+      {
+	// remove Store-Loads & Load-Stores
+	addOptimizationMessage( "checking for: store/loads and load/stores", 0, -1);
+	for( int j = 0; j < 3; j++ )
+	  {
+	    for( int i=0; i<asm_instr.size()-1; i++ )
+	      {
+		if( cmpstr( asm_instr[i]->getString(), str_STA ) &&
+		    cmpstr( asm_instr[i+1]->getString(), str_LDA ) )
+		  {
+		    int first_len = asm_instr[i]->getString().length();
+		    int second_len = asm_instr[i+1]->getString().length();
+		    string OP1 = asm_instr[i]->getString().substr(4, first_len - 4);
+		    string OP2 = asm_instr[i+1]->getString().substr(4, second_len - 4);
+		    if( OP1 == OP2 )
+		      {
+			asm_instr.erase(asm_instr.begin()+i+1,asm_instr.begin()+i+2);
+			addOptimizationMessage( "Store-Load Optimization (removing load)", i, 1);		    
+		      }
+		  }
+	      }
+	    for( int i=0; i<asm_instr.size()-1; i++ )
+	      {
+		if( cmpstr( asm_instr[i]->getString(), str_LDA ) &&
+		    cmpstr( asm_instr[i+1]->getString(), str_STA ) )
+		  {
+		    int first_len = asm_instr[i]->getString().length();
+		    int second_len = asm_instr[i+1]->getString().length();
+		    string OP1 = asm_instr[i]->getString().substr(4, first_len - 4);
+		    string OP2 = asm_instr[i+1]->getString().substr(4, second_len - 4);
+		    if( OP1 == OP2 )
+		      {
+			asm_instr.erase(asm_instr.begin()+i+1,asm_instr.begin()+i+2);
+			addOptimizationMessage( "Load-Store Optimization (removing store)", i, 1);
+		      }
+		  }
+	      }
+	  }
+      }
+    
+    if( asm_instr.size() > 2 && 1 )
+      {
+	addOptimizationMessage( "checking for: doubled clc's", 0, -1);
+	for( int i=0; i<asm_instr.size()-1; i++ )
+	  {
+	    if( cmpstr( asm_instr[i]->getString(), str_CLC ) &&
+		cmpstr( asm_instr[i+1]->getString(), str_CLC ) )
+	      {
+		asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+2);
+		addOptimizationMessage( "removing doubled up CLC's", i, 1);
+	      }
+	  }
+      }
+
+
+	
+    if( asm_instr.size() > 3 && 1 )
+      {
+	addOptimizationMessage( "checking for: redundant lda #$00's", 0, -1);
+	for( int i=0; i<asm_instr.size()-2; i++ )
+	  {
+	    if(
+	       cmpstr( asm_instr[i]->getString(), ldaZero ) &&
+	       cmpstr( asm_instr[i+1]->getString().substr(0,3), sta ) &&
+	       cmpstr( asm_instr[i+2]->getString(), ldaZero )
+	       )
+	      {
+		addOptimizationMessage( "removing redundant lda #$00 (pass 1)", i, 1);
+		asm_instr.erase(asm_instr.begin()+i+2,asm_instr.begin()+i+3);
+	      }
+	  }
+      }
+
+
+	
+    if( asm_instr.size() > 4 && 1 )
+      {
+	for( int i=0; i<asm_instr.size()-3; i++ )
+	  {
+	    if(
+	       cmpstr( asm_instr[i]->getString(), ldaZero ) &&
+	       cmpstr( asm_instr[i+1]->getString().substr(0,3), sta ) &&
+	       cmpstr( asm_instr[i+2]->getString().substr(0,3), sta ) &&
+	       cmpstr( asm_instr[i+3]->getString(), ldaZero )
+	       )
+	      {
+		addOptimizationMessage( "removing redundant lda #$00 (pass 2)", i, 1);
+		asm_instr.erase(asm_instr.begin()+i+3,asm_instr.begin()+i+4);
+	      }
+	  }
+      }
+
+	
+    if( asm_instr.size() > 5 && 1 )
+      {
+	for( int i=0; i<asm_instr.size()-4; i++ )
+	  {
+	    if(
+	       cmpstr( asm_instr[i]->getString(), ldaZero ) &&
+	       cmpstr( asm_instr[i+1]->getString().substr(0,3), sta ) &&
+	       cmpstr( asm_instr[i+2]->getString().substr(0,3), sta ) &&
+	       cmpstr( asm_instr[i+3]->getString().substr(0,3), sta ) &&
+	       cmpstr( asm_instr[i+4]->getString(), ldaZero )
+	       )
+	      {
+		addOptimizationMessage( "removing redundant lda #$00 (pass 3)", i, 1);
+		asm_instr.erase(asm_instr.begin()+i+4,asm_instr.begin()+i+5);
+	      }
+	  }
+      }
+
+    if( asm_instr.size() > 6 && 1 )
+      {
+
+	for( int i=0; i<asm_instr.size()-5; i++ )
+	  {
+	    if(
+	       cmpstr( asm_instr[i]->getString(), ldaZero ) &&
+	       cmpstr( asm_instr[i+1]->getString().substr(0,3), sta ) &&
+	       cmpstr( asm_instr[i+2]->getString().substr(0,3), sta ) &&
+	       cmpstr( asm_instr[i+3]->getString().substr(0,3), sta ) &&
+	       cmpstr( asm_instr[i+4]->getString().substr(0,3), sta ) &&
+	       cmpstr( asm_instr[i+5]->getString(), ldaZero )
+	       )
+	      {
+		addOptimizationMessage( "removing redundant lda #$00 (pass 4)", i, 1);
+		asm_instr.erase(asm_instr.begin()+i+5,asm_instr.begin()+i+6);
+	      }
+	  }
+      }
+
+	
+    if( asm_instr.size() > 2 && 1 )
+      {
+	// round 2
+	addOptimizationMessage( "checking for: more pop/pushes", 0, -1);
+	for( int i=0; i<asm_instr.size()-1; i++ )
+	  {
+	    if( cmpstr( asm_instr[i]->getString(), str_PLA ) &&
+		cmpstr( asm_instr[i+1]->getString(), str_PHA ) )
+	      {
+		asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+2);
+		addOptimizationMessage( "removing pop pushes (round 2)", i, 1);
+	      }
+	  }
+      }
+
+    if( asm_instr.size() > 2 && 1 )
+      {
+
+	addOptimizationMessage( "checking for: push/pops", 0, -1);
+	for( int i=0; i<asm_instr.size()-1; i++ )
+	  {
+	    if( cmpstr( asm_instr[i]->getString(), str_PHA ) &&
+		cmpstr( asm_instr[i+1]->getString(), str_PLA ) )
+	      {
+		asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+2);
+		addOptimizationMessage( "removing push pops (round 2)", i, 1);
+	      }
+	  }
+      }
+
+
+    if( asm_instr.size() > 6 && 1 )
+      {
+	
+	addOptimizationMessage( "checking for: wasteful and impolite stack manipulations", 0, -1);
+	for( int i=0; i<asm_instr.size()-6; i++ )
+	  {
+	    if(
+	       cmpstr( asm_instr[i+0]->getString(), pla ) &&
+	       cmpstr( asm_instr[i+1]->getString(), tax ) &&
+	       cmpstr( asm_instr[i+2]->getString(), pla ) &&
+	       cmpstr( asm_instr[i+3]->getString(), tay ) &&
+	       cmpstr( asm_instr[i+4]->getString(), pha ) &&
+	       cmpstr( asm_instr[i+5]->getString(), txa ) &&
+	       cmpstr( asm_instr[i+6]->getString(), pha )
+	       )
+	      {
+		asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+7);
+		addOptimizationMessage( "removing Unecesary Stack Manipulations", i, 1);
+	      }
+	  }
+
+      }
+
+    if( asm_instr.size() > 2 && 1 )
+      {
+	// remove Store-Loads & Load-Stores
+	addOptimizationMessage( "checking for: store/loads and load/stores", 0, -1);
+	for( int j = 0; j < 3; j++ )
+	  {
+	    for( int i=0; i<asm_instr.size()-1; i++ )
+	      {
+		if( cmpstr( asm_instr[i]->getString(), str_STA ) &&
+		    cmpstr( asm_instr[i+1]->getString(), str_LDA ) )
+		  {
+		    int first_len = asm_instr[i]->getString().length();
+		    int second_len = asm_instr[i+1]->getString().length();
+		    string OP1 = asm_instr[i]->getString().substr(4, first_len - 4);
+		    string OP2 = asm_instr[i+1]->getString().substr(4, second_len - 4);
+		    if( OP1 == OP2 )
+		      {
+			asm_instr.erase(asm_instr.begin()+i+1,asm_instr.begin()+i+2);
+			addOptimizationMessage( "Store-Load Optimization (removing load)", i, 1);		    
+		      }
+		  }
+	      }
+	    for( int i=0; i<asm_instr.size()-1; i++ )
+	      {
+		if( cmpstr( asm_instr[i]->getString(), str_LDA ) &&
+		    cmpstr( asm_instr[i+1]->getString(), str_STA ) )
+		  {
+		    int first_len = asm_instr[i]->getString().length();
+		    int second_len = asm_instr[i+1]->getString().length();
+		    string OP1 = asm_instr[i]->getString().substr(4, first_len - 4);
+		    string OP2 = asm_instr[i+1]->getString().substr(4, second_len - 4);
+		    if( OP1 == OP2 )
+		      {
+			asm_instr.erase(asm_instr.begin()+i+1,asm_instr.begin()+i+2);
+			addOptimizationMessage( "Load-Store Optimization (removing store)", i, 1);
+		      }
+		  }
+	      }
+	  }
+      }
+
+
+    if( asm_instr.size() > 4 && 1 )
+      {
+	addOptimizationMessage( "checking for: pha/txa/tax/pla, pha/tax/txa/pla", 0, -1);
+	for( int j = 0; j < 4; j++ )
+	  {
+	    for( int i=0; i<asm_instr.size()-3; i++ )
+	      {
+		if( cmpstr(asm_instr[i]->getString(), pha) &&
+		    cmpstr(asm_instr[i+1]->getString(), txa) &&
+		    cmpstr(asm_instr[i+2]->getString(), tax) &&
+		    cmpstr(asm_instr[i+3]->getString(), pla ) )
+		  {
+		    addOptimizationMessage( "removing pha-txa-tax-pla", i, 1);
+		    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+4);
+		  }
+	      }
+	    for( int i=0; i<asm_instr.size()-3; i++ )
+	      {
+		if( cmpstr(asm_instr[i]->getString(), str_PHA) &&
+		    cmpstr(asm_instr[i+1]->getString(), str_TAX) &&
+		    cmpstr(asm_instr[i+2]->getString(), str_TXA) &&
+		    cmpstr(asm_instr[i+3]->getString(), str_PLA ) )
+		  {
+		    addOptimizationMessage( "removing pha-tax-txa-pla", i, 1);
+		    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+4);
+		  }
+	      }
+	  }
+
+      }
+
+    if( asm_instr.size() > 2 && 1 )
+      {
+	// round 2
+	addOptimizationMessage( "checking for: more pop/pushes", 0, -1);
+	for( int i=0; i<asm_instr.size()-1; i++ )
+	  {
+	    if( cmpstr( asm_instr[i]->getString(), pla ) &&
+		cmpstr( asm_instr[i+1]->getString(), pha ) )
+	      {
+		asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+2);
+		addOptimizationMessage( "removing pop pushes (round 3)", i, 1);
+	      }
+	  }
+      }
+
+
+    
     return;
   }
 
@@ -3742,7 +4412,6 @@ parameterlist: /* empty */
   strcpy($$.name, $1.name );
 };
 
-
 numberlist: /* empty */
 |  
 | value
@@ -3752,7 +4421,7 @@ numberlist: /* empty */
       // the label was already added as a STRLBL
       // so don't add the string here
       int v = atoi( stripFirst( $1.name ).c_str());
-      addData( generateNewLabel() + " " + str_BYTE + "$" + toHex( v ), 1 );
+      addData( generateNewLabel() + "\t" + str_BYTE + "$" + toHex( v ), 1 );
     }
 }
 | numberlist ',' value
@@ -4084,14 +4753,14 @@ body: WHILE
 };
 
 
-| tDATA {pushScope("DATA");} ID
+| tDATA {/*pushScope("DATA");*/} ID
 {
 }
 '=' '{' numberlist '}' ';'
 {
   if( isString( $7.name ) )
     {
-      addDebugComment( "String type added as a word variable" );
+      //addDebugComment( "String type added as a word variable" );
       addAsmVariable($3.name, 2);
       int addr = getAddressOf( $3.name );
       addAsm( str_STA + getNameOf( addr ), 3, false );
@@ -4108,7 +4777,7 @@ body: WHILE
       addAsm( str_STA + getNameOf( addr ) + " +1", 3, false );
     }
   
-  popScope();
+  /*popScope();*/
 };
 
 // STATEMENTS
@@ -4192,8 +4861,15 @@ body: WHILE
 // STATEMENT
 | SCANFF '(' expression ')' ';'
 {
+  addComment( "OPTIMIZE" );
+  addComment( "If _scanfmaxchars won't ever be modified," );
+  addComment( "then it can be set once at the beginning." );
   addAsm( str_LDA + "#$" + toHex(scanf_buffer_size), 2, false );
   addAsm( str_STA + "_scanfmaxchars", 3, false );
+  addComment( "-----------------------------------------" );
+
+  //addAsm( str_JSR + "_initscanbuf", 3, false );
+  
   getkey_is_needed=true;
   scanf_is_needed=true;
   memcpy_is_needed=true;
@@ -4207,6 +4883,8 @@ body: WHILE
       addAsm( str_LDA + getNameOf(addr) + " +1", 2, false);
       addAsm( str_STA + "$FE", 2, false ); 
       addAsm( str_JSR + "_memcpy", 3, false );
+      addAsm( str_JSR + "_initscanbuf", 3, false );
+
     }
   else if( isWordIMM( $3.name ) )
     {
@@ -4215,12 +4893,13 @@ body: WHILE
       int tmp_H = get_word_H(tmp_v);      
       addComment("scanf(WordIMM)");
       addAsm( str_JSR + "_scanf", 3, false );
-      int addr = getAddressOf($3.name);
+      //int addr = getAddressOf($3.name);
       addAsm( str_LDA + "#$" + toHex(tmp_L), 2, false);
       addAsm( str_STA + "$FD", 2, false );
       addAsm( str_LDA + "#$" + toHex(tmp_H), 2, false);
       addAsm( str_STA + "$FE", 2, false ); 
       addAsm( str_JSR + "_memcpy", 3, false );
+      addAsm( str_JSR + "_initscanbuf", 3, false );
     }
   else if( isXA($3.name) )
     {
@@ -4230,6 +4909,7 @@ body: WHILE
       addAsm( str_JSR + "_scanf", 3, false );
       int addr = getAddressOf($3.name);
       addAsm( str_JSR + "_memcpy", 3, false );
+      addAsm( str_JSR + "_initscanbuf", 3, false );
     }
   else
     {
@@ -4343,6 +5023,7 @@ body: WHILE
       addAsm( str_LDA + getNameOf(addr) + " +1", 2, false);
       addAsm( str_STA + "$FE", 2, false ); 
       addAsm( str_JSR + "_memcpy", 3, false );
+      addAsm( str_JSR + "_initscanbuf", 3, false );
     }
   else if( isWordIMM( $3.name ) )
     {
@@ -4357,6 +5038,7 @@ body: WHILE
       addAsm( str_LDA + "#$" + toHex(tmp_H), 2, false);
       addAsm( str_STA + "$FE", 2, false ); 
       addAsm( str_JSR + "_memcpy", 3, false );
+      addAsm( str_JSR + "_initscanbuf", 3, false );
     }
   else if( isXA($3.name) )
     {
@@ -4366,6 +5048,7 @@ body: WHILE
       addAsm( str_JSR + "_scanf", 3, false );
       int addr = getAddressOf($3.name);
       addAsm( str_JSR + "_memcpy", 3, false );
+      addAsm( str_JSR + "_initscanbuf", 3, false );
     }
   else
     {
@@ -6358,9 +7041,9 @@ body: WHILE
 {
   // see the commodore 64 programmers manual
   // for a way more efficient routine
-  addComment( "THIS SHOULD SAVE $02/$03, but doesn't yet!" );
   if( isA( $3.name ) || isXA( $3.name ) )
     {
+      addComment( "THIS SHOULD SAVE $02/$03, but doesn't yet!" );
       addComment( "bank( A );" );
 
       addAsm( str_PHA );
@@ -6382,6 +7065,7 @@ body: WHILE
     }
   else if( isUintID( $3.name ) || isIntID( $3.name ) || isWordID( $3.name ) )
     {
+      addComment( "THIS SHOULD SAVE $02/$03, but doesn't yet!" );
       addComment( "bank( UintID );" );
       addAsm( str_LDA + "#$03", 2, false );
       addAsm( str_ORA + "$DD02", 3, false );
@@ -6505,16 +7189,19 @@ body: WHILE
   addComment( string("memcpy(") + $3.name + "," + $6.name + "," + $9.name + ");" );
   if( isWordID($3.name) && isWordID($6.name) && isUintIMM($9.name) )
     {
-      addComment( "vvv--- to be safe ---vvv" );
-      addAsm( str_LDA + "$02", 2, false );
-      addAsm( str_PHA );
-      addAsm( str_LDA + "$03", 2, false );
-      addAsm( str_PHA );
-      addAsm( str_LDA + "$FB", 2, false );
-      addAsm( str_PHA );
-      addAsm( str_LDA + "$FC", 2, false );
-      addAsm( str_PHA );
-      addComment( "^^^------------------^^^" );
+      if( arg_safe_loops )
+	{
+	  addComment( "vvv--- to be safe ---vvv" );
+	  addAsm( str_LDA + "$02", 2, false );
+	  addAsm( str_PHA );
+	  addAsm( str_LDA + "$03", 2, false );
+	  addAsm( str_PHA );
+	  addAsm( str_LDA + "$FB", 2, false );
+	  addAsm( str_PHA );
+	  addAsm( str_LDA + "$FC", 2, false );
+	  addAsm( str_PHA );
+	  addComment( "^^^------------------^^^" );
+	}
       addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
       addAsm( str_STA + "$02", 2, false );
       addAsm( str_LDA + getNameOf(getAddressOf($3.name))+"+1", 3, false );
@@ -6527,26 +7214,24 @@ body: WHILE
       addAsm( str_LDY + "#$" + toHex(atoi(stripFirst($9.name).c_str())), 2, false );
       addAsm( "!:\t" + str_LDA + "($02),Y", 2, true);
       addAsm( str_STA + "($FB),Y", 2, false); 
-
       addAsm( str_DEY );
-      addAsm( str_CPY + "#$00", 2, false );
-      addAsm( str_BNE + "!-", 2, false );
-
-      addComment( "vvv--- to be safe ---vvv" );
-      addAsm( str_PLA );
-      addAsm( str_STA + "$FC", 2, false );
-      addAsm( str_PLA );
-      addAsm( str_STA + "$FB", 2, false );
-      addAsm( str_PLA );
-      addAsm( str_STA + "$03", 2, false );
-      addAsm( str_PLA );
-      addAsm( str_STA + "$02", 2, false );
-      addComment( "^^^------------------^^^" );
-      
+      addAsm( str_BPL + "!-", 2, false );
+      if( arg_safe_loops )
+	{
+	  addComment( "vvv--- to be safe ---vvv" );
+	  addAsm( str_PLA );
+	  addAsm( str_STA + "$FC", 2, false );
+	  addAsm( str_PLA );
+	  addAsm( str_STA + "$FB", 2, false );
+	  addAsm( str_PLA );
+	  addAsm( str_STA + "$03", 2, false );
+	  addAsm( str_PLA );
+	  addAsm( str_STA + "$02", 2, false );
+	  addComment( "^^^------------------^^^" );
+	}
     }
   else if( isWordIMM($3.name) && isWordIMM($6.name) && isUintIMM($9.name) )
     {
-      //pushScope("memcpy");
       int addr_src = atoi(stripFirst($3.name).c_str());
       int addr_dst = atoi(stripFirst($6.name).c_str());
       int memcpy_size = atoi(stripFirst($9.name).c_str());
@@ -6567,7 +7252,6 @@ body: WHILE
 	  addAsm( str_INY, 1, false );	  
 	  addAsm( str_CPY + "#$" + toHex(memcpy_size), 2, false );
 	  addAsm( str_BNE + "!-", 2, false );
-	  //addAsm( generateNewLabel(), 0, true );
 	}
       else
 	{
@@ -6579,13 +7263,10 @@ body: WHILE
 	  addAsm( str_STA + "$" + toHex(addr_dst) + ",Y", 3, false );
 	  addAsm( str_DEY, 1, false );
 	  addAsm( str_BPL + "!-", 2, false );
-	  //addAsm( generateNewLabel(), 0, true );
 	}
-      //popScope();
     }
   else if( isWordIMM($3.name) && isWordIMM($6.name) && isUintID($9.name) )
     {
-      //pushScope("memcpy");
       int addr_src = atoi(stripFirst($3.name).c_str());
       int addr_dst = atoi(stripFirst($6.name).c_str());
       int memcpy_size_addr = getAddressOf($9.name);
@@ -6593,26 +7274,20 @@ body: WHILE
       if( addr_dst > 65535 ) addCompilerMessage("memcpy destination out of range",3);
       int instr_size = 2;
       if( memcpy_size_addr > 255 ) instr_size = 3;
-      addAsm( str_LDY + getNameOf(memcpy_size_addr) + commentmarker + getNameOf(memcpy_size_addr), instr_size, false );
-      addAsm( generateNewLabel(), 0, true );
-      addAsm( str_CPY + "#$FF", 2, false );
-      addAsm( str_BEQ + getLabel( label_vector[label_major],false), 2, false );
-      addAsm( str_LDA + "$" + toHex(addr_src) + ",Y", 3, false );
+      
+      addAsm( str_LDY + getNameOf(memcpy_size_addr), instr_size, false );
+      addAsm( "!:\t" + str_LDA + "$" + toHex(addr_src) + ",Y", 3, true );
       addAsm( str_STA + "$" + toHex(addr_dst) + ",Y", 3, false );
       addAsm( str_DEY, 1, false );
-      addAsm( str_JMP + getLabel( label_vector[label_major]-1,false), 3, false );
-      addAsm( generateNewLabel(), 0, true );
-      //popScope();
-
-    }
-  else if( isWordID($3.name) && isWordID($6.name) && isUintIMM($9.name) )
-    {
-      addCompilerMessage( "memcpy(wordid,wordid,uintimm): nyi", 3 );
+      addAsm( str_BPL + "!-", 2, false );
+      
     }
   else if( isXA( $3.name ) && isWordIMM($6.name) && isUintIMM($9.name) )
     {
       int dest_addr = atoi(stripFirst($6.name).c_str());
       int cpy_size = atoi(stripFirst($9.name).c_str());
+
+      
       addAsm( str_STA + "$02", 2, false );
       addAsm( str_STX + "$03", 2, false );
       addAsm( str_LDA + "#$" + toHex(get_word_L(dest_addr)), 3, false );
@@ -6625,8 +7300,7 @@ body: WHILE
       addAsm( str_STA + "($04),Y", 2, false); 
 
       addAsm( str_DEY );
-      addAsm( str_CPY + "#$FF", 2, false );
-      addAsm( str_BNE + "!-", 2, false );
+      addAsm( str_BPL + "!-", 2, false );
     }
   else
     {
@@ -6659,6 +7333,7 @@ body: WHILE
   addDebugComment( "poke( expression, expression );" );
   if( isWordID(param1) && (isUintID(param2) || isIntID(param2)) )
     {
+      // this seems to be broken
       addComment( "poke( WordID, UintID );" );
       int addr_addr = getAddressOf(param1);
       int valu_addr = getAddressOf(param2);
@@ -6700,13 +7375,6 @@ body: WHILE
   else if( isXA(param1) && (isUintID(param2) || isIntID(param2)) )
     {
       deletePreviousAsmUntil( "// MARKED_FOR_DELETION" );
-      //deletePreviousAsm(); // JSR PUSH
-      //deletePreviousAsm(); // TXA
-      //deletePreviousAsm(); // JSR PUSH
-      //if( arg_asm_comments )
-      //{
-      //  deletePreviousAsm(); // delete the comment
-      //}
       addComment( "deleted previous 3 instructions" );
       addCompilerMessage( "Deleted Mnemonics", 0 );
 
@@ -6728,15 +7396,7 @@ body: WHILE
     {
       deletePreviousAsmUntil( "// MARKED_FOR_DELETION");
       addCompilerMessage( "Deleted Mnemonics", 0 );
-
-      //deletePreviousAsm(); // JSR PUSH
-      //deletePreviousAsm(); // TXA
-      //deletePreviousAsm(); // JSR PUSH
-      //if( arg_asm_comments )
-      //	{
-      //  deletePreviousAsm(); // delete the comment
-      //}
-      addComment( "deleted previous 3 instructions" );
+      addComment( "deleted instructions" );
       addComment( "poke( XA, UIntIMM) (self modifying code)" );
       int valu_addr = getAddressOf(param2);
       addAsm( str_STA + "!+", 3, false );
@@ -6855,9 +7515,9 @@ body: WHILE
       if( addr_addr < 256 ) instr_size = 2; // it's in Zero Page
       addAsm( str_LDA + getNameOf(addr_addr), instr_size, false );
       addAsm( str_STA + "!++", 3, false );
-      addAsm( str_BYTE + "$A9" + commentmarker + "<-- LDA immediate", 1, false );
+      addAsm( str_BYTE + "$A9" + commentmarker + "<-- LDA imm", 1, false );
       addAsm( "!:\t"+str_BYTE + "$00", 1, true );
-      addAsm( str_BYTE + "$85" + commentmarker + "<-- STA Zero Page", 1, false );
+      addAsm( str_BYTE + "$85" + commentmarker + "<-- STA zp", 1, false );
       addAsm( "!:\t"+str_BYTE + "$00", 1, true );
     }
   else if(isUintIMM(param1) && isUintIMM(param2))
@@ -6910,6 +7570,8 @@ body: WHILE
 // popped off of the processor stack
 condition: expression[LHS]
 {
+  // TODO:
+  // here-in is where the Problem lies 
   // MRA for A, XA, and FAC
   addAsm( "// MARKED_FOR_DELETION",0,true);
   if(isXA($LHS.name))
@@ -6997,7 +7659,7 @@ condition: expression[LHS]
     {
       // INCREASE IF-DEPTH BY 1
       //if_depth++;
-      addComment( "condition" );
+      //addComment( "condition" );
       //addAsm( generateNewLabel() + commentmarker + "Top of IF statement", 0, true );
     }
 
@@ -7027,7 +7689,7 @@ condition: expression[LHS]
     }
 
   // ====================================================================================================================
-  //                 COMPARISONS START HERE START OF COMPARISONS START OF RELOPS
+  //                 COMPARISONS START HERE - START OF COMPARISONS - START OF RELOPS
   // ====================================================================================================================
 
   // A RELOP
@@ -9103,6 +9765,7 @@ condition: expression[LHS]
   else if( isXA($LHS.name) && isA($RHS.name) )
     {
       addComment( "XA relop A: TOC" );
+      addDebugComment( "Destroys $02/$03/$04/$05" );
       addAsm( str_STA + "$04", 2, false );
       addAsm( str_LDX + "#$00", 2, false );
       addAsm( str_STX + "$05", 2, false );
@@ -9288,7 +9951,7 @@ condition: expression[LHS]
     }
   else if( isXA($LHS.name) && isXA($RHS.name) )
     {
-      addCompilerMessage( "XA relop XA: Destroys ZP $02-$05", 1 );
+      addCompilerMessage( "XA relop XA: Destroys zp $02-$05", 1 );
       addComment( "XA relop XA: TOC" );
       addAsm( str_STX + "$05", 2, false );
       addAsm( str_STA + "$04", 2, false );
@@ -9697,118 +10360,7 @@ condition: expression[LHS]
 | condition
 {
   addAsm( "!else" + toString(if_depth) + ":\t// (||)", 0, true );
-  //addAsm( "// (||)", 0, false );
   string _tmpCond = $1.name;
-  if( 0 )
-    {
-      if( _tmpCond == "exp == exp" )
-	{
-	  // TODO CHECK THIS ONE (there may be a comment in there that it's deleting w/o checking to see if comments are on
-	  if( arg_asm_comments )
-	    {
-	      deletePreviousAsm();
-	    }
-	  deletePreviousAsm();
-	  deletePreviousAsm();
-	  addComment( "deleted previous 2 instructions" );
-	  addCompilerMessage( "Deleted Mnemonics", 0 );
-
-	  //deletePreviousAsm();
-	  addAsm( str_JMP + getLabel( label_vector[label_major]+2, false), 3, false);
-	  addAsm( "!_skip:", 0, true );
-	}
-      else if( _tmpCond == "exp > exp lb" )
-	{
-	  if( arg_asm_comments )
-	    {
-	      deletePreviousAsm();
-	    }
-	  deletePreviousAsm();
-	  deletePreviousAsm();
-	  deletePreviousAsm();
-	  deletePreviousAsm();
-	  deletePreviousAsm();
-	  addCompilerMessage( "Deleted Mnemonics", 0 );
-	  addComment( "deleted previous 5 instructions" );
- 
-	  addAsm( str_JMP + getLabel( label_vector[label_major]+2, false), 3, false);
-	  addAsm( "!_skip:", 0, true );
-	  addAsm( str_BNE + "!_skip+", 2, false );
-	  addAsm( str_JMP + getLabel( label_vector[label_major]+2, false), 3, false);
-	  addAsm( "!_skip:", 0, true ); 
-	}
-      else if( _tmpCond == "exp <= exp lb" )
-	{
-	  if( arg_asm_comments )
-	    {
-	      deletePreviousAsm();
-	    }
-      
-	  deletePreviousAsm();
-	  deletePreviousAsm();
-	  deletePreviousAsm();
-	  deletePreviousAsm();
-	  deletePreviousAsm();
-	  deletePreviousAsm();
-	  addCompilerMessage( "Deleted Mnemonics", 0 );
-	  addComment( "deleted previous 5 instructions" );
-
-	  addAsm( str_JMP + getLabel( label_vector[label_major], false), 3, false);
-	  addAsm( "!_skip:", 0, true );
-	  addAsm( str_BNE + "!_skip+", 2, false );
-	  addAsm( str_JMP + getLabel( label_vector[label_major], false), 3, false);
-	  addAsm( "!_skip:", 0, true );
-	  addAsm( str_JMP + getLabel( label_vector[label_major]+2, false), 3, false);
-      
-	}
-      else if( _tmpCond == "exp >= exp lb" )
-	{
-	  if( arg_asm_comments )
-	    {
-	      deletePreviousAsm();
-	    }
-	  
-	  deletePreviousAsm();
-	  deletePreviousAsm();
-	  addCompilerMessage( "Deleted Mnemonics", 0 );
-	  addComment( "deleted previous 2 instructions" );
- 
-	  addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "JMP to else (OPTIMIZE)", 3, false);
-	  addAsm( "!_skip:", 0, true );
-	}
-      else if( _tmpCond == "exp < exp lb" )
-	{
-	  if( arg_asm_comments )
-	    {
-	      deletePreviousAsm();
-	    }
-	  
-	  deletePreviousAsm();
-	  deletePreviousAsm();
-	  addCompilerMessage( "Deleted Mnemonics", 0 );
-	  addComment( "deleted previous 2 instructions" );
-      
-	  addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "JMP to else (OPTIMIZE)", 3, false);
-	  addAsm( "!_skip:", 0, true );
-	}
-      else if( _tmpCond == "exp != exp lb" )
-	{
-	  if( arg_asm_comments )
-	    {
-	      deletePreviousAsm();
-	    }
-	  
-	  deletePreviousAsm();
-	  deletePreviousAsm();
-	  addCompilerMessage( "Deleted 2 Mnemonics", 0 );
-	  addComment( "deleted previous 2 instructions" );
-      
-	  addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "JMP to else (OPTIMIZE)", 3, false);
-	  addAsm( "!_skip:", 0, true );
-	}
-
-      // TODO: Implement the rest of these to coincide with all of the exp relop exp's
-    }
 
 } tOR {} condition {}
 {
@@ -10139,7 +10691,7 @@ statement: datatype ID init
   else if( isWordDT(_dt) && isWordID(_id) && isXA(_init))
     {
       addComment( "word WordID = XA" );
-      addAsm(str_STA + _id, 3, false );
+      addAsm(str_STA + _id + commentmarker, 3, false );
       addAsm(str_STX + _id + " +1", 3, false );
     }
   else if(isWordDT(_dt) && isWordID(_id) && isFAC(_init))
@@ -10817,6 +11369,7 @@ statement: datatype ID init
   else if(  (isXA($3.name) && isWordID($5.name) ) ||
 	    (isA($3.name) && isWordID($5.name) ))
     {
+      // TODO: Completely Rework this
       addComment( "spritex( XA/A, WordID );" );
       if( isXA($3.name) )
 	{
@@ -10904,6 +11457,7 @@ statement: datatype ID init
   else if( (isUintID($3.name) && isWordID($5.name)) ||
 	   (isIntID($3.name) && isWordID($5.name)) )
     {
+      // TODO: Completely Rework this
       addComment( "spritex( UintID, WordID ); or spritex( IntID, WordID );" );
       addDebugComment( "this needs work" );
       bin2bit_is_needed = true;
@@ -10941,6 +11495,7 @@ statement: datatype ID init
     }
   else if(isUintID($3.name) && isXA($5.name))
     {
+      // TODO: Completely Rework this
       //============================================
       addComment( "spritex( (U)IntID, XA );" );
       addAsm( str_TAY );
@@ -11022,6 +11577,7 @@ statement: datatype ID init
   else if( (isUintID($3.name) && isA($5.name)) ||
 	   (isIntID($3.name) && isA($5.name)))
     {
+      // TODO: Completely Rework this
       addComment( "spritex( UIntID, A );" );
       //bin2bit_is_needed = true;
       
@@ -11058,6 +11614,7 @@ statement: datatype ID init
   else if( (isUintIMM($3.name) && isWordID($5.name)) ||
 	   (isIntIMM($3.name) && isWordID($5.name)))
     {
+      // TODO: Completely Rework this
       addComment( "spritex( UIntIMM, WordID );" );
 
       sprite_address = atoi( stripFirst($3.name).c_str() );
@@ -13222,12 +13779,18 @@ init: '=' expression
     }
   else if( isWordID( $2.name ) )
     {
+      /// TODO
+      // this seems to be where the problem is
       int tmp_addr = hexToDecimal($2.name);
       int instr_size = 3;
       if(tmp_addr < 256) instr_size = 2;
       addComment( "initialising with WordID" );
+      
+      //addAsm( str_NOP, 1, false );
+      //addAsm( str_LDA + getNameOf(tmp_addr), instr_size, false );
+      addAsm( str_LDA + getNameOf(tmp_addr), 3, false );
 
-      addAsm( str_LDA + getNameOf(tmp_addr), instr_size, false );
+      //addAsm( str_NOP, 1, false );
       instr_size = 3;
       if(tmp_addr < 255) instr_size = 2;
       addAsm( str_LDX + getNameOf(tmp_addr) + " +1",instr_size, false );
@@ -25677,7 +26240,7 @@ arithmetic[MATHOP] expression[OP2]
 };
 | '(' ID ')' '[' expression ']'
 {
-  pushScope( "INDIRECT" );
+  //pushScope( "INDIRECT" );
 
   if( isUintIMM( $5.name ) || isIntIMM( $5.name ))
     {
@@ -25726,7 +26289,7 @@ arithmetic[MATHOP] expression[OP2]
       addCompilerMessage( "(ID)[i] error - index of improper type", 3 );
     }
   strcpy($$.name, "_A" );
-  popScope();
+  //popScope();
 }
 | ID '[' expression ']'
 {
@@ -27553,7 +28116,6 @@ arithmetic[MATHOP] expression[OP2]
 | value
 {
   addParserComment( string("RULE: expression: value: (") + $1.name + ")" );
-  addParserComment( string($1.name) );
   strcpy($$.name, $1.name);
 };
 | ID
@@ -27949,7 +28511,7 @@ arithmetic[MATHOP] expression[OP2]
       addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
       addAsm( str_AND + "#$7F", 2, false );
       addAsm( str_STA + "!+", 3, false );
-      addAsm( str_BYTE + "$A5" + commentmarker + "<-- LDA ZP", 1, false );
+      addAsm( str_BYTE + "$A5" + commentmarker + "<-- LDA zp", 1, false );
       addAsm( "!:\t" + str_BYTE + "$00", 1, true );
     }
   else if(isUintID($3.name) )
@@ -27958,7 +28520,7 @@ arithmetic[MATHOP] expression[OP2]
       addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
       
       addAsm( str_STA + "!+", 3, false );
-      addAsm( str_BYTE + "$A5" + commentmarker + "<-- LDA ZP", 1, false );
+      addAsm( str_BYTE + "$A5" + commentmarker + "<-- LDA zp", 1, false );
       addAsm( "!:\t"+str_BYTE + "$00", 1, true );
     }
   else if( isIntIMM($3.name)  )
@@ -27988,7 +28550,7 @@ arithmetic[MATHOP] expression[OP2]
     {
       addComment( "peek( A );" );
       addAsm( str_STA + "!+", 3, false );
-      addAsm( str_BYTE + "$A5" + commentmarker + "<-- LDA ZP", 1, false );
+      addAsm( str_BYTE + "$A5" + commentmarker + "<-- LDA zp", 1, false );
       addAsm( "!:\t" + str_BYTE + "$00", 1, true );
     }
   else
@@ -28074,7 +28636,7 @@ value: FLOAT_NUM
 //};
 | NUMBER
 {
-  addComment( "found a #!" );
+  //addComment( "found a #!" );
   int v = atoi($1.name);
 
   if( getTypeOf($1.name) != -1 )
@@ -28131,35 +28693,40 @@ value: FLOAT_NUM
 }
 | CHARACTER
 {
+  addCompilerMessage( "FOUND A CHARACTER" );
+  //N.erase(0,2);
+  //int val = hexToDecimal(N);
+  //string return_value = string("u") + toString(val);
+  //strcpy( $$.name, return_value.c_str() );
+
+  string senduptheline = string("");
   if( $1.name[1] == '\\' )
     {
       // escape codes
       switch( $1.name[2] )
 	{
 	case 'n':
-	  addAsm( str_LDA + "#$0D", 2, false );
+	  senduptheline = string("u13");
 	  break;
 	case '\"':
-	  addAsm( str_LDA + "#$22", 2, false );
+	  senduptheline = string("u34");
 	  break;
 	case '\'':
-	  addAsm( str_LDA + "#$27", 2, false );
+	  senduptheline = string("u39");
 	  break;
 	case '\\':
-	  addAsm( str_LDA + "#$5C", 2, false );
-	  break;	  
-	  //case '0':
-	  //addAsm( str_LDA + "#$00", 2, false );
-	  //break;
+	  senduptheline = string("u92");
+	  break;
 	default:
-	  addAsm( str_LDA + "#$00", 2, false );
+	  senduptheline = string("u00");
 	}
     }
   else
     {
-      addAsm( str_LDA + ascii2petscii(string($1.name)[1] ), 2, false );
+      char c = $1.name[1];
+      senduptheline = string("u") + to_string(int(c));
     }
-  strcpy( $$.name, "_A" );
+  strcpy( $$.name, senduptheline.c_str() );
 }
 | STR
 {
@@ -28291,7 +28858,7 @@ return: RETURN ';'
   }
 |
 {
-  //addAsm( str_RTS );
+  addAsm( str_RTS );
 }
 ;
 
@@ -28345,6 +28912,7 @@ int main(int argc, char *argv[])
       if( a == "--short-branches" ) long_branches = false;
       if( a == "--long-branches" ) long_branches = true;
       if( a == "--show-opt" ) arg_show_opt = true; 
+      if( a == "--hide-opt" ) arg_show_opt = false; 
       if( a == "--debug" ) { debug_flag_is_on = true; arg_debug_comments = true; }
       if( a == "--basic" || a == "--basicupstart" ) basic_upstart = true;
       if( a == "--safe-loops" ) arg_safe_loops = true;
@@ -28425,6 +28993,7 @@ int main(int argc, char *argv[])
 	       << "\t--kick\t\t\tcreate .asm file that is compatible with Kick Assembler\n"
 	       << "\t--basic\t\t\tput BASIC Upstart code at $0801\n"
 	       << "\t--show-opt\t\t\twill show the optimisations that the compiler is performing (and also suggest some)\n"
+	       << "\t--hide-opt\t\t\twon't show the optimisations that the compiler is performing\n"
 	       << "\t--help\t\t\tthis message\n" 
 	       << "\t--code-segment address\tsets the start of code segment to a memory address (default is 49152)\n"
 	       << "\t--data-segment address\tsets the start of data segment to a memory address (default is 828)\n"
@@ -30003,7 +30572,8 @@ int main(int argc, char *argv[])
     {
       addAsm( string("_memcpy:\t\t") + commentmarker + "Copy \"buffersize\" bytes from $FB/$FC to $FD/$FE", 0, true );
       addComment( "-------------" );
-      addAsm( str_LDY + "#$" + toHex(scanf_buffer_size), 2, false );
+      addComment( "This is 1 greater than the scanf buffer size so it can have a $00 at the end" );
+      addAsm( str_LDY + "#$" + toHex(scanf_buffer_size+1), 2, false );
       addAsm( "!:\t" + str_CPY + "#$FF", 2, true );
       addAsm( str_BEQ + "!+", 2, false );
       addAsm( str_LDA + "($FB),Y", 2, false );
@@ -30129,7 +30699,7 @@ int main(int argc, char *argv[])
       addComment( "acceptable PETSCII characters for input" );
       if( kick )
 	{
-	  addAsm( str_TEXT + "\" ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890.,-+!#$%&()*\"", 49, false );
+	  addAsm( str_TEXT + "\" ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890.,-+!#$%&()*\"", 50, false );
 	}
       else
 	{
@@ -30167,6 +30737,19 @@ int main(int argc, char *argv[])
 	  addAsm(str_BYTE + "\"                \"", scanf_buffer_size, false );
 	}
       addAsm(str_BYTE + "$00", 1, false );
+
+      addAsm( "_initscanbuf:", 0, true );
+      addComment( "Initialise scanf buffer" );
+      addAsm( str_LDX + "#$" + toHex(scanf_buffer_size), 2, false);
+      addAsm( str_LDA + "#<_scanfbuf -2", 2, false );
+      addAsm( str_STA + "!+ +1", 3, false );
+      addAsm( str_LDA + "#>_scanfbuf -2", 2, false );
+      addAsm( str_STA + "!+ +2", 3, false );
+      addAsm( str_LDA + "#$00", 2, false );
+      addAsm( "!:\t" + str_STA + "$FFFF,X", 3, true );
+      addAsm( str_DEX, 1, false );
+      addAsm( str_BPL + "!-", 2, false );
+      addAsm( str_RTS, 1, false );
       addAsm(commentmarker + string("-------------------------------------------------"), 0, true );
     }
   if( getkey_is_needed )
@@ -30235,8 +30818,10 @@ int main(int argc, char *argv[])
   countn = countn_tmp;
   
 
-  
-  if( arg_optimize ) Optimize();
+  removetags();
+  if( arg_optimize ) Optimize(1);
+  if( arg_optimize ) Optimize(0);
+  if( arg_optimize ) Optimize(0);
   ProcessComments();
   ProcessVariables();
   //ProcessFunctions();
