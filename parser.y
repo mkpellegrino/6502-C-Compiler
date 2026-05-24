@@ -2178,6 +2178,114 @@ string replaceAll(string str, const string &from, const string &to)
     string sbc = string("sbc");
   
     string cmt = string("// ");
+
+
+
+
+
+    if( asm_instr.size() > 10 && 1 )
+      {
+	addOptimizationMessage( "checking for: WordID * 0x0004 -> mem", 0, -1);
+	for( int i=0; i<asm_instr.size()-1; i++ )
+	  {
+	    if(
+	       cmpstr(asm_instr[i+0]->getString(), str_ASL) &&
+	       cmpstr(asm_instr[i+1]->getString(), str_TAY) &&	       
+	       cmpstr(asm_instr[i+2]->getString(), str_TXA) &&
+	       cmpstr(asm_instr[i+3]->getString(), str_ROL) &&
+	       cmpstr(asm_instr[i+4]->getString(), str_TAX) &&
+	       cmpstr(asm_instr[i+5]->getString(), str_TYA) &&
+	       cmpstr(asm_instr[i+6]->getString(), str_STA) &&
+	       cmpstr(asm_instr[i+7]->getString(), str_STX) 
+	       )
+	      {
+		addOptimizationMessage( "removing extra register manipulations from WordID * 0x0004 -> mem", i, 1);
+		//asm_instr[i]->setString(asm_instr[i]->getString() );
+		asm_instr[i+1]->setString( asm_instr[i+6]->getString() );
+		asm_instr[i+1]->setSize(3);
+
+		// replace the "stx" in asm_instr[i+9] with "sta"		
+		string tmp_string = asm_instr[i+7]->getString();
+		tmp_string.replace(0, 4, str_STA);
+		
+		asm_instr[i+4]->setString( tmp_string );
+		asm_instr[i+4]->setSize(3);
+		asm_instr.erase(asm_instr.begin()+i+5,asm_instr.begin()+i+8);
+	      }
+	  }
+      }
+
+    
+    if( asm_instr.size() > 10 && 1 )
+      {
+	addOptimizationMessage( "checking for: WordID * 0x0002 -> mem", 0, -1);
+	for( int i=0; i<asm_instr.size()-1; i++ )
+	  {
+	    if(
+	       cmpstr(asm_instr[i]->getString(), str_LDA) &&
+	       cmpstr(asm_instr[i+1]->getString(), str_ASL) &&
+	       cmpstr(asm_instr[i+2]->getString(), str_TAY) &&	       
+	       cmpstr(asm_instr[i+3]->getString(), str_LDA) &&
+	       cmpstr(asm_instr[i+4]->getString(), str_ROL) &&
+	       cmpstr(asm_instr[i+5]->getString(), str_TAX) &&
+	       cmpstr(asm_instr[i+6]->getString(), str_TYA) &&
+	       cmpstr(asm_instr[i+7]->getString(), str_STA) &&
+	       cmpstr(asm_instr[i+8]->getString(), str_STX) 
+	       )
+	      {
+		addOptimizationMessage( "removing extra register manipulations from WordID * 0x0002 -> mem", i, 1);
+		//asm_instr[i]->setString(asm_instr[i]->getString() );
+		asm_instr[i+2]->setString( asm_instr[i+7]->getString() );
+		asm_instr[i+2]->setSize(3);
+
+		// replace the "stx" in asm_instr[i+9] with "sta"		
+		string tmp_string = asm_instr[i+8]->getString();
+		tmp_string.replace(0, 4, str_STA);
+		
+		asm_instr[i+5]->setString( tmp_string );
+		asm_instr[i+5]->setSize(3);
+		asm_instr.erase(asm_instr.begin()+i+6,asm_instr.begin()+i+10);
+	      }
+	  }
+      }
+
+
+    
+    if( asm_instr.size() > 10 && 1 )
+      {
+	addOptimizationMessage( "checking for: WordID + A -> mem", 0, -1);
+	for( int i=0; i<asm_instr.size()-1; i++ )
+	  {
+	    if(
+	       cmpstr(asm_instr[i]->getString(), str_LDA) &&
+	       cmpstr(asm_instr[i+1]->getString(), str_CLC) &&
+	       cmpstr(asm_instr[i+2]->getString(), str_ADC) &&
+	       cmpstr(asm_instr[i+3]->getString(), str_TAY) &&	       
+	       cmpstr(asm_instr[i+4]->getString(), str_LDA) &&
+	       cmpstr(asm_instr[i+5]->getString(), str_ADC) &&
+	       cmpstr(asm_instr[i+6]->getString(), str_TAX) &&
+	       cmpstr(asm_instr[i+7]->getString(), str_TYA) &&
+	       cmpstr(asm_instr[i+8]->getString(), str_STA) &&
+	       cmpstr(asm_instr[i+9]->getString(), str_STX) 
+	       )
+	      {
+		addOptimizationMessage( "removing extra register manipulations from adc -> mem (1)", i, 1);
+		asm_instr[i]->setString(asm_instr[i]->getString() );
+		asm_instr[i+3]->setString( asm_instr[i+8]->getString() );
+		asm_instr[i+3]->setSize(3);
+
+		// replace the "stx" in asm_instr[i+9] with "sta"		
+		string tmp_string = asm_instr[i+9]->getString();
+		tmp_string.replace(0, 4, str_STA);
+		
+		asm_instr[i+6]->setString( tmp_string );
+		asm_instr[i+6]->setSize(3);
+		asm_instr.erase(asm_instr.begin()+i+7,asm_instr.begin()+i+10);
+	      }
+	  }
+      }
+
+    
     if( asm_instr.size() > 10 && 1 )
       {
 	addOptimizationMessage( "checking for: adc -> mem", 0, -1);
@@ -2245,6 +2353,43 @@ string replaceAll(string str, const string &from, const string &to)
 	      }
 	  }
       }
+
+
+    if( asm_instr.size() > 10 && 1 )
+      {
+	addOptimizationMessage( "checking for: XA + XA -> mem", 0, -1);
+	for( int i=0; i<asm_instr.size()-1; i++ )
+	  {
+	    if(
+	       cmpstr(asm_instr[i]->getString(), str_CLC) &&
+	       cmpstr(asm_instr[i+1]->getString(), str_ADC) &&
+	       cmpstr(asm_instr[i+2]->getString(), str_TAY) &&	       
+	       cmpstr(asm_instr[i+3]->getString(), str_TXA) &&
+	       cmpstr(asm_instr[i+4]->getString(), str_ADC) &&
+	       cmpstr(asm_instr[i+5]->getString(), str_TAX) &&
+	       cmpstr(asm_instr[i+6]->getString(), str_TYA) &&
+	       cmpstr(asm_instr[i+7]->getString(), str_STA) &&
+	       cmpstr(asm_instr[i+8]->getString(), str_STX) 
+	       )
+	      {
+		addOptimizationMessage( "removing extra register manipulations from adc -> mem (2)", i, 1);
+		asm_instr[i]->setString(asm_instr[i]->getString() );
+		asm_instr[i+2]->setString( asm_instr[i+7]->getString() );
+		asm_instr[i+2]->setSize(3);
+
+		// replace the "stx" in asm_instr[i+9] with "sta"		
+		string tmp_string = asm_instr[i+8]->getString();
+		tmp_string.replace(0, 4, str_STA);
+		
+		asm_instr[i+5]->setString( tmp_string );
+		asm_instr[i+5]->setSize(3);
+		asm_instr.erase(asm_instr.begin()+i+6,asm_instr.begin()+i+9);
+	      }
+	  }
+      }
+
+
+    
     if( asm_instr.size() > 10 && 1 )
       {
 	addOptimizationMessage( "checking for: adc -> mem (split by comments)", 0, -1);
@@ -2280,6 +2425,45 @@ string replaceAll(string str, const string &from, const string &to)
 	      }
 	  }
       }
+
+    if( asm_instr.size() > 13 && 1 )
+      {
+	addOptimizationMessage( "checking for: WordIMM + WordID -> mem", 0, -1);
+	for( int i=0; i<asm_instr.size()-1; i++ )
+	  {
+	    if(
+	       cmpstr(asm_instr[i]->getString(), str_LDA) &&
+	       cmpstr(asm_instr[i+1]->getString(), str_LDX) &&
+	       
+	       cmpstr(asm_instr[i+2]->getString(), str_CLC) &&
+	       cmpstr(asm_instr[i+3]->getString(), str_ADC) &&
+	       cmpstr(asm_instr[i+4]->getString(), str_TAY) &&	       
+	       cmpstr(asm_instr[i+5]->getString(), str_TXA) &&
+	       cmpstr(asm_instr[i+6]->getString(), str_ADC) &&
+	       cmpstr(asm_instr[i+7]->getString(), str_TAX) &&
+	       cmpstr(asm_instr[i+8]->getString(), str_TYA) &&
+	       cmpstr(asm_instr[i+9]->getString(), str_STA) &&
+	       cmpstr(asm_instr[i+10]->getString(), str_STX) 
+	       )
+	      {
+		addOptimizationMessage( "removing extra register manipulations from WordIMM + WordID  -> mem", i, 1);
+		asm_instr[i]->setString(asm_instr[i]->getString() );
+		asm_instr[i+4]->setString( asm_instr[i+9]->getString() );
+		asm_instr[i+4]->setSize(3);
+
+		// replace the "stx" in asm_instr[i+9] with "sta"		
+		string tmp_string = asm_instr[i+10]->getString();
+		tmp_string.replace(0, 4, str_STA);
+		
+		asm_instr[i+7]->setString( tmp_string );
+		asm_instr[i+7]->setSize(3);
+		asm_instr.erase(asm_instr.begin()+i+8,asm_instr.begin()+i+11);
+	      }
+	  }
+      }
+
+
+    
     if( asm_instr.size() > 10 && 1 )
       {
 	addOptimizationMessage( "checking for: adc -> mem (split by comments)", 0, -1);
@@ -23019,8 +23203,8 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_LDA + O1, sizeOP1A, false );
 	  addAsm( str_ADC + O2, sizeOP2A, false );
 	  addAsm( str_TAY );
-	  addAsm( str_LDA + O1 + "+1", sizeOP1B, false );
-	  addAsm( str_ADC + O2 + "+1", sizeOP2B, false );
+	  addAsm( str_LDA + O1 + " +1", sizeOP1B, false );
+	  addAsm( str_ADC + O2 + " +1", sizeOP2B, false );
 	  addAsm( str_TAX );
 	  addAsm( str_TYA );
 	  strcpy($$.name, "_XA" );
@@ -23032,8 +23216,8 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_LDA + O1, sizeOP1A, false );
 	  addAsm( str_SBC + O2, sizeOP2A, false );
 	  addAsm( str_TAY );
-	  addAsm( str_LDA + O1 + "+1", sizeOP1B, false );
-	  addAsm( str_SBC + O2 + "+1", sizeOP2B, false );
+	  addAsm( str_LDA + O1 + " +1", sizeOP1B, false );
+	  addAsm( str_SBC + O2 + " +1", sizeOP2B, false );
 	  addAsm( str_TAX );
 	  addAsm( str_TYA );
 	  strcpy($$.name, "_XA" );
@@ -23175,28 +23359,26 @@ arithmetic[MATHOP] expression[OP2]
 	      // tested for 0 - 254
 	      addComment( "Special Case: WordID * $0002 --> XA" );
 	      addAsm( str_LDA + getNameOf(tmp_op1), 3, false );
-	      addAsm( str_LDX + getNameOf(tmp_op1) + " +1", 3, false );
-	      addAsm( str_CLC + commentmarker + "(2)", 1, false );
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_LDA + getNameOf(tmp_op1) + " +1", 3, false );
 	      addAsm( str_ROL, 1, false );
-	      addAsm( str_BCC + "!+", 2, false );
-	      addAsm( str_INX, 1, false );
-	      addAsm( "!:", 0, true );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );
+	      
 	    }
 	  else if( op2 == 4 )
 	    {
 	      addComment( "Special Case: WordID * 0x0004 --> XA" );
 	      addAsm( str_LDA + getNameOf(tmp_op1) + commentmarker + "(4)", 3, false );
-	      addAsm( str_LDX + getNameOf(tmp_op1) + " +1" + commentmarker + "(4)", 3, false );
-	      addAsm( str_CLC + commentmarker + "(2)", 1, false );
-   
-	      addAsm( str_ROL + commentmarker + "(2)", 1, false );	      
+	      addAsm( str_ASL + commentmarker + "(2)", 1, false );	      
 	      addAsm( str_TAY + commentmarker + "(2)", 1, false );
-	      addAsm( str_TXA + commentmarker + "(2)", 1, false );
+	      addAsm( str_LDA + getNameOf(tmp_op1) + " +1" + commentmarker + "(4)", 3, false );
 	      addAsm( str_ROL + commentmarker + "(2)", 1, false );
 	      addAsm( str_TAX + commentmarker + "(2)", 1, false );
 	      addAsm( str_TYA + commentmarker + "(2)", 1, false );
 	      
-	      addAsm( str_ROL + commentmarker + "(2)", 1, false );
+	      addAsm( str_ASL + commentmarker + "(2)", 1, false );
 	      addAsm( str_TAY + commentmarker + "(2)", 1, false );
 	      addAsm( str_TXA + commentmarker + "(2)", 1, false );
 	      addAsm( str_ROL + commentmarker + "(2)", 1, false );
@@ -25790,6 +25972,7 @@ arithmetic[MATHOP] expression[OP2]
       addComment( "XA math XA: TOC" );
       if( op == string("+") )
 	{
+	  // TODO: Redo this with self-modifying code
 	  addComment( "XA + XA --> XA (Destroys $FB/$FC)" );
 	  addAsm( str_STA + "$FB", 2, false ); // the A in 
 	  addAsm( str_STX + "$FC", 2, false );
@@ -25807,6 +25990,7 @@ arithmetic[MATHOP] expression[OP2]
 	}
       else if( op == string("-") )
 	{
+	  // TODO: Redo this with self-modifying code
 	  addComment( "XA - XA --> XA (Destroys $FB/$FC)" );
 	  addAsm( str_STA + "$FB", 2, false ); // the A in 
 	  addAsm( str_STX + "$FC", 2, false );
