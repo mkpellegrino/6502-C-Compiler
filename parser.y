@@ -22789,40 +22789,33 @@ arithmetic[MATHOP] expression[OP2]
 		}
 	      addAsm( str_LDA + O1, sizeOP1A, false );
 	      addAsm( str_STA + "$02", 2, false );
-	      addAsm( str_STA + "$04", 2, false );
 	      addAsm( str_LDA + O1 + " +1", sizeOP1A, false );
-	      addAsm( str_STA + "$03", 2, false );
-	      addAsm( str_STA + "$05", 2, false );
-
+	      addAsm( str_STA + "$03", 2, false );	      
 	      addAsm( str_ASL + "$02", 2, false );
 	      addAsm( str_ROL + "$03", 2, false );	      
 	      addAsm( str_ASL + "$02", 2, false );
 	      addAsm( str_ROL + "$03", 2, false );
 	      addAsm( str_ASL + "$02", 2, false );
+	      addAsm( str_LDA + "$02", 2, false );
+	      addAsm( str_STA + "$04", 2, false );
+	      addAsm( str_ROL + "$03", 2, false );	      
+	      addAsm( str_LDA + "$03", 2, false );
+	      addAsm( str_STA + "$05", 2, false );
+	      addAsm( str_ASL + "$02", 2, false );
 	      addAsm( str_ROL + "$03", 2, false );
-	      
-	      addAsm( str_ASL + "$04", 2, false );
-	      addAsm( str_ROL + "$05", 2, false );
-	      
+	      addAsm( str_ASL + "$02", 2, false );
+	      addAsm( str_ROL + "$03", 2, false );
 	      addAsm( str_CLC, 1, false );
 	      addAsm( str_LDA + "$02", 2, false );
 	      addAsm( str_ADC + "$04", 2, false );
-	      addAsm( str_STA + "$02", 2, false );
-	      
-	      addAsm( str_LDA + "$03", 2, false );	      
-	      addAsm( str_ADC + "$05", 2, false );
-	      addAsm( str_STA + "$03", 2, false );
-	      
-	      addAsm( str_ASL + "$02", 2, false );
-	      addAsm( str_ROL + "$03", 2, false );
-	      addAsm( str_ASL + "$02", 2, false );	      
-	      addAsm( str_ROL + "$03", 2, false );
-	      
+	      addAsm( str_STA + "$04", 2, false );
 	      addAsm( str_LDA + "$03", 2, false );
+	      addAsm( str_ADC + "$05", 2, false );
 	      addAsm( str_TAX, 1, false );
+	      addAsm( str_LDA + "$04", 2, false );
 	      if( !arg_unsafe_math )
 		{
-		  addAsm( str_LDY + "$02", 2, false );
+		  addAsm( str_TAY, 1, false );
 		  addComment( "-------------------" );
 		  addAsm( str_PLA, 1, false );
 		  addAsm( str_STA + "$05", 2, false );
@@ -22834,45 +22827,136 @@ arithmetic[MATHOP] expression[OP2]
 		  addAsm( str_STA + "$02", 2, false );
 		  addAsm( str_TYA, 1, false );
 		}
-	      else
-		{
-		  addAsm( str_LDA + "$02", 2, false );
-		}
+	      strcpy($$.name, "_XA" );
+	    }
+	  else if( IMMvalue == 0 )
+	    {
+	      addComment("Special Case: WordID * 0x00 --> XA" );
+	      addAsm( str_LAX + "#$00", 2, false );
+	      strcpy($$.name, "_XA" );
+
+	    }
+	  else if( IMMvalue == 1 )
+	    {
+	      addComment("Special Case: WordID * 0x01 --> XA" );
+	      addAsm( str_LDA + O1, sizeOP1A, false);
+	      addAsm( str_LDX + O1 + " +1", sizeOP1A, false);
+	      strcpy($$.name, "_XA" );
+	    }
+	  else if( IMMvalue == 2 )
+	    {
+	      addComment("Special Case: WordID * 0x02 --> XA" );
+	      addAsm( str_LDA + O1, sizeOP1A, false);
+	      addAsm( str_ASL, 1, false );	      
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_LDA + O1 + " +1", sizeOP1A, false);
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );
+	      strcpy($$.name, "_XA" );
+	    }
+	  else if( IMMvalue == 4 )
+	    {
+	      addComment("Special Case: WordID * 0x04 --> XA" );
+	      addComment( "Special Case: 0x0004 * WordID --> XA" );
+	      addAsm( str_LDA + O1, sizeOP1A, false);
+	      addAsm( str_ASL, 1, false );	      
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_LDA + O1 + " +1", sizeOP1A, false);
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );	      
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );
 	      strcpy($$.name, "_XA" );
 	    }
 	  else if( IMMvalue == 8 )
-	    {	      
-	      addComment( "multiply by 8" );
-
-	      if( !arg_unsafe_math )
-		{
-		  addComment( "save ZP $02/$03" );
-		  addAsm( str_LDA + "$02", 2, false );
-		  addAsm( str_PHA, 1, false );
-		  addAsm( str_LDA + "$03", 2, false );
-		  addAsm( str_PHA, 1, false );
-		}
-	      addComment( "-------------------" );
+	    {
+	      addComment("Special Case: WordID * 0x08 --> XA" );
 	      addAsm( str_LDA + O1, sizeOP1A, false );
-	      addAsm( str_STA + "$02", 2, false );
-	      addAsm( str_LDA + "#$00", 2, false );
-	      addAsm( str_STA + "$03", 2, false );
-	      addAsm( str_ASL + "$02", 2, false );
-	      addAsm( str_ROL + "$03", 2, false );
-	      addAsm( str_ASL + "$02", 2, false );
-	      addAsm( str_ROL + "$03", 2, false );
-	      addAsm( str_ASL + "$02", 2, false );
-	      addAsm( str_ROL + "$03", 2, false );
-	      addComment( "-------------------" );
-	      if( !arg_unsafe_math )
-		{
-		  addAsm( str_PLA, 1, false );
-		  addAsm( str_STA + "$03", 2, false );
-		  addAsm( str_PLA, 1, false );
-		  addAsm( str_STA + "$02", 2, false );
-		}
-	      addAsm( str_LDX + "$03", 2, false );
-	      addAsm( str_LDA + "$02", 2, false );
+	      addAsm( str_LDX + O1 + " +1", sizeOP1B, false );
+	      addAsm( str_CLC, 1, false );
+	      addAsm( str_LDY + "#$03", 2, false );
+	      addAsm( "!:\t" + str_ROL, 2, true );
+	      addAsm( str_PHA, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_PLA, 1, false );
+	      addAsm( str_DEY, 1, false );
+	      addAsm( str_BNE + "!-", 2, false );
+	      strcpy($$.name, "_XA" );
+	    }
+	  else if( IMMvalue == 16 )
+	    {
+	      addComment("Special Case: WordID * 0x10 --> XA" );
+	      addAsm( str_LDA + O1, sizeOP1A, false );
+	      addAsm( str_LDX + O1 + " +1", sizeOP1B, false );
+	      addAsm( str_CLC, 1, false );
+	      addAsm( str_LDY + "#$04", 2, false );
+	      addAsm( "!:\t" + str_ROL, 2, true );
+	      addAsm( str_PHA, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_PLA, 1, false );
+	      addAsm( str_DEY, 1, false );
+	      addAsm( str_BNE + "!-", 2, false );
+	      strcpy($$.name, "_XA" );
+	    }
+	  else if( IMMvalue == 32 )
+	    {
+	      addComment("Special Case: WordID * 0x20 --> XA" );
+	      addAsm( str_LDA + O1, sizeOP1A, false );
+	      addAsm( str_LDX + O1 + " +1", sizeOP1B, false );
+	      addAsm( str_CLC, 1, false );
+	      addAsm( str_LDY + "#$05", 2, false );
+	      addAsm( "!:\t" + str_ROL, 2, true );
+	      addAsm( str_PHA, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_PLA, 1, false );
+	      addAsm( str_DEY, 1, false );
+	      addAsm( str_BNE + "!-", 2, false );
+	      strcpy($$.name, "_XA" );
+	    }
+	  else if( IMMvalue == 64 )
+	    {
+	      addComment("Special Case: WordID * 0x40 --> XA" );
+	      addAsm( str_LDA + O1, sizeOP1A, false );
+	      addAsm( str_LDX + O1 + " +1", sizeOP1B, false );
+	      addAsm( str_CLC, 1, false );
+	      addAsm( str_LDY + "#$06", 2, false );
+	      addAsm( "!:\t" + str_ROL, 2, true );
+	      addAsm( str_PHA, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_PLA, 1, false );
+	      addAsm( str_DEY, 1, false );
+	      addAsm( str_BNE + "!-", 2, false );
+	      strcpy($$.name, "_XA" );
+	    }
+	  else if( IMMvalue == 128 )
+	    {
+	      addComment("Special Case: WordID * 0x80 --> XA" );
+	      addAsm( str_LDA + O1, sizeOP1A, false );
+	      addAsm( str_LDX + O1 + " +1", sizeOP1B, false );
+	      addAsm( str_CLC, 1, false );
+	      addAsm( str_LDY + "#$06", 2, false );
+	      addAsm( "!:\t" + str_ROL, 2, true );
+	      addAsm( str_PHA, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_PLA, 1, false );
+	      addAsm( str_DEY, 1, false );
+	      addAsm( str_BNE + "!-", 2, false );
 	      strcpy($$.name, "_XA" );
 	    }
 	  else
@@ -23292,7 +23376,6 @@ arithmetic[MATHOP] expression[OP2]
       
       if( op == string("+"))
 	{
-	  addComment( "(OPTIMIZE)" );
 	  addComment( "WordID + WordIMM -> XA" );
 	  addAsm( str_CLC, 1, false );
 	  addAsm( str_LDA + O1, sizeOP1A, false );
@@ -23370,124 +23453,100 @@ arithmetic[MATHOP] expression[OP2]
 	  else if( op2 == 4 )
 	    {
 	      addComment( "Special Case: WordID * 0x0004 --> XA" );
-	      addAsm( str_LDA + getNameOf(tmp_op1) + commentmarker + "(4)", 3, false );
-	      addAsm( str_ASL + commentmarker + "(2)", 1, false );	      
-	      addAsm( str_TAY + commentmarker + "(2)", 1, false );
-	      addAsm( str_LDA + getNameOf(tmp_op1) + " +1" + commentmarker + "(4)", 3, false );
-	      addAsm( str_ROL + commentmarker + "(2)", 1, false );
-	      addAsm( str_TAX + commentmarker + "(2)", 1, false );
-	      addAsm( str_TYA + commentmarker + "(2)", 1, false );
+	      addAsm( str_LDA + getNameOf(tmp_op1), 3, false );
+	      addAsm( str_ASL, 1, false );	      
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_LDA + getNameOf(tmp_op1) + " +1", 3, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );	      
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );
 	      
-	      addAsm( str_ASL + commentmarker + "(2)", 1, false );
-	      addAsm( str_TAY + commentmarker + "(2)", 1, false );
-	      addAsm( str_TXA + commentmarker + "(2)", 1, false );
-	      addAsm( str_ROL + commentmarker + "(2)", 1, false );
-	      addAsm( str_TAX + commentmarker + "(2)", 1, false );
-	      addAsm( str_TYA + commentmarker + "(2)", 1, false );
 	    }
 	  else if( op2 == 8 )
 	    {
 	      addComment( "Special Case: WordID * 0x0008 --> XA" );
-	      addAsm( str_LDA + getNameOf(tmp_op1) + commentmarker + "(4)", 3, false );
-	      addAsm( str_LDX + getNameOf(tmp_op1) + " +1" + commentmarker + "(4)", 3, false );
-	      addAsm( str_CLC + commentmarker + "(2)", 1, false );
-	      addAsm( str_LDY + "#$03" + commentmarker + "(2)", 2, false );
-	      addAsm( "!:\t" + str_ROL + commentmarker + "(2)", 2, true );
-	      addAsm( str_PHA + commentmarker + "(3)", 1, false );
-	      addAsm( str_TXA + commentmarker + "(2)", 1, false );
-	      addAsm( str_ROL + commentmarker + "(2)", 1, false );
-	      addAsm( str_TAX + commentmarker + "(2)", 1, false );
-	      addAsm( str_PLA + commentmarker + "(4)", 1, false );
-	      addAsm( str_DEY + commentmarker + "(2)", 1, false );
-	      addAsm( str_BNE + "!-" + commentmarker + "(2)", 2, false );
+	      addAsm( str_LDA + getNameOf(tmp_op1), 3, false );
+	      addAsm( str_LDX + getNameOf(tmp_op1) + " +1", 3, false );
+	      addAsm( str_CLC, 1, false );
+	      addAsm( str_LDY + "#$03", 2, false );
+	      addAsm( "!:\t" + str_ROL, 2, true );
+	      addAsm( str_PHA, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_PLA, 1, false );
+	      addAsm( str_DEY, 1, false );
+	      addAsm( str_BNE + "!-", 2, false );
 	    }
 	  else if( op2 == 16 )
 	    {
 	      addComment( "Special Case: WordID * 0x0010 --> XA" );
-	      addAsm( str_LDA + getNameOf(tmp_op1) + commentmarker + "(4)", 3, false );
-	      addAsm( str_LDX + getNameOf(tmp_op1) + " +1" + commentmarker + "(4)", 3, false );
-	      addAsm( str_CLC + commentmarker + "(2)", 1, false );
-	      addAsm( str_LDY + "#$04" + commentmarker + "(2)", 2, false );
-	      addAsm( "!:\t" + str_ROL + commentmarker + "(2)", 2, true );
-	      addAsm( str_PHA + commentmarker + "(3)", 1, false );
-	      addAsm( str_TXA + commentmarker + "(2)", 1, false );
-	      addAsm( str_ROL + commentmarker + "(2)", 1, false );
-	      addAsm( str_TAX + commentmarker + "(2)", 1, false );
-	      addAsm( str_PLA + commentmarker + "(4)", 1, false );
-	      addAsm( str_DEY + commentmarker + "(2)", 1, false );
-	      addAsm( str_BNE + "!-" + commentmarker + "(2)", 2, false );
+	      addAsm( str_LDA + getNameOf(tmp_op1), 3, false );
+	      addAsm( str_LDX + getNameOf(tmp_op1) + " +1", 3, false );
+	      addAsm( str_CLC, 1, false );
+	      addAsm( str_LDY + "#$04", 2, false );
+	      addAsm( "!:\t" + str_ROL, 2, true );
+	      addAsm( str_PHA, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_PLA, 1, false );
+	      addAsm( str_DEY, 1, false );
+	      addAsm( str_BNE + "!-", 2, false );
 	    }
 	  else if( op2 == 32 )
 	    {
 	      addComment( "Special Case: WordID * 0x0020 --> XA" );
-	      addAsm( str_LDA + getNameOf(tmp_op1) + commentmarker + "(4)", 3, false );
-	      addAsm( str_LDX + getNameOf(tmp_op1) + " +1" + commentmarker + "(4)", 3, false );
-	      addAsm( str_TAY + commentmarker + "(2)", 1, false );
-	      addAsm( str_CLC + commentmarker + "(2)", 1, false );
-	      addAsm( str_ROR + commentmarker + "(2)", 1, false );
-	      addAsm( str_ROR + commentmarker + "(2)", 1, false );
-	      addAsm( str_ROR + commentmarker + "(2)", 1, false );
-	      addAsm( str_ROR + commentmarker + "(2)", 1, false );
-	      addAsm( str_AND + "#$E0" + commentmarker + "(2)", 2, false );
-	      addAsm( str_PHA + commentmarker + "(3)", 1, false );
-	      addAsm( str_TYA + commentmarker + "(2)", 1, false );
-	      addAsm( str_ROL + commentmarker + "(2)", 1, false );
-	      addAsm( str_ROL + commentmarker + "(2)", 1, false );
-	      addAsm( str_ROL + commentmarker + "(2)", 1, false );
-	      addAsm( str_ROL + commentmarker + "(2)", 1, false );
-	      addAsm( str_ROL + commentmarker + "(2)", 1, false );
-	      addAsm( str_ROL + commentmarker + "(2)", 1, false );
-	      addAsm( str_AND + "#$1F" + commentmarker + "(2)", 2, false );
-	      addAsm( str_TAX + commentmarker + "(2)", 1, false );
-	      addAsm( str_PLA + commentmarker + "(4)", 1, false );
+	      addAsm( str_LDA + getNameOf(tmp_op1), 3, false );
+	      addAsm( str_LDX + getNameOf(tmp_op1) + " +1", 3, false );
+	      addAsm( str_CLC, 1, false );
+	      addAsm( str_LDY + "#$05", 2, false );
+	      addAsm( "!:\t" + str_ROL, 2, true );
+	      addAsm( str_PHA, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_PLA, 1, false );
+	      addAsm( str_DEY, 1, false );
+	      addAsm( str_BNE + "!-", 2, false );
 	    }
 	  else if( op2 == 64 )
 	    {
 	      addComment( "Special Case: WordID * 0x0040 --> XA" );
-	      addAsm( str_LDA + getNameOf(tmp_op1) + commentmarker + "(4)", 3, false );
-	      addAsm( str_LDX + getNameOf(tmp_op1) + " +1" + commentmarker + "(4)", 3, false );
-	      addAsm( str_TAY + commentmarker + "(2)", 1, false );
-	      addAsm( str_CLC + commentmarker + "(2)", 1, false );
-	      addAsm( str_ROR + commentmarker + "(2)", 1, false );
-	      addAsm( str_ROR + commentmarker + "(2)", 1, false );
-	      addAsm( str_ROR + commentmarker + "(2)", 1, false );
-	      addAsm( str_AND + "#$C0" + commentmarker + "(2)", 2, false );
-	      addAsm( str_PHA + commentmarker + "(3)", 1, false );
-	      addAsm( str_TYA + commentmarker + "(2)", 1, false );
-	      addAsm( str_ROL + commentmarker + "(2)", 1, false );
-	      addAsm( str_ROL + commentmarker + "(2)", 1, false );
-	      addAsm( str_ROL + commentmarker + "(2)", 1, false );
-	      addAsm( str_ROL + commentmarker + "(2)", 1, false );
-	      addAsm( str_ROL + commentmarker + "(2)", 1, false );
-	      addAsm( str_ROL + commentmarker + "(2)", 1, false );
-	      addAsm( str_ROL + commentmarker + "(2)", 1, false );
-	      addAsm( str_AND + "#$3F" + commentmarker + "(2)", 2, false );
-	      addAsm( str_TAX + commentmarker + "(2)", 1, false );
-	      addAsm( str_PLA + commentmarker + "(4)", 1, false );
+	      addAsm( str_LDA + getNameOf(tmp_op1), 3, false );
+	      addAsm( str_LDX + getNameOf(tmp_op1) + " +1", 3, false );
+	      addAsm( str_CLC, 1, false );
+	      addAsm( str_LDY + "#$06", 2, false );
+	      addAsm( "!:\t" + str_ROL, 2, true );
+	      addAsm( str_PHA, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_PLA, 1, false );
+	      addAsm( str_DEY, 1, false );
+	      addAsm( str_BNE + "!-", 2, false );
 	    }
 	  else if( op2 == 128 )
 	    {
 	      addComment( "Special Case: WordID * 0x0080 --> XA" );
-	      addAsm( str_LDA + getNameOf(tmp_op1) + commentmarker + "(4)", 3, false );
-	      addAsm( str_LDX + getNameOf(tmp_op1) + " +1" + commentmarker + "(4)", 3, false );
-	      addAsm( str_TAY + commentmarker + "(2)", 1, false );
-	      addAsm( str_CLC + commentmarker + "(2)", 1, false );
-	      addAsm( str_ROR + commentmarker + "(2)", 1, false );
-	      addAsm( str_ROR + commentmarker + "(2)", 1, false );
-	      addAsm( str_AND + "#$80" + commentmarker + "(2)", 2, false );
-	      addAsm( str_PHA + commentmarker + "(3)", 1, false );
-	      addAsm( str_TYA + commentmarker + "(2)", 1, false );
-	      addAsm( str_ROL + commentmarker + "(2)", 1, false );
-	      addAsm( str_ROL + commentmarker + "(2)", 1, false );
-	      addAsm( str_ROL + commentmarker + "(2)", 1, false );
-	      addAsm( str_ROL + commentmarker + "(2)", 1, false );
-	      addAsm( str_ROL + commentmarker + "(2)", 1, false );
-	      addAsm( str_ROL + commentmarker + "(2)", 1, false );
-	      addAsm( str_ROL + commentmarker + "(2)", 1, false );
-	      addAsm( str_ROL + commentmarker + "(2)", 1, false );
-	      addAsm( str_AND + "#$7F" + commentmarker + "(2)", 2, false );
-	      addAsm( str_TAX + commentmarker + "(2)", 1, false );
-	      addAsm( str_PLA + commentmarker + "(4)", 1, false );
+	      addAsm( str_LDA + getNameOf(tmp_op1), 3, false );
+	      addAsm( str_LDX + getNameOf(tmp_op1) + " +1", 3, false );
+	      addAsm( str_CLC, 1, false );
+	      addAsm( str_LDY + "#$07", 2, false );
+	      addAsm( "!:\t" + str_ROL, 2, true );
+	      addAsm( str_PHA, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_PLA, 1, false );
+	      addAsm( str_DEY, 1, false );
+	      addAsm( str_BNE + "!-", 2, false );
 	    }
 	  else if( op2 == 256 )
 	    {
@@ -23498,76 +23557,75 @@ arithmetic[MATHOP] expression[OP2]
 	  else if( op2 == 512 )
 	    {
 	      addComment( "Special Case: WordID * 0x0200 -> XA" );
-	      addAsm( str_LDA + getNameOf(tmp_op1) + commentmarker + "(4)", 3, false );
-	      addAsm( str_ASL + commentmarker + "(2)", 1, false );
-	      addAsm( str_TAX + commentmarker + "(2)", 1, false );
-	      addAsm( str_LDA + "#$00" + commentmarker + "(2)", 1, false );
+	      addAsm( str_LDA + getNameOf(tmp_op1), 3, false );
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_LDA + "#$00", 2, false );
 	    }
 	  else if( op2 == 1024 )
 	    {
 	      addComment( "Special Case: WordID * 0x0400 -> XA" );
-	      addAsm( str_LDA + getNameOf(tmp_op1) + commentmarker + "(4)", 3, false );
-	      addAsm( str_ASL + commentmarker + "(2)", 1, false );
-	      addAsm( str_ASL + commentmarker + "(2)", 1, false );
-	      addAsm( str_TAX + commentmarker + "(2)", 1, false );
-	      addAsm( str_LDA + "#$00" + commentmarker + "(2)", 1, false );
+	      addAsm( str_LDA + getNameOf(tmp_op1), 3, false );
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_LDA + "#$00", 2, false );
 	    }
 	  else if( op2 == 2048 )
 	    {
 	      addComment( "Special Case: WordID * 0x0800 -> XA" );
-	      addAsm( str_LDA + getNameOf(tmp_op1) + commentmarker + "(4)", 3, false );
-	      addAsm( str_ASL + commentmarker + "(2)", 1, false );
-	      addAsm( str_ASL + commentmarker + "(2)", 1, false );
-	      addAsm( str_ASL + commentmarker + "(2)", 1, false );
-	      addAsm( str_TAX + commentmarker + "(2)", 1, false );
-	      addAsm( str_LDA + "#$00" + commentmarker + "(2)", 1, false );
+	      addAsm( str_LDA + getNameOf(tmp_op1), 3, false );
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_LDA + "#$00", 2, false );
 	    }
 	  else if( op2 == 4096 )
 	    {
 	      addComment( "Special Case: WordID * 0x1000 -> XA" );
-	      addAsm( str_LDA + getNameOf(tmp_op1) + commentmarker + "(4)", 3, false );
-	      addAsm( str_ASL + commentmarker + "(2)", 1, false );
-	      addAsm( str_ASL + commentmarker + "(2)", 1, false );
-	      addAsm( str_ASL + commentmarker + "(2)", 1, false );
-	      addAsm( str_ASL + commentmarker + "(2)", 1, false );
-	      addAsm( str_TAX + commentmarker + "(2)", 1, false );
-	      addAsm( str_LDA + "#$00" + commentmarker + "(2)", 1, false );
+	      addAsm( str_LDA + getNameOf(tmp_op1), 3, false );
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_LDA + "#$00", 2, false );
 	    }
 	  else if( op2 == 8192 )
 	    {
 	      addComment( "Special Case: WordID * 0x2000 -> XA" );
-	      addAsm( str_LDA + getNameOf(tmp_op1) + commentmarker + "(4)", 3, false );
-	      addAsm( str_ASL + commentmarker + "(2)", 1, false );
-	      addAsm( str_ASL + commentmarker + "(2)", 1, false );
-	      addAsm( str_ASL + commentmarker + "(2)", 1, false );
-	      addAsm( str_ASL + commentmarker + "(2)", 1, false );
-	      addAsm( str_ASL + commentmarker + "(2)", 1, false );
-	      addAsm( str_TAX + commentmarker + "(2)", 1, false );
-	      addAsm( str_LDA + "#$00" + commentmarker + "(2)", 1, false );
+	      addAsm( str_LSR, 1, false );
+	      addAsm( str_ROR, 1, false );
+	      addAsm( str_ROR, 1, false );
+	      addAsm( str_ROR, 1, false );
+	      addAsm( str_AND + "#$E0", 2, false );
+
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_LDA + "#$00", 2, false );
 	    }
 	  else if( op2 == 16384 )
 	    {
 	      addComment( "Special Case: WordID * 0x4000 -> XA" );
-	      addAsm( str_LDA + getNameOf(tmp_op1) + commentmarker + "(4)", 3, false );
-	      addAsm( str_ASL + commentmarker + "(2)", 1, false );
-	      addAsm( str_ASL + commentmarker + "(2)", 1, false );
-	      addAsm( str_ASL + commentmarker + "(2)", 1, false );
-	      addAsm( str_ASL + commentmarker + "(2)", 1, false );
-	      addAsm( str_ASL + commentmarker + "(2)", 1, false );
-	      addAsm( str_ASL + commentmarker + "(2)", 1, false );
-	      addAsm( str_TAX + commentmarker + "(2)", 1, false );
-	      addAsm( str_LDA + "#$00" + commentmarker + "(2)", 1, false );
+	      addAsm( str_LDA + getNameOf(tmp_op1), 3, false );
+	      addAsm( str_LSR, 1, false );
+	      addAsm( str_ROR, 1, false );
+	      addAsm( str_ROR, 1, false );
+	      addAsm( str_AND + "#$C0", 2, false );
+
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_LDA + "#$00", 2, false );
 	    }
 	  else if( op2 == 32768 )
 	    {
 	      addComment( "Special Case: WordID * 0x8000 -> XA" );
-	      addAsm( str_LDA + getNameOf(tmp_op1) + commentmarker + "(4)", 3, false );
-	      addAsm( str_CLC + commentmarker + "(2)", 1, false );
-	      addAsm( str_ROR + commentmarker + "(2)", 1, false );
-	      addAsm( str_ROR + commentmarker + "(2)", 1, false );
-	      addAsm( str_AND + "#$80" + commentmarker + "(2)", 2, false );
-	      addAsm( str_TAX + commentmarker + "(2)", 1, false );
-	      addAsm( str_LDA + "#$00" + commentmarker + "(2)", 1, false );
+	      addAsm( str_LDA + getNameOf(tmp_op1), 3, false );
+	      addAsm( str_LSR, 1, false );
+	      addAsm( str_ROR, 1, false );
+	      addAsm( str_AND + "#$80", 2, false );
+
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_LDA + "#$00", 2, false );
 	    }
 	  else
 	    {
@@ -24408,17 +24466,196 @@ arithmetic[MATHOP] expression[OP2]
 	}
       else if( op == string( "*" ) )
 	{
-	  // TODO: Add Special cases here...
-	  // if WordIMM == 0, 1, 2, 4, 8, 16, 32, 64...
 	  switch( tmp_int )
 	    {
+	    case 0:
+	      addComment( "Special Case: 0x0000 * WordID --> XA" );
+	      addAsm( str_LAX + "#$00", 2, false );
+	      break;
+	    case 1:
+	      addComment( "Special Case: 0x0001 * WordID --> XA" );
+	      addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false);
+	      addAsm( str_LDX + getNameOf(getAddressOf($4.name)) + " +1", 3, false);
+	      break;
+	    case 2:
+	      addComment( "Special Case: 0x0002 * WordID --> XA" );
+	      addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false);
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_LDA + getNameOf(getAddressOf($4.name)) + " +1", 3, false);
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );
+	      break;
+	    case 4:
+	      addComment( "Special Case: 0x0004 * WordID --> XA" );
+	      addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false);
+	      addAsm( str_ASL, 1, false );	      
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_LDA + getNameOf(getAddressOf($4.name)) + " +1", 3, false);
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );	      
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );
+	      break;
+	    case 8:
+	      addComment( "Special Case: 0x0008 * WordID --> XA" );
+	      addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false);
+	      addAsm( str_LDX + getNameOf(getAddressOf($4.name)) + " +1", 3, false);
+	      addAsm( str_CLC, 1, false );
+	      addAsm( str_LDY + "#$03", 2, false );
+	      addAsm( "!:\t" + str_ROL, 2, true );
+	      addAsm( str_PHA, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_PLA, 1, false );
+	      addAsm( str_DEY, 1, false );
+	      addAsm( str_BNE + "!-", 2, false );
+	      break;
+	    case 16:
+	      addComment( "Special Case: 0x0010 * WordID --> XA" );
+	      addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false);
+	      addAsm( str_LDX + getNameOf(getAddressOf($4.name)) + " +1", 3, false);
+	      addAsm( str_CLC, 1, false );
+	      addAsm( str_LDY + "#$04", 2, false );
+	      addAsm( "!:\t" + str_ROL, 2, true );
+	      addAsm( str_PHA, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_PLA, 1, false );
+	      addAsm( str_DEY, 1, false );
+	      addAsm( str_BNE + "!-", 2, false );
+	      break;
+	    case 32:
+	      addComment( "Special Case: 0x0020 * WordID --> XA" );
+	      addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false);
+	      addAsm( str_LDX + getNameOf(getAddressOf($4.name)) + " +1", 3, false);
+	      addAsm( str_CLC, 1, false );
+	      addAsm( str_LDY + "#$05", 2, false );
+	      addAsm( "!:\t" + str_ROL, 2, true );
+	      addAsm( str_PHA, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_PLA, 1, false );
+	      addAsm( str_DEY, 1, false );
+	      addAsm( str_BNE + "!-", 2, false );
+	      break;
+	    case 64:
+	      addComment( "Special Case: 0x0040 * WordID --> XA" );
+	      addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false);
+	      addAsm( str_LDX + getNameOf(getAddressOf($4.name)) + " +1", 3, false);
+	      addAsm( str_CLC, 1, false );
+	      addAsm( str_LDY + "#$06", 2, false );
+	      addAsm( "!:\t" + str_ROL, 2, true );
+	      addAsm( str_PHA, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_PLA, 1, false );
+	      addAsm( str_DEY, 1, false );
+	      addAsm( str_BNE + "!-", 2, false );
+	      break;
+	    case 128:
+	      addComment( "Special Case: 0x0080 * WordID --> XA" );
+	      addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false);
+	      addAsm( str_LDX + getNameOf(getAddressOf($4.name)) + " +1", 3, false);
+	      addAsm( str_CLC, 1, false );
+	      addAsm( str_LDY + "#$07", 2, false );
+	      addAsm( "!:\t" + str_ROL, 2, true );
+	      addAsm( str_PHA, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_PLA, 1, false );
+	      addAsm( str_DEY, 1, false );
+	      addAsm( str_BNE + "!-", 2, false );
+	      break;	      
 	    case 256:
+	      addComment( "Special Case: 0x0100 * WordID --> XA" );
+	      addAsm( str_LDX + getNameOf(getAddressOf($4.name)), 3, false);
+	      addAsm( str_LDA + "#$00", 2, false );
+	      break;
+	    case 512:
+	      addComment( "Special Case: 0x0200 * WordID --> XA" );
+	      addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false);
+	      addAsm( str_ASL, 1, false );
 	      addAsm( str_TAX, 1, false );
 	      addAsm( str_LDA + "#$00", 2, false );
-	      strcpy($$.name, "_XA" );
 	      break;
-	    default:
-	  
+	    case 1024:
+	      addComment( "Special Case: 0x0400 * WordID --> XA" );
+	      addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false);
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_LDA + "#$00", 2, false );
+	      break;
+	    case 2048:
+	      addComment( "Special Case: 0x0800 * WordID --> XA" );
+	      addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false);
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_LDA + "#$00", 2, false );
+	      break;
+	    case 4096:
+	      addComment( "Special Case: 0x1000 * WordID --> XA" );
+	      addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false);
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_LDA + "#$00", 2, false );
+	      break;
+	    case 8192:
+	      addComment( "Special Case: 0x2000 * WordID --> XA" );
+	      addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false);
+	      //addAsm( str_CLC, 1, false );
+	      addAsm( str_LSR, 1, false );
+	      addAsm( str_ROR, 1, false );
+	      addAsm( str_ROR, 1, false );
+	      addAsm( str_ROR, 1, false );
+	      addAsm( str_AND + "#$E0", 2, false );
+
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_LDA + "#$00", 2, false );
+	      break;
+
+
+	    case 16384:
+	      addComment( "Special Case: 0x4000 * WordID --> XA" );
+	      addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false);
+	      //addAsm( str_CLC, 1, false );
+	      addAsm( str_LSR, 1, false );
+	      addAsm( str_ROR, 1, false );
+	      addAsm( str_ROR, 1, false );
+	      addAsm( str_AND + "#$C0", 2, false );
+
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_LDA + "#$00", 2, false );
+	      break;
+	    case 32768:
+	      addComment( "Special Case: 0x8000 * WordID --> XA" );
+	      addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false);
+	      addAsm( str_LSR, 1, false );
+	      addAsm( str_ROR, 1, false );
+	      addAsm( str_AND + "#$80", 2, false );
+
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_LDA + "#$00", 2, false );
+	      break;
+	      
+	    default:	  
 	      mul16_is_needed = true;
 	      addComment( "WordIMM * WordID --> XA" );
 	      addAsm( str_LDA + "#$" + toHex(tmp_int_L), 2, false );
@@ -24432,8 +24669,8 @@ arithmetic[MATHOP] expression[OP2]
 	      addAsm( str_JSR + "MUL16", 3, false );
 	      addAsm( str_LDA + "MUL16R", 3, false );
 	      addAsm( str_LDX + "MUL16R +1", 3, false );
-	      strcpy($$.name, "_XA" );
 	    }
+	  strcpy($$.name, "_XA" );
 	}
       else if( op == string( "/" ) )
 	{
