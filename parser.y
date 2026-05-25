@@ -21973,38 +21973,247 @@ arithmetic[MATHOP] expression[OP2]
 	}
       else if( op == string( "*" ) )
 	{
-	  mul16_is_needed = true;
 	  int tmp_int = atoi(stripFirst($1.name).c_str());
 	  addComment( "UintIMM * WordID --> XA" );
-	  addAsm( str_LDA + "#$" + toHex(tmp_int), 2, false );
-	  addAsm( str_LDX + "#$00", 2, false );
-	  addAsm( str_STA + "_MUL16_FB", 3, false);
-	  addAsm( str_STX + "_MUL16_FC", 3, false);
-	  addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false );
-	  addAsm( str_LDX + getNameOf(getAddressOf($4.name)) + " +1", 3, false );
-	  addAsm( str_STA + "_MUL16_FD", 3, false);
-	  addAsm( str_STX + "_MUL16_FE", 3, false);
-	  addAsm( str_JSR + "MUL16", 3, false );
-	  addAsm( str_LDA + "MUL16R", 3, false );
-	  addAsm( str_LDX + "MUL16R+1", 3, false );
-	  strcpy($$.name, "_XA" );
+	  int sizeOP2A = 3;
+	  int sizeOP2B = 3;
+
+	  if( getAddressOf($4.name) < 256 ) sizeOP2A = 2;
+	  if( getAddressOf($4.name) < 255 ) sizeOP2B = 2;
+	  
+	    
+
+	  if( tmp_int == 40 )
+	    {
+	      addComment("Special Case: 0x28 * WordID --> XA" );
+	      if( !arg_unsafe_math )
+		{
+		  addComment( "save ZP $02/$03/$04/$05" );
+		  addAsm( str_LDA + "$02", 2, false );
+		  addAsm( str_PHA, 1, false );
+		  addAsm( str_LDA + "$03", 2, false );
+		  addAsm( str_PHA, 1, false );
+		  addAsm( str_LDA + "$04", 2, false );
+		  addAsm( str_PHA, 1, false );
+		  addAsm( str_LDA + "$05", 2, false );
+		  addAsm( str_PHA, 1, false );
+		  addComment( "----------------------" );
+		}
+	      addAsm( str_LDA + getNameOf(getAddressOf($4.name)), sizeOP2A, false );
+	      addAsm( str_STA + "$02", 2, false );
+	      addAsm( str_LDA + getNameOf(getAddressOf($4.name)) + " +1", sizeOP2B, false );
+	      addAsm( str_STA + "$03", 2, false );	      
+	      addAsm( str_ASL + "$02", 2, false );
+	      addAsm( str_ROL + "$03", 2, false );	      
+	      addAsm( str_ASL + "$02", 2, false );
+	      addAsm( str_ROL + "$03", 2, false );
+	      addAsm( str_ASL + "$02", 2, false );
+	      addAsm( str_LDA + "$02", 2, false );
+	      addAsm( str_STA + "$04", 2, false );
+	      addAsm( str_ROL + "$03", 2, false );	      
+	      addAsm( str_LDA + "$03", 2, false );
+	      addAsm( str_STA + "$05", 2, false );
+	      addAsm( str_ASL + "$02", 2, false );
+	      addAsm( str_ROL + "$03", 2, false );
+	      addAsm( str_ASL + "$02", 2, false );
+	      addAsm( str_ROL + "$03", 2, false );
+	      addAsm( str_CLC, 1, false );
+	      addAsm( str_LDA + "$02", 2, false );
+	      addAsm( str_ADC + "$04", 2, false );
+	      addAsm( str_STA + "$04", 2, false );
+	      addAsm( str_LDA + "$03", 2, false );
+	      addAsm( str_ADC + "$05", 2, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_LDA + "$04", 2, false );
+	      if( !arg_unsafe_math )
+		{
+		  addAsm( str_TAY, 1, false );
+		  addComment( "-------------------" );
+		  addAsm( str_PLA, 1, false );
+		  addAsm( str_STA + "$05", 2, false );
+		  addAsm( str_PLA, 1, false );
+		  addAsm( str_STA + "$04", 2, false );
+		  addAsm( str_PLA, 1, false );
+		  addAsm( str_STA + "$03", 2, false );
+		  addAsm( str_PLA, 1, false );
+		  addAsm( str_STA + "$02", 2, false );
+		  addAsm( str_TYA, 1, false );
+		}
+	      strcpy($$.name, "_XA" );
+	    }
+	  else if( tmp_int == 0 )
+	    {
+	      addComment("Special Case: 0x00 * WordID --> XA" );
+	      addAsm( str_LAX + "#$00", 2, false );
+	      strcpy($$.name, "_XA" );
+
+	    }
+	  else if( tmp_int == 1 )
+	    {
+	      addComment("Special Case: 0x01 * WordID --> XA" );
+	      addAsm( str_LDA + getNameOf(getAddressOf($4.name)), sizeOP2A, false);
+	      addAsm( str_LDX + getNameOf(getAddressOf($4.name)) + " +1", sizeOP2B, false);
+	      strcpy($$.name, "_XA" );
+	    }
+	  else if( tmp_int == 2 )
+	    {
+	      addComment("Special Case: 0x02 * WordID --> XA" );
+	      addAsm( str_LDA + getNameOf(getAddressOf($4.name)), sizeOP2A, false);
+	      addAsm( str_ASL, 1, false );	      
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_LDA + getNameOf(getAddressOf($4.name)) + " +1", sizeOP2B, false);
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );
+	      strcpy($$.name, "_XA" );
+	    }
+	  else if( tmp_int == 4 )
+	    {
+	      addComment( "Special Case: 0x04 * WordID --> XA" );
+	      addAsm( str_LDA + getNameOf(getAddressOf($4.name)), sizeOP2A, false);
+	      addAsm( str_ASL, 1, false );	      
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_LDA + getNameOf(getAddressOf($4.name)) + " +1", sizeOP2B, false);
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );	      
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );
+	      strcpy($$.name, "_XA" );
+	    }
+	  else if( tmp_int == 8 )
+	    {
+	      addComment("Special Case: 0x08 * WordID --> XA" );
+	      addAsm( str_LDA + getNameOf(getAddressOf($4.name)), sizeOP2A, false );
+	      addAsm( str_LDX + getNameOf(getAddressOf($4.name)) + " +1", sizeOP2B, false );
+	      addAsm( str_CLC, 1, false );
+	      addAsm( str_LDY + "#$03", 2, false );
+	      addAsm( "!:\t" + str_ROL, 2, true );
+	      addAsm( str_PHA, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_PLA, 1, false );
+	      addAsm( str_DEY, 1, false );
+	      addAsm( str_BNE + "!-", 2, false );
+	      strcpy($$.name, "_XA" );
+	    }
+	  else if( tmp_int == 16 )
+	    {
+	      addComment("Special Case: 0x10 * WordID --> XA" );
+	      addAsm( str_LDA + getNameOf(getAddressOf($4.name)), sizeOP2A, false );
+	      addAsm( str_LDX + getNameOf(getAddressOf($4.name)) + " +1", sizeOP2B, false );
+	      addAsm( str_CLC, 1, false );
+	      addAsm( str_LDY + "#$04", 2, false );
+	      addAsm( "!:\t" + str_ROL, 2, true );
+	      addAsm( str_PHA, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_PLA, 1, false );
+	      addAsm( str_DEY, 1, false );
+	      addAsm( str_BNE + "!-", 2, false );
+	      strcpy($$.name, "_XA" );
+	    }
+	  else if( tmp_int == 32 )
+	    {
+	      addComment("Special Case: 0x20 * WordID --> XA" );
+	      addAsm( str_LDA + getNameOf(getAddressOf($4.name)), sizeOP2A, false );
+	      addAsm( str_LDX + getNameOf(getAddressOf($4.name)) + " +1", sizeOP2B, false );
+	      addAsm( str_CLC, 1, false );
+	      addAsm( str_LDY + "#$05", 2, false );
+	      addAsm( "!:\t" + str_ROL, 2, true );
+	      addAsm( str_PHA, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_PLA, 1, false );
+	      addAsm( str_DEY, 1, false );
+	      addAsm( str_BNE + "!-", 2, false );
+	      strcpy($$.name, "_XA" );
+	    }
+	  else if( tmp_int == 64 )
+	    {
+	      addComment("Special Case: 0x40 * WordID --> XA" );
+	      addAsm( str_LDA + getNameOf(getAddressOf($4.name)), sizeOP2A, false );
+	      addAsm( str_LDX + getNameOf(getAddressOf($4.name)) + " +1", sizeOP2B, false );
+	      addAsm( str_CLC, 1, false );
+	      addAsm( str_LDY + "#$06", 2, false );
+	      addAsm( "!:\t" + str_ROL, 2, true );
+	      addAsm( str_PHA, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_PLA, 1, false );
+	      addAsm( str_DEY, 1, false );
+	      addAsm( str_BNE + "!-", 2, false );
+	      strcpy($$.name, "_XA" );
+	    }
+	  else if( tmp_int == 128 )
+	    {
+	      addComment("Special Case: 0x80 * WordID --> XA" );
+	      addAsm( str_LDA + getNameOf(getAddressOf($4.name)), sizeOP2A, false );
+	      addAsm( str_LDX + getNameOf(getAddressOf($4.name)) + " +1", sizeOP2B, false );
+	      addAsm( str_CLC, 1, false );
+	      addAsm( str_LDY + "#$07", 2, false );
+	      addAsm( "!:\t" + str_ROL, 2, true );
+	      addAsm( str_PHA, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_PLA, 1, false );
+	      addAsm( str_DEY, 1, false );
+	      addAsm( str_BNE + "!-", 2, false );
+	      strcpy($$.name, "_XA" );
+	    }
+	  else
+	    {
+	      mul16_is_needed = true;
+	      addAsm( str_LDA + "#$" + toHex(tmp_int), 2, false );
+	      addAsm( str_LDX + "#$00", 2, false );
+	      addAsm( str_STA + "_MUL16_FB", 3, false);
+	      addAsm( str_STX + "_MUL16_FC", 3, false);
+	      addAsm( str_LDA + getNameOf(getAddressOf($4.name)), sizeOP2A, false );
+	      addAsm( str_LDX + getNameOf(getAddressOf($4.name)) + " +1", sizeOP2B, false );
+	      addAsm( str_STA + "_MUL16_FD", 3, false);
+	      addAsm( str_STX + "_MUL16_FE", 3, false);
+	      addAsm( str_JSR + "MUL16", 3, false );
+	      addAsm( str_LDA + "MUL16R", 3, false );
+	      addAsm( str_LDX + "MUL16R+1", 3, false );
+	      strcpy($$.name, "_XA" );
+	    }
 	}
       else if( op == string( "/" ) )
-	{
+	{	  
 	  div16_is_needed = true;
-	  int tmp_int = atoi(stripFirst($1.name).c_str());
 	  addComment( "UintIMM / WordID --> XA" );
-	  addAsm( str_LDA + "#$" + toHex(tmp_int), 2, false );
-	  addAsm( str_LDX + "#$00", 2, false );
-	  addAsm( str_STA + "_DIV16_FB", 3, false);
-	  addAsm( str_STX + "_DIV16_FC", 3, false);
-	  addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false );
-	  addAsm( str_LDX + getNameOf(getAddressOf($4.name)) + " +1", 3, false );
-	  addAsm( str_STA + "_DIV16_FD", 3, false);
-	  addAsm( str_STX + "_DIV16_FE", 3, false);
-	  addAsm( str_JSR + "DIV16", 3, false );
-	  addAsm( str_LDA + "_DIV16_FB", 3, false);
-	  addAsm( str_LDX + "_DIV16_FC", 3, false);
+	  int tmp_int = atoi(stripFirst($1.name).c_str());
+	  if( tmp_int == 0 )
+	    {
+	      addComment("Special Case: 0x00 / WordID --> XA" );
+	      addAsm( str_LAX + "#$00", 2, false );
+	    }
+	  else
+	    {
+	      div16_is_needed = true;
+
+	      addComment( "UintIMM / WordID --> XA" );
+	      addAsm( str_LDA + "#$" + toHex(tmp_int), 2, false );
+	      addAsm( str_LDX + "#$00", 2, false );
+	      addAsm( str_STA + "_DIV16_FB", 3, false);
+	      addAsm( str_STX + "_DIV16_FC", 3, false);
+	      addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false );
+	      addAsm( str_LDX + getNameOf(getAddressOf($4.name)) + " +1", 3, false );
+	      addAsm( str_STA + "_DIV16_FD", 3, false);
+	      addAsm( str_STX + "_DIV16_FE", 3, false);
+	      addAsm( str_JSR + "DIV16", 3, false );
+	      addAsm( str_LDA + "_DIV16_FB", 3, false);
+	      addAsm( str_LDX + "_DIV16_FC", 3, false);
+	    }
 	  strcpy($$.name, "_XA" );
 	}
       else if( op == string( "**" ) )
@@ -22773,7 +22982,7 @@ arithmetic[MATHOP] expression[OP2]
 	  
 	  if( IMMvalue == 40 )
 	    {
-	      addComment( "multiply by 40" );
+	      addComment("Special Case: WordID * 0x28 --> XA" );
 	      if( !arg_unsafe_math )
 		{
 		  addComment( "save ZP $02/$03/$04/$05" );
@@ -22789,7 +22998,7 @@ arithmetic[MATHOP] expression[OP2]
 		}
 	      addAsm( str_LDA + O1, sizeOP1A, false );
 	      addAsm( str_STA + "$02", 2, false );
-	      addAsm( str_LDA + O1 + " +1", sizeOP1A, false );
+	      addAsm( str_LDA + O1 + " +1", sizeOP1B, false );
 	      addAsm( str_STA + "$03", 2, false );	      
 	      addAsm( str_ASL + "$02", 2, false );
 	      addAsm( str_ROL + "$03", 2, false );	      
@@ -22840,7 +23049,7 @@ arithmetic[MATHOP] expression[OP2]
 	    {
 	      addComment("Special Case: WordID * 0x01 --> XA" );
 	      addAsm( str_LDA + O1, sizeOP1A, false);
-	      addAsm( str_LDX + O1 + " +1", sizeOP1A, false);
+	      addAsm( str_LDX + O1 + " +1", sizeOP1B, false);
 	      strcpy($$.name, "_XA" );
 	    }
 	  else if( IMMvalue == 2 )
@@ -22849,7 +23058,7 @@ arithmetic[MATHOP] expression[OP2]
 	      addAsm( str_LDA + O1, sizeOP1A, false);
 	      addAsm( str_ASL, 1, false );	      
 	      addAsm( str_TAY, 1, false );
-	      addAsm( str_LDA + O1 + " +1", sizeOP1A, false);
+	      addAsm( str_LDA + O1 + " +1", sizeOP1B, false);
 	      addAsm( str_ROL, 1, false );
 	      addAsm( str_TAX, 1, false );
 	      addAsm( str_TYA, 1, false );
@@ -22858,11 +23067,10 @@ arithmetic[MATHOP] expression[OP2]
 	  else if( IMMvalue == 4 )
 	    {
 	      addComment("Special Case: WordID * 0x04 --> XA" );
-	      addComment( "Special Case: 0x0004 * WordID --> XA" );
 	      addAsm( str_LDA + O1, sizeOP1A, false);
 	      addAsm( str_ASL, 1, false );	      
 	      addAsm( str_TAY, 1, false );
-	      addAsm( str_LDA + O1 + " +1", sizeOP1A, false);
+	      addAsm( str_LDA + O1 + " +1", sizeOP1B, false);
 	      addAsm( str_ROL, 1, false );
 	      addAsm( str_TAX, 1, false );
 	      addAsm( str_TYA, 1, false );	      
@@ -22948,7 +23156,7 @@ arithmetic[MATHOP] expression[OP2]
 	      addAsm( str_LDA + O1, sizeOP1A, false );
 	      addAsm( str_LDX + O1 + " +1", sizeOP1B, false );
 	      addAsm( str_CLC, 1, false );
-	      addAsm( str_LDY + "#$06", 2, false );
+	      addAsm( str_LDY + "#$07", 2, false );
 	      addAsm( "!:\t" + str_ROL, 2, true );
 	      addAsm( str_PHA, 1, false );
 	      addAsm( str_TXA, 1, false );
@@ -22980,18 +23188,93 @@ arithmetic[MATHOP] expression[OP2]
 	{
 	  addComment( "WordID / UIntIMM" );
 	  int addr_op1 = getAddressOf($1.name);
-	  div16_is_needed = true;
-	  addAsm( str_LDA + getNameOf(addr_op1), 3, false );
-	  addAsm( str_STA + "_DIV16_FB", 3, false );
-	  addAsm( str_LDA + getNameOf(addr_op1) + " +1", 3, false );
-	  addAsm( str_STA + "_DIV16_FC", 3, false );
-	  addAsm( str_LDA + "#$" + toHex(atoi(stripFirst($4.name).c_str())), 2, false );
-	  addAsm( str_STA + "_DIV16_FD", 3, false );
-	  addAsm( str_LDA + "#$00", 2, false );
-	  addAsm( str_STA + "_DIV16_FE", 3, false );
-	  addAsm( str_JSR + "DIV16", 3, false );
-	  addAsm( str_LDA + "_DIV16_FB", 3, false );
-	  addAsm( str_LDX + "_DIV16_FC", 3, false );
+	  int OP2 = atoi(stripFirst($4.name).c_str());
+	  if( OP2 == 0 )
+	    {
+	      addComment("Special Case: WordID / 0x00 --> XA" );
+	      addCompilerMessage( "Hardcoded division by 0.  Das ist verboten.", 3 );
+	    }
+	  else if( OP2 == 1 )
+	    {
+	      addComment("Special Case: WordID / 0x01 --> XA" );
+	      addAsm( str_LDA + getNameOf(addr_op1), 3, false );
+	      addAsm( str_LDX + getNameOf(addr_op1) + " +1", 3, false );
+	    }
+	  else if( OP2 == 2 )
+	    {
+	      addComment("Special Case: WordID / 0x02 --> XA" );
+	      addComment( "notice... X & A are in un-conventional locations here because" );
+	      addComment( "we shift the HI register first so it needs to be in A" );
+	      addAsm( str_LDY + getNameOf(addr_op1), 3, false );
+	      addAsm( str_LDA + getNameOf(addr_op1) + " +1", 3, false );
+	      addAsm( str_LSR, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );
+	      addAsm( str_ROR, 1, false );
+	    }
+	  else if( OP2 == 4 )
+	    {
+	      addComment("Special Case: WordID / 0x04 --> XA" );
+	      addComment( "notice... X & A are in un-conventional locations here because" );
+	      addComment( "we shift the HI register first so it needs to be in A" );
+	      addAsm( str_LDY + getNameOf(addr_op1), 3, false );
+	      addAsm( str_LDA + getNameOf(addr_op1) + " +1", 3, false );
+	      addAsm( str_LSR, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );
+	      addAsm( str_ROR, 1, false );
+
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_LSR, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );
+	      addAsm( str_ROR, 1, false );
+	    }
+	  else if( OP2 == 8 )
+	    {
+	      addComment("Special Case: WordID / 0x08 --> XA" );
+	      addComment( "notice... X & A are in un-conventional locations here because" );
+	      addComment( "we shift the HI register first so it needs to be in A" );
+	      addAsm( str_LDY + getNameOf(addr_op1), 3, false );
+	      addAsm( str_LDA + getNameOf(addr_op1) + " +1", 3, false );
+	      addAsm( str_LSR, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );
+	      addAsm( str_ROR, 1, false );
+
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_LSR, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );
+	      addAsm( str_ROR, 1, false );
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_LSR, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );
+	      addAsm( str_ROR, 1, false );
+	    }
+
+
+      else
+	    {
+	    
+
+	      div16_is_needed = true;
+	      addAsm( str_LDA + getNameOf(addr_op1), 3, false );
+	      addAsm( str_STA + "_DIV16_FB", 3, false );
+	      addAsm( str_LDA + getNameOf(addr_op1) + " +1", 3, false );
+	      addAsm( str_STA + "_DIV16_FC", 3, false );
+	      addAsm( str_LDA + "#$" + toHex(OP2), 2, false );
+	      addAsm( str_STA + "_DIV16_FD", 3, false );
+	      addAsm( str_LDA + "#$00", 2, false );
+	      addAsm( str_STA + "_DIV16_FE", 3, false );
+	      addAsm( str_JSR + "DIV16", 3, false );
+	      addAsm( str_LDA + "_DIV16_FB", 3, false );
+	      addAsm( str_LDX + "_DIV16_FC", 3, false );
+	    }
 	  strcpy($$.name, "_XA" );
 	}
       else if( op == string( "**" ) )
@@ -25677,13 +25960,15 @@ arithmetic[MATHOP] expression[OP2]
 	  switch(tmp_v)
 	    {
 	    case 0:
-	      addCompilerMessage( "Division by Zero is forbidden!", 3 );
+	      addComment("Special Case: XA / 0x00 --> XA" );
+	      addCompilerMessage( "Hardcoded division by 0.  Das ist verboten.", 3 );
 	      break;
 	    case 1:
+	      addComment("Special Case: XA / 0x01 --> XA" );
 	      strcpy($$.name, "_XA" );
 	      break;
 	    case 2:
-	      addComment( "XA / 2 --> XA" );
+	      addComment("Special Case: XA / 0x02 --> XA" );
 	      addAsm( str_TAY, 1, false );
 	      addAsm( str_TXA, 1, false );
 	      addAsm( str_LSR, 1, false );
@@ -25693,23 +25978,50 @@ arithmetic[MATHOP] expression[OP2]
 	      strcpy($$.name, "_XA" );
 	      break;
 	    case 4:
-	      addComment( "XA / 4 --> XA" );
+	      addComment("Special Case: XA / 0x04 --> XA" );
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      
+	      addAsm( str_LSR, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );
+	      addAsm( str_ROR, 1, false );
+	      
 	      addAsm( str_TAY, 1, false );
 	      addAsm( str_TXA, 1, false );
 	      addAsm( str_LSR, 1, false );
 	      addAsm( str_TAX, 1, false );
 	      addAsm( str_TYA, 1, false );
 	      addAsm( str_ROR, 1, false );
-	      addAsm( str_TAY, 1, false );
-	      addAsm( str_TXA, 1, false );
-	      addAsm( str_LSR, 1, false );
-	      addAsm( str_TAX, 1, false );
-	      addAsm( str_TYA, 1, false );
-	      addAsm( str_ROR, 1, false );
+	      
 	      strcpy($$.name, "_XA" );
 	      break;
-
+	    case 8:
+	      addComment("Special Case: XA / 0x08 --> XA" );
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_TXA, 1, false );
 	      
+	      addAsm( str_LSR, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );
+	      addAsm( str_ROR, 1, false );
+	      
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_LSR, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );
+	      addAsm( str_ROR, 1, false );
+	      
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_LSR, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );
+	      addAsm( str_ROR, 1, false );
+
+	      strcpy($$.name, "_XA" );
+	      break;
 	    default:
 	      div16_is_needed = true;
 	      addComment( "XA / UintIMM --> XA" );
@@ -26162,20 +26474,163 @@ arithmetic[MATHOP] expression[OP2]
 	{
 	  addComment( "XA / WordIMM --> XA" );
 	  int tmp_v = atoi(stripFirst($4.name).c_str());
-	  int tmp_v_L = get_word_L( tmp_v );
-	  int tmp_v_H = get_word_H( tmp_v );
-	  div16_is_needed = true;
-	  addAsm( str_STA + "_DIV16_FB", 3, false);
-	  addAsm( str_STX + "_DIV16_FC", 3, false);
-	  addAsm( str_LDA + "#$" + toHex(tmp_v_L), 2, false );
-	  addAsm( str_STA + "_DIV16_FD", 3, false);
-	  addAsm( str_LDA + "#$" + toHex(tmp_v_H), 2, false );
-	  addAsm( str_STA + "_DIV16_FE", 3, false);
-	  addAsm( str_JSR + "DIV16", 3, false );
-	  addAsm( str_LDA + "_DIV16_FB", 3, false );
-	  addAsm( str_LDX + "_DIV16_FC", 3, false );
+	  switch(tmp_v)
+	    {
+	    case 0:
+	      addComment("Special Case: XA / 0x0000 --> XA" );
+	      addCompilerMessage( "Hardcoded division by 0.  Das ist verboten.", 3 );
+	      break;
+	    case 1:
+	      addComment("Special Case: XA / 0x0001 --> XA" );
+	      strcpy($$.name, "_XA" );
+	      break;
+	    case 2:
+	      addComment("Special Case: XA / 0x0002 --> XA" );
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_LSR, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );
+	      addAsm( str_ROR, 1, false );
+	      strcpy($$.name, "_XA" );
+	      break;
+	    case 4:
+	      addComment("Special Case: XA / 0x0004 --> XA" );
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      
+	      addAsm( str_LSR, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );
+	      addAsm( str_ROR, 1, false );
+	      
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_LSR, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );
+	      addAsm( str_ROR, 1, false );
+	      
+	      strcpy($$.name, "_XA" );
+	      break;
+	    case 8:
+	      addComment("Special Case: XA / 0x0008 --> XA" );
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      
+	      addAsm( str_LSR, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );
+	      addAsm( str_ROR, 1, false );
+	      
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_LSR, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );
+	      addAsm( str_ROR, 1, false );
+	      
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_LSR, 1, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );
+	      addAsm( str_ROR, 1, false );
+	      strcpy($$.name, "_XA" );
+	      break;
+
+	    case 256:
+	      addComment("Special Case: XA / 0x0100 --> XA" );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_LDX + "#$00", 2, false );	      
+	      strcpy($$.name, "_XA" );
+	      break;
+	    case 512:
+	      addComment("Special Case: XA / 0x0200 --> XA" );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_LDX + "#$00", 2, false );	      
+	      addAsm( str_LSR, 1, false );	      
+	      strcpy($$.name, "_XA" );
+	      break;
+	    case 1024:
+	      addComment("Special Case: XA / 0x0400 --> XA" );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_LDX + "#$00", 2, false );	      
+	      addAsm( str_LSR, 1, false );
+	      addAsm( str_LSR, 1, false );
+	      strcpy($$.name, "_XA" );
+	      break;
+	    case 2048:
+	      addComment("Special Case: XA / 0x0800 --> XA" );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_LDX + "#$00", 2, false );	      
+	      addAsm( str_LSR, 1, false );
+	      addAsm( str_LSR, 1, false );
+	      addAsm( str_LSR, 1, false );
+	      strcpy($$.name, "_XA" );
+	      break;
+	    case 4096:
+	      addComment("Special Case: XA / 0x1000 --> XA" );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_LDX + "#$00", 2, false );	      
+	      addAsm( str_LSR, 1, false );
+	      addAsm( str_LSR, 1, false );
+	      addAsm( str_LSR, 1, false );
+	      addAsm( str_LSR, 1, false );
+	      strcpy($$.name, "_XA" );
+	      break;
+	    case 8192:
+	      addComment("Special Case: XA / 0x2000 --> XA" );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_LDX + "#$00", 2, false );	      
+	      addAsm( str_LSR, 1, false );
+	      addAsm( str_LSR, 1, false );
+	      addAsm( str_LSR, 1, false );
+	      addAsm( str_LSR, 1, false );
+	      addAsm( str_LSR, 1, false );
+	      strcpy($$.name, "_XA" );
+	      break;
+	    case 16384:
+	      addComment("Special Case: XA / 0x4000 --> XA" );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_LDX + "#$00", 2, false );	      
+	      addAsm( str_LSR, 1, false );
+	      addAsm( str_LSR, 1, false );
+	      addAsm( str_LSR, 1, false );
+	      addAsm( str_LSR, 1, false );
+	      addAsm( str_LSR, 1, false );
+	      addAsm( str_LSR, 1, false );
+	      strcpy($$.name, "_XA" );
+	      break;
+	    case 32768:
+	      addComment("Special Case: XA / 0x8000 --> XA" );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_LDX + "#$00", 2, false );	      
+	      addAsm( str_LSR, 1, false );
+	      addAsm( str_LSR, 1, false );
+	      addAsm( str_LSR, 1, false );
+	      addAsm( str_LSR, 1, false );
+	      addAsm( str_LSR, 1, false );
+	      addAsm( str_LSR, 1, false );
+	      addAsm( str_LSR, 1, false );
+	      strcpy($$.name, "_XA" );
+	      break;
+	    default:
 	  
-	  strcpy($$.name, "_XA" );
+	      int tmp_v_L = get_word_L( tmp_v );
+	      int tmp_v_H = get_word_H( tmp_v );
+	      div16_is_needed = true;
+	      addAsm( str_STA + "_DIV16_FB", 3, false);
+	      addAsm( str_STX + "_DIV16_FC", 3, false);
+	      addAsm( str_LDA + "#$" + toHex(tmp_v_L), 2, false );
+	      addAsm( str_STA + "_DIV16_FD", 3, false);
+	      addAsm( str_LDA + "#$" + toHex(tmp_v_H), 2, false );
+	      addAsm( str_STA + "_DIV16_FE", 3, false);
+	      addAsm( str_JSR + "DIV16", 3, false );
+	      addAsm( str_LDA + "_DIV16_FB", 3, false );
+	      addAsm( str_LDX + "_DIV16_FC", 3, false );	  
+	      strcpy($$.name, "_XA" );
+	    }
 	}
       else if( op == string( "**" ) )
 	{
