@@ -1303,6 +1303,7 @@ string replaceAll(string str, const string &from, const string &to)
 
   vector <id_and_line*> proposed_ids_vector;
   vector <id_and_line*> defined_ids_vector;
+  vector <string> missing_functions;
   
   class asm_function
   {
@@ -2134,6 +2135,7 @@ string replaceAll(string str, const string &from, const string &to)
       }
 
   }
+  
   void Optimize(int x)
   {
     
@@ -3616,12 +3618,28 @@ string replaceAll(string str, const string &from, const string &to)
     
     for( int j=0; j<proposed_ids_vector.size(); j++ )
       {
-	cerr << "*** ERROR: Undefined Function: " <<  proposed_ids_vector[j]->getName() << " on line " <<  proposed_ids_vector[j]->getLine() << " ***" << endl;
+	string label_to_lookup = proposed_ids_vector[j]->getName();
+	missing_functions.push_back(label_to_lookup);
       }
 
+  	// Sort the vector
+    sort(missing_functions.begin(), missing_functions.end());
+
+    // Move all duplicates to last of vector
+    auto it = unique(missing_functions.begin(), missing_functions.end());
+
+    // Remove all duplicates
+    missing_functions.erase(it, missing_functions.end());
+    
+    for( int j=0; j<missing_functions.size(); j++ )
+      {
+	addCompilerMessage( "Using external function: " + missing_functions[j], 0 );
+      }
+    
+    
     for( int j=0; j<defined_ids_vector.size(); j++ )
       {
-	cerr << "*** Warning: Unused Function: " <<  defined_ids_vector[j]->getName() << " on line " <<  defined_ids_vector[j]->getLine() << " ***" << endl;
+	addCompilerMessage( "Unused function: " + defined_ids_vector[j]->getName(), 1 );
       }
     
     
@@ -3648,10 +3666,9 @@ string replaceAll(string str, const string &from, const string &to)
 		asm_instr[i]->setString( current_LOC );
 	      }
 	  }
-
       }
-
   }
+
   
   void ProcessMemoryLocationsOfCode()
   {
@@ -3662,6 +3679,119 @@ string replaceAll(string str, const string &from, const string &to)
       }
   }
 
+  int distanceFrom( int starting_line, string label_to_find )
+  {
+    int distance = 0;
+    for( int i=starting_line; i<asm_instr.size(); i++ )
+      {
+	if( cmpstr( asm_instr[i]->getString(), label_to_find) )
+	  {
+	    return distance;
+	  }
+	distance += asm_instr[i]->getSize();
+      }
+
+    
+    distance = 0;
+    for( int i=starting_line; i>0; i-- )
+      {
+	if( cmpstr( asm_instr[i]->getString(), label_to_find) )
+	  {
+	    return distance;
+	  }
+	distance -= asm_instr[i]->getSize();
+      }    
+    return 0;
+  }
+
+  
+  void ProcessBranches()
+  {
+    for( int i=0; i<asm_instr.size(); i++ )
+      {
+	if( cmpstr( asm_instr[i]->getString(), str_JMP ) )
+	  {
+	    string remainder = asm_instr[i]->getString().substr(4, asm_instr[i]->getString().size() );
+	    string remainder0 = asm_instr[i]->getString().substr(4, asm_instr[i]->getString().size() );
+	    size_t found = remainder.find(' ');
+
+	    if (found != std::string::npos)
+	      {
+		remainder = remainder.substr(0,found) + ":";
+	      } 
+
+	    int d = distanceFrom(i, remainder );
+	    if( d < 128 && d > -127 && d != 0 )
+	      {
+		if( cmpstr( asm_instr[i-1]->getString(), str_BEQ + "!_skip+" ) )
+		  {
+		    asm_instr[i-1]->setString( commentmarker + asm_instr[i-1]->getString() );
+		    asm_instr[i+1]->setString( commentmarker + asm_instr[i+1]->getString() );
+		    asm_instr[i]->setString( str_BNE + remainder0 + commentmarker + "auto-fixed" );
+		    asm_instr[i]->setSize(2);
+		  }
+		else if( cmpstr( asm_instr[i-1]->getString(), str_BNE + "!_skip+" ) )
+		  {
+		    asm_instr[i-1]->setString( commentmarker + asm_instr[i-1]->getString() );
+		    asm_instr[i+1]->setString( commentmarker + asm_instr[i+1]->getString() );
+		    asm_instr[i]->setString( str_BEQ + remainder0 + commentmarker + "auto-fixed" );
+		    asm_instr[i]->setSize(2);
+		  }
+		else if( cmpstr( asm_instr[i-1]->getString(), str_BCS + "!_skip+" ) )
+		  {
+		    asm_instr[i-1]->setString( commentmarker + asm_instr[i-1]->getString() );
+		    asm_instr[i+1]->setString( commentmarker + asm_instr[i+1]->getString() );
+		    asm_instr[i]->setString( str_BCC + remainder0 + commentmarker + "auto-fixed" );
+		    asm_instr[i]->setSize(2);
+		  }
+		else if( cmpstr( asm_instr[i-1]->getString(), str_BCC + "!_skip+" ) )
+		  {
+		    asm_instr[i-1]->setString( commentmarker + asm_instr[i-1]->getString() );
+		    asm_instr[i+1]->setString( commentmarker + asm_instr[i+1]->getString() );
+		    asm_instr[i]->setString( str_BCS + remainder0 + commentmarker + "auto-fixed" );
+		    asm_instr[i]->setSize(2);
+		  }
+		else if( cmpstr( asm_instr[i-1]->getString(), str_BCC  ) )
+		  {
+		    asm_instr[i-1]->setString( commentmarker + asm_instr[i-1]->getString() );
+		    asm_instr[i]->setString( str_BCS + remainder0 + commentmarker + "auto-fixed" );
+		    asm_instr[i]->setSize(2);
+		  }
+	      }
+	  }
+      }
+
+    // then iterate through the list and delete any //!_skip:, // bcc !_skip+, etc
+    for( int i=asm_instr.size(); i>0; i-- )
+      {
+	if( cmpstr( asm_instr[i-1]->getString(), commentmarker + str_BCC + "!_skip+" ) )
+	  {
+	    asm_instr.erase(asm_instr.begin()+i-1,asm_instr.begin()+i);
+	  }
+	else if( cmpstr( asm_instr[i-1]->getString(), commentmarker + str_BCS + "!_skip+" ) )
+	  {
+	    asm_instr.erase(asm_instr.begin()+i-1,asm_instr.begin()+i);
+	  }
+	else if( cmpstr( asm_instr[i-1]->getString(), commentmarker + str_BEQ + "!_skip+" ) )
+	  {
+	    asm_instr.erase(asm_instr.begin()+i-1,asm_instr.begin()+i);
+	  }
+	else if( cmpstr( asm_instr[i-1]->getString(), commentmarker + str_BNE + "!_skip+" ) )
+	  {
+	    asm_instr.erase(asm_instr.begin()+i-1,asm_instr.begin()+i);
+	  }
+	else if( cmpstr( asm_instr[i-1]->getString(), commentmarker + "!_skip:" ) )
+	  {
+	    asm_instr.erase(asm_instr.begin()+i-1,asm_instr.begin()+i);
+	  }
+	else if( cmpstr( asm_instr[i-1]->getString(), commentmarker + str_BCC ) )
+	  {
+	    asm_instr.erase(asm_instr.begin()+i-1,asm_instr.begin()+i);
+	  }
+      }
+  }
+  
+  
   void ProcessStrings()
   {
     //current_code_location
@@ -7220,6 +7350,7 @@ body: WHILE
     {
       addCompilerMessage( "Invalid JSR - argument needs to be a WordIMM, WordID, or XA", 3 );
     }
+  strcpy( $$.name, "NULL" );
 };
 | tBANK '(' expression ')' ';'
 {
@@ -7297,6 +7428,7 @@ body: WHILE
     {
       addCompilerMessage( "Error setting VIC-II Bank - unknown type", 3 );
     }
+  strcpy( $$.name, "NULL" );
 };
 // STATEMENT
 // 2023 05 02 : this IS needed to support Interrupt Routines
@@ -7313,11 +7445,14 @@ body: WHILE
     {
       addCompilerMessage( "invalid JMP", 3 );
     }
+  strcpy( $$.name, "NULL" );
 };
 | tINLINE '(' STR ')' ';'
 {
   string inlinestring = string($3.name);
   addAsm( inlinestring.substr(1,inlinestring.length()-2), 0, true );
+  strcpy( $$.name, "NULL" );
+
 }
 | tINLINE '(' STR ',' expression ')' ';'
 {
@@ -7331,6 +7466,7 @@ body: WHILE
   
   addAsm( inlinestring.substr(1,inlinestring.length()-2), size, isItALabel );
   //addAsm( string( "        " ) + inlinestring.substr(1,inlinestring.length()-2), size, true );
+  strcpy( $$.name, "NULL" );
 }
 // STATEMENT
 | tXXX '(' ')' ';'
@@ -7338,7 +7474,7 @@ body: WHILE
   // I have no memory of this place -- Gandalf in Moria
   addComment( "special sprite collision interrupt test" );
   addComment( "write a routine in $033C" );
-  addAsm( str_LDA + "#$EE" + commentmarker + "INC (abs)", 2, false );
+  addAsm( str_LDA + "#$EE" + commentmarker + "<-- INC abs", 2, false );
   addAsm( str_STA + "$033C", 3, false );
   addAsm( str_LDA + "#$21", 2, false );
   addAsm( str_STA + "$033D", 3, false );
@@ -7364,7 +7500,8 @@ body: WHILE
 // STATEMENT
 | tNOP '(' ')' ';'
 {
-  addAsm(str_NOP, 1, false );
+  addAsm( str_NOP, 1, false );
+  strcpy( $$.name, "NULL" );
 };
 // STATEMENT
 | tMEMCPY '(' expression {} ',' expression {} ',' expression {} ')' ';'
@@ -10180,7 +10317,7 @@ condition: expression[LHS]
 	      addAsm( str_BNE + "!_skip+", 2, false );
 	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==1 jump to BODY", 3, false );
 	      addAsm( "!_skip:", 0, true );
-	      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR (OPTIMIZE)", 3, false );
+	      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR", 3, false );
 	    }
 	}
       else if( string($OP.name) == string( "==" ) )
@@ -10199,7 +10336,7 @@ condition: expression[LHS]
 	      //addAsm( "!_skip:", 0, true );
 	      //addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR (OPTIMIZE)", 3, false );
 	      addAsm( str_BEQ + getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==1 jump to BODY", 2, false );
-	      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR (OPTIMIZE)", 3, false );
+	      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR", 3, false );
 	    }
 	}
       else if( string($OP.name) == string( ">" ) )
@@ -10218,7 +10355,7 @@ condition: expression[LHS]
 	      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "if z==1 jump out of FOR", 3, false );
 	      addAsm( "!_skip:", 0, true );
 	      addAsm( str_BCS + "!_skip+", 2, false );
-	      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "if c==0 jump out of FOR (OPTIMIZE)", 3, false );
+	      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "if c==0 jump out of FOR", 3, false );
 	      addAsm( "!_skip:", 0, true );
 	      //addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to body of FOR", 3, false );
 	    }
@@ -10237,7 +10374,7 @@ condition: expression[LHS]
 	      addAsm( str_BCS + "!_skip+", 2, false );
 	      addAsm(str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if c==0 jump to BODY", 3, false );
 	      addAsm( "!_skip:", 0, true );
-	      addAsm(str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR (OPTIMIZE)" , 3, false );
+	      addAsm(str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR" , 3, false );
 	    }
 	}
       else if( string($OP.name) == string( ">=" ) )
@@ -10254,7 +10391,7 @@ condition: expression[LHS]
 	      addAsm( str_BCC + "!_skip+", 2, false );
 	      addAsm( str_JMP  + getLabel( label_vector[label_major]+1, false) + commentmarker + "if c==1 jump to BODY", 3, false );
 	      addAsm( "!_skip:", 0, true );
-	      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR (OPTIMIZE)", 3, false );
+	      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR", 3, false );
 	    }
 	}
       else /* != ... NOT EQUAL TO */
@@ -10270,7 +10407,7 @@ condition: expression[LHS]
 	      addComment( "long branch" );
 	      addAsm( str_BEQ + "!+", 2, false );
 	      addAsm( str_JMP +  getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==0 jump to BODY", 2, false );
-	      addAsm( "!:\t" + str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR (OPTIMIZE)", 3, true );
+	      addAsm( "!:\t" + str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR", 3, true );
 	    }
 	}
     }
@@ -10294,7 +10431,7 @@ condition: expression[LHS]
 	      addAsm( str_BNE + "!_skip+", 2, false ); // BNE +3
 	      addAsm( str_JMP + getLabel( label_vector[label_major], false) + commentmarker + "if z==1 jump to BODY", 3, false );
 	      addAsm( "!_skip:", 0, true );
-	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE (OPTIMIZE)", 3, false );
+	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE", 3, false );
 	      strcpy($$.name, "exp <= exp lb" );
 	    }
 	}   
@@ -10310,7 +10447,7 @@ condition: expression[LHS]
 	    {
 	      addComment( "long branch" );
 	      addAsm( str_BEQ + "!_skip+", 2, false );
-	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE (OPTIMIZE)", 3, false );
+	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE", 3, false );
 	      addAsm( "!_skip:", 0, true );
 	      strcpy($$.name, "exp == exp lb" );
 	    }
@@ -10331,7 +10468,7 @@ condition: expression[LHS]
 	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if c==0 jump to ELSE" , 3, false );
 	      addAsm( "!_skip:", 0, true );	      
 	      addAsm( str_BNE + "!_skip+", 2, false );
-	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==1 jump to ELSE (OPTIMIZE)" , 3, false );
+	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==1 jump to ELSE" , 3, false );
 	      addAsm( "!_skip:", 0, true );
 	      strcpy($$.name, "exp > exp lb" ); // longbranches
 	    }
@@ -10349,7 +10486,7 @@ condition: expression[LHS]
 	    {
 	      addComment( "long branch" );
 	      addAsm( str_BCC + "!_skip+", 2, false );
-	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE (OPTIMIZE)", 3, false );
+	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE", 3, false );
 	      addAsm( "!_skip:", 0, true );
 	      strcpy($$.name, "exp < exp lb" ); // longbranches
 	    }
@@ -10366,7 +10503,7 @@ condition: expression[LHS]
 	    {
 	      addComment( "long branch" );
 	      addAsm( str_BCS + "!_skip+", 2, false );
-	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if c==1 jump to ELSE (OPTIMIZE)", 3, false );
+	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if c==1 jump to ELSE", 3, false );
 	      addAsm( "!_skip:", 0, true );
 	      strcpy($$.name, "exp >= exp lb" ); // longbranches
 	    }
@@ -10383,7 +10520,7 @@ condition: expression[LHS]
 	    {
 	      addComment( "long branch" );
 	      addAsm( str_BNE + "!_skip+", 2, false ); // BNE +3
-	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==1 jump to ELSE (OPTIMIZE)", 3, false );
+	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==1 jump to ELSE", 3, false );
 	      addAsm( "!_skip:", 0, true );
 	      strcpy($$.name, "exp != exp lb" ); // longbranches
 	    }
@@ -10628,7 +10765,7 @@ condition: expression[LHS]
 	  addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addComment( "deleted previous 2 instructions" );
  
-	  addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "JMP to else (OPTIMIZE)", 3, false);
+	  addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "JMP to else", 3, false);
 	  addAsm( "!_skip:", 0, true );
 	}
       else if( _tmpCond == "exp < exp lb" )
@@ -10643,7 +10780,7 @@ condition: expression[LHS]
 	  addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addComment( "deleted previous 2 instructions" );
       
-	  addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "JMP to else (OPTIMIZE)", 3, false);
+	  addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "JMP to else", 3, false);
 	  addAsm( "!_skip:", 0, true );
 	}
       else if( _tmpCond == "exp != exp lb" )
@@ -10658,7 +10795,7 @@ condition: expression[LHS]
 	  addCompilerMessage( "Deleted 2 Mnemonics", 0 );
 	  addComment( "deleted previous 2 instructions" );
       
-	  addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "JMP to else (OPTIMIZE)", 3, false);
+	  addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "JMP to else", 3, false);
 	  addAsm( "!_skip:", 0, true );
 	}
 
@@ -26190,10 +26327,11 @@ arithmetic[MATHOP] expression[OP2]
 	      addComment( "XA * WordIMM (32768) --> XA" );
 
 	      // saves 2 bytes
-	      addAsm( str_CLC );                 // 2 cycles
+	      //addAsm( str_CLC );                 // 2 cycles
+	      addAsm( str_LSR );                 // 2 cycles
+	      //addAsm( str_LDA + "#$00", 2, false );  // 2 cycles
 	      addAsm( str_ROR );                 // 2 cycles
-	      addAsm( str_LDA + "#$00", 2, false );  // 2 cycles
-	      addAsm( str_ROR );                 // 2 cycles
+	      addAsm( str_AND + "#$08", 2, false ); // 2 cycles
 	      addAsm( str_TAX );                 // 2 cycles
 	      addAsm( str_LDA + "#$00", 2, false );  // 2 cycles
 	      strcpy($$.name, "_XA");
@@ -31700,10 +31838,12 @@ int main(int argc, char *argv[])
   if( arg_optimize ) Optimize(0);
   ProcessComments();
   ProcessVariables();
-  //ProcessFunctions();
+  ProcessFunctions();
   ProcessReturnTypes();
   ProcessMemoryLocationsOfCode();
   ProcessStrings();
+  ProcessBranches();
+  ProcessBranches();
   //ProcessMobs();
   current_code_location = code_start;  // reset the memory counter
   
