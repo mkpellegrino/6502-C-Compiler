@@ -3679,88 +3679,159 @@ string replaceAll(string str, const string &from, const string &to)
       }
   }
 
-  int distanceFrom( int starting_line, string label_to_find )
+  int distanceFrom( int starting_line, string label_to_find, int occurance = 1 )
   {
     int distance = 0;
+    int which_occurance = 0;
     for( int i=starting_line; i<asm_instr.size(); i++ )
       {
 	if( cmpstr( asm_instr[i]->getString(), label_to_find) )
 	  {
-	    return distance;
+	    which_occurance++;
+	    if( which_occurance == occurance )
+	      {
+		return distance;
+	      }
 	  }
 	distance += asm_instr[i]->getSize();
       }
 
-    
+    which_occurance = 0;
     distance = 0;
+    
     for( int i=starting_line; i>0; i-- )
       {
 	if( cmpstr( asm_instr[i]->getString(), label_to_find) )
 	  {
-	    return distance;
+	    which_occurance++;
+	    if( which_occurance == occurance )
+	      {
+		return distance;
+	      }
 	  }
 	distance -= asm_instr[i]->getSize();
       }    
     return 0;
   }
 
+  int countPluses(string s)
+  {
+    int pluses =0;
+    string p;
+    size_t found = s.find('+');	    
+    if (found != std::string::npos)
+      {
+	p = s.substr(found,s.length());
+      } 
+    pluses = p.length();
+    return pluses;
+  }
   
   void ProcessBranches()
   {
     for( int i=0; i<asm_instr.size(); i++ )
       {
-	if( cmpstr( asm_instr[i]->getString(), str_JMP ) )
+	if(
+	   cmpstr( asm_instr[i]->getString(), str_JMP + "!else" ) &&
+	   cmpstr( asm_instr[i-1]->getString(), str_BEQ + "!body+" ) && 1 &&
+	   !cmpstr( asm_instr[i+1]->getString(), "!else1:	// (||)" ) )
+		 
+	   
 	  {
-	    string remainder = asm_instr[i]->getString().substr(4, asm_instr[i]->getString().size() );
-	    string remainder0 = asm_instr[i]->getString().substr(4, asm_instr[i]->getString().size() );
-	    size_t found = remainder.find(' ');
 
+	    string label = asm_instr[i]->getString().substr(4,asm_instr[i]->getString().length());
+	    string actual_label = label;
+	    size_t found = label.find(' ');	    
 	    if (found != std::string::npos)
 	      {
-		remainder = remainder.substr(0,found) + ":";
+		label = label.substr(0, found);
 	      } 
 
-	    int d = distanceFrom(i, remainder );
+	    
+	    found = label.find('+');	    
+	    if (found != std::string::npos)
+	      {
+		label = label.substr(found, label.length());
+	      } 	    
+	    
+	    int d = distanceFrom(i, "!else1:", label.length());	    
+	    if( d < 128 && d > -127 && d != 0 )
+	      {
+		    asm_instr[i-1]->setString( commentmarker + asm_instr[i-1]->getString() );
+		    asm_instr[i]->setString( str_BNE + actual_label + commentmarker + "[" + to_string(d) + "] (OPTIMIZED)" );
+		    asm_instr[i]->setSize(2);
+	      }
+	  }
+
+	else if(
+	   cmpstr( asm_instr[i]->getString(), str_JMP + "!else1+" ) &&
+	   cmpstr( asm_instr[i-1]->getString(), str_BNE + "!body+" ) && 1
+	   )
+	  {
+	    int d = distanceFrom(i, "!else1:" );	    
+	    if( d < 128 && d > -127 && d != 0 )
+	      {
+		    asm_instr[i-1]->setString( commentmarker + asm_instr[i-1]->getString() );
+		    asm_instr[i]->setString( str_BEQ + "!else1+" + commentmarker + "(OPTIMIZED)" );
+		    asm_instr[i]->setSize(2);
+	      }
+	  }
+      }
+
+    // This eliminates all those skips
+    for( int i=0; i<asm_instr.size(); i++ )
+      {
+	if(cmpstr( asm_instr[i]->getString(), str_JMP ))
+	  {
+	    string label_no_colon;
+	    string label_with_colon;
+	    string line_of_code_without_instruction = asm_instr[i]->getString().substr(4, asm_instr[i]->getString().size() );
+	    
+	    size_t found = line_of_code_without_instruction.find(' ');	    
+	    if (found != std::string::npos)
+	      {
+		label_no_colon = line_of_code_without_instruction.substr(0,found);
+	      } 
+	    int d = distanceFrom(i, label_no_colon );
 	    if( d < 128 && d > -127 && d != 0 )
 	      {
 		if( cmpstr( asm_instr[i-1]->getString(), str_BEQ + "!_skip+" ) )
 		  {
 		    asm_instr[i-1]->setString( commentmarker + asm_instr[i-1]->getString() );
 		    asm_instr[i+1]->setString( commentmarker + asm_instr[i+1]->getString() );
-		    asm_instr[i]->setString( str_BNE + remainder0 + commentmarker + "auto-fixed" );
+		    asm_instr[i]->setString( str_BNE + label_no_colon + commentmarker + "(OPTIMIZED)" );
 		    asm_instr[i]->setSize(2);
 		  }
 		else if( cmpstr( asm_instr[i-1]->getString(), str_BNE + "!_skip+" ) )
 		  {
 		    asm_instr[i-1]->setString( commentmarker + asm_instr[i-1]->getString() );
 		    asm_instr[i+1]->setString( commentmarker + asm_instr[i+1]->getString() );
-		    asm_instr[i]->setString( str_BEQ + remainder0 + commentmarker + "auto-fixed" );
+		    asm_instr[i]->setString( str_BEQ + label_no_colon + commentmarker + "(OPTIMIZED)" );
 		    asm_instr[i]->setSize(2);
 		  }
 		else if( cmpstr( asm_instr[i-1]->getString(), str_BCS + "!_skip+" ) )
 		  {
 		    asm_instr[i-1]->setString( commentmarker + asm_instr[i-1]->getString() );
 		    asm_instr[i+1]->setString( commentmarker + asm_instr[i+1]->getString() );
-		    asm_instr[i]->setString( str_BCC + remainder0 + commentmarker + "auto-fixed" );
+		    asm_instr[i]->setString( str_BCC + label_no_colon + commentmarker + "(OPTIMIZED)" );
 		    asm_instr[i]->setSize(2);
 		  }
 		else if( cmpstr( asm_instr[i-1]->getString(), str_BCC + "!_skip+" ) )
 		  {
 		    asm_instr[i-1]->setString( commentmarker + asm_instr[i-1]->getString() );
 		    asm_instr[i+1]->setString( commentmarker + asm_instr[i+1]->getString() );
-		    asm_instr[i]->setString( str_BCS + remainder0 + commentmarker + "auto-fixed" );
+		    asm_instr[i]->setString( str_BCS + label_no_colon + commentmarker + "(OPTIMIZED)" );
 		    asm_instr[i]->setSize(2);
 		  }
 		else if( cmpstr( asm_instr[i-1]->getString(), str_BCC  ) )
 		  {
 		    asm_instr[i-1]->setString( commentmarker + asm_instr[i-1]->getString() );
-		    asm_instr[i]->setString( str_BCS + remainder0 + commentmarker + "auto-fixed" );
+		    asm_instr[i]->setString( str_BCS + label_no_colon + commentmarker + "(OPTIMIZED)" );
 		    asm_instr[i]->setSize(2);
 		  }
 	      }
 	  }
       }
-
     // then iterate through the list and delete any //!_skip:, // bcc !_skip+, etc
     for( int i=asm_instr.size(); i>0; i-- )
       {
@@ -3787,6 +3858,29 @@ string replaceAll(string str, const string &from, const string &to)
 	else if( cmpstr( asm_instr[i-1]->getString(), commentmarker + str_BCC ) )
 	  {
 	    asm_instr.erase(asm_instr.begin()+i-1,asm_instr.begin()+i);
+	  }
+	else if( cmpstr( asm_instr[i-1]->getString(), commentmarker + str_BEQ + "!body+" ) )
+	  {
+	    asm_instr.erase(asm_instr.begin()+i-1,asm_instr.begin()+i);
+	  }
+      }
+
+    for( int i=asm_instr.size(); i>0; i-- )
+      {
+	for( int j = 1; j < 50; j++ )
+	  {
+	    // remove unnecessary jumps to unnecessary labels
+	    if( cmpstr( asm_instr[i-1]->getString(), str_JMP + "!else"+to_string(j)+"+ // jump to ELSE" ) &&
+		cmpstr( asm_instr[i]->getString(), "!else"+to_string(j)+":	// (||)" ))
+	      {
+		asm_instr.erase(asm_instr.begin()+i-1,asm_instr.begin()+i+1);
+	      }
+
+	    if( cmpstr( asm_instr[i-1]->getString(), str_JMP + "!else"+to_string(j)+"+ // jump to ELSE" ) &&
+		cmpstr( asm_instr[i]->getString(), "!else"+to_string(j)+":	// (&&)" ))
+	      {
+		asm_instr.erase(asm_instr.begin()+i-1,asm_instr.begin()+i+1);
+	      }
 	  }
       }
   }
@@ -5408,7 +5502,7 @@ body: WHILE
       addAsm( str_STA + "$02", 2, false );
       addAsm( str_LDA + "#$" + toHex(tmp_H), 2, false );
       addAsm( str_STA + "$03", 2, false );
-      addAsm( str_JSR + "PRN", 3, false );
+      addAsm( str_JSR + "_prn", 3, false );
 
       addAsm( str_PLA, 1, false );
       addAsm( str_STA + "$03", 2, false );
@@ -5421,41 +5515,51 @@ body: WHILE
       int addr = getAddressOf( $3.name );
       string OP3 = getNameOf(addr);
 
-      addAsm( str_LDX + "$02", 2, false );
-      addAsm( str_LDA + "$03", 2, false );
-      addAsm( str_PHA, 1, false );
-      
+      if( arg_safe_loops )
+	{
+	  addAsm( str_LDX + "$02", 2, false );
+	  addAsm( str_LDA + "$03", 2, false );
+	  addAsm( str_PHA, 1, false );
+	}
       addAsm( str_LDA + OP3, 3, false );
       addAsm( str_STA + "$02", 2, false );
       addAsm( str_LDA + OP3 + " +1", 3, false );
       addAsm( str_STA + "$03", 2, false );
-      addAsm( str_JSR + "PRN", 3, false );
-
-      addAsm( str_PLA, 1, false );
-      addAsm( str_STA + "$03", 2, false );
-      addAsm( str_STX + "$02", 2, false );
+      addAsm( str_JSR + "_prn", 3, false );
+      if( arg_safe_loops )
+	{
+	  addAsm( str_PLA, 1, false );
+	  addAsm( str_STA + "$03", 2, false );
+	  addAsm( str_STX + "$02", 2, false );
+	}
     }
   else if( isXA($3.name) )
     {
       addComment( "prints(XA);");
       printf_is_needed = true;
 
-      addAsm( str_TAY, 1, false );
-      addAsm( str_LDA + "$02", 2, false );
-      addAsm( str_PHA, 1, false );
-      addAsm( str_LDA + "$03", 2, false ); 
-      addAsm( str_PHA, 1, false );
-
-      
-      addAsm( str_STY + "$02", 2, false );
+      if( arg_safe_loops )
+	{
+	  addAsm( str_TAY, 1, false );
+	  addAsm( str_LDA + "$02", 2, false );
+	  addAsm( str_PHA, 1, false );
+	  addAsm( str_LDA + "$03", 2, false ); 
+	  addAsm( str_PHA, 1, false );      
+	  addAsm( str_STY + "$02", 2, false );
+	}
+      else
+	{
+	  addAsm( str_STA + "$02", 2, false );
+	}
       addAsm( str_STX + "$03", 2, false );
-      addAsm( str_JSR + "PRN", 3, false );
-
-      addAsm( str_PLA, 1, false );
-      addAsm( str_STA + "$03", 2, false );
-      addAsm( str_PLA, 1, false );
-      addAsm( str_STA + "$02", 2, false );
-
+      addAsm( str_JSR + "_prn", 3, false );
+      if( arg_safe_loops )
+	{
+	  addAsm( str_PLA, 1, false );
+	  addAsm( str_STA + "$03", 2, false );
+	  addAsm( str_PLA, 1, false );
+	  addAsm( str_STA + "$02", 2, false );
+	}
     }
   else
     {
@@ -5587,7 +5691,7 @@ body: WHILE
       addAsm( str_STA + "$02", 2, false );
       addAsm( str_LDA + "#$01", 2, false );
       addAsm( str_STA + "$03", 2, false );
-      addAsm( str_JSR + "PRN", 3, false ); printf_is_needed = true;
+      addAsm( str_JSR + "_prn", 3, false ); printf_is_needed = true;
     }
   else if( isWordID($3.name) )
     {
@@ -5662,22 +5766,26 @@ body: WHILE
 | PRINTFF '(' STR ')' ';'
 {
   addComment( string("printf(") + string($3.name) + string( ");") );
-
-  addAsm( str_LDX + "$02", 2, false );
-  addAsm( str_LDA + "$03", 2, false );
-  addAsm( str_PHA );
-  
+  if( arg_safe_loops )
+    {
+      addAsm( str_LDX + "$02", 2, false );
+      addAsm( str_LDA + "$03", 2, false );
+      addAsm( str_PHA );
+    }
   addString( string("STRLBL") + itos(string_number), string($3.name).substr(1,string($3.name).length()-2), asm_instr.size() );
   addAsm( str_LDA + "#<STRLBL" + itos(string_number), 2, false );
   addAsm( str_STA + "$02", 2, false );
   addAsm( str_LDA + "#>STRLBL" + itos(string_number++), 2, false );
   addAsm( str_STA + "$03", 2, false );
   
-  addAsm( str_JSR + "PRN", 3, false );
+  addAsm( str_JSR + "_prn", 3, false );
 
-  addAsm( str_PLA );
-  addAsm( str_STA + "$03", 2, false );
-  addAsm( str_STX + "$02", 2, false );
+  if( arg_safe_loops )
+    {
+      addAsm( str_PLA );
+      addAsm( str_STA + "$03", 2, false );
+      addAsm( str_STX + "$02", 2, false );
+    }
   printf_is_needed = true;
 };
 // STATEMENT
@@ -7877,7 +7985,7 @@ body: WHILE
   
   byte_count -= asm_instr[asm_instr.size()-2]->getSize();
   asm_instr.erase( asm_instr.end()-2 );  
-  addComment( "OPTIMIZED: Removed unnecessary 'jmp'" );	       
+  addComment( "(OPTIMIZED) Removed unnecessary 'jmp'" );	       
   $$.nd = NULL;
 }
 
@@ -10567,11 +10675,8 @@ condition: expression[LHS]
 	      // 2026 05 10
 	      addComment( "long branch" );
 	      addAsm( str_BEQ + "!body+", 2, false );
-	      //popScope();
-	      //addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE (OPTIMIZE)", 3, false );
-	      addAsm( str_JMP + "!else" + toString(if_depth) + "+" + commentmarker + "jump to ELSE (OPTIMIZE)", 3, false );
-	      //pushScope("IF");
-	      //addAsm( "!body:\t// delete this if more than one condition (AND only!!!)", 0, true );
+	      //addAsm( str_JMP + "!else" + toString(if_depth) + "+" + commentmarker + "jump to ELSE (OPTIMIZE)", 3, false );
+	      addAsm( str_JMP + "!else" + toString(if_depth) + "+" + commentmarker + "jump to ELSE", 3, false );
 	      strcpy($$.name, "exp == exp lb" );
 	    }
 	}
@@ -10580,8 +10685,6 @@ condition: expression[LHS]
 	  if( !long_branches )
 	    {
 	      addComment( "short branch" );
-	      //addAsm( str_BCC + getLabel( label_vector[label_major]+1, false) + commentmarker + "if c==0 jump to ELSE", 2, false );
-	      //addAsm( str_BEQ + getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==1 jump to ELSE", 2, false );
 	      addAsm( str_BCC + "!else" + toString(if_depth) + "+" + commentmarker + "if c==0 jump to ELSE", 2, false );
 	      addAsm( str_BEQ + "!else" + toString(if_depth) + "+" + commentmarker + "if z==1 jump to ELSE", 2, false );
 	      strcpy($$.name, "exp > exp sb" ); // shortbranches
@@ -10589,18 +10692,11 @@ condition: expression[LHS]
 	  else
 	    {
 	      addComment( "long branch" );
-	      //addAsm( str_BCS + "!_skip+", 2, false );
-	      //addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if c==0 jump to ELSE" , 3, false );
-	      //addAsm( "!_skip:", 0, true );	      
-	      //addAsm( str_BNE + "!_skip+", 2, false );
-	      //addAsm(str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==1 jump to ELSE (OPTIMIZE)" , 3, false );
-	      //addAsm( "!_skip:", 0, true );
-
 	      addAsm( str_BCS + "!_skip+", 2, false );
 	      addAsm( str_JMP + "!else" + toString(if_depth) + "+" + commentmarker + "if c==0 jump to ELSE" , 3, false );
 	      addAsm( "!_skip:", 0, true );	      
 	      addAsm( str_BNE + "!body+", 2, false );
-	      addAsm(str_JMP + "!else" + toString(if_depth) + "+" + commentmarker + "if z==1 jump to ELSE (OPTIMIZE)" , 3, false );
+	      addAsm( str_JMP + "!else" + toString(if_depth) + "+" + commentmarker + "if z==1 jump to ELSE" , 3, false );
 
 	      strcpy($$.name, "exp > exp lb" ); // longbranches
 	    }
@@ -10663,7 +10759,7 @@ condition: expression[LHS]
 	      //addAsm( str_BNE + "!skip+", 2, false ); //jump to body
 	      addAsm( str_BNE + "!body+", 2, false ); //jump to body
 	      //addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==1 jump to ELSE (OPTIMIZE)", 3, false );
-	      addAsm( str_JMP + "!else" + toString(if_depth) + "+" + commentmarker + "if z==1 jump to ELSE (OPTIMIZE)", 3, false );
+	      addAsm( str_JMP + "!else" + toString(if_depth) + "+" + commentmarker + "if z==1 jump to ELSE ", 3, false );
 	      //addAsm( "!skip:", 0, true );
 	      //addAsm( "!body:\t// delete this if more than one condition (AND only!!!)", 0, true );
 	      strcpy($$.name, "exp != exp lb" ); // longbranches
@@ -10820,6 +10916,7 @@ statement: datatype ID init
   string _id = string($2.name);
   string _init = string($3.name);
 
+
   if( int_uint )
     {
       // addCompilerMessage( "Initialising a signed integer with an unsigned integer that is > 127.  Chaos may ensue.", 1 );
@@ -10832,6 +10929,7 @@ statement: datatype ID init
 
   // this adds the variable to the list of variables
   addAsmVariable(_id, current_variable_type );
+
 
   current_variable_base_address = getAddressOf(_id);
 
@@ -10992,6 +11090,8 @@ statement: datatype ID init
     {
       addCompilerMessage( "Initialising a WordID with an 8-bit SIGNED  integer", 1);
       int instr_size = 3;
+      if( current_variable_base_address < 256 ) instr_size = 2;
+
       addAsm( str_STA + _id, instr_size, false );	    
       addAsm( str_LDX + "#$FF", 2, false );
       addAsm( str_STX + _id + " +1", instr_size, false );
@@ -11011,9 +11111,12 @@ statement: datatype ID init
     }
   else if( isWordDT(_dt) && isWordID(_id) && isXA(_init))
     {
+      int instr_size = 3;
+      if( current_variable_base_address < 256 ) instr_size = 2;
       addComment( "word WordID = XA" );
-      addAsm(str_STA + _id + commentmarker, 3, false );
-      addAsm(str_STX + _id + " +1", 3, false );
+      addAsm(str_STA + _id, instr_size, false );
+      if( current_variable_base_address+1 < 256 ) instr_size = 2;
+      addAsm(str_STX + _id + " +1", instr_size, false );
     }
   else if(isWordDT(_dt) && isWordID(_id) && isFAC(_init))
     {
@@ -20636,40 +20739,67 @@ arithmetic[MATHOP] expression[OP2]
 		}
 	      addComment( "----------------------" );
 	      addAsm( str_LDA + O1, sizeOP1A, false );
-	      
+	      addAsm( str_PHA, 1, false );
+	      addAsm( str_LDX + "#$00", 2, false );
+	      addAsm( str_STX + "$03", 2, false );
+	      addAsm( str_STX + "$05", 2, false );
 	      addAsm( str_STA + "$02", 2, false );
-	      addAsm( str_STA + "$04", 2, false );
-	      addAsm( str_LDA + "#$00", 2, false );
-	      addAsm( str_STA + "$03", 2, false );
-	      addAsm( str_STA + "$05", 2, false );
-
 	      addAsm( str_ASL + "$02", 2, false );
 	      addAsm( str_ROL + "$03", 2, false );
-	      addAsm( str_CLC, 1, false );
-	      addAsm( str_LDA + "$02", 2, false );
-	      addAsm( str_ADC + "$04", 2, false );
-	      addAsm( str_STA + "$02", 2, false );
-	      
-	      addAsm( str_LDA + "$03", 2, false );
-	      addAsm( str_ADC + "$05", 2, false );
-	      addAsm( str_STA + "$03", 2, false );
-	      
-	      addAsm( str_ASL + "$04", 2, false );
-	      addAsm( str_ROL + "$05", 2, false );
-	      addAsm( str_ASL + "$04", 2, false );
-	      addAsm( str_ROL + "$05", 2, false );
-	      addAsm( str_ASL + "$04", 2, false );
-	      addAsm( str_ROL + "$05", 2, false );
 	      
 	      addAsm( str_CLC, 1, false );
-	      addAsm( str_LDA + "$02", 2, false );
-	      addAsm( str_ADC + "$04", 2, false );	      
+	      addAsm( str_ADC + "$02", 2, false );
 	      addAsm( str_STA + "$02", 2, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_ADC + "$03", 2, false );
+	      
+	      addAsm( str_PLA, 1, false );
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_ROL + "$05", 2, false );
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_ROL + "$05", 2, false );
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_ROL + "$05", 2, false );
+	      addAsm( str_CLC, 1, false );
+	      addAsm( str_ADC + "$02", 2, false );
 	      addAsm( str_TAY, 1, false );
-	      
-	      addAsm( str_LDA + "$03", 2, false );
-	      addAsm( str_ADC + "$05", 2, false );
+	      addAsm( str_LDA + "$05", 2, false );
+	      addAsm( str_ADC + "$03", 2, false );
 	      addAsm( str_TAX, 1, false );
+	      //addAsm( str_TYA, 1, false );
+	      
+	      if(0)
+		{
+		  addAsm( str_LDA + O1, sizeOP1A, false );
+		  addAsm( str_STA + "$02", 2, false );
+		  addAsm( str_STA + "$04", 2, false );
+		  addAsm( str_LDA + "#$00", 2, false );
+		  addAsm( str_STA + "$03", 2, false );
+		  addAsm( str_STA + "$05", 2, false );
+		  addAsm( str_ASL + "$02", 2, false );
+		  addAsm( str_ROL + "$03", 2, false );
+		  addAsm( str_CLC, 1, false );
+		  addAsm( str_LDA + "$02", 2, false );
+		  addAsm( str_ADC + "$04", 2, false );
+		  addAsm( str_STA + "$02", 2, false );
+		  addAsm( str_LDA + "$03", 2, false );
+		  addAsm( str_ADC + "$05", 2, false );
+		  addAsm( str_STA + "$03", 2, false );
+		  addAsm( str_ASL + "$04", 2, false );
+		  addAsm( str_ROL + "$05", 2, false );
+		  addAsm( str_ASL + "$04", 2, false );
+		  addAsm( str_ROL + "$05", 2, false );
+		  addAsm( str_ASL + "$04", 2, false );
+		  addAsm( str_ROL + "$05", 2, false );
+		  addAsm( str_CLC, 1, false );
+		  addAsm( str_LDA + "$02", 2, false );
+		  addAsm( str_ADC + "$04", 2, false );	      
+		  addAsm( str_STA + "$02", 2, false );
+		  addAsm( str_TAY, 1, false );
+		  addAsm( str_LDA + "$03", 2, false );
+		  addAsm( str_ADC + "$05", 2, false );
+		  addAsm( str_TAX, 1, false );
+		}
 	      if( !arg_unsafe_math )
 		{
 		  addComment( "-------------------" );
@@ -20747,7 +20877,7 @@ arithmetic[MATHOP] expression[OP2]
 	  int op2 = atoi(stripFirst($4.name).c_str());
 	  if( op2 == 10 )
 	    {
-	      addComment( "Special Case UintID / 10" );
+	      addComment( "Special Case UintID / 10 (destroys $2A)" );
 	      addAsm( str_LDA + O1, sizeOP1A, false );
 	      addAsm( str_LSR );
 	      addAsm( str_STA + "$2A", 2, false );
@@ -20973,7 +21103,7 @@ arithmetic[MATHOP] expression[OP2]
     }
   else if( isUintID($1.name) && isWordIMM($4.name) )
     {
-      // TODO: Hardcode common multipliers (256, 512, 1024, 2048, 4096, 8192)...  are there others?
+      // TODO: Hardcode common multipliers (40, 256, 512, 1024, 2048, 4096, 8192)...  are there others?
       addComment( "UintID math WordIMM: TOC" );      
       int OP2 = atoi(stripFirst($4.name).c_str());
       if( op == string("+") )
@@ -21065,20 +21195,91 @@ arithmetic[MATHOP] expression[OP2]
 	}
       else if( op == string("/") )
 	{
-	  addCompilerMessage( "UintID / WordIMM: possible division by zero", 1 );
-	  addComment( "UintID / WordIMM --> XA" );
-	  div16_is_needed = true;
-	  addAsm( str_LDA + O1, sizeOP1A, false );
-	  addAsm( str_STA + "_DIV16_FB", 3, false);
-	  addAsm( str_LDA + "#$00", 2, false );
-	  addAsm( str_STA + "_DIV16_FC", 3, false);
-	  addAsm( str_LDA + "#$" + IMM2L, 2, false );
-	  addAsm( str_STA + "_DIV16_FD", 3, false);
-	  addAsm( str_LDA + "#$" + IMM2H, 2, false );
-	  addAsm( str_STA + "_DIV16_FE", 3, false);
-	  addAsm( str_JSR + "DIV16", 3, false );
-  	  addAsm( str_LDA + "_DIV16_FB", 3, false );
-	  addAsm( str_LDX + "_DIV16_FC", 3, false );
+	  if( OP2 > 255 ) OP2 = 256;
+	  switch( OP2 )
+	    {
+	    case 0:
+	      addCompilerMessage( "division by zero.  das ist verboten!", 3 );
+	      break;
+	    case 128:
+	      addComment( "This could be shortened by rolling left twice and then anding with #$01" );
+	      addAsm( str_LDA + O1, sizeOP1A, false );
+	      addAsm( str_LSR, 2, false );
+	      addAsm( str_LSR, 2, false );
+	      addAsm( str_LSR, 2, false );
+	      addAsm( str_LSR, 2, false );
+	      addAsm( str_LSR, 2, false );
+	      addAsm( str_LSR, 2, false );
+	      addAsm( str_LSR, 2, false );
+	      addAsm( str_LDX + "#$00", 2, false );
+	      break;	      
+	    case 64:
+	      addAsm( str_LDA + O1, sizeOP1A, false );
+	      addAsm( str_LSR, 2, false );
+	      addAsm( str_LSR, 2, false );
+	      addAsm( str_LSR, 2, false );
+	      addAsm( str_LSR, 2, false );
+	      addAsm( str_LSR, 2, false );
+	      addAsm( str_LSR, 2, false );
+	      addAsm( str_LDX + "#$00", 2, false );
+	      break;	      
+	    case 32:
+	      addAsm( str_LDA + O1, sizeOP1A, false );
+	      addAsm( str_LSR, 2, false );
+	      addAsm( str_LSR, 2, false );
+	      addAsm( str_LSR, 2, false );
+	      addAsm( str_LSR, 2, false );
+	      addAsm( str_LSR, 2, false );
+	      addAsm( str_LDX + "#$00", 2, false );
+	      break;	      
+	    case 16:
+	      addAsm( str_LDA + O1, sizeOP1A, false );
+	      addAsm( str_LSR, 2, false );
+	      addAsm( str_LSR, 2, false );
+	      addAsm( str_LSR, 2, false );
+	      addAsm( str_LSR, 2, false );
+	      addAsm( str_LDX + "#$00", 2, false );
+	      break;	      
+	    case 8:
+	      addAsm( str_LDA + O1, sizeOP1A, false );
+	      addAsm( str_LSR, 2, false );
+	      addAsm( str_LSR, 2, false );
+	      addAsm( str_LSR, 2, false );
+	      addAsm( str_LDX + "#$00", 2, false );
+	      break;	      
+	    case 4:
+	      addAsm( str_LDA + O1, sizeOP1A, false );
+	      addAsm( str_LSR, 2, false );
+	      addAsm( str_LSR, 2, false );
+	      addAsm( str_LDX + "#$00", 2, false );
+	      break;	      
+	    case 2:
+	      addAsm( str_LDA + O1, sizeOP1A, false );
+	      addAsm( str_LSR, 2, false );	      
+	      addAsm( str_LDX + "#$00", 2, false );
+	      break;	      
+	    case 1:
+	      addAsm( str_LDA + O1, sizeOP1A, false );
+	      addAsm( str_LDX + "#$00", 2, false );
+	      break;
+	    case 256:
+	      addAsm( str_LAX + "#$00", 2, false );
+	      break;
+	    default:
+	      addComment( "UintID / WordIMM --> XA" );
+	      div16_is_needed = true;
+	      addAsm( str_LDA + O1, sizeOP1A, false );
+	      addAsm( str_STA + "_DIV16_FB", 3, false);
+	      addAsm( str_LDA + "#$00", 2, false );
+	      addAsm( str_STA + "_DIV16_FC", 3, false);
+	      addAsm( str_LDA + "#$" + IMM2L, 2, false );
+	      addAsm( str_STA + "_DIV16_FD", 3, false);
+	      addAsm( str_LDA + "#$" + IMM2H, 2, false );
+	      addAsm( str_STA + "_DIV16_FE", 3, false);
+	      addAsm( str_JSR + "DIV16", 3, false );
+	      addAsm( str_LDA + "_DIV16_FB", 3, false );
+	      addAsm( str_LDX + "_DIV16_FC", 3, false );
+	    }
 	  strcpy($$.name, "_XA" );
 	}
       else if( op == string( "**" ) )
@@ -21125,40 +21326,19 @@ arithmetic[MATHOP] expression[OP2]
 	}
       else if( op == string("-") )
 	{
-	  addCompilerMessage( "UintID - XA --> XA should be written better", 0 );
-	  if( !arg_unsafe_math)
-	    {
-	      addComment( "UintID - XA --> XA (Uses $02)");
-	    }
-	  else
-	    {
-	      addComment( "UintID - XA --> XA (Destroys $02)");
-	    }
-	  if( !arg_unsafe_math)
-	    {
-	      addAsm( str_TAY );
-	      addAsm( str_LDA + "$02", 2, false );
-	      addAsm( str_PHA );
-	      addAsm( str_STY + "$02", 2, false );
-	    }
-	  else
-	    {
-	      addAsm( str_STA + "$02", 2, false );
-	    }
-	  addAsm( str_LDA + O1, sizeOP1A, false  );
-	  addAsm( str_SEC );
-	  addAsm( str_SBC + "$02", 2, false );
-	  addAsm( str_TAY );
-	  addAsm( str_STX + "$02", 2, false );
-	  addAsm( str_LDA + "#$00", 2, false  );
-	  addAsm( str_SBC + "$02", 2, false );
-	  addAsm( str_TAX );
-	  if( !arg_unsafe_math)
-	    {
-	      addAsm( str_PLA );
-	      addAsm( str_STA + "$02", 2, false );
-	    }
-	  addAsm( str_TYA );
+	  addCompilerMessage( "UintID - XA --> XA", 0 );
+	  addAsm( str_STA + "!+", 3, false );         // 4 cyc
+	  addAsm( str_STX + "!++", 3, false );        // 4 cyc
+	  addAsm( str_LDA + O1, sizeOP1A, false  );   // 4 cyc
+	  addAsm( str_SEC );                          // 2 cyc
+	  addAsm( str_BYTE + "$E9" + commentmarker + "<-- SBC imm", 1, false );
+	  addAsm( "!:\t" + str_BYTE + "$00", 1, true );
+	  addAsm( str_TAY );                          // 2 cycles
+	  addAsm( str_LDA + "#$00", 2, false  );      // 2 cyc
+	  addAsm( str_BYTE + "$E9" + commentmarker + "<-- SBC imm", 1, false );
+	  addAsm( "!:\t" + str_BYTE + "$00", 1, true );
+	  addAsm( str_TAX );                          // 2 cycles
+	  addAsm( str_TYA );                          // 2 cycles
 	  strcpy($$.name, "_XA" );
 	}
       else if( op == string("*") )
@@ -30115,7 +30295,7 @@ int main(int argc, char *argv[])
   // TODO: Remove this section
   if( load_is_needed )
     {
-      addAsm( "LOAD:", 0, true );
+      addAsm( "_load:", 0, true );
       saveReturnAddress();
 
       // save $02/$03 in software stack (pretty slow!)
@@ -31544,7 +31724,7 @@ int main(int argc, char *argv[])
   if( div10_is_needed )
     {
       // DIVIDE BY 10 ROUTINE
-      addAsm( string("DIV10:\t\t") + commentmarker + "Divide number on stack by 10", 0, true );
+      addAsm( string("_div10:\t\t") + commentmarker + "Divide number on stack by 10", 0, true );
 
       // save return address to the stack
       saveReturnAddress();
@@ -31601,7 +31781,7 @@ int main(int argc, char *argv[])
     {
       //return_addresses_needed = true;
 
-      addAsm( string("TWOS:\t\t") + commentmarker + string("Two's Complement Function"), 0, true );
+      addAsm( string("_twos:\t\t") + commentmarker + string("Two's Complement Function"), 0, true );
       
       // get the return address and status flag from the stack
       // save return address
@@ -31624,7 +31804,7 @@ int main(int argc, char *argv[])
   if( printf_is_needed )
     {
       /* a Simple printf for strings */   
-      addAsm( "PRN:", 0, true );
+      addAsm( "_prn:", 0, true );
       addAsm( str_LDY + "#$00", 2, false);
       addAsm( "!:\t" + str_LDA + "($02),Y", 2, true);
       addAsm( str_BEQ + "!+", 2, false );
@@ -31769,12 +31949,12 @@ int main(int argc, char *argv[])
   if( getkey_is_needed )
     {
       // puts a keypress on the stack
-      addAsm( "GETKEY:", 0, true );
+      addAsm( "_getkey:", 0, true );
       addAsm( str_JSR + "$FFE4", 3, false );
 
       // 2023 06 07 - maybe take out the following line ??
       //addAsm( str_CMP + "#$00", 2, false );
-      addAsm( str_BEQ + "GETKEY", 2, false );
+      addAsm( str_BEQ + "_getkey", 2, false );
       /* this memory loc could be anywhere */
       /* I chose $CFDF because it's right */
       /* before the input buffer for "scanf" */
@@ -31834,7 +32014,6 @@ int main(int argc, char *argv[])
 
   removetags();
   if( arg_optimize ) Optimize(1);
-  if( arg_optimize ) Optimize(0);
   if( arg_optimize ) Optimize(0);
   ProcessComments();
   ProcessVariables();
