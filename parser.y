@@ -3729,55 +3729,118 @@ string replaceAll(string str, const string &from, const string &to)
   
   void ProcessBranches()
   {
-    for( int i=0; i<asm_instr.size(); i++ )
+    //for( int i=0; i<asm_instr.size(); i++ )
+    for( int i=asm_instr.size(); i>0; i-- )
       {
-	if(
-	   cmpstr( asm_instr[i]->getString(), str_JMP + "!else" ) &&
-	   cmpstr( asm_instr[i-1]->getString(), str_BEQ + "!body+" ) && 1 &&
-	   !cmpstr( asm_instr[i+1]->getString(), "!else1:	// (||)" ) )
-		 
-	   
+	for( int j = 0; j < 50; j++ )
 	  {
-
-	    string label = asm_instr[i]->getString().substr(4,asm_instr[i]->getString().length());
-	    string actual_label = label;
-	    size_t found = label.find(' ');	    
-	    if (found != std::string::npos)
+	    if(
+	       cmpstr( asm_instr[i]->getString(), str_JMP + "!else"+to_string(j)  ) &&
+	       cmpstr( asm_instr[i-1]->getString(), str_BEQ + "!body+" ) && 1 &&
+	       !cmpstr( asm_instr[i+1]->getString(), "!else"+to_string(j)+":	// (||)" ) &&
+	       !cmpstr( asm_instr[i+1]->getString(), "!else"+to_string(j)+":	// (&&)" )
+	       )
 	      {
-		label = label.substr(0, found);
-	      } 
+
+		string label = asm_instr[i]->getString().substr(4,asm_instr[i]->getString().length());
+		string actual_label = label;
+		size_t found = label.find(' ');	    
+		if (found != std::string::npos)
+		  {
+		    label = label.substr(0, found);
+		  } 
 
 	    
-	    found = label.find('+');	    
-	    if (found != std::string::npos)
-	      {
-		label = label.substr(found, label.length());
-	      } 	    
+		found = label.find('+');	    
+		if (found != std::string::npos)
+		  {
+		    label = label.substr(found, label.length());
+		  } 	    
 	    
-	    int d = distanceFrom(i, "!else1:", label.length());	    
-	    if( d < 128 && d > -127 && d != 0 )
-	      {
+		int d = distanceFrom(i, "!else"+to_string(j)+":", label.length());	    
+		if( d < 128 && d > -127 && d != 0 )
+		  {
 		    asm_instr[i-1]->setString( commentmarker + asm_instr[i-1]->getString() );
 		    asm_instr[i]->setString( str_BNE + actual_label + commentmarker + "[" + to_string(d) + "] (OPTIMIZED)" );
 		    asm_instr[i]->setSize(2);
+		  }
 	      }
-	  }
 
-	else if(
-	   cmpstr( asm_instr[i]->getString(), str_JMP + "!else1+" ) &&
-	   cmpstr( asm_instr[i-1]->getString(), str_BNE + "!body+" ) && 1
-	   )
-	  {
-	    int d = distanceFrom(i, "!else1:" );	    
-	    if( d < 128 && d > -127 && d != 0 )
-	      {
-		    asm_instr[i-1]->setString( commentmarker + asm_instr[i-1]->getString() );
-		    asm_instr[i]->setString( str_BEQ + "!else1+" + commentmarker + "(OPTIMIZED)" );
-		    asm_instr[i]->setSize(2);
-	      }
+	    
+	    
 	  }
       }
+    for( int i=0; i<asm_instr.size(); i++ )
+      {
+	for( int j=0; j<50; j++ )
+	  {
+	    if(
+	       cmpstr( asm_instr[i]->getString(), str_JMP + "!else"+to_string(j)+"+" ) &&
+	       cmpstr( asm_instr[i-1]->getString(), str_BCC + "!body+" ) && 1 &&
+	       !cmpstr( asm_instr[i+1]->getString(), "!else"+to_string(j)+":	// (||)" ) &&
+	       !cmpstr( asm_instr[i+1]->getString(), "!else"+to_string(j)+":	// (&&)" )
 
+	       )
+	      {
+		int d = distanceFrom(i, "!else"+to_string(j)+":" );	    
+		if( d < 128 && d > -127 && d != 0 )
+		  {
+		    asm_instr[i-1]->setString( commentmarker + asm_instr[i-1]->getString() );
+		    asm_instr[i]->setString( str_BCS + "!else"+to_string(j)+"+" + commentmarker + "(OPTIMIZED)" );
+		    asm_instr[i]->setSize(2);
+		  }
+	      }
+	    else if(
+		    cmpstr( asm_instr[i]->getString(), str_JMP + "!else"+to_string(j)+"+" ) &&
+		    cmpstr( asm_instr[i-1]->getString(), str_BNE + "!body+" ) && 1 &&
+		    !cmpstr( asm_instr[i+1]->getString(), "!else"+to_string(j)+":	// (||)" ) &&
+		    !cmpstr( asm_instr[i+1]->getString(), "!else"+to_string(j)+":	// (&&)" )
+		    
+		    )
+	      {
+		int d = distanceFrom(i, "!else"+to_string(j)+":" );	    
+		if( d < 128 && d > -127 && d != 0 )
+		  {
+		    asm_instr[i-1]->setString( commentmarker + asm_instr[i-1]->getString() );
+		    asm_instr[i]->setString( str_BEQ + "!else"+to_string(j)+"+" + commentmarker + "(OPTIMIZED)" );
+		    asm_instr[i]->setSize(2);
+		  }
+	      }
+	    else if(
+		    cmpstr( asm_instr[i]->getString(), str_JMP + "!else"+to_string(j)+"+" ) &&
+		    cmpstr( asm_instr[i-1]->getString(), str_BEQ + "!body+" ) && 1 &&
+		    !cmpstr( asm_instr[i+1]->getString(), "!else"+to_string(j)+":	// (||)" ) &&
+		    !cmpstr( asm_instr[i+1]->getString(), "!else"+to_string(j)+":	// (&&)" )
+		    
+		    )
+	      {
+		int d = distanceFrom(i, "!else"+to_string(j)+":" );	    
+		if( d < 128 && d > -127 && d != 0 )
+		  {
+		    asm_instr[i-1]->setString( commentmarker + asm_instr[i-1]->getString() );
+		    asm_instr[i]->setString( str_BNE + "!else"+to_string(j)+"+" + commentmarker + "(OPTIMIZED)" );
+		    asm_instr[i]->setSize(2);
+		  }
+	      }
+	    else if(
+		    cmpstr( asm_instr[i]->getString(), str_JMP + "!else"+to_string(j)+"+" ) &&
+		    cmpstr( asm_instr[i-1]->getString(), str_BCS + "!body+" ) && 1 &&
+		    !cmpstr( asm_instr[i+1]->getString(), "!else"+to_string(j)+":	// (||)" ) &&
+		    !cmpstr( asm_instr[i+1]->getString(), "!else"+to_string(j)+":	// (&&)" )
+		    
+		    )
+	      {
+		int d = distanceFrom(i, "!else"+to_string(j)+":" );	    
+		if( d < 128 && d > -127 && d != 0 )
+		  {
+		    asm_instr[i-1]->setString( commentmarker + asm_instr[i-1]->getString() );
+		    asm_instr[i]->setString( str_BCC + "!else"+to_string(j)+"+" + commentmarker + "(OPTIMIZED)" );
+		    asm_instr[i]->setSize(2);
+		  }
+	      }
+	    
+	  }
+      }
     // This eliminates all those skips
     for( int i=0; i<asm_instr.size(); i++ )
       {
@@ -3860,6 +3923,14 @@ string replaceAll(string str, const string &from, const string &to)
 	    asm_instr.erase(asm_instr.begin()+i-1,asm_instr.begin()+i);
 	  }
 	else if( cmpstr( asm_instr[i-1]->getString(), commentmarker + str_BEQ + "!body+" ) )
+	  {
+	    asm_instr.erase(asm_instr.begin()+i-1,asm_instr.begin()+i);
+	  }
+	else if( cmpstr( asm_instr[i-1]->getString(), commentmarker + str_BNE + "!body+" ) )
+	  {
+	    asm_instr.erase(asm_instr.begin()+i-1,asm_instr.begin()+i);
+	  }
+	else if( cmpstr( asm_instr[i-1]->getString(), commentmarker + str_BCS + "!body+" ) )
 	  {
 	    asm_instr.erase(asm_instr.begin()+i-1,asm_instr.begin()+i);
 	  }
@@ -9264,7 +9335,7 @@ condition: expression[LHS]
       addComment( "IntIMM relop UintID: TOC" );
       if( arg_show_opt )
 	{
-	  addCompilerMessage( "This could be hard-coded because IntIMM is always < UintID", 0 );
+	  addCompilerMessage( "This could be hard-coded because IntIMM is always < UintID", 1 );
 	  addComment( "OPTIMIZE (IntIMM is always < UintID)" );
 	}
       addAsm( str_LDA + "#$FF", 2, false );
@@ -9274,7 +9345,7 @@ condition: expression[LHS]
   else if( isIntIMM($LHS.name) && isUintIMM($RHS.name) )
     {
       addComment( "IntIMM relop UintIMM: TOC" );
-      if( arg_show_opt ) addCompilerMessage( "This condition is known at compile-time... just hard-code it!", 0 );
+      if( arg_show_opt ) addCompilerMessage( "This condition is known at compile-time... just hard-code it!", 1 );
       float L = atof( stripFirst($LHS.name).c_str() );
       float R = atof( stripFirst($RHS.name).c_str() );
       if( L > R )
@@ -9297,6 +9368,7 @@ condition: expression[LHS]
   else if( isIntIMM($LHS.name) && isWordID($RHS.name) )
     {
       addComment( "IntIMM relop WordID: TOC" );
+      if( arg_show_opt ) addCompilerMessage( "This condition is known at compile-time... just hard-code it!", 1 );
       addCompilerMessage( "IntIMM will always be < WordID", 1 );
       addAsm( str_LDA + "#$FF", 2, false );
       addAsm( str_CLC, 1, false );
@@ -30538,9 +30610,17 @@ int main(int argc, char *argv[])
     }
   if( signed_comparison_is_needed )
     {
+      addAsm( "!rx:\t" + str_BYTE + "$00", 1, false );
+      addAsm( "!ry:\t" + str_BYTE + "$00", 1, false );      
       stack_is_needed = true;
       addAsm( string("_signed_comparison: ") + commentmarker + string(" Signed Comparison"), 0, true );
-      saveReturnAddress();
+      addAsm( str_PLA, 1, false );
+      addAsm( str_STA + "!ry-", 3, false );
+      addAsm( str_PLA, 1, false );
+      addAsm( str_STA + "!rx-", 3, false );
+      
+      
+      //saveReturnAddress();
       // ==================================================================================
 
       if( !arg_unsafe_math )
@@ -30562,12 +30642,12 @@ int main(int argc, char *argv[])
       addAsm( str_ROL ); // C is now set (if warrented)
       
       addAsm( str_BCS + "!+", 2, false );
-      addAsm( str_LDA + "$02", 2, false );
-      addAsm( str_PHA );
+      addAsm( str_LDX + "$02", 2, false );
+      //addAsm( str_TAX );
       addAsm( str_LDA + "$03", 2, false );
       addAsm( str_STA + "$02", 2, false );
-      addAsm( str_PLA );
-      addAsm( str_STA + "$03", 2, false );
+      //addAsm( str_TXA );
+      addAsm( str_STX + "$03", 2, false );
       addAsm( "!:\t" + str_LDA + "$02", 2, true );
       addAsm( str_CMP + "$03", 2, false );
       addAsm( str_PHP );// push the status register onto the stack with the correct values after cmp
@@ -30582,7 +30662,11 @@ int main(int argc, char *argv[])
 	}
       
       // ==================================================================================
-      restoreReturnAddress();
+      //restoreReturnAddress();
+      addAsm( str_LDA + "!rx-", 3, false );
+      addAsm( str_PHA, 1, false );
+      addAsm( str_LDA + "!ry-", 3, false );
+      addAsm( str_PHA, 1, false );
       addAsm( str_RTS );
     }
   // TODO: REMOVE THIS SECTION... WORD2DEC IS NO LONGER USED
