@@ -101,7 +101,7 @@ frmt  [{\t}|{\n}]
 "prints"                    { strcpy(yylval.nd_obj.name,(yytext)); return tPRINTS; }
 "scanf"                     { strcpy(yylval.nd_obj.name,(yytext)); return SCANFF; }
 "int"                       { strcpy(yylval.nd_obj.name,(yytext)); return INT; }
-"mob"               { strcpy(yylval.nd_obj.name,(yytext)); return tMOB; }
+   /*"mob"               { strcpy(yylval.nd_obj.name,(yytext)); return tMOB; }*/
 "float"                     { strcpy(yylval.nd_obj.name,(yytext)); return FLOAT; }
    /* "double"                    { strcpy(yylval.nd_obj.name,(yytext)); return tDOUBLE; } */
 "word"                    { strcpy(yylval.nd_obj.name,(yytext)); return tWORD; }

@@ -72,11 +72,11 @@ bmPrint:
 	ldx #$00
 	sta !MEM4- 
 	stx !MEM4- +1
-	lda $02
-	pha 
-	lda $03
-	pha 
-	php
+	//lda $02
+	//pha 
+	//lda $03
+	//pha 
+	//php
 	
 !START:			 // Top of WHILE Loop
 	lda !MEM4- +1
@@ -86,23 +86,36 @@ bmPrint:
 	cmp #$00
 !:
 	bne !_skip+
-	jmp !END+
+	rts
+	//jmp !END+
 !_skip:
+	//lda $02
+	//pha 
+	//lda $03
+	//pha 
+// ----------------------
 	sec 
 	lda !MEM4- 
 	sbc #$20
-	sta _MUL16_FB
+	sta $02
 	lda !MEM4- +1
-	sta _MUL16_FC
-
-	lda #$08
-	sta _MUL16_FD
-	lda #$00
-	sta _MUL16_FE
-	jsr MUL16
-	lda MUL16R
-	ldx MUL16R+1
-	
+	//sta $03
+	asl $02
+	rol// $03
+	asl $02
+	rol //$03
+	asl $02		
+	rol //$03
+	tax
+	//ldx $03
+	lda $02
+// -------------------
+	//pla 
+	//sta $03
+	//pla 
+	//sta $02
+	//tya 	
+	//----------------
 	sta !MEM4- 
 	stx !MEM4- +1
 
@@ -116,17 +129,54 @@ bmPrint:
 	
 	lda #$00
 	sta !MEM6-
-	
+
+	lda $02
+	pha 
+	lda $03
+	pha 
+	lda $04
+	pha 
+	lda $05
+	pha 
+// ----------------------
 	lda !ARG1-
-	sta _MUL16_FB
+	sta $02
+	sta $04
 	lda #$00
-	sta _MUL16_FC
-	sta _MUL16_FE
-	lda #$28
-	sta _MUL16_FD
-	jsr MUL16
-	lda MUL16R
-	ldx MUL16R+1
+	sta $03
+	sta $05
+	asl $02
+	rol $03
+	asl $02
+	rol $03
+	asl $02
+	rol $03
+	asl $04
+	rol $05
+	clc 
+	lda $02
+	adc $04
+	sta $02
+	lda $03
+	adc $05
+	sta $03
+	asl $02
+	rol $03
+	asl $02
+	rol $03
+	ldx $03
+	ldy $02
+// -------------------
+	pla 
+	sta $05
+	pla 
+	sta $04
+	pla 
+	sta $03
+	pla 
+	sta $02
+	tya 
+	//========================
 
 	clc 
 	adc !ARG0-
@@ -167,7 +217,9 @@ bmPrint:
 	txa 
 	rol 
 	
-	clc 
+	clc
+
+	// this can likely be optimised
 !BMPDATA:
 	adc #$A0
 	sta !MEM8- +1
@@ -248,10 +300,11 @@ bmPrint:
 	jmp !START- // jump to top of WHILE loop
 	
 !END:
-	plp 
-	pla 
-	sta $03
-	pla 
-	sta $02
+	//plp 
+	//pla 
+	//sta $03
+	//pla 
+	//sta $02
 	
 	rts
+

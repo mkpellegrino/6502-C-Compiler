@@ -422,7 +422,7 @@ string replaceAll(string str, const string &from, const string &to)
     if( s == string("WORD")) return 2;
     if( s == string("DOUBLE")) return 4;
     if( s == string("FLOAT")) return 8;
-    if( s == string("MOB")) return 16;
+    //if( s == string("MOB")) return 16;
     if( s == string("VOID")) return 32;
     if( s == string("STRING")) return 64;
     return -1;
@@ -1718,12 +1718,12 @@ string replaceAll(string str, const string &from, const string &to)
     if( s == string("_FAC")) return_value = true;
     return return_value;
   }
-  bool isMOB( string s )
-  {
-    bool return_value = false;
-    if( s == string("_MOB")) return_value = true;
-    return return_value;
-  }
+  //bool isMOB( string s )
+  //{
+  // bool return_value = false;
+  // if( s == string("_MOB")) return_value = true;
+  // return return_value;
+  //}
 
   bool isRET( string s )
   {
@@ -2356,6 +2356,27 @@ string replaceAll(string str, const string &from, const string &to)
 	  }
       }
 
+
+    if( asm_instr.size() > 4 && 1 )
+      {
+	addOptimizationMessage( "checking for: bcs/clc pairing (split by 2 labels)", 0, -1);
+	for( int i=0; i<asm_instr.size()-3; i++ )
+	  {
+	    if(
+	       cmpstr(asm_instr[i]->getString(), str_BCS + "LBL1L4 // (OPTIMIZED)") &&
+	       cmpstr(asm_instr[i+1]->getString(), "LBL1L2:") &&
+	       cmpstr(asm_instr[i+2]->getString(), "LBL1L3:") &&
+	       cmpstr(asm_instr[i+3]->getString(), str_CLC)
+	       )
+	      {
+		addOptimizationMessage( "commenting out clc", i, 1);
+		asm_instr[i+3]->setString("\t" + commentmarker + asm_instr[i+3]->getString() );
+		asm_instr[i+3]->setSize(0);
+	      }
+	  }
+      }
+
+    
 
     if( asm_instr.size() > 10 && 1 )
       {
@@ -3764,6 +3785,10 @@ string replaceAll(string str, const string &from, const string &to)
 		    asm_instr[i]->setString( str_BNE + actual_label + commentmarker + "[" + to_string(d) + "] (OPTIMIZED)" );
 		    asm_instr[i]->setSize(2);
 		  }
+		else
+		  {
+		    asm_instr[i]->setString(  asm_instr[i]->getString() + commentmarker + "[" + to_string(d) + "] (CANNOT BE OPTIMIZED)" );
+		  }
 	      }
 
 	    
@@ -4120,9 +4145,6 @@ string replaceAll(string str, const string &from, const string &to)
     addAsm( str_LDA + "$FE", 2, false );
     addAsm( str_PHA );
     addComment( "^^^^^^^^^^^^^^^^^^^^^^^^" );
-
-
-
     return;
   }
 
@@ -4140,7 +4162,6 @@ string replaceAll(string str, const string &from, const string &to)
     addAsm( str_PLA );
     addAsm( str_STA + "$FB", 2, false );
     addComment( "^^^^^^^^^^^^^^^^^^^^^^^" );
-
     return;
   }
   
@@ -4152,20 +4173,17 @@ string replaceAll(string str, const string &from, const string &to)
     addAsm( str_LDA + "$03", 2, false );
     addAsm( str_PHA );
     addComment( "^^^^^^^^^^^^^^^^^^^^^^^^" );
-
     return;
   }
 
   void restore0203()
   {
     addComment( "vvv Restore $02/$03 vvv" );
-
     addAsm( str_PLA );
     addAsm( str_STA + "$03", 2, false );
     addAsm( str_PLA );
     addAsm( str_STA + "$02", 2, false );
     addComment( "^^^^^^^^^^^^^^^^^^^^^^^" );
-
     return;
   }
   
@@ -4260,7 +4278,7 @@ string replaceAll(string str, const string &from, const string &to)
 
 //%parse-param { FILE* fp }
 %token VOID 
-%token <nd_obj> CHAR tFCLOSE tFOPEN tFCLRCHN tFCHROUT tFCHRIN tFREADST tFCHKOUT tFCHKIN tSETLFS tSETNAM tSAVE tLOAD tIMPORT tSPRPTR /* tPUSH tPOP */ tCOMMENT tDATA tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tLN tABS tSIN tCOS tTAN tMOB tSIDIRQ tSIDOFF tSTRTOFLOAT tSTRTOWORD tTOFLOAT tINTTOWORD tTOUINT tTOWORD tTOBIT tDEC tINC tROL tROR tLSR tGETPC tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJUMP tSETSCR tJSR tIRQ tROMOUT tROMIN tLDA tASL tSPRITESET  tSPRITEOFF tSPRITETOGGLE tRND tXXX tINLINE tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tPEEK tPOKE NEWLINE CHARACTER tPRINTS PRINTFF SCANFF INT FLOAT WHILE FOR IF ELSE TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE EXPONENT tSQRT UNARY INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL tSCREEN tNULL tMEMCPY tSEED tNEEDS tPI tE tBL tBS
+%token <nd_obj> CHAR tFCLOSE tFOPEN tFCLRCHN tFCHROUT tFCHRIN tFREADST tFCHKOUT tFCHKIN tSETLFS tSETNAM tSAVE tLOAD tIMPORT tSPRPTR /* tPUSH tPOP */ tCOMMENT tDATA tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tLN tABS tSIN tCOS tTAN /*tMOB*/ tSIDIRQ tSIDOFF tSTRTOFLOAT tSTRTOWORD tTOFLOAT tINTTOWORD tTOUINT tTOWORD tTOBIT tDEC tINC tROL tROR tLSR tGETPC tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJUMP tSETSCR tJSR tIRQ tROMOUT tROMIN tLDA tASL tSPRITESET  tSPRITEOFF tSPRITETOGGLE tRND tXXX tINLINE tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tPEEK tPOKE NEWLINE CHARACTER tPRINTS PRINTFF SCANFF INT FLOAT WHILE FOR IF ELSE TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE EXPONENT tSQRT UNARY INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL tSCREEN tNULL tMEMCPY tSEED tNEEDS tPI tE tBL tBS
 %type <nd_obj> headers main body return function datatype statement arithmetic relop program else 
    %type <nd_obj2> init value expression /*charlist*/ numberlist parameterlist argumentlist
       %type <nd_obj3> condition
@@ -5134,9 +5152,9 @@ body: WHILE
 
   if( scope_stack.top() != string("FOR") )
     {
-      addCompilerMessage( "Scope out of Sync", 3 );
       addDebugComment( "ERROR: Scope out of Sync" );
       addDebugComment( scope_stack.top() );
+      addCompilerMessage( "Scope out of Sync", 3 );
     }
   else
     {
@@ -5300,27 +5318,7 @@ body: WHILE
       addCompilerMessage("unidentified argument type for lda", 2 );
     }
 };
-// STATEMENT
-//| tPUSH '(' expression ')' ';'
-//{
-//  stack_is_needed = true;
-//
-//  // merely for testing out the software stack
-//  if( isA($3.name) )
-//    {
-//      addAsm( str_JSR + "PUSH", 3, false );
-//    }
-//  else if( isUintID($3.name) || isIntID($3.name) )
-//    {
-//      addAsm( str_LDA + getNameOf(getAddressOf( $3.name )), 3, false //);
-//      addAsm( str_JSR + "PUSH", 3, false );
-//    }
-//  else if( isUintIMM($3.name) || isIntIMM($3.name) )
-//    {
-//      addAsm( str_LDA + "#$" + toHex( atoi( stripFirst($3.name).c_str() )), 2, false );
-//      addAsm( str_JSR + "PUSH", 3, false );
-//    }
-//};
+
 // STATEMENT
 | tSEED '(' ')' ';' 
 {
@@ -5564,20 +5562,24 @@ body: WHILE
       int tmp_L = get_word_L(tmp_v);
       int tmp_H = get_word_H(tmp_v);
 
-      addAsm( str_LDX + "$02", 2, false );
-      addAsm( str_LDA + "$03", 2, false );
-      addAsm( str_PHA, 1, false );
-
+      if( arg_safe_loops )
+	{
+	  addAsm( str_LDX + "$02", 2, false );
+	  addAsm( str_LDA + "$03", 2, false );
+	  addAsm( str_PHA, 1, false );
+	}
       
       addAsm( str_LDA + "#$" + toHex(tmp_L), 2, false );
       addAsm( str_STA + "$02", 2, false );
       addAsm( str_LDA + "#$" + toHex(tmp_H), 2, false );
       addAsm( str_STA + "$03", 2, false );
       addAsm( str_JSR + "_prn", 3, false );
-
-      addAsm( str_PLA, 1, false );
-      addAsm( str_STA + "$03", 2, false );
-      addAsm( str_STX + "$02", 2, false );
+      if( arg_safe_loops )
+	{
+	  addAsm( str_PLA, 1, false );
+	  addAsm( str_STA + "$03", 2, false );
+	  addAsm( str_STX + "$02", 2, false );
+	}
     }
   else if( isWordID($3.name) )
     {
@@ -7362,7 +7364,7 @@ body: WHILE
       addComment( "The address of the function must be put into $0314/$0315" );
       addAsm( str_LDA + $3.name, 2, false ); 
       addAsm( str_STA + "$0314", 3, false );
-      addAsm( str_LDA + $3.name + "+1", 2, false ); 
+      addAsm( str_LDA + $3.name + " +1", 2, false ); 
       addAsm( str_STA + "$0315", 3, false );
       if( b == 1 ) addAsm( str_CLI );
 
@@ -7704,7 +7706,7 @@ body: WHILE
 	}
       addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
       addAsm( str_STA + "$02", 2, false );
-      addAsm( str_LDA + getNameOf(getAddressOf($3.name))+"+1", 3, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name))+" +1", 3, false );
       addAsm( str_STA + "$03", 2, false );
       addAsm( str_LDA + getNameOf(getAddressOf($6.name)), 3, false );
       addAsm( str_STA + "$FB", 2, false );
@@ -7924,7 +7926,7 @@ body: WHILE
       instr_size = 3;
       if( addr_addr+1 < 256 ) instr_size = 2;
 
-      addAsm( str_LDA + getNameOf(addr_addr)+"+1", instr_size, false );
+      addAsm( str_LDA + getNameOf(addr_addr)+" +1", instr_size, false );
       addAsm( str_STA + "!++", 3, false );
 
       /* load the value into acc */
@@ -11219,10 +11221,10 @@ statement: datatype ID init
       addAsm( str_JSR + "$B1AA" + commentmarker + "FAC -> WORD (ylo ahi)", 3, false );
       addAsm( str_STY + getNameOf(getAddressOf($2.name)), 3, false );
     }
-  else if(isMOB(_init))
-    {
-      addCompilerMessage( "MOB type has been removed", 3 );
-    }
+  //else if(isMOB(_init))
+  //{
+  //  addCompilerMessage( "MOB type has been removed", 3 );
+  //}
   else if( isNULL(_init) )
     {
       addCompilerMessage( "Uninitialised variable may contain garbage", 0 );
@@ -11319,8 +11321,8 @@ statement: datatype ID init
       addAsm( str_STA + getNameOf( a ), size_of_instruction, false );
       if( a < 255 ) size_of_instruction = 2;
       addAsm( str_LDA + "#$00", 2, false );
-      addAsm( str_ADC + getNameOf( a ) + "+1", size_of_instruction, false );
-      addAsm( str_STA + getNameOf( a ) + "+1", size_of_instruction, false );
+      addAsm( str_ADC + getNameOf( a ) + " +1", size_of_instruction, false );
+      addAsm( str_STA + getNameOf( a ) + " +1", size_of_instruction, false );
     }
   else
     {
@@ -11395,8 +11397,8 @@ statement: datatype ID init
 	  size_of_instruction = 3;
 	}
       addAsm( str_LDA + "#$00", 2, false );
-      addAsm( str_ADC + a_name + "+1", size_of_instruction, false );
-      addAsm( str_STA + a_name + "+1", size_of_instruction, false );
+      addAsm( str_ADC + a_name + " +1", size_of_instruction, false );
+      addAsm( str_STA + a_name + " +1", size_of_instruction, false );
     }
   else if( isUintID($3.name) || isIntID($3.name) )
     {
@@ -11439,7 +11441,7 @@ statement: datatype ID init
 	}
       addAsm( str_BNE + "!+", 2, false );
       //addAsm( str_BYTE + "$D0, $" + toHex(size_of_instruction) + commentmarker + "BNE +3", 2, false );
-      addAsm( str_DEC + getNameOf(getAddressOf($3.name))+ "+1", size_of_instruction, false );
+      addAsm( str_DEC + getNameOf(getAddressOf($3.name))+ " +1", size_of_instruction, false );
       addAsm( "!:", 0, true );
     }
   else if( isUintID($3.name) || isIntID($3.name) )
@@ -11907,7 +11909,7 @@ statement: datatype ID init
       addAsm( str_AND + "$D010", 3, false );
       addAsm( str_TAX, 1, false );
       
-      addAsm( str_LDA + getNameOf(hexToDecimal($5.name)) + "+1", 3, false );
+      addAsm( str_LDA + getNameOf(hexToDecimal($5.name)) + " +1", 3, false );
       addAsm( str_LSR, 1, false );
       addAsm( str_BCS + "!+", 2, false ); // if bit then store a 1 there x there
       addAsm( str_STX + "$D010", 3, false );
@@ -11982,7 +11984,7 @@ statement: datatype ID init
 
       // 2023 03 07 - mkpellegrino
       addAsm( str_LDX + getNameOf( getAddressOf( $3.name ) ), 3, false );
-      addAsm( str_LDA + getNameOf( value_addr ) + "+1" , 3, false ); // this is the HIGH byte of the X coord
+      addAsm( str_LDA + getNameOf( value_addr ) + " +1" , 3, false ); // this is the HIGH byte of the X coord
       addAsm( "!:\t" + str_ASL, 1, true );
       addAsm( str_DEX );
       addAsm( str_BNE + "!-", 2, false );
@@ -12124,7 +12126,7 @@ statement: datatype ID init
       // High Byte
       // 2024 04 27 - mkpellegrino
       addAsm( str_LDA + "#$01", 2, false );
-      addAsm( str_BIT + getNameOf(addr)+"+1", 3, false );
+      addAsm( str_BIT + getNameOf(addr)+" +1", 3, false );
       addAsm( str_BEQ + "!+", 2, false );
 
       // find out which sprite number we're talking about
@@ -12433,7 +12435,7 @@ statement: datatype ID init
       // High Byte
       // 2024 04 27 - mkpellegrino
       addAsm( str_LDA + "#$01", 2, false );
-      addAsm( str_BIT + getNameOf(addr)+"+1", 3, false );
+      addAsm( str_BIT + getNameOf(addr)+" +1", 3, false );
       addAsm( str_BEQ + "!+", 2, false );
 
 
@@ -12522,7 +12524,7 @@ statement: datatype ID init
       // 2024 05 01 - mkpellegrino
       // 2024 04 27 - mkpellegrino
       addAsm( str_LDA + "#$01", 2, false );
-      addAsm( str_BIT + getNameOf(addr)+"+1", 3, false );
+      addAsm( str_BIT + getNameOf(addr)+" +1", 3, false );
       addAsm( str_BEQ + "!+", 2, false );
 
       int sprite_number = atoi( stripFirst($3.name).c_str() );
@@ -12836,7 +12838,7 @@ statement: datatype ID init
       addAsm( str_AND + "$D010", 3, false );
       addAsm( str_TAX, 1, false );
       
-      addAsm( str_LDA + getNameOf(hexToDecimal($5.name)) + "+1", 3, false );
+      addAsm( str_LDA + getNameOf(hexToDecimal($5.name)) + " +1", 3, false );
       addAsm( str_LSR, 1, false );
       addAsm( str_BCS + "!+", 2, false ); // if bit then store a 1 there x there
       addAsm( str_STX + "$D010", 3, false );
@@ -13141,14 +13143,14 @@ statement: datatype ID init
       // Y
       addAsm( str_LDA + getNameOf(y_addr), 3, false );
       addAsm( str_STA + "$FC", 2, false );
-      //addAsm( str_JSR + "MCPLOT", 3, false );
+      //addAsm( str_JSR + "_mcplot", 3, false );
 
 
       // colour
       addAsm( str_LDA + getNameOf(c_addr), 3, false );
       addAsm( str_STA + "$FD", 2, false );
 
-      addAsm( str_JSR + "MCPLOT", 3, false );
+      addAsm( str_JSR + "_mcplot", 3, false );
       
     }
   else if( isWordID($3.name) && (isWordID($6.name)||isUintID($6.name)) && isUintIMM($9.name) )
@@ -13169,13 +13171,13 @@ statement: datatype ID init
       // Y
       addAsm( str_LDA + getNameOf(y_addr), 3, false );
       addAsm( str_STA + "$FC", 2, false );
-      //addAsm( str_JSR + "MCPLOT", 3, false );
+      //addAsm( str_JSR + "_mcplot", 3, false );
 
       int c = atoi(stripFirst($9.name).c_str());
       addAsm( str_LDA + "#$" + toHex(c), 2, false );
       addAsm( str_STA + "$FD", 2, false );
 
-      addAsm( str_JSR + "MCPLOT", 3, false );
+      addAsm( str_JSR + "_mcplot", 3, false );
 
     }
   else if( isA($3.name) && isA($6.name) && isA($9.name) )
@@ -13193,7 +13195,7 @@ statement: datatype ID init
       addAsm( str_PLA );
       addAsm( str_STA + "$FA" + commentmarker + "X", 2, false );
       
-      addAsm( str_JSR + "MCPLOT", 3, false );
+      addAsm( str_JSR + "_mcplot", 3, false );
     }
   else if( isUintID($3.name) && (isWordID($6.name)||isUintID($6.name)) && isUintID($9.name) )
     {
@@ -13209,13 +13211,13 @@ statement: datatype ID init
       // Y
       addAsm( str_LDA + getNameOf(y_addr), 3, false );
       addAsm( str_STA + "$FC", 2, false );
-      //addAsm( str_JSR + "MCPLOT", 3, false );
+      //addAsm( str_JSR + "_mcplot", 3, false );
 
       // colour
       addAsm( str_LDA + getNameOf(c_addr), 3, false );
       addAsm( str_STA + "$FD", 2, false );
 
-      addAsm( str_JSR + "MCPLOT", 3, false );
+      addAsm( str_JSR + "_mcplot", 3, false );
     }
   else if( isUintID($3.name) && (isWordID($6.name)||isUintID($6.name)) && isUintIMM($9.name) )
     {
@@ -13231,13 +13233,13 @@ statement: datatype ID init
       // Y
       addAsm( str_LDA + getNameOf(y_addr), 3, false );
       addAsm( str_STA + "$FC", 2, false );
-      //addAsm( str_JSR + "MCPLOT", 3, false );
+      //addAsm( str_JSR + "_mcplot", 3, false );
 
       // colour
       addAsm( str_LDA + "#$" + toHex(c_value), 2, false );
       addAsm( str_STA + "$FD", 2, false );
 
-      addAsm( str_JSR + "MCPLOT", 3, false );
+      addAsm( str_JSR + "_mcplot", 3, false );
 
     }
   else if( isUintID($3.name) && (isWordID($6.name)||isUintID($6.name)) && isA($9.name) )
@@ -13275,7 +13277,7 @@ statement: datatype ID init
       //addAsm( str_LDA + "#$" + toHex(c), 2, false );
       //addAsm( str_STA + "$FD", 2, false );
 
-      addAsm( str_JSR + "MCPLOT", 3, false );
+      addAsm( str_JSR + "_mcplot", 3, false );
       addAsm( str_PLA );
       addAsm( str_STA + "$02", 2, false );
       
@@ -13292,7 +13294,7 @@ statement: datatype ID init
       addAsm( str_STA + "$FC", 2, false );
       addAsm( str_LDA + "#$" + toHex(c), 2, false );
       addAsm( str_STA + "$FD", 2, false );
-      addAsm( str_JSR + "MCPLOT", 3, false );
+      addAsm( str_JSR + "_mcplot", 3, false );
     }
   else if( (isWordID($3.name)||isUintID($3.name)) && (isUintIMM($6.name)||isIntIMM($6.name)) && (isUintIMM($9.name)||isIntIMM($9.name)) )
     {
@@ -13311,7 +13313,7 @@ statement: datatype ID init
       addAsm( str_STA + "$FC", 2, false );
       addAsm( str_LDA + "#$" + toHex(c), 2, false );
       addAsm( str_STA + "$FD", 2, false );
-      addAsm( str_JSR + "MCPLOT", 3, false );
+      addAsm( str_JSR + "_mcplot", 3, false );
     }
   else
     {
@@ -13960,7 +13962,7 @@ statement: datatype ID init
       //addAsm( str_NOP );
 
       addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
-      addAsm( str_LDX + getNameOf(getAddressOf($3.name)) + "+1", 3, false );
+      addAsm( str_LDX + getNameOf(getAddressOf($3.name)) + " +1", 3, false );
       
       // find the length of the string first
       addAsm( str_STA + "!++", 3, false );
@@ -14368,11 +14370,11 @@ init: '=' expression
     {
       strcpy($$.name, "NULL" );
     }
-  else if( isMOB($2.name)  )
-    {
-      addCompilerMessage( "MOB type has been removed", 3 );
-      strcpy($$.name, "NULL" );
-    }  
+  //else if( isMOB($2.name)  )
+  //{
+  //  addCompilerMessage( "MOB type has been removed", 3 );
+  //  strcpy($$.name, "NULL" );
+  // }  
   else
     {
       addComment( "What is this?  Pass it on!" );
@@ -15317,7 +15319,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_ADC + getNameOf(getAddressOf($4.name)), 3, false );
 	  addAsm( str_TAY );
 	  addAsm( str_LDA + "#$00", 2, false );
-	  addAsm( str_ADC + getNameOf(getAddressOf($4.name)) + "+1", 3, false );
+	  addAsm( str_ADC + getNameOf(getAddressOf($4.name)) + " +1", 3, false );
 	  addAsm( str_TAX );
 	  addAsm( str_TYA );
 	  strcpy($$.name, "_XA");
@@ -15329,7 +15331,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_SBC + getNameOf(getAddressOf($4.name)), 3, false );
 	  addAsm( str_TAY );
 	  addAsm( str_LDA + "#$00", 2, false );
-	  addAsm( str_SBC + getNameOf(getAddressOf($4.name)) + "+1", 3, false );
+	  addAsm( str_SBC + getNameOf(getAddressOf($4.name)) + " +1", 3, false );
 	  addAsm( str_TAX );
 	  addAsm( str_TYA );
 	  strcpy($$.name, "_XA");
@@ -22831,7 +22833,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_SBC + O1, sizeOP1A, false );
 	  addAsm( str_TAY );
 	  addAsm( str_LDA+"#$00", 2, false );
-	  addAsm( str_SBC + O1 + "+1", sizeOP1B, false );
+	  addAsm( str_SBC + O1 + " +1", sizeOP1B, false );
 	  addAsm( str_TAX );
 	  addAsm( str_TYA );
 	  strcpy($$.name, "_XA" );
@@ -22879,7 +22881,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_LDA + O1, 3, false );
 	  addAsm( str_PHA, 1, false );
-	  addAsm( str_LDA + O1 + "+1", 3, false );
+	  addAsm( str_LDA + O1 + " +1", 3, false );
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_TXA, 1, false );
 	  addAsm( str_PHA, 1, false );
@@ -22948,7 +22950,7 @@ arithmetic[MATHOP] expression[OP2]
 	{
 	  addComment( "WordID * FloatID --> XA" );
 	  addAsm( str_LDY + OP1, 3, false );
-	  addAsm( str_LDA + OP1 + "+1", 2, false );
+	  addAsm( str_LDA + OP1 + " +1", 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD16 -> FAC", 3, false );
 	  addAsm( str_LDA + "#<" + OP2, 3, false );
 	  addAsm( str_LDY + "#>" + OP2, 3, false );
@@ -23016,7 +23018,7 @@ arithmetic[MATHOP] expression[OP2]
       else if( op == string( "**" ) )
 	{
 	  addAsm( str_LDY + OP1, 3, false );
-	  addAsm( str_LDA + OP1 + "+1", 2, false );
+	  addAsm( str_LDA + OP1 + " +1", 2, false );
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  addAsm( str_JSR + "$BC0F" + commentmarker + "FAC -> ARG", 3, false );
 	  addAsm( str_LDA + "#<" + OP2, 3, false );
@@ -23126,7 +23128,7 @@ arithmetic[MATHOP] expression[OP2]
 	  mul16_is_needed = true;
 	  addAsm( str_LDA + O1, sizeOP1A, false );
 	  addAsm( str_STA + "_MUL16_FB", 3, false);
-	  addAsm( str_LDA + O1 + "+1", sizeOP1B, false );
+	  addAsm( str_LDA + O1 + " +1", sizeOP1B, false );
 	  addAsm( str_STA + "_MUL16_FC", 3, false);
 	  addAsm( str_LDX + "#$00", 2, false );
 	  addAsm( str_LDA + O2, sizeOP2A, false );
@@ -23294,7 +23296,7 @@ arithmetic[MATHOP] expression[OP2]
 
 	  addAsm( str_LDA + O1, 3, false );
 	  addAsm( str_PHA, 1, false );
-	  addAsm( str_LDA + O1 + "+1", 3, false );
+	  addAsm( str_LDA + O1 + " +1", 3, false );
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_LDA + O2, 3, false );
 	  addAsm( str_PHA, 1, false );
@@ -23674,7 +23676,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addCompilerMessage( "WordID ** UintIMM: exponent restricted to < 0x0F", 1);
 	  addAsm( str_LDA + getNameOf(addr_op1), 3, false );
 	  addAsm( str_PHA, 1, false );
-	  addAsm( str_LDA + getNameOf(addr_op1) + "+1", 3, false );
+	  addAsm( str_LDA + getNameOf(addr_op1) + " +1", 3, false );
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_LDA + "#$" + toHex(atoi(stripFirst($4.name).c_str())), 2, false );
 	  addAsm( str_PHA, 1, false );
@@ -23892,7 +23894,7 @@ arithmetic[MATHOP] expression[OP2]
 	      mul16_is_needed = true;
 	      addAsm( str_LDA + O1, sizeOP1A, false );
 	      addAsm( str_STA + "_MUL16_FB", 3, false);
-	      addAsm( str_LDA + O1 +"+1", sizeOP1B, false );
+	      addAsm( str_LDA + O1 +" +1", sizeOP1B, false );
 	      addAsm( str_STA + "_MUL16_FC", 3, false);
 	      addAsm( str_LDA + "#$" + toHex(twos_complement(atoi(stripFirst($4.name).c_str()))), 2, false );
 	      addAsm( str_STA + "_MUL16_FD", 3, false);
@@ -24416,7 +24418,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_LDA + O1, 3, false );
 	  addAsm( str_PHA, 1, false );
-	  addAsm( str_LDA + O1 + "+1", 3, false );
+	  addAsm( str_LDA + O1 + " +1", 3, false );
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_TXA, 1, false );
 	  addAsm( str_PHA, 1, false );
@@ -27183,12 +27185,12 @@ arithmetic[MATHOP] expression[OP2]
       addAsm( str_LDA + "#$" + toHex( sprite_number ), 2, false );
       addAsm( str_ADC + "$02", 2, false );
       addAsm( str_STA + "$02", 2, false );
-      
+      addComment( "can be hardcoded into A" );
       addAsm( str_JSR + "SCRMEM", 3, false );
       addAsm( str_PLA );
       addAsm( str_ADC + "$03", 2, false );
       addAsm( str_STA + "$03", 2, false );
-
+      addComment( "can be hardcoded into A" );
       addAsm( str_JSR + "BNKMEM", 3, false );
       addAsm( str_PLA );
       addAsm( str_ADC + "$03", 2, false );
@@ -27259,7 +27261,7 @@ arithmetic[MATHOP] expression[OP2]
       addAsm( str_ASL, 1, false );
       addAsm( str_TAY, 1, false );
       if( a+1 < 256 ) size_of_instruction = 2;
-      addAsm( str_LDA + getNameOf(a) + "+1", size_of_instruction, false );
+      addAsm( str_LDA + getNameOf(a) + " +1", size_of_instruction, false );
       addAsm( str_ROL );
       addAsm( str_TAX );
       addAsm( str_TYA );
@@ -27472,7 +27474,7 @@ arithmetic[MATHOP] expression[OP2]
       int a = getAddressOf($3.name);
       int size_of_instruction = 3;
       if( a+1 < 256 ) size_of_instruction = 2;
-      addAsm( str_LDA + getNameOf(a) + "+1", size_of_instruction, false );
+      addAsm( str_LDA + getNameOf(a) + " +1", size_of_instruction, false );
       addAsm( str_LSR, 1, false );
       addAsm( str_TAX, 1, false );
       if( a < 256 ) size_of_instruction = 2;
@@ -27514,7 +27516,7 @@ arithmetic[MATHOP] expression[OP2]
       int index_addr = getAddressOf( $5.name );
       addAsm( str_LDA + getNameOf( addr ), 3, false );
       addAsm( str_STA + "!+", 3, false );
-      addAsm( str_LDA + getNameOf( addr ) + "+1", 3, false );
+      addAsm( str_LDA + getNameOf( addr ) + " +1", 3, false );
       addAsm( str_STA + "!++", 3, false );
       addAsm( str_LDX + "#$" + toHex(atoi(stripFirst($5.name).c_str())), 2, false );
       addAsm( str_BYTE + "$BD"+ commentmarker + "<-- LDA abs,X", 1, false );
@@ -27528,7 +27530,7 @@ arithmetic[MATHOP] expression[OP2]
       addComment( string("Dereference: ") + $2.name  );
       addAsm( str_LDA + getNameOf( addr ), 3, false );
       addAsm( str_STA + "!+", 3, false );
-      addAsm( str_LDA + getNameOf(addr) + "+1", 3, false );      
+      addAsm( str_LDA + getNameOf(addr) + " +1", 3, false );      
       addAsm( str_STA + "!++", 3, false );
       addAsm( str_LDX + getNameOf(index_addr), 3, false );
       addAsm( str_BYTE + "$BD"+ commentmarker + "<-- LDA abs, X", 1, false );
@@ -27543,7 +27545,7 @@ arithmetic[MATHOP] expression[OP2]
       addAsm( str_TAX );
       addAsm( str_LDA + getNameOf(addr), 3, false );
       addAsm( str_STA + "!+", 3, false );
-      addAsm( str_LDA + getNameOf(addr)+"+1", 3, false );
+      addAsm( str_LDA + getNameOf(addr)+" +1", 3, false );
       addAsm( str_STA + "!++", 3, false );
 
       addAsm( str_BYTE + "$BD"+ commentmarker + "<-- LDA abs,X", 1, false );
@@ -28070,6 +28072,7 @@ arithmetic[MATHOP] expression[OP2]
   addAsm( str_LDA + "#$00", 2, false );
   addAsm( str_STA + "$03", 2, false );
   scrmem_is_needed=true;
+  addComment( "can be hardcoded into A" );
   addAsm( str_JSR + "SCRMEM", 3, false );
   addAsm( str_PLA );
   
@@ -28077,6 +28080,7 @@ arithmetic[MATHOP] expression[OP2]
   addAsm( str_ADC + "$03", 2, false );
   addAsm( str_STA + "$03", 2, false );
   bnkmem_is_needed=true;
+  addComment( "can be hardcoded into A" );
   addAsm( str_JSR + "BNKMEM", 3, false );
   addAsm( str_PLA );
   addAsm( str_ADC + "$03", 2, false );
@@ -28178,7 +28182,7 @@ arithmetic[MATHOP] expression[OP2]
       int y_addr = getAddressOf($6.name);
       addAsm( str_LDA + getNameOf(x_addr), 3, false );
       addAsm( str_STA + "$FA", 2, false );
-      addAsm( str_LDA + getNameOf(x_addr) + "+1", 3, false );
+      addAsm( str_LDA + getNameOf(x_addr) + " +1", 3, false );
       addAsm( str_STA + "$FB", 2, false );
       addAsm( str_LDA + getNameOf(y_addr), 3, false );
       addAsm( str_STA + "$FC", 2, false );
@@ -28211,7 +28215,7 @@ arithmetic[MATHOP] expression[OP2]
       int y_addr = getAddressOf($6.name);
       addAsm( str_LDA + getNameOf(x_addr), 3, false );
       addAsm( str_STA + "$FA", 2, false );
-      addAsm( str_LDA + getNameOf(x_addr) + "+1", 3, false );
+      addAsm( str_LDA + getNameOf(x_addr) + " +1", 3, false );
       addAsm( str_STA + "$FB", 2, false );
     }
   else if( isXA($3.name) && isA($6.name) )
@@ -31045,7 +31049,7 @@ int main(int argc, char *argv[])
       addAsm( commentmarker + "STORE is at $FE(l), $FF(h)", 0, true);
       addAsm( commentmarker + "LOC is at $02(l), $03(h)", 0, true);
       
-      addAsm( "MCPLOT:", 0, true );
+      addAsm( "_mcplot:", 0, true );
       addAsm( "#if SAFEMCPLOT", 0, true );
       addAsm( str_SEI );
       addAsm( "#endif", 0, true );
@@ -31087,10 +31091,11 @@ int main(int argc, char *argv[])
       addAsm( str_ROR + "$02" + commentmarker + "loc", 2, false );
       addAsm( str_LSR );
       addAsm( str_ROR + "$02" + commentmarker + "loc", 2, false );
+
       addAsm( str_CLC );
-      
       addAsm( str_ADC + "$03" + commentmarker + "loc + 1", 2, false );
       addAsm( str_STA + "$03" + commentmarker + "loc + 1", 2, false );
+      
       addAsm( str_LDA + "$FC" + commentmarker + "ycoord", 2, false );  // 3 cycles
       addAsm( str_AND + "#$07", 2, false );
       addAsm( str_ADC + "$02" + commentmarker + "loc", 2, false );
@@ -31107,14 +31112,18 @@ int main(int argc, char *argv[])
       //addAsm( commentmarker + string(" These subroutines I added to calculate the addresses based on VICII settings"), 0, true );
       bnkmem_is_needed=true;
       addComment( "this can be hardcoded for speed" );
+      addComment( str_LDA + "#$80" + commentmarker + "maybe?" );
       addAsm( str_JSR + "BNKMEM", 3, false );
-      addAsm( str_PLA ); // <<- A should now be #$00, #$40, #$80, #$C0 based on Bank #      
+      addAsm( str_PLA ); // <<- A should now be #$00, #$40, #$80, #$C0 based on Bank #
+      
       addAsm( str_CLC );
       addAsm( str_ADC + "$22", 2, false );
       addAsm( str_STA + "$22" + commentmarker + "tmpstore", 2, false );
       bmpmem_is_needed = true;
+      addComment( "this can be hardcoded for speed" );
       addAsm( str_JSR + "BMPMEM", 3, false );
       addAsm( str_PLA ); // <<- A should now be #$00 or a #$20
+      addComment( str_LDA + "#$00" + commentmarker + "or #$20 maybe?" );      
       addAsm( str_CLC );
       addAsm( str_ADC + "$22" + commentmarker + "tmpstore", 2, false );
       //addAsm( str_ADC + "$03; loc + 1", 2, false );

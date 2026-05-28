@@ -1,5 +1,4 @@
  //  Variable Labels
-
 !lv_colour:	.byte $00 // colour
 !lv_y2:		.byte $00 // y2
 !lv_x2:		.byte $00 // x2
@@ -20,8 +19,7 @@
 !lv_Y:		.byte $00 // Y
 !lv_i:		.byte $00 // i
 
-segment:
-	pla 
+segment:pla 
 	tax 
 	pla 
 	tay 
@@ -57,26 +55,19 @@ segment:
 
 	lda #$01
 	sta !lv_CASE-
-!:
-	
-// Top of IF statement
+!:      // Top of IF statement
 	lda !lv_y1-
 	cmp !lv_y2-
-	bcc !+
-	beq !+
-	jmp !++
-!:
-	
-// Top of IF statement
+	bcs !++
+!:      // Top of IF statement
 	lda !lv_x1-
 	cmp !lv_x2-
 	bcc !+ // if c==0 jump to ELSE
-	beq !+ // if z==1 jump to ELSE ()
+	beq !+ // if z==1 jump to ELSE
 	
 	lda #$02
 	sta !lv_CASE-
-!:
-// &&
+!:      // &&
 	lda !lv_y1-
 	cmp !lv_y2-
 	bcc !+
@@ -84,23 +75,19 @@ segment:
 
 	lda !lv_x1-
 	cmp !lv_x2-
-	bcs !+ // jump to ELSE ()
+	bcs !+ // jump to ELSE
 	
 	lda #$03
 	sta !lv_CASE-
-!:
-
-	
-// Top of IF statement
+!:      // Top of IF statement
 	lda !lv_CASE-
 	cmp #$01
 	beq !+
-// ||
+        // ||
 	lda !lv_CASE-
 	cmp #$02
-	bne !++ // jump to ELSE ()
-!:
-// swap (x1,y1) and (x2,y2)
+	bne !++ // jump to ELSE
+!:      // swap (x1,y1) and (x2,y2)
 	ldx !lv_x1- // 4 cy
 	ldy !lv_x2- // 4 cy
 	stx !lv_x2- // 4 cy
@@ -109,49 +96,35 @@ segment:
 	ldy !lv_y2- // 4 cy
 	stx !lv_y2- // 4 cy
 	sty !lv_y1- // 4 cy
-!:
-
-	
-
-// Top of IF statement
+!:      // Top of IF statement
 	lda !lv_CASE-
 	cmp #$01
 	beq !+
-// ||
+        // ||
 	lda !lv_CASE-
 	cmp #$04
 	bne !++ // jump to ELSE ()
-!:
-	sec 
+!:	sec 
 	lda !lv_x2-
 	sbc !lv_x1-
 	sta !lv_dx-
 	lda #$00
-	sta !lv_dx-+1
-	
-	// moved to here from below
+	sta !lv_dx-+1	
 	sta !lv_dy-+1
 	
 	sec 
 	lda !lv_y2-
 	sbc !lv_y1-
 	sta !lv_dy-
-	//lda #$00
-	//sta !lv_dy-+1
-!:
-
-
-	
-// Top of IF statement
+!:      // Top of IF statement
 	lda !lv_CASE-
 	cmp #$02
 	beq !+
-// ||
+        // ||
 	lda !lv_CASE-
 	cmp #$03
 	bne !++ // jump to ELSE ()
-!:
-	sec 
+!:	sec 
 	lda !lv_x2-
 	sbc !lv_x1-
 	sta !lv_dx-
@@ -163,14 +136,10 @@ segment:
 	lda !lv_y1-
 	sbc !lv_y2-
 	sta !lv_dy-
-
-	//lda #$00
-	//sta !lv_dy-+1
 	
 	lda #$03
 	sta !lv_CASE-
-!:
-	lda !lv_x1-
+!:	lda !lv_x1-
 	sta !lv_X-
 
 	lda !lv_y1-
@@ -179,15 +148,11 @@ segment:
 // Top of IF statement   if( x2 == x1 )
 	lda !lv_x2-
 	cmp !lv_x1-
-	beq !+
-	jmp !++++ // jump to ELSE (CANNOT OPTIMIZE)
-!:
-
-	// Plot a Vertical Line from (x1,y1) to (x1,y2)
+	bne !++++ // jump to ELSE
+!:	// Plot a Vertical Line from (x1,y1) to (x1,y2)
 	lda !lv_y1-
 	sta !lv_i-
-!:
-// Top of FOR Loop
+!:      // Top of FOR Loop
 	lda !lv_i-
 	cmp !lv_y2-
 	
@@ -202,28 +167,23 @@ segment:
 	sta $FC
 	lda !lv_colour-
 	sta $FD
-	jsr MCPLOT
+	jsr _mcplot
 #if SAFEMCPLOT	
 	cli
 #endif
 	inc !lv_i-
 
 	jmp !-
-!:
-	rts
-!:
-
-
-// Top of IF statement if( y2 == y1 )
+!:	rts
+!:      // Top of IF statement if( y2 == y1 )
 	lda !lv_y2-
 	cmp !lv_y1-
-	beq !+
-	jmp !++++ // jump to ELSE (CANNOT OPTIMIZE)
-!:
-	// Plot a Horiz Line from (x1,y1) to (x2,y1)
+	bne !++++ // jump to ELSE
+!:	// Plot a Horiz Line from (x1,y1) to (x2,y1)
 	lda !lv_x1-
 	sta !lv_i-
-!:			 // Top of FOR Loop
+	
+!:	// Top of FOR Loop
 	lda !lv_i-
 	cmp !lv_x2-
 	
@@ -241,7 +201,7 @@ segment:
 	lda !lv_colour-
 	sta $FD
 
-	jsr MCPLOT
+	jsr _mcplot
 #if SAFEMCPLOT	
 	cli
 #endif
@@ -249,8 +209,7 @@ segment:
 	inc !lv_i-
 
 	jmp !-
-!:
-	rts
+!:	rts
 !:
 
 // Top of IF statement
@@ -259,8 +218,7 @@ segment:
 	bne !+
 	lda !lv_dx-
 	cmp !lv_dy-
-!:
-	bcc !_skip+
+!:	bcc !_skip+
 	jmp !+++++ // jump to ELSE (CANNOT OPTIMIZE)
 !_skip:
 
@@ -271,7 +229,7 @@ segment:
 
 	lda !lv_y1-
 	sta !lv_i-
-!:			 // Top of FOR Loop
+!:	// Top of FOR Loop
 	lda !lv_i-
 	cmp !lv_y2-
 	beq !+
@@ -279,14 +237,11 @@ segment:
 	sec 
 	lda !lv_y1-
 	sbc !lv_i-
-	
-	//sta !lv_Z1-
 	sta _MUL16_FB
 
 	ldx #$00
 	stx _MUL16_FC
 
-	//sta _MUL16_FB
 	lda !lv_dx-
 	sta _MUL16_FD
 	lda !lv_dx-+1
@@ -317,23 +272,19 @@ segment:
 	sta $FC
 	lda !lv_colour-
 	sta $FD
-	jsr MCPLOT
+	jsr _mcplot
 #if SAFEMCPLOT	
 	cli
 #endif
-
-	
 	dec !lv_i-
 	jmp !-
-!:
-	rts
+!:	rts
 	
 	// if (dx < dy )
 	//  and CASE != 3
-!:
-	lda !lv_y1-
+!:	lda !lv_y1-
 	sta !lv_i-
-!:			 // Top of FOR Loop
+!:	// Top of FOR Loop
 	lda !lv_i-
 	cmp !lv_y2-	
 	beq !+ // jump out of FOR ()
@@ -370,7 +321,6 @@ segment:
 	jsr DIV16
 	
 	lda _DIV16_FB
-	//ldx _DIV16_FC
 	
 	sta !lv_Zx-
 	clc 
@@ -383,23 +333,20 @@ segment:
 	sta $FC
 	lda !lv_colour-
 	sta $FD
-	jsr MCPLOT
+	jsr _mcplot
 #if SAFEMCPLOT	
 	cli
 #endif
 	inc !lv_i-
-	jmp !-
-	
-!:
-
-// Top of IF statement
+	jmp !-	
+!:      // Top of IF statement
 	lda !lv_CASE-
 	cmp #$03
 	bne !+++ // jump to ELSE 
 	lda !lv_x2-
 	sta !lv_i-
 
-!:			 // Top of FOR Loop
+!:	// Top of FOR Loop
 	lda !lv_i-
 	cmp !lv_x1-
 	beq !+ // jump out of FOR ()
@@ -418,8 +365,6 @@ segment:
 	
 	lda MUL16R
 	ldx MUL16R+1
-	//sta !lv_Zy-
-	//stx !lv_Zy-+1
 
 	sta _DIV16_FB
 	stx _DIV16_FC
@@ -428,19 +373,11 @@ segment:
 	lda !lv_dx-+1
 	sta _DIV16_FE
 	jsr DIV16
-
 	
 	lda _DIV16_FB
-	//ldx _DIV16_FC
-
-	// not sure is THIS is needed!
-	//sta !lv_Zy-
-	//stx !lv_Zy- +1
 	
 	clc 
-	//lda !lv_Zy-
 	adc !lv_y2-
-	//sta !lv_Y-
 #if SAFEMCPLOT	
 	sei
 #endif
@@ -448,25 +385,19 @@ segment:
 
 	lda !lv_i-
 	sta $FA
-	//lda !lv_Y-
-	//sta $FC
 	lda !lv_colour-
 	sta $FD
-	jsr MCPLOT
+	jsr _mcplot
 #if SAFEMCPLOT	
 	cli
 #endif
 	dec !lv_i-
 	jmp !-
-!:
-	rts
+!:	rts
 	
-!:
-
-
-	lda !lv_x1-
+!:	lda !lv_x1-
 	sta !lv_i-
-!:			 // Top of FOR Loop
+!:	// Top of FOR Loop
 	lda !lv_i-
 	cmp !lv_x2-
 	beq !--- // jump out of FOR ()
@@ -503,9 +434,6 @@ segment:
 	lda _DIV16_FB
 	clc 
 	adc !lv_y1-
-
-	// not sure this next line is needed
-	//sta !lv_Y-
 	
 #if SAFEMCPLOT	
 	sei
@@ -516,12 +444,11 @@ segment:
 	
 	lda !lv_colour-
 	sta $FD
-	jsr MCPLOT
+	jsr _mcplot
 #if SAFEMCPLOT	
 	cli
 #endif
 	inc !lv_i-
 	jmp !-
-!:
-	rts
+!:	rts
 
