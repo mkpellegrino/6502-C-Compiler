@@ -3702,6 +3702,7 @@ string replaceAll(string str, const string &from, const string &to)
 
   int distanceFrom( int starting_line, string label_to_find, int occurance = 1 )
   {
+    starting_line++;
     int distance = 0;
     int which_occurance = 0;
     for( int i=starting_line; i<asm_instr.size(); i++ )
