@@ -108,10 +108,10 @@
     str_BRK = string( "brk " );
     str_BVC = string( "bvc " );
     str_BVS = string( "bvs " );
-    str_CLC = string( "clc " );
-    str_CLD = string( "cld " );
-    str_CLI = string( "cli " );
-    str_CLV = string( "clv " );
+    str_CLC = string( "clc" );
+    str_CLD = string( "cld" );
+    str_CLI = string( "cli" );
+    str_CLV = string( "clv" );
     str_CMP = string( "cmp " );
     str_CPX = string( "cpx " );
     str_CPY = string( "cpy " );
@@ -121,8 +121,8 @@
     str_DEY = string( "dey " );
     str_EOR = string( "eor " );
     str_INC = string( "inc " );
-    str_INX = string( "inx " );
-    str_INY = string( "iny " );
+    str_INX = string( "inx" );
+    str_INY = string( "iny" );
     str_JMP = string( "jmp " );
     str_JSR = string( "jsr " );
     str_LAX = string( "lax " );
@@ -130,16 +130,16 @@
     str_LDX = string( "ldx " );
     str_LDY = string( "ldy " );
     str_LSR = string( "lsr " );
-    str_NOP = string( "nop " );
+    str_NOP = string( "nop" );
     str_ORA = string( "ora " );
-    str_PHA = string( "pha " );
-    str_PHP = string( "php " );
-    str_PLA = string( "pla " );
-    str_PLP = string( "plp " );
+    str_PHA = string( "pha" );
+    str_PHP = string( "php" );
+    str_PLA = string( "pla" );
+    str_PLP = string( "plp" );
     str_ROL = string( "rol " );
     str_ROR = string( "ror " );
     str_RTI = string( "rti " );
-    str_RTS = string( "rts " );
+    str_RTS = string( "rts" );
     str_SBC = string( "sbc " );
     str_SEC = string( "sec " );
     str_SED = string( "sed " );
@@ -147,12 +147,12 @@
     str_STA = string( "sta " );
     str_STX = string( "stx " );
     str_STY = string( "sty " );
-    str_TAX = string( "tax " );
-    str_TAY = string( "tay " );
-    str_TSX = string( "tsx " );
-    str_TXA = string( "txa " );
-    str_TXS = string( "txs " );
-    str_TYA = string( "tya " );
+    str_TAX = string( "tax" );
+    str_TAY = string( "tay" );
+    str_TSX = string( "tsx" );
+    str_TXA = string( "txa" );
+    str_TXS = string( "txs" );
+    str_TYA = string( "tya" );
     str_XAA = string( "xaa " );
     str_BYTE = string( ".byte " );
     str_TEXT = string( ".text " );
@@ -2012,6 +2012,7 @@ string replaceAll(string str, const string &from, const string &to)
       }
     byte_count -= asm_instr[asm_instr.size()-1]->getSize();
     asm_instr.erase( asm_instr.end()-1 );
+    addCompilerMessage( "Removed a mnemonic", 0 );
     return;
   }
 
@@ -2032,6 +2033,7 @@ string replaceAll(string str, const string &from, const string &to)
       }
     byte_count -= asm_instr[asm_instr.size()-1]->getSize();
     asm_instr.erase( asm_instr.end()-1 );
+    addCompilerMessage( "Removed mnemonics", 0 );
     return;
   }
 
@@ -2359,19 +2361,17 @@ string replaceAll(string str, const string &from, const string &to)
 
     if( asm_instr.size() > 4 && 1 )
       {
-	addOptimizationMessage( "checking for: bcs/clc pairing (split by 2 labels)", 0, -1);
+	addOptimizationMessage( "checking for: bcs/clc pairing", 0, -1);
 	for( int i=0; i<asm_instr.size()-3; i++ )
 	  {
 	    if(
-	       cmpstr(asm_instr[i]->getString(), str_BCS + "LBL1L4 // (OPTIMIZED)") &&
-	       cmpstr(asm_instr[i+1]->getString(), "LBL1L2:") &&
-	       cmpstr(asm_instr[i+2]->getString(), "LBL1L3:") &&
-	       cmpstr(asm_instr[i+3]->getString(), str_CLC)
+	       cmpstr(asm_instr[i]->getString(), str_BCS) &&
+	       cmpstr(asm_instr[i+1]->getString(), str_CLC)
 	       )
 	      {
 		addOptimizationMessage( "commenting out clc", i, 1);
-		asm_instr[i+3]->setString("\t" + commentmarker + asm_instr[i+3]->getString() );
-		asm_instr[i+3]->setSize(0);
+		asm_instr[i+1]->setString( commentmarker + asm_instr[i+1]->getString() );
+		asm_instr[i+1]->setSize(0);
 	      }
 	  }
       }
@@ -5114,7 +5114,7 @@ body: WHILE
       iterator_stack.push( asm_instr[asm_instr.size()-1] );
       s = iterator_stack.top()->getString();
       deletePreviousAsm();
-      addCompilerMessage( "Deleted Mnemonics", 0 );
+      //addCompilerMessage( "Deleted Mnemonics", 0 );
 
     }
   addComment( "- - - - - - - moved iterator from here to down below" );
@@ -5142,7 +5142,7 @@ body: WHILE
     }
   // delete the TAG
   deletePreviousAsm();
-  addCompilerMessage( "Deleted Mnemonics", 0 );
+  //addCompilerMessage( "Deleted Mnemonics", 0 );
 
   addDebugComment( "// ^ ^ ^ ^ ^ ^ ^ moved iterator to here from above");
   
@@ -7000,7 +7000,7 @@ body: WHILE
 {
   addComment( "cls()");
   cls_is_needed = true;
-  addAsm( str_JSR + "CLS" + commentmarker + "deep cls()", 3, false );
+  addAsm( str_JSR + "_cls" + commentmarker + "deep cls()", 3, false );
 };
 // STATEMENT
 | tROMOUT '(' expression ')' ';'
@@ -7418,8 +7418,6 @@ body: WHILE
       addAsm( str_LDA + "#$7F", 2, false );
       addAsm( str_STA + "$DC0D", 3, false );
       addAsm( str_STA + "$DD0D", 3, false );
-      //addAsm( str_LDA + "$DC0D", 3, false );
-      //addAsm( str_LDA + "$DD0D", 3, false );
       
       addComment( "Enable Raster Interrupts" );
       addAsm( str_LDA + "#$01", 2, false );
@@ -7450,8 +7448,6 @@ body: WHILE
       addAsm( str_LDA + "#$7F", 2, false );
       addAsm( str_STA + "$DC0D", 3, false );
       addAsm( str_STA + "$DD0D", 3, false );
-      //addAsm( str_LDA + "$DC0D", 3, false );
-      //addAsm( str_LDA + "$DD0D", 3, false );
       
       addComment( "Enable Raster Interrupts" );
       addAsm( str_LDA + "#$01", 2, false );
@@ -7539,7 +7535,7 @@ body: WHILE
   // for a way more efficient routine
   if( isA( $3.name ) || isXA( $3.name ) )
     {
-      addComment( "THIS SHOULD SAVE $02/$03, but doesn't yet!" );
+      addComment( "THIS SHOULD SAVE $02, but doesn't yet!" );
       addComment( "bank( A );" );
 
       addAsm( str_PHA );
@@ -7561,7 +7557,7 @@ body: WHILE
     }
   else if( isUintID( $3.name ) || isIntID( $3.name ) || isWordID( $3.name ) )
     {
-      addComment( "THIS SHOULD SAVE $02/$03, but doesn't yet!" );
+      addComment( "THIS SHOULD SAVE $02, but doesn't yet!" );
       addComment( "bank( UintID );" );
       addAsm( str_LDA + "#$03", 2, false );
       addAsm( str_ORA + "$DD02", 3, false );
@@ -7594,8 +7590,6 @@ body: WHILE
       v = v ^ 255; // xor #$FF
       v = v & 3;   // and #$03
       addAsm( str_LDA + "#$" + toHex( v ), 2, false ); 
-      //addAsm(str_EOR + "#$FF", 2, false );
-      //addAsm( str_AND + "#$03", 2, false );
 
       addAsm( str_STA + "$02", 2, false );
       addAsm( str_LDA + "$DD00", 3, false );
@@ -7646,7 +7640,6 @@ body: WHILE
     }
   
   addAsm( inlinestring.substr(1,inlinestring.length()-2), size, isItALabel );
-  //addAsm( string( "        " ) + inlinestring.substr(1,inlinestring.length()-2), size, true );
   strcpy( $$.name, "NULL" );
 }
 // STATEMENT
@@ -7878,7 +7871,7 @@ body: WHILE
     {
       deletePreviousAsmUntil( "// MARKED_FOR_DELETION" );
       addComment( "deleted previous 3 instructions" );
-      addCompilerMessage( "Deleted Mnemonics", 0 );
+      //addCompilerMessage( "Deleted Mnemonics", 0 );
 
       addComment( "poke( XA, UIntID )" );
       
@@ -7897,7 +7890,7 @@ body: WHILE
   else if( isXA(param1) && (isUintIMM(param2) || isIntIMM(param2)) )
     {
       deletePreviousAsmUntil( "// MARKED_FOR_DELETION");
-      addCompilerMessage( "Deleted Mnemonics", 0 );
+      //addCompilerMessage( "Deleted Mnemonics", 0 );
       addComment( "deleted instructions" );
       addComment( "poke( XA, UIntIMM) (self modifying code)" );
       int valu_addr = getAddressOf(param2);
@@ -8092,7 +8085,7 @@ condition: expression[LHS]
        )
     {
       deletePreviousAsmUntil("// MARKED_FOR_DELETION");
-      addCompilerMessage( "Deleted Mnemonics", 0 );
+      //addCompilerMessage( "Deleted Mnemonics", 0 );
 
       addComment( "Deleted Mnemonics");
     }
@@ -8296,7 +8289,7 @@ condition: expression[LHS]
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
-      addCompilerMessage( "Deleted Mnemonics", 0 );
+      //addCompilerMessage( "Deleted Mnemonics", 0 );
       cmpFACMEM( "#$19", "#$00" );
     }    
   else if( isA($LHS.name) && isIntID($RHS.name) )
@@ -8487,7 +8480,7 @@ condition: expression[LHS]
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
-      addCompilerMessage( "Deleted Mnemonics", 0 );
+      //addCompilerMessage( "Deleted Mnemonics", 0 );
       
       cmpFACMEM( "#$19", "#$00" );
     }
@@ -8537,7 +8530,7 @@ condition: expression[LHS]
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
-      addCompilerMessage( "Deleted Mnemonics", 0 );
+      //addCompilerMessage( "Deleted Mnemonics", 0 );
       cmpFACMEM( "#$19", "#$00" );
     }
   else if( isFAC($LHS.name) && isUintID($RHS.name) )
@@ -8583,7 +8576,7 @@ condition: expression[LHS]
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
-      addCompilerMessage( "Deleted Mnemonics", 0 );
+      //addCompilerMessage( "Deleted Mnemonics", 0 );
       cmpFACMEM( "#$19", "#$00" );
     }
   else if( isFAC($LHS.name) && isWordID($RHS.name) )
@@ -8630,7 +8623,7 @@ condition: expression[LHS]
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
-      addCompilerMessage( "Deleted Mnemonics", 0 );
+      //addCompilerMessage( "Deleted Mnemonics", 0 );
       cmpFACMEM( "#$19", "#$00" );
     }
   else if( isFAC($LHS.name) && isXA($RHS.name) )
@@ -8766,7 +8759,7 @@ condition: expression[LHS]
 	  deletePreviousAsm();
 	  deletePreviousAsm();
 	  deletePreviousAsm();
-	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  //addCompilerMessage( "Deleted Mnemonics", 0 );
 	  cmpFACMEM( "#$19", "#$00" );
 	}
     }
@@ -8777,7 +8770,7 @@ condition: expression[LHS]
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
-      addCompilerMessage( "Deleted Mnemonics", 0 );
+      //addCompilerMessage( "Deleted Mnemonics", 0 );
       cmpFACMEM( "#$19", "#$00" );
     }
   else if( isFloatIMM($LHS.name) && isFloatID($RHS.name)) 
@@ -8787,7 +8780,7 @@ condition: expression[LHS]
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
-      addCompilerMessage( "Deleted Mnemonics", 0 );
+      //addCompilerMessage( "Deleted Mnemonics", 0 );
       addAsm( str_LDA + "#<" + getNameOf(getAddressOf($RHS.name)), 2, false );
       addAsm( str_LDY + "#>" + getNameOf(getAddressOf($RHS.name)), 2, false );
       addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
@@ -8838,7 +8831,7 @@ condition: expression[LHS]
 	  deletePreviousAsm();
 	  deletePreviousAsm();
 	  deletePreviousAsm();
-	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  //addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_LDX + "#$00", 2, false );
 	  addAsm( str_LDY + getNameOf(getAddressOf($RHS.name)), 3, false );
 	  addAsm( str_BPL + "!+", 2, false );
@@ -8878,7 +8871,7 @@ condition: expression[LHS]
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
-      addCompilerMessage( "Deleted Mnemonics", 0 );
+      //addCompilerMessage( "Deleted Mnemonics", 0 );
       addAsm( str_LDY + getNameOf(getAddressOf($RHS.name)), 3, false );
       addAsm( str_LDA + "#$00", 2, false );
       addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
@@ -8913,7 +8906,7 @@ condition: expression[LHS]
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
-      addCompilerMessage( "Deleted Mnemonics", 0 );
+      //addCompilerMessage( "Deleted Mnemonics", 0 );
       addAsm( str_LDY + getNameOf(getAddressOf($RHS.name)), 3, false );
       addAsm( str_LDA + getNameOf(getAddressOf($RHS.name)) + " +1", 3, false );
       addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
@@ -8953,7 +8946,7 @@ condition: expression[LHS]
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
-      addCompilerMessage( "Deleted Mnemonics", 0 );
+      //addCompilerMessage( "Deleted Mnemonics", 0 );
       cmpFACMEM("#$19", "#$00");
     }
   else if( isIntID($LHS.name) && isA($RHS.name) )
@@ -9091,7 +9084,7 @@ condition: expression[LHS]
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
-      addCompilerMessage( "Deleted Mnemonics", 0 );
+      //addCompilerMessage( "Deleted Mnemonics", 0 );
       cmpFACMEM( "#$69", "#$00" );
       
     }
@@ -9237,7 +9230,7 @@ condition: expression[LHS]
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
-      addCompilerMessage( "Deleted Mnemonics", 0 );
+      //addCompilerMessage( "Deleted Mnemonics", 0 );
       cmpFACMEM( "#$19", "#$00" );  
     }
   else if( isIntIMM($LHS.name) && isFloatID($RHS.name) )
@@ -9527,7 +9520,7 @@ condition: expression[LHS]
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
-      addCompilerMessage( "Deleted Mnemonics", 0 );
+      //addCompilerMessage( "Deleted Mnemonics", 0 );
       cmpFACMEM( "#$19", "#$00" );
 
     }
@@ -9659,7 +9652,7 @@ condition: expression[LHS]
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
-      addCompilerMessage( "Deleted Mnemonics", 0 );
+      //addCompilerMessage( "Deleted Mnemonics", 0 );
       cmpFACMEM( "#$19", "#$00" );
     }
   else if( isUintIMM($LHS.name) && isFloatID($RHS.name) )
@@ -9941,7 +9934,7 @@ condition: expression[LHS]
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
-      addCompilerMessage( "Deleted Mnemonics", 0 );
+      //addCompilerMessage( "Deleted Mnemonics", 0 );
       cmpFACMEM( "#$19", "#$00" );
     }
   else if( isWordID($LHS.name) && isIntID($RHS.name) )
@@ -10056,7 +10049,7 @@ condition: expression[LHS]
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
-      addCompilerMessage( "Deleted Mnemonics", 0 );
+      //addCompilerMessage( "Deleted Mnemonics", 0 );
       cmpFACMEM( "#$19", "#$00" );
     }
   else if( isWordIMM($LHS.name) && isFloatID($RHS.name) )
@@ -10377,7 +10370,7 @@ condition: expression[LHS]
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
-      addCompilerMessage( "Deleted Mnemonics", 0 );
+      //addCompilerMessage( "Deleted Mnemonics", 0 );
       cmpFACMEM( "#$19", "#$00" );
     }
   else if( isXA($LHS.name) && isIntID($RHS.name) )
@@ -10873,7 +10866,7 @@ condition: expression[LHS]
 	  deletePreviousAsm();
 	  deletePreviousAsm();
 	  addComment( "deleted previous 2 instructions" );
-	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  //addCompilerMessage( "Deleted Mnemonics", 0 );
 
 	  //deletePreviousAsm();
 	  addAsm( str_JMP + getLabel( label_vector[label_major]+2, false), 3, false);
@@ -10890,7 +10883,7 @@ condition: expression[LHS]
 	  deletePreviousAsm();
 	  deletePreviousAsm();
 	  deletePreviousAsm();
-	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  //addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addComment( "deleted previous 5 instructions" );
  
 	  addAsm( str_JMP + getLabel( label_vector[label_major]+2, false), 3, false);
@@ -10912,7 +10905,7 @@ condition: expression[LHS]
 	  deletePreviousAsm();
 	  deletePreviousAsm();
 	  deletePreviousAsm();
-	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  //addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addComment( "deleted previous 5 instructions" );
 
 	  addAsm( str_JMP + getLabel( label_vector[label_major], false), 3, false);
@@ -10932,7 +10925,7 @@ condition: expression[LHS]
 	  
 	  deletePreviousAsm();
 	  deletePreviousAsm();
-	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  //addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addComment( "deleted previous 2 instructions" );
  
 	  addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "JMP to else", 3, false);
@@ -10947,7 +10940,7 @@ condition: expression[LHS]
 	  
 	  deletePreviousAsm();
 	  deletePreviousAsm();
-	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  //addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addComment( "deleted previous 2 instructions" );
       
 	  addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "JMP to else", 3, false);
@@ -10962,7 +10955,7 @@ condition: expression[LHS]
 	  
 	  deletePreviousAsm();
 	  deletePreviousAsm();
-	  addCompilerMessage( "Deleted 2 Mnemonics", 0 );
+	  //addCompilerMessage( "Deleted 2 Mnemonics", 0 );
 	  addComment( "deleted previous 2 instructions" );
       
 	  addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "JMP to else", 3, false);
@@ -12025,10 +12018,6 @@ statement: datatype ID init
       addAsm( str_STA + "$D000,X" + commentmarker + "set the low-byte value", 3, false );
       // the high byte
       addAsm( str_PLA );
-      //addAsm( str_LDA + "$" + toHex( sprite_number ), 3, false );
-      //addAsm( str_LDA + "$02", 2, false );
-      //addAsm( str_TXA );
-      //addAsm( str_LSR );
       
 
       // 2024 05 01 - mkpellegrino
@@ -15178,47 +15167,115 @@ arithmetic[MATHOP] expression[OP2]
       addComment( "A math UintIMM: TOC" );
       if( op == string("+") )
 	{
-	  addComment( "A + UintIMM" );
+	  addComment( "A + UintIMM -> A" );
 	  addAsm( str_CLC, 1, false );
 	  addAsm( str_ADC + "#$" + toHex(tmp_v), 2, false );
 	  strcpy($$.name, "_A");
 	}
       else if( op == string( "-" ))
 	{
-	  addComment( "A - UintIMM" );
+	  addComment( "A - UintIMM -> A" );
 	  addAsm( str_SEC );
 	  addAsm( str_SBC + "#$" + toHex(tmp_v), 2, false );
 	  strcpy($$.name, "_A");
 	}
       else if( op == string( "*" ) )
 	{
-	  switch( tmp_v )
+	  addComment( "A * UintIMM -> XA" );
+	  if( tmp_v == 4 )
 	    {
-	    case 4:
-	      addComment( "A * 4 --> XA" );
+	      if( arg_unsafe_math )
+	  	{
+		  addComment( "A * 4 --> XA (destroys $03) (21 cycles)" );
+		  addAsm( str_LDX + "#$00", 2, false );
+		  addAsm( str_STX + "$03", 2, false );
+		  addAsm( str_ASL, 1, false );
+		  addAsm( str_ROL + "$03", 2, false );
+		  addAsm( str_ASL, 1, false );
+		  addAsm( str_ROL + "$03", 2, false );
+		  addAsm( str_LDX + "$03", 2, false );
+	  	}
+	      else
+		{
+		  addComment( "A * 4 --> XA (24 cycles)" );
+		  addAsm( str_ASL, 1, false );
+		  addAsm( str_TAY, 1, false );
+		  addAsm( str_LDA + "#$00", 2, false );
+		  addAsm( str_ROL, 1, false );
+		  addAsm( str_TAX, 1, false );
+		  addAsm( str_TYA, 1, false );
+		  addAsm( str_ASL, 1, false );
+		  addAsm( str_TAY, 1, false );
+		  addAsm( str_TXA, 1, false );
+		  addAsm( str_ROL, 1, false );
+		  addAsm( str_TAX, 1, false );
+		  addAsm( str_TYA, 1, false );	      
+		}
+	    }
+	  else if( tmp_v == 2 )
+	    {
+	      addComment( "A * 2 --> XA (12 cycles)" );
 	      addAsm( str_ASL, 1, false );
 	      addAsm( str_TAY, 1, false );
 	      addAsm( str_LDA + "#$00", 2, false );
 	      addAsm( str_ROL, 1, false );
 	      addAsm( str_TAX, 1, false );
 	      addAsm( str_TYA, 1, false );
-	      addAsm( str_ASL, 1, false );
-	      addAsm( str_TAY, 1, false );
-	      addAsm( str_TXA, 1, false );
-	      addAsm( str_ROL, 1, false );
-	      addAsm( str_TAX, 1, false );
-	      addAsm( str_TYA, 1, false );	      
-	      break;
-	    case 2:
-	      addComment( "A * 2 --> XA" );
-	      addAsm( str_ASL, 1, false );
-	      addAsm( str_TAY, 1, false );
-	      addAsm( str_LDA + "#$00", 2, false );
-	      addAsm( str_ROL, 1, false );
-	      addAsm( str_TAX, 1, false );
-	      addAsm( str_TYA, 1, false );
-	      break;
-	    default:
+	    }
+	  else if( tmp_v == 10 )
+	    {
+	      if( arg_unsafe_math )
+		{
+		  addComment( "A * 10 --> XA (46 cycles destroys $05)" );
+		  addAsm( str_TAY, 1, false ); // 2
+		  addAsm( str_ASL, 1, false ); // 2   
+		  addAsm( str_STA + "$05", 2, false ); // 3
+		  addAsm( str_LDA + "#$00", 2, false ); // 2
+		  addAsm( str_ROL, 1, false ); // 2 
+		  addAsm( str_ASL + "$05", 2, false );  // 5
+		  addAsm( str_ROL, 1, false );
+		  addAsm( str_TAX, 1, false );
+	      
+		  addAsm( str_TYA, 1, false );
+		  addAsm( str_CLC, 1, false );
+		  addAsm( str_ADC + "$05", 2, false );
+		  addAsm( str_STA + "$05", 2, false );
+		  addAsm( str_TXA, 1, false );
+		  addAsm( str_ADC + "#$00", 2, false );
+
+		  addAsm( str_ASL + "$05", 2, false );
+		  addAsm( str_ROL, 1, false );
+		  addAsm( str_TAX, 1, false );
+		  addAsm( str_LDA + "$05", 2, false );
+		}
+	      else
+		{
+		  addComment( "A * 10 --> XA (48 cycles)" );
+		  addAsm( str_TAY, 1, false );
+		  addAsm( str_ASL, 1, false );	      
+		  addAsm( str_STA + "!mem+", 3, false );
+		  addAsm( str_LDA + "#$00", 2, false );
+		  addAsm( str_ROL, 1, false );
+		  addAsm( str_ASL + "!mem+", 3, false );
+		  addAsm( str_ROL, 1, false );
+		  addAsm( str_TAX, 1, false );
+	      
+		  addAsm( str_TYA, 1, false );
+		  addAsm( str_CLC, 1, false );
+		  addAsm( str_ADC + "!mem+", 3, false );
+		  addAsm( str_STA + "!mem+", 3, false );
+		  addAsm( str_TXA, 1, false );
+		  addAsm( str_ADC + "#$00", 2, false );
+
+		  addAsm( str_ASL + "!mem+", 3, false );
+		  addAsm( str_ROL, 1, false );
+		  addAsm( str_TAX, 1, false );
+		  addAsm( str_BYTE + "$A9" + commentmarker + "<-- LDA imm", 1, false );
+		  addAsm( "!mem:\t" + str_BYTE + "$00", 1, true );
+		}
+	    }
+	  else
+	    {
 	      mul16_is_needed = true;
 	      addComment( "A * UintIMM --> XA" );
 	      addAsm( str_STA + "_MUL16_FD", 3, false);
@@ -15290,7 +15347,7 @@ arithmetic[MATHOP] expression[OP2]
       else if( op == string( "**" ) )
 	{
 	  addComment( "A ** UintIMM --> XA" );
-	  mul16_is_needed = true;
+	  //mul16_is_needed = true;
 	  pow16_is_needed = true;
 
 	  addAsm( str_PHA, 1, false );
@@ -15298,7 +15355,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_LDA + "#$" + toHex(tmp_v), 2, false  );
 	  addAsm( str_PHA, 1, false );
-	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_JSR + "_pow16", 3, false );
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_PLA, 1, false );
@@ -15387,7 +15444,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_LDA + O2, 3, false );
 	  addAsm( str_PHA, 1, false );
-	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_JSR + "_pow16", 3, false );
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_PLA, 1, false );
@@ -15572,7 +15629,7 @@ arithmetic[MATHOP] expression[OP2]
 	      addAsm( str_LDA + "#$" + toHex(get_word_L(tmp_v)), 2, false  );
 	      
 	      addAsm( str_PHA, 1, false );
-	      addAsm( str_JSR + "pow16", 3, false );
+	      addAsm( str_JSR + "_pow16", 3, false );
 	      addAsm( str_PLA, 1, false );
 	      addAsm( str_TAX, 1, false );
 	      addAsm( str_PLA, 1, false );
@@ -15689,7 +15746,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_TYA, 1, false );
 	  addAsm( str_PHA, 1, false );
-	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_JSR + "_pow16", 3, false );
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_PLA, 1, false );
@@ -16966,7 +17023,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  inlineFloat($1.name);
 	  deletePreviousAsm();
-	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  //addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fMultT();
 	  strcpy($$.name, "_FAC" );
@@ -16978,7 +17035,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  inlineFloat($1.name);
 	  deletePreviousAsm();
-	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  //addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fAddT();
 	  strcpy($$.name, "_FAC" );
@@ -16990,7 +17047,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  inlineFloat($1.name);
 	  deletePreviousAsm();
-	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  //addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fSubT();
 	  strcpy($$.name, "_FAC" );
@@ -17002,7 +17059,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  inlineFloat($1.name);
 	  deletePreviousAsm();
-	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  //addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fDivT();
 	  strcpy($$.name, "_FAC" );
@@ -17014,7 +17071,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  inlineFloat($1.name);
 	  deletePreviousAsm();
-	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  //addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fPwrT();
 	  strcpy($$.name, "_FAC" );
@@ -17031,7 +17088,7 @@ arithmetic[MATHOP] expression[OP2]
 	{
 	  inlineFloat($1.name);
 	  deletePreviousAsm();
-	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  //addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fAddT();
 	}
@@ -17039,7 +17096,7 @@ arithmetic[MATHOP] expression[OP2]
 	{
 	  inlineFloat($1.name);
 	  deletePreviousAsm();
-	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  // addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fSubT();
 	}
@@ -17047,7 +17104,7 @@ arithmetic[MATHOP] expression[OP2]
 	{
 	  inlineFloat($1.name);
 	  deletePreviousAsm();
-	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  // addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fSubT();
 	}
@@ -17055,7 +17112,7 @@ arithmetic[MATHOP] expression[OP2]
 	{
 	  inlineFloat($1.name);
 	  deletePreviousAsm();
-	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  // addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fDivT();
 	}
@@ -17063,7 +17120,7 @@ arithmetic[MATHOP] expression[OP2]
 	{
 	  inlineFloat($1.name);
 	  deletePreviousAsm();
-	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  // addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fPwrT();
 	}
@@ -17083,7 +17140,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
 	  inlineFloat($1.name);
 	  deletePreviousAsm();
-	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  // addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fMultT();
 	}
@@ -17094,7 +17151,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
 	  inlineFloat($1.name);
 	  deletePreviousAsm();
-	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  // addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fAddT();
 	}
@@ -17105,7 +17162,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
 	  inlineFloat($1.name);
 	  deletePreviousAsm();
-	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  // addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fSubT();
 	}
@@ -17116,7 +17173,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
 	  inlineFloat($1.name);
 	  deletePreviousAsm();
-	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  // addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fDivT();
 	}
@@ -17127,7 +17184,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
 	  inlineFloat($1.name);
 	  deletePreviousAsm();
-	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  // addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fPwrT();
 	}
@@ -17194,7 +17251,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  inlineFloat( $1.name );
 	  deletePreviousAsm();
-	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  // addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fAddT();
 	}
@@ -17209,7 +17266,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  inlineFloat( $1.name );
 	  deletePreviousAsm();
-	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  // addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fAddT();
 
@@ -17228,7 +17285,7 @@ arithmetic[MATHOP] expression[OP2]
 	  // OP1 -> FAC
 	  inlineFloat( $1.name );
 	  deletePreviousAsm();
-	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  // addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fMultT();
 	}
@@ -17242,7 +17299,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_TXA, 1, false );	  
 	  addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
 	  inlineFloat( $1.name );
-	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  // addCompilerMessage( "Deleted Mnemonics", 0 );
 	  deletePreviousAsm();
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fDivT();	  
@@ -17261,7 +17318,7 @@ arithmetic[MATHOP] expression[OP2]
 	  // OP1 -> FAC
 	  inlineFloat( $1.name );
 	  deletePreviousAsm();
-	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  // addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fPwrT();
 	}
@@ -17383,7 +17440,7 @@ arithmetic[MATHOP] expression[OP2]
 	  // OP1 -> FAC
 	  inlineFloat( $1.name );
 	  deletePreviousAsm();
-	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  // addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fSubT();
 	}
@@ -17397,7 +17454,7 @@ arithmetic[MATHOP] expression[OP2]
 	  // OP1 -> FAC
 	  inlineFloat( $1.name );
 	  deletePreviousAsm();
-	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  // addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fMultT();
 	}
@@ -17411,7 +17468,7 @@ arithmetic[MATHOP] expression[OP2]
 	  // OP1 -> FAC
 	  inlineFloat( $1.name );
 	  deletePreviousAsm();
-	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  // addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fDivT();
 	}
@@ -17425,7 +17482,7 @@ arithmetic[MATHOP] expression[OP2]
 	  // OP1 -> FAC
 	  inlineFloat( $1.name );
 	  deletePreviousAsm();
-	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  // addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fPwrT();
 	}
@@ -17492,7 +17549,7 @@ arithmetic[MATHOP] expression[OP2]
 	  // OP1 -> FAC
 	  inlineFloat( $1.name );
 	  deletePreviousAsm();
-	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  // addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fAddT();
 	}
@@ -17505,7 +17562,7 @@ arithmetic[MATHOP] expression[OP2]
 	  // OP1 -> FAC
 	  inlineFloat( $1.name );
 	  deletePreviousAsm();
-	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  // addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fSubT();
 	}
@@ -17519,7 +17576,7 @@ arithmetic[MATHOP] expression[OP2]
 	  // OP1 -> FAC
 	  inlineFloat( $1.name );
 	  deletePreviousAsm();
-	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  // addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fMultT();
 	}
@@ -17533,7 +17590,7 @@ arithmetic[MATHOP] expression[OP2]
 	  // OP1 -> FAC
 	  inlineFloat( $1.name );
 	  deletePreviousAsm();
-	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  // addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fDivT();
 	}
@@ -17547,7 +17604,7 @@ arithmetic[MATHOP] expression[OP2]
 	  // OP1 -> FAC
 	  inlineFloat( $1.name );
 	  deletePreviousAsm();
-	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  // addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fPwrT();
 	}
@@ -17571,7 +17628,7 @@ arithmetic[MATHOP] expression[OP2]
 	  // OP1 -> FAC
 	  inlineFloat( $1.name );
 	  deletePreviousAsm();
-	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  // addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fAddT();
 	}
@@ -17585,7 +17642,7 @@ arithmetic[MATHOP] expression[OP2]
 	  // OP1 -> FAC
 	  inlineFloat( $1.name );
 	  deletePreviousAsm();
-	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  // addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fSubT();
 	}
@@ -17599,7 +17656,7 @@ arithmetic[MATHOP] expression[OP2]
 	  // OP1 -> FAC
 	  inlineFloat( $1.name );
 	  deletePreviousAsm();
-	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  // addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fMultT();
 	}
@@ -17613,7 +17670,7 @@ arithmetic[MATHOP] expression[OP2]
 	  // OP1 -> FAC
 	  inlineFloat( $1.name );
 	  deletePreviousAsm();
-	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  // addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fDivT();
 	}
@@ -17627,7 +17684,7 @@ arithmetic[MATHOP] expression[OP2]
 	  // OP1 -> FAC
 	  inlineFloat( $1.name );
 	  deletePreviousAsm();
-	  addCompilerMessage( "Deleted Mnemonics", 0 );
+	  // addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addAsm( str_JSR + "$BA8C" + commentmarker + "MEM -> ARG (+)", 3, false );
 	  fPwrT();
 	}
@@ -17756,7 +17813,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_TYA, 1, false );
 	  addAsm( str_PHA, 1, false );
-	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_JSR + "_pow16", 3, false );
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAX, 1, false );// not needed
 	  addAsm( str_PLA, 1, false );
@@ -18285,7 +18342,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_LDA + O2, 3, false );	  
 	  addAsm( str_PHA, 1, false );
-	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_JSR + "_pow16", 3, false );
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_PLA, 1, false );
@@ -18557,7 +18614,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_LDA + O2, 3, false );	  
 	  addAsm( str_PHA, 1, false );
-	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_JSR + "_pow16", 3, false );
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_PLA, 1, false );
@@ -18709,7 +18766,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_LDA + "#$" + toHex(op2), 2, false );
 	  addAsm( str_PHA, 1, false );
-	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_JSR + "_pow16", 3, false );
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_PLA, 1, false );
@@ -18834,7 +18891,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_LDA + O2, 3, false );	  
 	  addAsm( str_PHA, 1, false );
-	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_JSR + "_pow16", 3, false );
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_PLA, 1, false );
@@ -18961,7 +19018,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_LDA + "#$" + IMM2L, 3, false );	  
 	  addAsm( str_PHA, 1, false );
-	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_JSR + "_pow16", 3, false );
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_PLA, 1, false );
@@ -19111,7 +19168,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_TYA, 1, false );
 	  addAsm( str_PHA, 1, false );
-	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_JSR + "_pow16", 3, false );
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_PLA, 1, false );
@@ -19236,7 +19293,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_LDA + "$02", 2, false );
 	  addAsm( str_PHA, 1, false );
-	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_JSR + "_pow16", 3, false );
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_PLA, 1, false );
@@ -19551,7 +19608,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_LDA + O2, 3, false );
 	  addAsm( str_PHA, 1, false );
-	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_JSR + "_pow16", 3, false );
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_PLA, 1, false );
@@ -19731,7 +19788,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_LDA + O2, 3, false );
 	  addAsm( str_PHA, 1, false );
-	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_JSR + "_pow16", 3, false );
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_PLA, 1, false );
@@ -19913,7 +19970,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_LDA + O2, 3, false );
 	  addAsm( str_PHA, 1, false );
-	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_JSR + "_pow16", 3, false );
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_PLA, 1, false );
@@ -20083,7 +20140,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_TYA, 1, false );
 	  addAsm( str_PHA, 1, false );
-	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_JSR + "_pow16", 3, false );
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_PLA, 1, false );	  
@@ -20461,7 +20518,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false );
 	  addAsm( str_PHA, 1, false );
-	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_JSR + "_pow16", 3, false );
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_PLA, 1, false );
@@ -20676,7 +20733,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_LDA + O2, sizeOP2A, false );
 	  addAsm( str_PHA, 1, false );
-	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_JSR + "_pow16", 3, false );
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_PLA, 1, false );
@@ -20897,7 +20954,7 @@ arithmetic[MATHOP] expression[OP2]
 		  addAsm( str_PHA, 1, false );
 		  addComment( "-----------------------" );
 		}
-	      addComment( "UintID * UintIMM --> XA special case: * 40 (experimental)" );
+	      addComment( "UintID * UintIMM --> XA special case: * 0x28" );
 	      addComment( "32 bytes, 54-58 cycles" );
 	      addAsm( str_LDA + "#$00", 2, false );
 	      addAsm( str_STA + "$03", 2, false );
@@ -21074,7 +21131,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_LDA + "#$" + toHex(op2), 2, false );
 	  addAsm( str_PHA, 1, false );
-	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_JSR + "_pow16", 3, false );
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_PLA, 1, false );
@@ -21163,7 +21220,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_LDA + O2, sizeOP2A, false );
 	  addAsm( str_PHA, 1, false );
-	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_JSR + "_pow16", 3, false );
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_PLA, 1, false );
@@ -21370,7 +21427,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_LDA + "#$" + toHex(op2), 2, false );
 	  addAsm( str_PHA, 1, false );
-	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_JSR + "_pow16", 3, false );
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_PLA, 1, false );
@@ -21461,7 +21518,7 @@ arithmetic[MATHOP] expression[OP2]
 	  
 	  addAsm( str_TXA, 1, false );
 	  addAsm( str_PHA, 1, false );
-	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_JSR + "_pow16", 3, false );
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_PLA, 1, false );
@@ -21615,7 +21672,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_TXA, 1, false );
 	  addAsm( str_PHA, 1, false );
-	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_JSR + "_pow16", 3, false );
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_PLA, 1, false );
@@ -22007,7 +22064,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_TYA, 1, false );
 	  addAsm( str_PHA, 1, false );
-	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_JSR + "_pow16", 3, false );
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_PLA, 1, false );
@@ -22246,7 +22303,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_LDA + O2, sizeOP2A, false );
 	  addAsm( str_PHA, 1, false );
-	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_JSR + "_pow16", 3, false );
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_PLA, 1, false );
@@ -22373,7 +22430,7 @@ arithmetic[MATHOP] expression[OP2]
 	  if( getAddressOf($4.name) < 255 ) sizeOP2B = 2;
 	  
 	    
-
+	  // TODO: Optimize this
 	  if( tmp_int == 40 )
 	    {
 	      addComment("Special Case: 0x28 * WordID --> XA" );
@@ -22620,7 +22677,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false );
 	  addAsm( str_PHA, 1, false );
-	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_JSR + "_pow16", 3, false );
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_PLA, 1, false );
@@ -22800,7 +22857,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_TYA, 1, false );
 	  addAsm( str_PHA, 1, false );
-	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_JSR + "_pow16", 3, false );
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_PLA, 1, false );
@@ -22876,7 +22933,7 @@ arithmetic[MATHOP] expression[OP2]
 	{
 	  addComment( "WordID ** A --> XA" );
 	  addCompilerMessage( "WordID ** A: exponent restricted to < 0x0F", 1 );
-	  mul16_is_needed = true;
+	  //mul16_is_needed = true;
 	  pow16_is_needed = true;
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_LDA + O1, 3, false );
@@ -22885,7 +22942,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_TXA, 1, false );
 	  addAsm( str_PHA, 1, false );
-	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_JSR + "_pow16", 3, false );
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_PLA, 1, false );
@@ -23081,8 +23138,6 @@ arithmetic[MATHOP] expression[OP2]
 	  if( addr_op1 > 255 ) size_op1=3;
 	  if( addr_op2 > 255 ) size_op2=3;
 
-	  
-
 	  addAsm( str_CLC, 1, false );
 	  addAsm( str_LDX + "#$00", 2, false );
 	  addAsm( str_LDA + getNameOf(getAddressOf($4.name)), size_op2, false );
@@ -23184,7 +23239,7 @@ arithmetic[MATHOP] expression[OP2]
 	{
 	  addComment( "WordID ** IntID  --> XA" );
 	  addCompilerMessage( "WordID ** IntID cant't have OP2 > 0x000F, the result is > 0xFFFF", 0 );
-	  mul16_is_needed = true;
+	  //mul16_is_needed = true;
 	  pow16_is_needed = true;
 
 	  addAsm( str_LAX + "#$00", 2, false );
@@ -23198,7 +23253,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_TYA, 1, false );
 	  //addAsm( str_LDA + O2, 3, false );
 	  addAsm( str_PHA, 1, false );
-	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_JSR + "_pow16", 3, false );
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_PLA, 1, false );
@@ -23300,7 +23355,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_LDA + O2, 3, false );
 	  addAsm( str_PHA, 1, false );
-	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_JSR + "_pow16", 3, false );
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_PLA, 1, false );
@@ -23373,7 +23428,59 @@ arithmetic[MATHOP] expression[OP2]
 	  
 	  if( IMMvalue == 40 )
 	    {
-	      addComment("Special Case: WordID * 0x28 --> XA" );
+	      addComment("Special Case: WordID * 0x28 --> XA (70 cycles)" );
+	      if( !arg_unsafe_math )
+		{
+		  addComment( "save ZP $02/$03/$04/$05" );
+		  addAsm( str_LDA + "$02", 2, false );
+		  addAsm( str_PHA, 1, false );
+		  addAsm( str_LDA + "$03", 2, false );
+		  addAsm( str_PHA, 1, false );
+		  addAsm( str_LDA + "$05", 2, false );
+		  addAsm( str_PHA, 1, false );
+		  addComment( "----------------------" );
+		}
+	      addAsm( str_LDA + O1, sizeOP1A, false );
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_STA + "$02", 2, false );
+	      addAsm( str_LDA + O1 + " +1", sizeOP1B, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_ASL + "$02", 2, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_ASL + "$02", 2, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_STA + "$03", 2, false );
+	      addAsm( str_STA + "$05", 2, false );
+	      addAsm( str_LDA + "$02", 2, false );
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_ROL + "$05", 2, false );
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_ROL + "$05", 2, false );
+	      addAsm( str_CLC, 1, false );
+	      addAsm( str_ADC + "$02", 2, false );
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_LDA + "$05", 2, false );
+	      addAsm( str_ADC + "$03", 2, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );
+	      
+	      if( !arg_unsafe_math )
+		{
+		  addAsm( str_TAY, 1, false );
+		  addComment( "-------------------" );
+		  addAsm( str_PLA, 1, false );
+		  addAsm( str_STA + "$05", 2, false );
+		  addAsm( str_PLA, 1, false );
+		  addAsm( str_STA + "$03", 2, false );
+		  addAsm( str_PLA, 1, false );
+		  addAsm( str_STA + "$02", 2, false );
+		  addAsm( str_TYA, 1, false );
+		}
+	      strcpy($$.name, "_XA" );
+	    }
+	  else if( IMMvalue == 40 )
+	    {
+	      addComment("Special Case: WordID * 0x28 --> XA (93 cycles) (old version)" );
 	      if( !arg_unsafe_math )
 		{
 		  addComment( "save ZP $02/$03/$04/$05" );
@@ -23680,7 +23787,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_LDA + "#$" + toHex(atoi(stripFirst($4.name).c_str())), 2, false );
 	  addAsm( str_PHA, 1, false );
-	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_JSR + "_pow16", 3, false );
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_PLA, 1, false );
@@ -24029,7 +24136,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_LDA + O2, 3, false );
 	  addAsm( str_PHA, 1, false );
-	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_JSR + "_pow16", 3, false );
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_PLA, 1, false );
@@ -24332,7 +24439,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_LDA + "#$" + toHex(get_word_L(op2)), 2, false  );      
 	  addAsm( str_PHA, 1, false );
-	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_JSR + "_pow16", 3, false );
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_PLA, 1, false );
@@ -24422,7 +24529,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_TXA, 1, false );
 	  addAsm( str_PHA, 1, false );
-	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_JSR + "_pow16", 3, false );
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_PLA, 1, false );
@@ -24508,7 +24615,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_TYA, 1, false );
 	  addAsm( str_PHA, 1, false );
-	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_JSR + "_pow16", 3, false );
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_PLA, 1, false );
@@ -24875,7 +24982,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_TYA, 1, false );
 	  addAsm( str_PHA, 1, false );
-	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_JSR + "_pow16", 3, false );
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_PLA, 1, false );
@@ -25047,7 +25154,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false);
 	  addAsm( str_PHA, 1, false );
-	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_JSR + "_pow16", 3, false );
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_PLA, 1, false );
@@ -25375,7 +25482,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false);
 	  addAsm( str_PHA, 1, false );
-	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_JSR + "_pow16", 3, false );
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_PLA, 1, false );
@@ -25546,7 +25653,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_TYA, 1, false );
 	  addAsm( str_PHA, 1, false );
-	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_JSR + "_pow16", 3, false );
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_PLA, 1, false );
@@ -25639,7 +25746,7 @@ arithmetic[MATHOP] expression[OP2]
 
 	  addAsm( str_PHA, 1, false );
 
-	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_JSR + "_pow16", 3, false );
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_PLA, 1, false );
@@ -25896,7 +26003,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_JMP + "!++", 3, false );
 
 	  addAsm( "!:\t" + str_PHA, 1, true );
-	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_JSR + "_pow16", 3, false );
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_PLA, 1, false );
@@ -26058,7 +26165,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_LDA + O2, 3, false );
 	  addAsm( str_PHA, 1, false );
-	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_JSR + "_pow16", 3, false );
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_PLA, 1, false );
@@ -26102,6 +26209,8 @@ arithmetic[MATHOP] expression[OP2]
 	{
 	  addComment( "XA * UintIMM --> XA" );
 	  int tmp_v = atoi(stripFirst($4.name).c_str());
+
+	  // TODO: Add XA * 0x28
 	  switch(tmp_v)
 	    {
 	    case 0:
@@ -26208,29 +26317,30 @@ arithmetic[MATHOP] expression[OP2]
 		  addAsm( str_STA + "$02", 2, false );                 // 3 cyc
 		}
 	      addAsm( str_STX + "$03", 2, false );
-	      addAsm( str_ASL );
-	      addAsm( str_TAY );
-	      addAsm( str_TXA );
-	      addAsm( str_ROL );
-	      addAsm( str_TAX );
-	      addAsm( str_TYA );
-	      addAsm( str_ASL );
-	      addAsm( str_TAY );
-	      addAsm( str_TXA );
-	      addAsm( str_ROL );
-	      addAsm( str_TAX );
-	      addAsm( str_TYA );
-	      addAsm( str_CLC );
+	      addAsm( str_ASL, 1, false  );
+	      addAsm( str_TAY, 1, false  );
+	      addAsm( str_TXA, 1, false  );
+	      addAsm( str_ROL, 1, false  );
+	      addAsm( str_TAX, 1, false  );
+	      addAsm( str_TYA, 1, false  );
+	      addAsm( str_ASL, 1, false  );
+	      addAsm( str_TAY, 1, false  );
+	      addAsm( str_TXA, 1, false  );
+	      addAsm( str_ROL, 1, false  );
+	      addAsm( str_TAX, 1, false  );
+	      addAsm( str_TYA, 1, false  );
+	      
+	      addAsm( str_CLC, 1, false  );
 	      addAsm( str_ADC + "$02", 2, false );
-	      addAsm( str_TAY );
-	      addAsm( str_TXA );
+	      addAsm( str_TAY, 1, false  );
+	      addAsm( str_TXA, 1, false  );
 	      addAsm( str_ADC + "$03", 2, false );
-	      addAsm( str_TAX );
+	      addAsm( str_TAX, 1, false  );
 	      if( !arg_unsafe_math )
 		{
-		  addAsm( str_PLA );
+		  addAsm( str_PLA, 1, false  );
 		  addAsm( str_STA + "$03", 2, false );
-		  addAsm( str_PLA );
+		  addAsm( str_PLA, 1, false  );
 		  addAsm( str_STA + "$02", 2, false );
 		}
 	      addAsm( str_TYA );
@@ -26241,71 +26351,135 @@ arithmetic[MATHOP] expression[OP2]
 	      addComment( "XA * 3 --> XA" );
 	      if( !arg_unsafe_math )
 		{
-		  addAsm( str_TAY );
+		  addAsm( str_TAY, 1, false  );
 		  addAsm( str_LDA + "$02", 2, false );
-		  addAsm( str_PHA );
+		  addAsm( str_PHA, 1, false  );
 		  addAsm( str_LDA + "$03", 2, false );
-		  addAsm( str_PHA );
+		  addAsm( str_PHA, 1, false  );
 		  addAsm( str_STY + "$02", 2, false );
-		  addAsm( str_TYA );
+		  addAsm( str_TYA, 1, false  );
 		}
 	      else
 		{
 		  addAsm( str_STA + "$02", 2, false );
 		}
 	      addAsm( str_STX + "$03", 2, false );
-	      addAsm( str_ASL );
-	      addAsm( str_TAY );
-	      addAsm( str_TXA );
-	      addAsm( str_ROL );
-	      addAsm( str_TAX );
-	      addAsm( str_TYA );
-	      addAsm( str_CLC );
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_TAY, 1, false  );
+	      addAsm( str_TXA, 1, false  );
+	      addAsm( str_ROL, 1, false  );
+	      addAsm( str_TAX, 1, false  );
+	      addAsm( str_TYA, 1, false  );
+	      
+	      addAsm( str_CLC, 1, false  );
 	      addAsm( str_ADC + "$02", 2, false );
-	      addAsm( str_TAY );
-	      addAsm( str_TXA );
+	      addAsm( str_TAY, 1, false  );
+	      addAsm( str_TXA, 1, false  );
 	      addAsm( str_ADC + "$03", 2, false );
-	      addAsm( str_TAX );
+	      addAsm( str_TAX, 1, false  );
 
 	      if( !arg_unsafe_math )
 		{
-		  addAsm( str_PLA );
+		  addAsm( str_PLA, 1, false  );
 		  addAsm( str_STA + "$03", 2, false );
-		  addAsm( str_PLA );
+		  addAsm( str_PLA, 1, false  );
 		  addAsm( str_STA + "$02", 2, false );
 		}
 	      addAsm( str_TYA );
 	      strcpy($$.name, "_XA");
 	      break;
-	    case 10:
-	      addComment( "XA * 10 --> XA" );
+	    case 40:
 	      if( !arg_unsafe_math )
 		{
+		  addComment("Special Case: XA * 0x28 --> XA (85 cycles)" );
+		  addAsm( str_TAY, 1, false );
+		  addComment( "save ZP $02/$03/$04/$05" );
+		  addAsm( str_LDA + "$02", 2, false );
+		  addAsm( str_PHA, 1, false );
+		  addAsm( str_LDA + "$03", 2, false );
+		  addAsm( str_PHA, 1, false );
+		  addAsm( str_LDA + "$05", 2, false );
+		  addAsm( str_PHA, 1, false );
+		  addComment( "----------------------" );
+		  addAsm( str_TYA, 1, false );
+		}
+	      else
+		{
+		  addComment("Special Case: XA * 0x28 --> XA (63 cycles)" );
+		}
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_STA + "$02", 2, false );
+	      addAsm( str_TXA, 1, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_ASL + "$02", 2, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_ASL + "$02", 2, false );
+	      addAsm( str_ROL, 1, false );
+	      addAsm( str_STA + "$03", 2, false );
+	      addAsm( str_STA + "$05", 2, false );
+	      addAsm( str_LDA + "$02", 2, false );
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_ROL + "$05", 2, false );
+	      addAsm( str_ASL, 1, false );
+	      addAsm( str_ROL + "$05", 2, false );
+	      addAsm( str_CLC, 1, false );
+	      addAsm( str_ADC + "$02", 2, false );
+	      addAsm( str_TAY, 1, false );
+	      addAsm( str_LDA + "$05", 2, false );
+	      addAsm( str_ADC + "$03", 2, false );
+	      addAsm( str_TAX, 1, false );
+	      addAsm( str_TYA, 1, false );
+	      
+	      if( !arg_unsafe_math )
+		{
+		  addAsm( str_TAY, 1, false );
+		  addComment( "-------------------" );
+		  addAsm( str_PLA, 1, false );
+		  addAsm( str_STA + "$05", 2, false );
+		  addAsm( str_PLA, 1, false );
+		  addAsm( str_STA + "$03", 2, false );
+		  addAsm( str_PLA, 1, false );
+		  addAsm( str_STA + "$02", 2, false );
+		  addAsm( str_TYA, 1, false );
+		}
+
+	      strcpy($$.name, "_XA");
+	      break;
+	    case 10:
+	      if( !arg_unsafe_math )
+		{
+		  addComment( "XA * 10 --> XA (90 cycles)" );
 		  addAsm( str_TAY );
 		  addAsm( str_LDA + "$02", 2, false );
 		  addAsm( str_PHA );
+
 		  addAsm( str_LDA + "$03", 2, false );
 		  addAsm( str_PHA );
+		  
 		  addAsm( str_STY + "$02", 2, false );
 		  addAsm( str_TYA );
 		}
 	      else
 		{
+		  addComment( "XA * 10 --> XA (58 cycles)" );
 		  addAsm( str_STA + "$02", 2, false );
 		}
 	      addAsm( str_STX + "$03", 2, false );
+	      
 	      addAsm( str_ASL );
 	      addAsm( str_TAY );
 	      addAsm( str_TXA );
 	      addAsm( str_ROL );
 	      addAsm( str_TAX );
 	      addAsm( str_TYA );
+
 	      addAsm( str_ASL );
 	      addAsm( str_TAY );
 	      addAsm( str_TXA );
 	      addAsm( str_ROL );
 	      addAsm( str_TAX );
 	      addAsm( str_TYA );
+
 	      addAsm( str_CLC );
 	      addAsm( str_ADC + "$02", 2, false );
 	      addAsm( str_TAY );
@@ -26434,14 +26608,14 @@ arithmetic[MATHOP] expression[OP2]
 	{
 	  int tmp_v = atoi(stripFirst($4.name).c_str());
 	  addComment( "XA ** UintIMM --> XA" );
-	  mul16_is_needed = true;
+	  //mul16_is_needed = true;
 	  pow16_is_needed = true;
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_TXA, 1, false );
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_LDA + "#$" + toHex(tmp_v), 2, false );
 	  addAsm( str_PHA, 1, false );
-	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_JSR + "_pow16", 3, false );
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_PLA, 1, false );
@@ -26521,7 +26695,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_LDA + O2, sizeOP2A, false );
 	  addAsm( str_PHA, 1, false );
-	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_JSR + "_pow16", 3, false );
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_PLA, 1, false );
@@ -26570,8 +26744,6 @@ arithmetic[MATHOP] expression[OP2]
 	    {
 	    case 0:
 	      addComment( "XA * WordIMM --> XA (0)" );
-
-	      illegal_operations_are_needed = true;
 	      addAsm( str_LDA + "#$00", 2, false );
 	      addAsm( str_TAX );
 	    case 1:
@@ -26629,27 +26801,30 @@ arithmetic[MATHOP] expression[OP2]
 	    case 64:
 	      if( !special_case_flag ) addComment( "Special Case: XA * WordIMM (64) --> XA" );
 	      special_case_flag = true;
-	      // TODO: Add Unsafe Math Flag here
-	      addAsm( str_TAY );
-	      addAsm( str_LDA + "$02", 2, false );
-	      addAsm( str_PHA );
-	      addAsm( str_LDA + "$03", 2, false );
-	      addAsm( str_PHA );
-	      addAsm( str_STY + "$02", 2, false );
-	      addAsm( str_STX + "$03", 2, false );
-	      addAsm( str_LDX + "#$" + toHex(log2(tmp_v)), 2, false );
-	      addAsm( "!:\t" + str_ASL + "$02", 2, true );
-	      addAsm( str_ROL + "$03", 2, false );
-	      addAsm( str_DEX );
-	      addAsm( str_BNE + "!-", 2, false );
-	      addAsm( str_LDY + "$02", 2, false );
-	      addAsm( str_LDX + "$03", 2, false );
+
+	      // TODO: ADD Safe Math Here
+		{
+		  addAsm( str_TAY );
+		  addAsm( str_LDA + "$02", 2, false );
+		  addAsm( str_PHA );
+		  addAsm( str_LDA + "$03", 2, false );
+		  addAsm( str_PHA );
+		  addAsm( str_STY + "$02", 2, false );
+		  addAsm( str_STX + "$03", 2, false );
+		  addAsm( str_LDX + "#$" + toHex(log2(tmp_v)), 2, false );
+		  addAsm( "!:\t" + str_ASL + "$02", 2, true );
+		  addAsm( str_ROL + "$03", 2, false );
+		  addAsm( str_DEX );
+		  addAsm( str_BNE + "!-", 2, false );
+		  addAsm( str_LDY + "$02", 2, false );
+		  addAsm( str_LDX + "$03", 2, false );
 	      
-	      addAsm( str_PLA );
-	      addAsm( str_STA + "$03", 2, false );
-	      addAsm( str_PLA );
-	      addAsm( str_STA + "$02", 2, false );
-	      addAsm( str_TYA );
+		  addAsm( str_PLA );
+		  addAsm( str_STA + "$03", 2, false );
+		  addAsm( str_PLA );
+		  addAsm( str_STA + "$02", 2, false );
+		  addAsm( str_TYA );
+		}
 	      strcpy($$.name, "_XA");
 	      break;
 	    case 32:
@@ -27040,7 +27215,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_LDA + "#$" + toHex(get_word_L(tmp_v)), 2, false );
 	  addAsm( str_PHA, 1, false );
-	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_JSR + "_pow16", 3, false );
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_PLA, 1, false );
@@ -27057,35 +27232,38 @@ arithmetic[MATHOP] expression[OP2]
       if( op == string("+") )
 	{
 	  // TODO: Redo this with self-modifying code
-	  addComment( "XA + XA --> XA (Destroys $FB/$FC)" );
-	  addAsm( str_STA + "$FB", 2, false ); // the A in 
-	  addAsm( str_STX + "$FC", 2, false );
+	  addComment( "XA + XA --> XA (new)" );
+	  addAsm( str_STA + "!mem+", 3, false ); // the A in 
+	  addAsm( str_STX + "!mem++", 3, false );
 	  addAsm( str_PLA ); // the X in XA
 	  addAsm( str_TAX );
 	  addAsm( str_PLA ); // the A in XA
 	  addAsm( str_CLC, 1, false );
-	  addAsm( str_ADC + "$FB", 2, false );
+	  addAsm( str_BYTE + "$69" + commentmarker + "<-- ADC imm", 1, false );
+	  addAsm( "!mem:\t" + str_BYTE + "$00", 1, true );
 	  addAsm( str_TAY );
 	  addAsm( str_TXA );
-	  addAsm( str_ADC + "$FC", 2, false );
+	  addAsm( str_BYTE + "$69" + commentmarker + "<-- ADC imm", 1, false );
+	  addAsm( "!mem:\t" + str_BYTE + "$00", 1, true );
 	  addAsm( str_TAX );
 	  addAsm( str_TYA );
 	  strcpy($$.name, "_XA" );
 	}
       else if( op == string("-") )
 	{
-	  // TODO: Redo this with self-modifying code
-	  addComment( "XA - XA --> XA (Destroys $FB/$FC)" );
-	  addAsm( str_STA + "$FB", 2, false ); // the A in 
-	  addAsm( str_STX + "$FC", 2, false );
+	  addComment( "XA - XA --> XA" );
+	  addAsm( str_STA + "!mem+", 3, false ); // the A in 
+	  addAsm( str_STX + "!mem++", 3, false );
 	  addAsm( str_PLA ); // the X in XA
 	  addAsm( str_TAX );
 	  addAsm( str_PLA ); // the A in XA
 	  addAsm( str_SEC );
-	  addAsm( str_SBC + "$FB", 2, false );
+	  addAsm( str_BYTE + "$E9" + commentmarker + "<-- SBC imm", 1, false );
+	  addAsm( "!mem:\t" + str_BYTE + "$00", 1, true );
 	  addAsm( str_TAY );
 	  addAsm( str_TXA );
-	  addAsm( str_SBC + "$FC", 2, false );
+	  addAsm( str_BYTE + "$E9" + commentmarker + "<-- SBC imm", 1, false );
+	  addAsm( "!mem:\t" + str_BYTE + "$00", 1, true );
 	  addAsm( str_TAX );
 	  addAsm( str_TYA );
 	  strcpy($$.name, "_XA" );
@@ -27124,10 +27302,10 @@ arithmetic[MATHOP] expression[OP2]
 	{
 	  addCompilerMessage( "XA ** XA: exponent restricted to Low Byte of op2 (A)", 1 );
 	  addComment( "XA ** XA --> XA" );
-	  mul16_is_needed = true;
+	  //mul16_is_needed = true;
 	  pow16_is_needed = true;
 	  addAsm( str_PHA, 1, false );
-	  addAsm( str_JSR + "pow16", 3, false );
+	  addAsm( str_JSR + "_pow16", 3, false );
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_PLA, 1, false );
@@ -31259,21 +31437,20 @@ int main(int argc, char *argv[])
       addAsm( "!lv_ret:\t" + str_BYTE + "$00, $00", 2, true );
       addAsm( "!lv_mem0:\t" + str_BYTE + "$00, $00", 2, true );
 
-      addAsm( "pow16:", 0, true );
+      addAsm( "!rx:\t" + str_BYTE + "$00", 1, true );
+      addAsm( "!ry:\t" + str_BYTE + "$00", 1, true );
+      
+      addAsm( "_pow16:", 0, true );
       addAsm( str_PLA, 1, false );
-      addAsm( str_TAX, 1, false );
+      addAsm( str_STA + "!rx-", 3, false );
       addAsm( str_PLA, 1, false );
-      addAsm( str_TAY, 1, false );
+      addAsm( str_STA + "!ry-", 3, false );
       addAsm( str_PLA, 1, false );
       addAsm( str_STA + "!lv_arg1-", 3, false );
       addAsm( str_PLA, 1, false );
       addAsm( str_STA + "!lv_arg0- +1", 3, false );
       addAsm( str_PLA, 1, false );
       addAsm( str_STA + "!lv_arg0-", 3, false );
-      addAsm( str_TYA, 1, false );
-      addAsm( str_PHA, 1, false );
-      addAsm( str_TXA, 1, false );
-      addAsm( str_PHA, 1, false );
 
       addAsm( str_LDA + "#$01", 2, false );
       addAsm( str_LDX + "#$00", 2, false );
@@ -31305,8 +31482,6 @@ int main(int argc, char *argv[])
       addAsm( "!:\t" + str_LDA + "!lv_mem0- +1", 3, true );
       addAsm( str_CMP + "!lv_arg1- +1", 3, false );
       addAsm( str_BNE + "!+", 2, false );
-
-
       
       addAsm( str_LDA + "!lv_mem0-", 3, false );
       addAsm( str_CMP + "!lv_arg1-", 3, false );
@@ -31334,7 +31509,10 @@ int main(int argc, char *argv[])
       addAsm( str_ADC + "#$00", 2, false );
       addAsm( str_STA + "!lv_mem0- +1", 3, false );
       addAsm( str_JMP + "!--", 3, false );
+
+      
       addAsm( "!:\t" + str_PLA, 1, true );
+      
       addAsm( str_TAX, 1, false );
       addAsm( str_PLA, 1, false );
       addAsm( str_TAY, 1, false );
@@ -31344,9 +31522,9 @@ int main(int argc, char *argv[])
       addAsm( str_LDA + "!lv_ret- +1", 3, false );
       addAsm( str_PHA, 1, false );
 
-      addAsm( str_TYA, 1, false );
+      addAsm( str_LDA + "!ry-", 3, false );
       addAsm( str_PHA, 1, false );
-      addAsm( str_TXA, 1, false );
+      addAsm( str_LDA + "!rx-", 3, false );
       addAsm( str_PHA, 1, false );
       addAsm( str_RTS, 1, false );
  
@@ -31357,23 +31535,20 @@ int main(int argc, char *argv[])
       addAsm( "!lv_arg0:\t.byte $00", 1, false );
       addAsm( "!lv_mem0:\t.byte $00", 1, false );
       addAsm( "!lv_mem1:\t.byte $00", 1, false );
+      addAsm( "!rx:\t" + str_BYTE + "$00", 1, true );
+      addAsm( "!ry:\t" + str_BYTE + "$00", 1, true );
       addAsm( "pow8:", 0, true );
       
       addAsm( str_PLA, 1, false );
-      addAsm( str_TAX, 1, false );
+      addAsm( str_STA + "!rx-", 3, false );
       addAsm( str_PLA, 1, false );
-      addAsm( str_TAY, 1, false );
+      addAsm( str_STA + "!ry-", 3, false );
 
       addAsm( str_PLA, 1, false );
       addAsm( str_STA + "!lv_arg1+", 3, false );
       addAsm( str_PLA, 1, false );
       addAsm( str_STA + "!lv_arg0-", 3, false );
-      
-      addAsm( str_TYA, 1, false );
-      addAsm( str_PHA, 1, false );
-      addAsm( str_TXA, 1, false );
-      addAsm( str_PHA, 1, false );
-      
+            
       addAsm( str_LDA + "#$01", 2, false );
       addAsm( str_STA + "!lv_mem0-", 3, false );
       addAsm( str_LDA + "$02", 2, false );
@@ -31385,7 +31560,6 @@ int main(int argc, char *argv[])
       addAsm( "!:\t" + str_LDA + "!lv_mem1-", 3, true );
       addAsm( str_BYTE + "$C9" + commentmarker + "<-- CMP imm", 1, false );
       addAsm( "!lv_arg1:" + str_BYTE + "$00", 1, true );
-      //addAsm( str_BYTE + "$00", 1, false );
 	      
       addAsm( str_BCS + "!+", 2, false );
       
@@ -31417,20 +31591,15 @@ int main(int argc, char *argv[])
       addAsm( str_STA + "$02", 2, false );
 
       
-      addAsm( str_PLA, 1, false );
-      addAsm( str_TAX, 1, false );
-      addAsm( str_PLA, 1, false );
-      addAsm( str_TAY, 1, false );
 
       addAsm( str_BYTE + "$A9" + commentmarker + "<-- LDA imm", 1, false );
       addAsm( "hack:" + str_BYTE + "$00", 1, true ); // lv_mem0
-      //addAsm( str_BYTE + "$00", 1, false );
       
       addAsm( str_PHA, 1, false );
       
-      addAsm( str_TYA, 1, false );
+      addAsm( str_LDA + "!ry-", 3, false );
       addAsm( str_PHA, 1, false );
-      addAsm( str_TXA, 1, false );
+      addAsm( str_LDA + "!rx-", 3, false );
       addAsm( str_PHA, 1, false );
       
       addAsm( str_RTS, 1, false );
@@ -31495,14 +31664,12 @@ int main(int argc, char *argv[])
       // =================================================================================
       addAsm( "UMUL:", 0, true );
       addAsm( str_LDA + "#$00", 2, false ); 
-      //addAsm( str_LDA + "#$00", 2, false );
       addAsm( str_LDX + "#$08", 2, false );
       addAsm( "!:\t" + str_LSR + "$03", 2, true );
       addAsm( str_BCC + "!+", 2, false );
       addAsm( str_CLC );
       addAsm( str_ADC + "$02", 2, false );
       addAsm( "!:\t" + str_ASL + "$02", 2, true );
-      //addAsm( str_CLC );
       addAsm( str_DEX );
       addAsm( str_BNE + "!--", 2, false );
       addAsm( str_STA + "$03", 2, false ); // 8 bit result in $0042
@@ -31750,24 +31917,37 @@ int main(int argc, char *argv[])
   if( false )
     {
       // this is the template to use for a built-in function
+      addAsm( "!rx:\t" + str_BYTE + "$00", 1, true );
+      addAsm( "!ry:\t" + str_BYTE + "$00", 1, true );
+
       addAsm( string("FUNCTION:\t\t") + commentmarker + "Function Comment", 0, true );
-      // put return address on the stack
-      saveReturnAddress();
+      addAsm( str_PLA, 1, false );
+      addAsm( str_STA + "!rx-", 3, false );
+      addAsm( str_PLA, 1, false );
+      addAsm( str_STA + "!ry-", 3, false );
       //==================================================================================
       
       
       
       //==================================================================================
       // get return address from the stack
-      restoreReturnAddress();
+      addAsm( str_LDA + "!ry-", 3, false );
+      addAsm( str_PHA, 1, false );
+      addAsm( str_LDA + "!rx-", 3, false );
+      addAsm( str_PHA, 1, false );
       addAsm( str_RTS );
     }
   if( split_byte_is_needed )
     {
-      addAsm( "SPLITBYTE:\t\t" + commentmarker + "S1 -> S1=Hi Bits   S0=Lo Bits", 0, true );
+      addAsm( "!rx:\t" + str_BYTE + "$00", 1, true );
+      addAsm( "!ry:\t" + str_BYTE + "$00", 1, true );
+      addAsm( "SPLITBYTE:\t\t" + commentmarker + "S1 -> S1=Hi Bits\tS0=Lo Bits", 0, true );
+      addComment( "Destroys $52 in ZP" );
 
-      // save return address from the stack
-      saveReturnAddress();
+      addAsm( str_PLA, 1, false );
+      addAsm( str_STA + "!rx-", 3, false );
+      addAsm( str_PLA, 1, false );
+      addAsm( str_STA + "!ry-", 3, false );
       //==================================================================================
       addAsm( str_PLA );
       addAsm( str_STA + "$52", 2, false);
@@ -31785,7 +31965,10 @@ int main(int argc, char *argv[])
       addAsm( str_ADC + "#$30", 2, false );
       addAsm( str_PHA );      
       //==================================================================================
-      restoreReturnAddress();
+      addAsm( str_LDA + "!ry-", 3, false );
+      addAsm( str_PHA, 1, false );
+      addAsm( str_LDA + "!rx-", 3, false );
+      addAsm( str_PHA, 1, false );
       addAsm( str_RTS );
 
     }
@@ -31816,11 +31999,15 @@ int main(int argc, char *argv[])
     }
   if( div10_is_needed )
     {
+      addAsm( "!rx:\t" + str_BYTE + "$00", 1, true );
+      addAsm( "!ry:\t" + str_BYTE + "$00", 1, true );
       // DIVIDE BY 10 ROUTINE
-      addAsm( string("_div10:\t\t") + commentmarker + "Divide number on stack by 10", 0, true );
+      addAsm( "_div10:\t" + commentmarker + "Divide number on stack by 10", 0, true );
 
-      // save return address to the stack
-      saveReturnAddress();
+      addAsm( str_PLA, 1, false );
+      addAsm( str_STA + "!rx-", 3, false );
+      addAsm( str_PLA, 1, false );
+      addAsm( str_STA + "!ry-", 3, false );
       //==================================================================================
       
       addAsm( str_PLA );
@@ -31839,12 +32026,15 @@ int main(int argc, char *argv[])
       addAsm( str_LSR );
       addAsm( str_PHA ); // put result on processor stack
       //==================================================================================
-      restoreReturnAddress();
+      addAsm( str_LDA + "!ry-", 3, false );
+      addAsm( str_PHA, 1, false );
+      addAsm( str_LDA + "!rx-", 3, false );
+      addAsm( str_PHA, 1, false );
       addAsm( str_RTS );
     }
   if( cls_is_needed )
     {
-      addAsm( string("CLS:\t\t") + commentmarker + "Clear Screen Routine", 0, true );
+      addAsm( string("_cls:\t\t") + commentmarker + "Clear Screen Routine", 0, true );
       addAsm( str_LDA + "#$20", 2, false ); // space
       addAsm( str_LDX + "#$00", 2, false ); // (essentially 256)
       addAsm( "!:\t" + str_STA + "$0400,X", 3, true );
