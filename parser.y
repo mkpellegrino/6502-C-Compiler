@@ -10024,8 +10024,7 @@ condition: expression[LHS]
       addAsm( str_BYTE + "$C9" + commentmarker + "<-- CMP imm", 1, false );
       addAsm( "!:\t" + str_BYTE + "$00", 1, true );
       addAsm( "!:", 0, true );
-    }
-    
+    }    
   else if( isWordIMM($LHS.name) && isA($RHS.name) )
     {
       addComment( "WordIMM relop A: TOC" );
@@ -10506,12 +10505,9 @@ condition: expression[LHS]
 	  else
 	    {
 	      addComment( "long branch" );
-	      //addAsm( str_BNE + "!_skip+", 2, false );
-	      //addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==1 jump to BODY", 3, false );
-	      //addAsm( "!_skip:", 0, true );
-	      //addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR (OPTIMIZE)", 3, false );
-	      addAsm( str_BEQ + getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==1 jump to BODY", 2, false );
+	      addAsm( str_BEQ + "!_skip+", 2, false );
 	      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR", 3, false );
+	      addAsm( "!_skip:", 0, true );
 	    }
 	}
       else if( string($OP.name) == string( ">" ) )
@@ -10521,7 +10517,6 @@ condition: expression[LHS]
 	      addComment( "short branch" );
 	      addAsm( str_BEQ + getLabel( label_vector[label_major]+2, false) + commentmarker + "if z==1 jump out of FOR", 2, false );
 	      addAsm( str_BCC + getLabel( label_vector[label_major]+2, false) + commentmarker + "if c==0 jump out of FOR", 2, false );
-	      //addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to body of FOR", 3, false );
 	    }
 	  else
 	    {
@@ -10532,7 +10527,6 @@ condition: expression[LHS]
 	      addAsm( str_BCS + "!_skip+", 2, false );
 	      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "if c==0 jump out of FOR", 3, false );
 	      addAsm( "!_skip:", 0, true );
-	      //addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to body of FOR", 3, false );
 	    }
 	}
       else if( string($OP.name) == string( "<" ) )
@@ -10540,16 +10534,15 @@ condition: expression[LHS]
 	  if( !long_branches )
 	    {
 	      addComment( "short branch" );
-	      //addAsm( str_BCC + getLabel( label_vector[label_major]+1, false) + commentmarker + "if c==0 jump to BODY", 2, false );
 	      addAsm(str_BCS + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR", 2, false );
 	    }
 	  else
 	    {
 	      addComment( "long branch" );
 	      addAsm( str_BCS + "!_skip+", 2, false );
-	      addAsm(str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if c==0 jump to BODY", 3, false );
+	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if c==0 jump to BODY", 3, false );
 	      addAsm( "!_skip:", 0, true );
-	      addAsm(str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR" , 3, false );
+	      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR (OPTIMIZE)" , 3, false );
 	    }
 	}
       else if( string($OP.name) == string( ">=" ) )
@@ -10557,7 +10550,6 @@ condition: expression[LHS]
 	  if( !long_branches )
 	    {
 	      addComment( "short branch" );
-	      //addAsm( str_BCS + getLabel( label_vector[label_major]+1, false) + commentmarker + "if c==1 jump to BODY", 2, false );
 	      addAsm( str_BCC + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR", 2, false );
 	    }
 	  else
@@ -10574,15 +10566,15 @@ condition: expression[LHS]
 	  if( !long_branches )
 	    {
 	      addComment( "short branch" );
-	      //addAsm( str_BNE + getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==0 jump to BODY" , 2, false );
 	      addAsm( str_BEQ + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR", 2, false );
 	    }
 	  else
 	    {
 	      addComment( "long branch" );
-	      addAsm( str_BEQ + "!+", 2, false );
-	      addAsm( str_JMP +  getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==0 jump to BODY", 2, false );
-	      addAsm( "!:\t" + str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR", 3, true );
+	      addAsm( str_BEQ + "!_skip+", 2, false );
+	      addAsm( str_JMP +  getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==0 jump to BODY", 3, false );
+	      addAsm( "!_skip:", 0, true );
+	      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR (OPTIMIZE)", 3, false  );
 	    }
 	}
     }
@@ -10653,7 +10645,6 @@ condition: expression[LHS]
 	  if( !long_branches )
 	    {
 	      addComment( "short branch" );
-	      //addAsm( str_BCC + getLabel( label_vector[label_major], false) + commentmarker + "if c==0 jump to BODY", 2, false );
 	      addAsm( str_BCS + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE", 2, false );
 	      strcpy($$.name, "exp < exp sb" ); // shortbranches
 	    }
@@ -10671,7 +10662,7 @@ condition: expression[LHS]
 	  if( !long_branches )
 	    {
 	      addComment( "short branch" );
-	      addAsm( str_BCC + getLabel( label_vector[label_major]+1, false) + commentmarker + "if c==1 jump to ELSE", 2, false );	      
+	      addAsm( str_BCC + getLabel( label_vector[label_major]+1, false) + commentmarker + "if c==1 jump to ELSE", 2, false );
 	      strcpy($$.name, "exp >= exp sb" ); // shortbranches
 	    }
 	  else
@@ -10709,19 +10700,13 @@ condition: expression[LHS]
 	  if( !long_branches )
 	    {
 	      addComment( "short branch" );
-	      //addAsm( str_BCC + "!skip+" + commentmarker + "if c==0 jump to BODY", 2, false );
 	      addAsm( str_BCC + "!body+" + commentmarker + "if c==0 jump to BODY", 2, false );
-	      //addAsm( str_BNE + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE", 2, false );
 	      addAsm( str_BNE + "!else" + toString(if_depth) + "+" + commentmarker + "jump to ELSE", 2, false );
-	      //addAsm( "!skip:", 0, true );
 	      strcpy($$.name, "exp <= exp sb" );
 	    }
 	  else
 	    {
 	      addComment( "long branch" );
-	      //addAsm( str_BCC + "!skip+" + commentmarker + "if c==0 jump to BODY", 2, false );
-	      //addAsm( str_BEQ + "!skip+" + commentmarker + "if z==1 jump to BODY", 2, false );
-	      //addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE (OPTIMIZE)", 3, false );
 	      addAsm( str_BCC + "!body+" + commentmarker + "if c==0 jump to BODY", 2, false );
 	      addAsm( str_BEQ + "!body+" + commentmarker + "if z==1 jump to BODY", 2, false );
 	      addAsm( str_JMP + "!else" + toString(if_depth) + "+" + commentmarker + "jump to ELSE (OPTIMIZE)", 3, false );
@@ -10733,7 +10718,6 @@ condition: expression[LHS]
 	  if( !long_branches )
 	    {
 	      addComment( "short branch" );
-	      //addAsm( str_BNE + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE", 2, false );
 	      addAsm( str_BNE + "!else" + toString(if_depth) + "+" + commentmarker + "jump to ELSE", 2, false );
 	      strcpy($$.name, "exp == exp sb" );
 	    }
@@ -10742,7 +10726,6 @@ condition: expression[LHS]
 	      // 2026 05 10
 	      addComment( "long branch" );
 	      addAsm( str_BEQ + "!body+", 2, false );
-	      //addAsm( str_JMP + "!else" + toString(if_depth) + "+" + commentmarker + "jump to ELSE (OPTIMIZE)", 3, false );
 	      addAsm( str_JMP + "!else" + toString(if_depth) + "+" + commentmarker + "jump to ELSE", 3, false );
 	      strcpy($$.name, "exp == exp lb" );
 	    }
@@ -10773,17 +10756,12 @@ condition: expression[LHS]
 	  if( !long_branches )
 	    {
 	      addComment( "short branch" );
-	      //addAsm( str_BCS + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE", 2, false );
 	      addAsm( str_BCS + "!else" + toString(if_depth) + "+" + commentmarker + "jump to ELSE", 2, false );
 	      strcpy($$.name, "exp < exp sb" ); // shortbranches
 	    }
 	  else
 	    {
 	      addComment( "long branch" );
-	      //addAsm( str_BCC + "!_skip+", 2, false );
-	      //addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE (OPTIMIZE)", 3, false );
-	      //addAsm( "!_skip:", 0, true );
-
 	      addAsm( str_BCC + "!body+", 2, false );
 	      addAsm( str_JMP + "!else" + toString(if_depth) + "+" + commentmarker + "jump to ELSE (OPTIMIZE)", 3, false );
 
@@ -10795,16 +10773,12 @@ condition: expression[LHS]
 	  if( !long_branches )
 	    {
 	      addComment( "short branch" );
-	      //addAsm( str_BCC + getLabel( label_vector[label_major]+1, false) + commentmarker + "if c==1 jump to ELSE", 2, false );	      
 	      addAsm( str_BCC + "!else" + toString(if_depth) + "+" + commentmarker + "if c==1 jump to ELSE", 2, false );	      
 	      strcpy($$.name, "exp >= exp sb" ); // shortbranches
 	    }
 	  else
 	    {
 	      addComment( "long branch" );
-	      //addAsm( str_BCS + "!_skip+", 2, false );
-	      //addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if c==1 jump to ELSE (OPTIMIZE)", 3, false );
-	      //addAsm( "!_skip:", 0, true );
 	      addAsm( str_BCS + "!body+", 2, false );
 	      addAsm( str_JMP + "!else" + toString(if_depth) + "+" + commentmarker + "if c==1 jump to ELSE (OPTIMIZE)", 3, false );
 	      strcpy($$.name, "exp >= exp lb" ); // longbranches
@@ -10815,7 +10789,6 @@ condition: expression[LHS]
 	  if( !long_branches )
 	    {
 	      addComment( "short branch" );
-	      //addAsm( str_BEQ  + getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==1 jump to ELSE", 2, false );
 	      addAsm( str_BEQ  + "!else" + toString(if_depth) + "+" + commentmarker + "if z==1 jump to ELSE", 2, false );
 	      strcpy($$.name, "exp != exp sb" ); // shortbranches
 	    }
@@ -10823,12 +10796,8 @@ condition: expression[LHS]
 	    {
 	      // 2026 05 10
 	      addComment( "long branch" );
-	      //addAsm( str_BNE + "!skip+", 2, false ); //jump to body
 	      addAsm( str_BNE + "!body+", 2, false ); //jump to body
-	      //addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==1 jump to ELSE (OPTIMIZE)", 3, false );
 	      addAsm( str_JMP + "!else" + toString(if_depth) + "+" + commentmarker + "if z==1 jump to ELSE ", 3, false );
-	      //addAsm( "!skip:", 0, true );
-	      //addAsm( "!body:\t// delete this if more than one condition (AND only!!!)", 0, true );
 	      strcpy($$.name, "exp != exp lb" ); // longbranches
 	    }
 	}
@@ -20771,7 +20740,7 @@ arithmetic[MATHOP] expression[OP2]
       else if( op == string("*"))
 	{
 	  
-	  addComment( "UintID * UintIMM --> XA (Word16)" );
+	  addComment( "UintID * UintIMM --> XA" );
 	  int addr_op1 = getAddressOf( $1.name );
 	  //mul16_is_needed = true;
 	  int tmp_v = atoi(stripFirst($4.name).c_str());
