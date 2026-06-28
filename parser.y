@@ -417,10 +417,10 @@ string replaceAll(string str, const string &from, const string &to)
   int getDataTypeValue( string s )
   {
     if( s == string("UINT")) return 0;
-    if( s == string("BYTE")) return 0;
+    //if( s == string("BYTE")) return 0;
     if( s == string("INT")) return 1;
     if( s == string("WORD")) return 2;
-    if( s == string("DOUBLE")) return 4;
+    //if( s == string("DOUBLE")) return 4;
     if( s == string("FLOAT")) return 8;
     //if( s == string("MOB")) return 16;
     if( s == string("VOID")) return 32;
@@ -854,7 +854,7 @@ string replaceAll(string str, const string &from, const string &to)
       }
     newsw += return_value.substr(3, 1);
     
-    addComment( string( "6 Byte FAC: .byte $") + byte0 + string(", $") +
+    addComment( string( "6 Byte FAC: " + str_BYTE + " $") + byte0 + string(", $") +
 	       newsw + string(", $") +
 	       byte2 + string(", $") +
 	       byte3 + string(", $") +
@@ -862,7 +862,7 @@ string replaceAll(string str, const string &from, const string &to)
 	       signbyte
 	       );
 
-    addComment( string( "5 Byte MEM: .byte $") + byte0 + string(", $") +
+    addComment( string( "5 Byte MEM: " + str_BYTE + " $") + byte0 + string(", $") +
 	       signbyte + string(", $") +
 	       byte2 + string(", $") +
 	       byte3 + string(", $") +
@@ -1328,7 +1328,16 @@ string replaceAll(string str, const string &from, const string &to)
     void setAddress( int i ){ address=i; };
     string getLabel(){ return label; };
     int getType(){ return type; };
-    void setType( int i ){ type = i; };
+
+    // Types
+    // 0: uint
+    // 1: int
+    // 2: word
+    // 8: float
+    // 32: void
+    // 64: string
+    
+    void setType( int i ){ type = i; };    
   private:
     int address;
     string name;
@@ -1399,16 +1408,19 @@ string replaceAll(string str, const string &from, const string &to)
 
   // 
 
-  void addFunction( string s, string l )
-  {
-    asm_function * ptr_function = new asm_function( s, l );
-    asm_functions.push_back( ptr_function );
+  //void addFunction( string s, string l )
+  //{
+  // asm_function * ptr_function = new asm_function( s, l );
+  //asm_functions.push_back( ptr_function );
+  //
+  //}
 
-  }
-
-  void addFunction( string s, string l, int t )
+  void addFunction( string s, string l, int t = 0 )
   {
-    asm_function * ptr_function = new asm_function( s, l, t);
+    // not sure why "l" is always incorrect here
+    // actually  - I'm not sure why it's here at all!
+    //addCompilerMessage( "Adding Function: " + s + "\tType: " + to_string(t), 2);
+    asm_function * ptr_function = new asm_function( s, l, t );
     asm_functions.push_back( ptr_function );
   }
 
@@ -1518,9 +1530,10 @@ string replaceAll(string str, const string &from, const string &to)
   ostream & operator << (ostream &out, const asm_string &a) 
     {
       // TODO: Make this output '.text "THE STRING", $00
-      out << commentmarker << "; $" << std::hex << a.address << "\t\t\t\"" << a.text << "\"" << endl;
-
-      out << a.name << ":\n\t" << str_BYTE << " ";
+      //out << commentmarker << "; $" << std::hex << a.address << "\t\t\t\"" << a.text << "\"" << endl;
+      out << a.name << ":\t";
+      out << commentmarker << ".text " << "\"" << a.text << "\"" << endl;
+      out << "\t" << str_BYTE << " ";
       for( int i = 0; i<a.text.size(); i++ )
       {
        if( a.text[i] == '\\' && a.text[i+1] == 'n')
@@ -1958,9 +1971,9 @@ string replaceAll(string str, const string &from, const string &to)
       case 8:
 	s = string( "float" );
 	break;
-      case 16:
-	s = string( "mob" );
-	break;
+	//case 16:
+	//s = string( "mob" );
+	//break;
       case 32:
 	s = string( "string" );
 	break;
@@ -1978,6 +1991,7 @@ string replaceAll(string str, const string &from, const string &to)
       }
     if( t == 0 || t == 1 || t == 2 || t == 4 || t == 8 )
       {
+	//addCompilerMessage( string( "Adding: " ) + string(id) + string(" of type: ") + s, 2 );
 	addDebugComment( string( "Adding: " ) + string(id) + string(" of type: ") + s  );
 	asm_variable * new_asm_variable = new asm_variable( id, t );
 	asm_variables.push_back( new_asm_variable ); // add the variable to the list of variables
@@ -2016,6 +2030,28 @@ string replaceAll(string str, const string &from, const string &to)
     return;
   }
 
+  void deleteFutureAsmUntil( string s )
+  {
+    //removes most recent lines of code until "s" is found
+    string deletedinst = "";
+    while( !cmpstr(deletedinst,s) )
+      {
+	if(debug_flag_is_on)
+	  {
+	    string s = string("deleting " + asm_instr[asm_instr.size()+1]->getString() );
+	    if( arg_show_opt ) addCompilerMessage( s, 0 );
+	  }
+	byte_count -= asm_instr[asm_instr.size()-1]->getSize();
+	asm_instr.erase( asm_instr.end()-1 );
+	deletedinst =  asm_instr[asm_instr.size()-1]->getString();
+      }
+    byte_count -= asm_instr[asm_instr.size()-1]->getSize();
+    asm_instr.erase( asm_instr.end()-1 );
+    //addCompilerMessage( "Removed mnemonics", 0 );
+    return;
+  }
+
+  
   void deletePreviousAsmUntil( string s )
   {
     //removes most recent lines of code until "s" is found
@@ -2084,9 +2120,6 @@ string replaceAll(string str, const string &from, const string &to)
     cout << commentmarker << " Variable Labels" << endl;
     for( int i=0; i<asm_variables.size(); i++ )
       {
-	// TODO: This is a hack. mkpellegrino 2023 05 22
-	// it only outputs the label if it is < 8 characters long
-
 	if( kick )
 	  {
 	    cout << ".label " << asm_variables[i]->getIdentifier() << " = $" << asm_variables[i]->getAddress() << endl;
@@ -3537,6 +3570,7 @@ string replaceAll(string str, const string &from, const string &to)
 
   void ProcessReturnTypes()
   {
+    
     cerr << commentmarker << " Processing Return Types" << endl;
     for( int i=0; i<asm_instr.size()-1; i++ )
       {
@@ -3606,7 +3640,106 @@ string replaceAll(string str, const string &from, const string &to)
 	  }
       }
   }
-  
+
+  void ProcessReturnValues()
+  {
+    // return types: 0: uint, 1: int, 2: word, 8: float, 32: void
+    cerr << commentmarker << " Processing Return Values" << endl;
+    
+    for( int i=asm_instr.size()-1; i>0; i-- )
+      {
+	if( asm_instr[i]->getString().substr(1,20) == string( "// _function_return:" ))
+	  {
+	    string fn = asm_instr[i]->getString().substr(22,asm_instr[i]->getString().size());
+	    int ft = 32;
+	    string text_t;
+	    bool found = false;
+	    for( int j = 0;  j < asm_functions.size() && !found; j++ )
+	      {
+		if( !strcmp(asm_functions[j]->getIdentifier().c_str(), fn.c_str()) )
+		  {
+		    ft = asm_functions[j]->getType();
+		    //j=0;
+		    found = true;
+		  }
+	      }
+
+	    if( found )
+	      {
+		// remove the ambiguous=return-value-code
+		asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+13);
+		if(arg_asm_comments) asm_instr.erase(asm_instr.begin()+i+1,asm_instr.begin()+i+5);
+		switch(ft)
+		  {
+		  case 0:
+		    text_t = string( "uint" );
+		    insAsm( i, "// returned a uint (OPTIMIZE)", 0, false );
+		    insAsm( i, str_PLA, 1, false );
+		    insAsm( i, str_LDX + "#$00", 2, false );
+		    
+		    break;
+		  case 1:
+		    insAsm( i, "// returned an int (OPTIMIZE)", 0, false );
+		    text_t = string( "int" );
+		    insAsm( i, "!:", 0, true );
+		    insAsm( i, str_DEX, 1, false );
+		    insAsm( i, str_BPL +  "!+", 2, false ); 
+		    insAsm( i, str_PLA, 1, false );
+		    insAsm( i, str_LDX + "#$00", 2, false );
+		    break;
+		  case 2:
+		    text_t = string( "word" );
+		    insAsm( i, "// returned a word", 0, false );
+		    insAsm( i, str_PLA, 1, false ); // inserted backwards!
+		    insAsm( i, str_TAX, 1, false ); // (so the show up
+		    insAsm( i, str_PLA, 1, false ); // forwards)
+		    break;
+		  case 8:
+		    // TODO: Still Broken
+		    text_t = string( "float" );
+		    insAsm( i, "// returned a float", 0, false );
+		    insAsm( i+1, str_TSX, 1, false );
+		    insAsm( i+2, str_INX, 1, false );
+		    insAsm( i+3, str_TXA, 1, false );
+		    insAsm( i+4, str_LDY + "#$01", 2, false );
+		    insAsm( i+5, str_JSR + "$BBA2" + commentmarker + "STACK -> FAC", 3, false );
+		    insAsm( i+6, str_PLA, 1, false );
+		    insAsm( i+7, str_PLA, 1, false );
+		    insAsm( i+8, str_PLA, 1, false );
+		    insAsm( i+9, str_PLA, 1, false );
+		    insAsm( i+10, str_PLA, 1, false );
+		    for( int k=i+11; k<asm_instr.size() && k<i+30; k++ )
+		      {
+			if( asm_instr[k]->getString().find("FloatID = XA") != string::npos )
+			  {
+			    if( k > 0 && asm_instr[k-1]->getString().find("initialising with XA") != string::npos )
+			      {
+				asm_instr[k-1]->setString(commentmarker + " initialising with FAC");
+			      }
+			    asm_instr[k]->setString(commentmarker + " FloatID = FAC");
+			    asm_instr.erase(asm_instr.begin()+k+1, asm_instr.begin()+k+5);
+			    break;
+			  }
+		      }
+		    break;
+		  case 32:
+		    text_t = string( "void" );
+		    insAsm( i, "// returned a void", 0, false );
+		    break;
+		  default:
+		    insAsm( i, "// DEFAULT", 0, true );
+		  }
+	      }
+	  }
+
+	// look for "_function_return: functionname" in the code
+	// look up the name in asm_functions
+	// find it's return type using asm_functions[?]->getType();
+	// insert the code into the program that accepts that type
+      }
+    
+    return;
+  }
   void ProcessFunctions()
   {
     
@@ -3677,7 +3810,7 @@ string replaceAll(string str, const string &from, const string &to)
 	    // Line of Code
 	    string current_LOC = asm_instr[i]->getString();
 
-	    // find the string that is to be replaces
+	    // find the string that is to be replaced
 	    std::size_t found = current_LOC.find(string( "###" ) + current_function);
 
 	    // if it IS found
@@ -4816,6 +4949,10 @@ parameterlist: /* empty */
       
       addAsm( str_PHA, 1, false );
     }
+  else if( isFAC($1.name) )
+    {
+      pushFAC();
+    }
   else if( isFloatIMM($1.name) )
     {
       inlineFloat( $1.name );
@@ -4964,12 +5101,17 @@ function: function function
     string s = string( "Function: " ) + string($1.name) + ": " + string( $2.name );
     addComment( s );
   }
+
+  // TODO: we could determine if this has a return value the same way as in
+  // ProcessReturnValues() and then Optimize this from there.
   addComment( "return address (OPTIMIZE)" );
   // this will make recursion (almost) impossible
   addAsm( "!rx:\t" + str_BYTE + "$00", 1, true );
   addAsm( "!ry:\t" + str_BYTE + "$00", 1, true );
   addAsm( "// MARKED_FOR_DELETION", 0, true );  
   addAsm( string($2.name) + ":", 0, true);
+
+  //addCompilerMessage( "Adding function of type: " + string($1.name), 2 );
   addFunction( string($2.name), getLabel( label_vector[label_major]-1 ), getDataTypeValue($1.name));
 
 
@@ -10409,13 +10551,14 @@ condition: expression[LHS]
     }
   else if( isXA($LHS.name) && isUintIMM($RHS.name))
     {
+      addAsm( "// XA relop UintIMM: TOC", 0, true);
       addComment( "XA relop UintIMM: TOC" );
       int tmp_v = atoi(stripFirst($RHS.name).c_str());
 
       // save A in Y
       addAsm( str_TAY );
       addAsm( str_TXA );
-      //addAsm( str_CMP + "#$00", 2, false ); 
+      addAsm( str_CMP + "#$00", 2, false ); 
       addAsm( str_BNE + "!+", 2, false );
       addAsm( str_TYA );
       addAsm( str_CMP + "#$" + toHex( tmp_v ), 2, false );
@@ -10835,7 +10978,7 @@ condition: expression[LHS]
 	    }
 	  deletePreviousAsm();
 	  deletePreviousAsm();
-	  addComment( "deleted previous 2 instructions" );
+	  //addComment( "deleted previous 2 instructions" );
 	  //addCompilerMessage( "Deleted Mnemonics", 0 );
 
 	  //deletePreviousAsm();
@@ -15459,6 +15602,14 @@ arithmetic[MATHOP] expression[OP2]
 	  int O2 = atoi(stripFirst($4.name).c_str());
 	  switch( O2 )
 	    {
+	    case 0:
+	      addComment( "A * WordIMM --> XA (special case: 0x0000)" );
+	      addAsm( str_LAX + "#$00", 2, false );
+	      break;
+	    case 1:
+	      addComment( "A * WordIMM --> XA (special case: 0x0001)" );
+	      addAsm( str_LDX + "#$00", 2, false );
+	      break;
 	    case 256:
 	      addComment( "A * WordIMM --> XA (special case: 0x0100)" );
 	      addAsm( str_TAX, 1, false );
@@ -20853,6 +21004,7 @@ arithmetic[MATHOP] expression[OP2]
 	      addAsm( str_STA + "$02", 2, false );
 	      addAsm( str_TXA, 1, false );
 	      addAsm( str_ADC + "$03", 2, false );
+	      addAsm( str_STA + "$03", 2, false );
 	      
 	      addAsm( str_PLA, 1, false );
 	      addAsm( str_ASL, 1, false );
@@ -27334,12 +27486,12 @@ arithmetic[MATHOP] expression[OP2]
       addAsm( str_ADC + "$02", 2, false );
       addAsm( str_STA + "$02", 2, false );
       addComment( "can be hardcoded into A" );
-      addAsm( str_JSR + "SCRMEM", 3, false );
+      addAsm( str_JSR + "_scrmem", 3, false );
       addAsm( str_PLA );
       addAsm( str_ADC + "$03", 2, false );
       addAsm( str_STA + "$03", 2, false );
       addComment( "can be hardcoded into A" );
-      addAsm( str_JSR + "BNKMEM", 3, false );
+      addAsm( str_JSR + "_bnkmem", 3, false );
       addAsm( str_PLA );
       addAsm( str_ADC + "$03", 2, false );
       
@@ -28209,7 +28361,7 @@ arithmetic[MATHOP] expression[OP2]
 | tGETBANK '(' ')'
 {
   bnkmem_is_needed=true;
-  addAsm( str_JSR + "BNKMEM", 3, false );
+  addAsm( str_JSR + "_bnkmem", 3, false );
   addAsm( str_PLA );
   addAsm( str_TAX );
   addAsm( str_LDA + "#$00", 2, false );
@@ -28221,7 +28373,7 @@ arithmetic[MATHOP] expression[OP2]
   addAsm( str_STA + "$03", 2, false );
   scrmem_is_needed=true;
   addComment( "can be hardcoded into A" );
-  addAsm( str_JSR + "SCRMEM", 3, false );
+  addAsm( str_JSR + "_scrmem", 3, false );
   addAsm( str_PLA );
   
   addAsm( str_CLC ); 
@@ -28229,7 +28381,7 @@ arithmetic[MATHOP] expression[OP2]
   addAsm( str_STA + "$03", 2, false );
   bnkmem_is_needed=true;
   addComment( "can be hardcoded into A" );
-  addAsm( str_JSR + "BNKMEM", 3, false );
+  addAsm( str_JSR + "_bnkmem", 3, false );
   addAsm( str_PLA );
   addAsm( str_ADC + "$03", 2, false );
   addAsm( str_TAX );
@@ -29841,7 +29993,7 @@ arithmetic[MATHOP] expression[OP2]
   addComment( "Call a function as an expression" );
   proposed_ids_vector.push_back( new id_and_line( $1.name, countn+1 ));
   addAsm( str_JSR + $1.name, 3, false );
-
+  addAsm( commentmarker + "_function_return: " + $1.name, 0, true );
   // move to ID init and datatype ID init
   addComment( "Pop Return Value off of Processor Stack - 2023 04 02" );
   addComment( "Modified on 2025 06 17 to use relative labels instead of static ones" );
@@ -29865,8 +30017,8 @@ arithmetic[MATHOP] expression[OP2]
   addAsm( str_TAY );
 
   // commented out code
-  addAsm( "//\t" + str_LDA + "#$00", 0, true );
-  addAsm( "//\t" + str_LDX + "#$00", 0, true );	  
+  addAsm( commentmarker + "\t" + str_LDA + "#$00", 0, true );
+  addAsm( commentmarker + "\t" + str_LDX + "#$00", 0, true );	  
   addAsm( str_LAX + "#$00", 2, false );
   
   addAsm( str_CPY + "#$00", 2, false );
@@ -29882,6 +30034,7 @@ arithmetic[MATHOP] expression[OP2]
   //addAsm( "!:", 0, true );
   addCommentBreak(2);
   // floats will store the address of the 5 bytes in XA
+  
   strcpy($$.name, "_XA" ); 
 };
 | tPEEK '(' expression ')'
@@ -30181,8 +30334,9 @@ return: RETURN ';'
       {
 	addAsm( str_LDA + getNameOf(v), 3, false );
 	addAsm( str_PHA );
-	addAsm( str_LDA + "#$01", 2, false );
-	addAsm( str_PHA );
+	//addAsm( str_LDA + "#$01", 2, false );
+	//addAsm( str_PHA );
+	strcpy( $$.name, "_A" );
       }
     else if( isWordID($3.name) )
       {
@@ -30190,8 +30344,9 @@ return: RETURN ';'
 	addAsm( str_PHA );
 	addAsm( str_LDA + getNameOf(v) + " +1", 3, false );
 	addAsm( str_PHA );
-	addAsm( str_LDA + "#$02", 2, false );
-	addAsm( str_PHA );
+	//addAsm( str_LDA + "#$02", 2, false );
+	//addAsm( str_PHA );
+	strcpy( $$.name, "_XA" );
       }
     else if( isUintIMM($3.name) || isIntIMM($3.name) )
       {
@@ -30199,11 +30354,16 @@ return: RETURN ';'
 
       
 	v = atoi(stripFirst($3.name).c_str());
+	if( v < 0 )
+	  {
+	    v = twos_complement(v);
+	  }
 
 	addAsm( str_LDA + "#$" + toHex(v), 2, false );
 	addAsm( str_PHA );
-	addAsm( str_LDA + "#$01", 2, false );
-	addAsm( str_PHA );
+	//addAsm( str_LDA + "#$01", 2, false );
+	//addAsm( str_PHA );
+	strcpy( $$.name, "_A" );
       }
     else if( isWordIMM($3.name) )
       {
@@ -30215,8 +30375,9 @@ return: RETURN ';'
 	addAsm( str_PHA );
 	addAsm( str_LDA + "#$" + toHex(x_register), 2, false );
 	addAsm( str_PHA );
-	addAsm( str_LDA + "#$02", 2, false );
-	addAsm( str_PHA );
+	//addAsm( str_LDA + "#$02", 2, false );
+	//addAsm( str_PHA );
+	strcpy( $$.name, "_XA" );
       }
     else if( isWordID($3.name) )
       {
@@ -30225,46 +30386,55 @@ return: RETURN ';'
 	addAsm( str_PHA );
 	addAsm( str_LDA + getNameOf(v), 3, false );
 	addAsm( str_PHA );
-	addAsm( str_LDA + "#$02", 2, false );
-	addAsm( str_PHA );
+	//addAsm( str_LDA + "#$02", 2, false );
+	//addAsm( str_PHA );
+	strcpy( $$.name, "_XA" );
       }
     else if( isA($3.name) )
       {
+	addAsm( "// returning an A", 0, false );
 	addAsm( str_TYA, 1, false );	
 	addAsm( str_PHA, 1, false );
-	addAsm( str_LDA + "#$01", 2, false );
-	addAsm( str_PHA );
+	//addAsm( str_LDA + "#$01", 2, false );
+	//addAsm( str_PHA );
+	strcpy( $$.name, "_A" );
       }
     else if( isXA($3.name) )
       {
+	addAsm( "// returning an XA", 0, false );
 	addAsm( str_TYA, 1, false );
 	addAsm( str_PHA, 1, false );
 	addAsm( str_TXA, 1, false );
 	addAsm( str_PHA, 1, false );
-	addAsm( str_LDA + "#$02", 2, false );
-	addAsm( str_PHA );
+	//addAsm( str_LDA + "#$02", 2, false );
+	//addAsm( str_PHA );
+	strcpy( $$.name, "_XA" );
       }
     else if( isFloatID($3.name) )
       {
-	v = atoi(stripFirst($3.name).c_str());
-	addAsm( str_LDA + getNameOf(v) + " +1", 3, false );
-	addAsm( str_PHA );
-	addAsm( str_LDA + getNameOf(v), 3, false );
-	addAsm( str_PHA );
-	addAsm( str_LDA + "#$05", 2, false );
-	addAsm( str_PHA );
+	// TODO: Return Floats is STILL Broken
+	addAsm( str_LDA + "#<" + getNameOf(v), 2, false );
+	addAsm( str_LDY + "#>" + getNameOf(v), 2, false );
+	addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false );
+	pushFAC();
+	strcpy( $$.name, "_FAC" );
       }
     else if( isFloatIMM($3.name) )
       {
-	addCompilerMessage( "Just hardcode the value", 3 );
+	inlineFloatFP0( $3.name );
+	Swap0ToFAC();
+	pushFAC();
+	strcpy( $$.name, "_FAC" );
       }
     else if( isFAC($3.name) )
       {
-	addCompilerMessage( "FAC is an unsupported return type", 3 );
+	pushFAC();
+	strcpy( $$.name, "_FAC" );
       }
     else
       {
-	addCompilerMessage( "invalid return type", 3 );
+	strcpy( $$.name, "_NULL" );
+	//addCompilerMessage( "invalid return type", 3 );
       }
 
     addComment( "Restore return address locally" );
@@ -31130,8 +31300,8 @@ int main(int argc, char *argv[])
   if( float_swap_space_is_needed )
     {
       addComment( "Floating Point Swap Space" );
-      addAsm( "!fp0:\t .byte $00, $00, $00, $00, $00, $00", 6, true );
-      addAsm( "!fp1:\t .byte $00, $00, $00, $00, $00, $00", 6, true );
+      addAsm( "!fp0:\t" + str_BYTE + "$00, $00, $00, $00, $00, $00", 6, true );
+      addAsm( "!fp1:\t" + str_BYTE + "$00, $00, $00, $00, $00, $00", 6, true );
     }
   if( div16_is_needed )
     {
@@ -31185,7 +31355,67 @@ int main(int argc, char *argv[])
       addAsm( str_RTS );
 
     }
-  if( multicolour_plot_is_needed )
+  if( multicolour_plot_is_needed && 1 )
+    {
+      addComment( "vvv------------------------------------vvv" );
+      addComment( "vvv from p164 of Advanced Machine Code vvv" );
+      addComment( "vvv  Programming for the Commodore 64  vvv" );
+      addComment( "vvv w/ some changes to deal with banks vvv" );
+      addComment( "vvv            and optimized           vvv" );
+      addComment( "vvv------------------------------------vvv" );
+      addComment( "x = $FA, y = $FC, colour = $FD" );
+      addComment( "STORE is at $FE(l), $FF(h)" );
+      addComment( "LOC is at $02(l), $03(h)" );
+      
+      addAsm( "_mcplot:", 0, true );
+      addAsm( str_LDA + "$FD" + commentmarker + "colcode (11/01/10/00)", 2, false );
+      addAsm( str_ASL, 1, false );
+      addAsm( str_ASL, 1, false );
+      addAsm( str_ORA + "$FA" + commentmarker + "xcoord", 2, false );
+      addAsm( str_AND + "#$0F", 2, false );
+      addAsm( str_TAY, 1, false );
+      addAsm( str_LDA + "_mcplotMasks,Y", 3, false );
+      addAsm( str_STA + "$50" + commentmarker + "mask", 2, false );
+      addAsm( str_LDA + "#$00" , 2, false );
+      addAsm( str_STA + "$02" + commentmarker + "loc", 2, false );
+      addAsm( str_STA + "$FF" + commentmarker + "store +1", 2, false );
+      addAsm( str_LDA + "$FA" + commentmarker + "xcoord", 2, false );
+      addAsm( str_AND + "#$FC", 2, false );
+      addAsm( str_ASL, 1, false );
+      addAsm( str_ROL + "$FF" + commentmarker + "store +1", 2, false );
+      addAsm( str_STA + "$FE" + commentmarker + "store", 2, false );
+      addAsm( str_LDA + "$FC" + commentmarker + "ycoord", 2, false );
+      addAsm( str_LSR, 1, false );
+      addAsm( str_LSR, 1, false );
+      addAsm( str_LSR, 1, false );
+      addAsm( str_STA + "$03" + commentmarker + "loc +1", 2, false );
+      addAsm( str_LSR, 1, false );
+      addAsm( str_ROR + "$02" + commentmarker + "loc", 2, false );
+      addAsm( str_LSR, 1, false );
+      addAsm( str_ROR + "$02" + commentmarker + "loc", 2, false );
+      addAsm( str_CLC, 1, false );
+      addAsm( str_ADC + "$03" + commentmarker + "loc +1", 2, false );
+      addAsm( str_STA + "$03" + commentmarker + "loc +1", 2, false );
+      addAsm( str_LDA + "$FC" + commentmarker + "ycoord", 2, false );
+      addAsm( str_AND + "#$07", 2, false );
+      addAsm( str_ADC + "$02" + commentmarker + "loc", 2, false );
+      addAsm( str_ADC + "$FE" + commentmarker + "store", 2, false );
+      addAsm( str_STA + "$02" + commentmarker + "loc", 2, false );
+      addAsm( str_LDA + "$03" + commentmarker + "loc +1", 2, false );
+      addAsm( str_ADC + "$FF" + commentmarker + "store +1", 2, false );
+      addAsm( str_CLC, 1, false );
+      addAsm( str_ADC + "#$A0" + commentmarker + "bitmap page", 2, false );
+      addAsm( str_STA + "$03" + commentmarker + "loc +1", 2, false );
+      addAsm( str_LDY + "#$00", 2, false );
+      addAsm( str_LDA + "($02),Y", 3, false );
+      addAsm( str_ORA + "$50" + commentmarker + "mask", 2, false );
+      addAsm( str_STA + "($02),Y", 2, false );
+      addAsm( str_RTS, 1, false );
+      addAsm( "_mcplotMasks:",0,true );
+      addAsm( str_BYTE + "$00, $00, $00, $00, $40, $10, $04, $01, $80, $20, $08, $02, $C0, $30, $0C, $03", 16, false );
+      addComment( "^^^------------------------------------^^^" );
+    }
+  if( multicolour_plot_is_needed && 0 )
     {
       // from p164 of Advanced Machine Code Programming for the Commodore 64
       addComment( "vvv------------------------------------vvv" );
@@ -31193,14 +31423,15 @@ int main(int argc, char *argv[])
       addComment( "vvv  Programming for the Commodore 64  vvv" );
       addComment( "vvv w/ some changes to deal with banks vvv" );
       addComment( "vvv------------------------------------vvv" );
-      addAsm( commentmarker + "x = $FA, y = $FC, colour = $FD", 0, true );
-      addAsm( commentmarker + "STORE is at $FE(l), $FF(h)", 0, true);
-      addAsm( commentmarker + "LOC is at $02(l), $03(h)", 0, true);
+      addComment( "x = $FA, y = $FC, colour = $FD" );
+      addComment( "STORE is at $FE(l), $FF(h)" );
+      addComment( "LOC is at $02(l), $03(h)" );
+      
       
       addAsm( "_mcplot:", 0, true );
-      addAsm( "#if SAFEMCPLOT", 0, true );
-      addAsm( str_SEI );
-      addAsm( "#endif", 0, true );
+      //addAsm( "#if SAFEMCPLOT", 0, true );
+      //addAsm( str_SEI );
+      //addAsm( "#endif", 0, true );
 
       // -------------------------------------------------
       // LDX #$03  - 2 cycles
@@ -31212,7 +31443,6 @@ int main(int argc, char *argv[])
       addAsm( str_LDA + "$FA" + commentmarker + "xcoord", 2, false );  // 3 cycles
       addAsm( str_AND + "#$03", 2, false );  // 2 cycles
       addAsm( str_STA + "$FE" + commentmarker + "store", 2, false ); // 3 cycles
-
       addAsm( str_LDA + string("#$00"), 2, false );
       addAsm( str_STA + "$02" + commentmarker + "loc", 2, false );
       addAsm( str_STA + "$FF" + commentmarker + "store + 1", 2, false );
@@ -31261,7 +31491,7 @@ int main(int argc, char *argv[])
       bnkmem_is_needed=true;
       addComment( "this can be hardcoded for speed" );
       addComment( str_LDA + "#$80" + commentmarker + "maybe?" );
-      addAsm( str_JSR + "BNKMEM", 3, false );
+      addAsm( str_JSR + "_bnkmem", 3, false );
       addAsm( str_PLA ); // <<- A should now be #$00, #$40, #$80, #$C0 based on Bank #
       
       addAsm( str_CLC );
@@ -31371,7 +31601,7 @@ int main(int argc, char *argv[])
       bnkmem_is_needed=true;
       addComment( "OPTIMIZE" );
       addComment( "After this call, A should contain #$00, #$40, #$80, or #$C0" );
-      addAsm( str_JSR + "BNKMEM", 3, false );
+      addAsm( str_JSR + "_bnkmem", 3, false );
       addAsm( str_PLA ); // <<- A should now be #$00, #$40, #$80, #$C0 based on Bank #
       addAsm( str_CLC ); 
       addAsm( str_ADC + "$03", 2, false );
@@ -31502,9 +31732,9 @@ int main(int argc, char *argv[])
   if( pow8_is_needed )
     {
       umul_is_needed = true;
-      addAsm( "!lv_arg0:\t.byte $00", 1, false );
-      addAsm( "!lv_mem0:\t.byte $00", 1, false );
-      addAsm( "!lv_mem1:\t.byte $00", 1, false );
+      addAsm( "!lv_arg0:\t" + str_BYTE + "$00", 1, false );
+      addAsm( "!lv_mem0:\t" + str_BYTE + "$00", 1, false );
+      addAsm( "!lv_mem1:\t" + str_BYTE + "$00", 1, false );
       addAsm( "!rx:\t" + str_BYTE + "$00", 1, true );
       addAsm( "!ry:\t" + str_BYTE + "$00", 1, true );
       addAsm( "pow8:", 0, true );
@@ -31716,10 +31946,10 @@ int main(int argc, char *argv[])
 
   if( scrmem_is_needed )
     {
-      stack_is_needed = true;
+      //stack_is_needed = true;
       addComment( "Get the screen mem location from the vic II" );
       addComment( "OPTIMIZE: This address can be hardcoded later" );
-      addAsm( string("SCRMEM:\t\t"), 0, true );
+      addAsm( string("_scrmem:"), 0, true );
       
 
       //saveReturnAddress();
@@ -31748,7 +31978,7 @@ int main(int argc, char *argv[])
     {
       addComment( "Get the bank memory from the vic II" );
       addComment( "OPTIMIZE: This address can be hardcoded later" );
-      addAsm( string("BNKMEM:\t\t"), 0, true );
+      addAsm( string("_bnkmem:"), 0, true );
       //saveReturnAddress();
       addAsm( str_PLA );
       addAsm( str_TAX );
@@ -31780,7 +32010,7 @@ int main(int argc, char *argv[])
     }
   if( byte2hex_is_needed )
     {
-      addComment( "return address" );
+      addComment( "save return address" );
       addAsm( "!rx:\t" + str_BYTE + "$00", 1, true );
       addAsm( "!ry:\t" + str_BYTE + "$00", 1, true );
       addComment( "Display a Hexadecimal Byte" );
@@ -32216,7 +32446,7 @@ int main(int argc, char *argv[])
     }
   if(sqrrt8_is_needed)
     {
-      addAsm( "_sqrrt8:\t.byte $00, $01, $01, $02, $02, $02, $02, $03, $03, $03, $03, $03, $03, $04, $04, $04, $04, $04, $04, $04, $04, $05, $05, $05, $05, $05, $05, $05, $05, $05, $05, $06, $06, $06, $06, $06, $06, $06, $06, $06, $06, $06, $06, $07, $07, $07, $07, $07, $07, $07, $07, $07, $07, $07, $07, $07, $07, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10", 255, true );
+      addAsm( "_sqrrt8:\t" + str_BYTE + " $00, $01, $01, $02, $02, $02, $02, $03, $03, $03, $03, $03, $03, $04, $04, $04, $04, $04, $04, $04, $04, $05, $05, $05, $05, $05, $05, $05, $05, $05, $05, $06, $06, $06, $06, $06, $06, $06, $06, $06, $06, $06, $06, $07, $07, $07, $07, $07, $07, $07, $07, $07, $07, $07, $07, $07, $07, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10", 255, true );
 
 
     }
@@ -32271,9 +32501,10 @@ int main(int argc, char *argv[])
   ProcessComments();
   ProcessVariables();
   ProcessFunctions();
-  ProcessReturnTypes();
-  ProcessMemoryLocationsOfCode();
+  // ProcessReturnTypes();
+  //ProcessMemoryLocationsOfCode();
   ProcessStrings();
+  ProcessReturnValues();
   ProcessBranches();
   ProcessBranches();
   //ProcessMobs();
