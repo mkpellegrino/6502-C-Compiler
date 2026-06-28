@@ -1,4 +1,16 @@
-!mem0:   .byte $00
+// setScreenMode( uint m )
+// 0: Standard Character Mode
+// 1: Multicolor Character Mode
+// 2: Standard Bitmap Mode
+// 3: Multicolor Bitmap Mode
+// 4: Extended Background Color Mode
+// 5: 
+// 6: 
+// 7: 
+// 8:
+
+// This really only needs to be used if you're switching back and forth
+// between screen modes lots of times.   otherwise you can hard code it.
 setScreenMode:
 	pla 
 	tax 
@@ -6,88 +18,97 @@ setScreenMode:
 	tay
 	
 	pla 
-	sta !mem0-
+	sta !arg0+ +1
 	
 	tya 
 	pha 
 	txa 
 	pha
 	
-	lda !mem0-
-	cmp #$00
+// 0: Standard Character Mode	
+!arg0:	lda #$00
 	bne !+
-	
-	lda #$BF
+
+	// clear ECM & BMM
+	lda #$9F
 	and $D011
-	sta !mem0-
-	lda #$20
-	ora !mem0-
-	sta $D011
-	
+	sta $D011	
+
+	// clear MCM
 	lda #$EF
 	and $D016
 	sta $D016
 	rts
-!:
 
-	lda !mem0-
-	cmp #$01
-	bne !+
 	
+// 1: Multicolor Character Mode	
+!:	cmp #$01
+	bne !+
+
+	// clear ECM & BMM
 	lda #$9F
 	and $D011
 	sta $D011
+
+	// set MCM
 	lda #$10
 	ora $D016
 	sta $D016
 	rts
-!:
 
-	lda !mem0-
-	cmp #$02
+
+// 2: Standard Bitmap Mode
+!:	cmp #$02
 	bne !+
-	
+
+	// clear ECM
 	lda #$BF
 	and $D011
-	sta !mem0-
-	lda #$20
-	ora !mem0-
+	// set BMM
+	ora #$20
 	sta $D011
+
+	// clear MCM
 	lda #$EF
 	and $D016
 	sta $D016
 	rts
-!:
 
-	// multicolour bitmode (3)
-	lda !mem0-
-	cmp #$03
+
+// 3: Multicolor Bitmap Mode
+!:	cmp #$03
 	bne !+
-	lda #$BF  // clear bit 6
-	and $D011
-	sta !mem0-
-	lda #$20  // set bit 5
-	ora !mem0-
-	sta $D011
 	
-	lda #$10 // set bit 4
+	// clear ECM
+	lda #$BF
+	and $D011
+	// set BMM
+	ora #$20
+	sta $D011
+
+	// set MCM
+	lda #$10
 	ora $D016
 	sta $D016
 	rts
-!:
 
-	lda !mem0-
-	cmp #$04
+
+// 4: Extended Background Color Mode
+!:	cmp #$04
 	bne !+
-	
-	lda #$DF
-	and $D011
-	sta !mem0-
-	lda #$40
-	ora !mem0-
+
+	// set ECM
+	lda $D011
+	ora #$40
+	// clear BMM
+	and #$DF
 	sta $D011
+
+	// clear MCM
 	lda #$EF
 	and $D016
 	sta $D016
+	
 !:
+
 	rts

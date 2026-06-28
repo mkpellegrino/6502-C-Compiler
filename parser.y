@@ -5022,15 +5022,15 @@ parameterlist: /* empty */
 	{
 	  OP = string("$") + toHex(getAddressOf($3.name));
 	}
-      addAsm( str_LDA + OP, 3, false );
-      addAsm( str_PHA );
-      addAsm( str_LDA + OP + " +1", 3, false );
-      addAsm( str_PHA );
-      addAsm( str_LDA + OP + " +2", 3, false );
+      addAsm( str_LDA + OP + " +4" + commentmarker + "***", 3, false );
       addAsm( str_PHA );
       addAsm( str_LDA + OP + " +3", 3, false );
       addAsm( str_PHA );
-      addAsm( str_LDA + OP + " +4", 3, false );
+      addAsm( str_LDA + OP + " +2", 3, false );
+      addAsm( str_PHA );
+      addAsm( str_LDA + OP + " +1", 3, false );
+      addAsm( str_PHA );
+      addAsm( str_LDA + OP, 3, false );
       addAsm( str_PHA );
     }
   else if( isFloatIMM($3.name) )
