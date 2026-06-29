@@ -5393,10 +5393,7 @@ body: WHILE
 };
 
 
-| tDATA {/*pushScope("DATA");*/} ID
-{
-}
-'=' '{' numberlist '}' ';'
+| tDATA {} ID {} '=' '{' numberlist '}' ';'
 {
   if( isString( $7.name ) )
     {
@@ -5410,14 +5407,11 @@ body: WHILE
     {
       addAsmVariable($3.name, 2);
       int addr = getAddressOf( $3.name );
-      addAsm( str_LDA + "#<" + getLabel( label_vector[label_major]-1,false), 2, false );
-      
+      addAsm( str_LDA + "#<" + getLabel( label_vector[label_major]-1,false), 2, false );      
       addAsm( str_STA + getNameOf( addr ), 3, false );
       addAsm( str_LDA + "#>"  + getLabel( label_vector[label_major]-1,false), 2, false );
       addAsm( str_STA + getNameOf( addr ) + " +1", 3, false );
     }
-  
-  /*popScope();*/
 };
 
 // STATEMENTS
@@ -5504,7 +5498,6 @@ body: WHILE
       addAsm( str_STA + "$FE", 2, false ); 
       addAsm( str_JSR + "_memcpy", 3, false );
       addAsm( str_JSR + "_initscanbuf", 3, false );
-
     }
   else if( isWordIMM( $3.name ) )
     {
@@ -6115,7 +6108,7 @@ body: WHILE
   string _y = $6.name;
   addComment( string("cursorxy(") + string(_x) + string(",") + string(_y) + string( ")" ));
   addComment( "clc is integral to jsr $FFF0... do not remove" );
-  addAsm( str_CLC ); // carry must be set in order to SET the cursor position using kernal call
+  addAsm( str_CLC ); // carry must be clear in order to SET the cursor position using kernal call
 
   if( isA(_x) )
     {
@@ -29761,11 +29754,9 @@ arithmetic[MATHOP] expression[OP2]
   addComment( "Get the High-Byte" );
   if( isWordID( $3.name ) )
     {
-      //addAsm( str_LDA + ">" + $3.name, 2, false );
       int addr = getAddressOf( $3.name );
       int inst_size = 3;
       if( addr+1 < 256 ) inst_size = 2;
-      //addAsm( str_LDA + "$" + string( toHex( addr+1) ), inst_size, false );
       addAsm( str_LDA + getNameOf(hexToDecimal(stripFirst($3.name))) + " +1", inst_size, false );
     }
   else if( isXA( $3.name ))
@@ -31123,10 +31114,11 @@ int main(int argc, char *argv[])
 
       // save return address
       addAsm( str_PLA, 1, false );
-      addAsm( str_STA + "!rx-", 3, false );
+      addAsm( str_TAX, 1, false );
+      //addAsm( str_STA + "!rx-", 3, false );
       addAsm( str_PLA, 1, false );
-      addAsm( str_STA + "!ry-", 3, false );
-
+      //addAsm( str_STA + "!ry-", 3, false );
+      addAsm( str_TAY, 1, false );
       // parameter
       addAsm( str_PLA, 1, false );
       addAsm( str_STA + "!mem1- +1", 3, false );
@@ -31134,9 +31126,11 @@ int main(int argc, char *argv[])
       addAsm( str_STA + "!mem1-", 3, false );
 
       // restore return address
-      addAsm( str_LDA + "!ry-", 3, false );
+      //addAsm( str_LDA + "!ry-", 3, false );
+      addAsm( str_TYA, 1, false );
       addAsm( str_PHA, 1, false );
-      addAsm( str_LDA + "!rx-", 3, false );
+      //addAsm( str_LDA + "!rx-", 3, false );
+      addAsm( str_TXA, 1, false );
       addAsm( str_PHA, 1, false );
       // ==================================================================================
 
@@ -32205,9 +32199,11 @@ int main(int argc, char *argv[])
       addAsm( "_div10:\t" + commentmarker + "Divide number on stack by 10", 0, true );
 
       addAsm( str_PLA, 1, false );
-      addAsm( str_STA + "!rx-", 3, false );
+      addAsm( str_TAX, 1, false );
+      //addAsm( str_STA + "!rx-", 3, false );
       addAsm( str_PLA, 1, false );
-      addAsm( str_STA + "!ry-", 3, false );
+      addAsm( str_TAY, 1, false );
+      //addAsm( str_STA + "!ry-", 3, false );
       //==================================================================================
       
       addAsm( str_PLA );
@@ -32226,9 +32222,11 @@ int main(int argc, char *argv[])
       addAsm( str_LSR );
       addAsm( str_PHA ); // put result on processor stack
       //==================================================================================
-      addAsm( str_LDA + "!ry-", 3, false );
+      //addAsm( str_LDA + "!ry-", 3, false );
+      addAsm( str_TYA, 1, false );
       addAsm( str_PHA, 1, false );
-      addAsm( str_LDA + "!rx-", 3, false );
+      //addAsm( str_LDA + "!rx-", 3, false );
+      addAsm( str_TXA, 1, false );
       addAsm( str_PHA, 1, false );
       addAsm( str_RTS );
     }
@@ -32269,7 +32267,14 @@ int main(int argc, char *argv[])
       // get the return address and status flag from the stack
       // save return address
 
-      saveReturnAddress();
+      //saveReturnAddress();
+      addAsm( str_PLA, 1, false );
+      addAsm( str_TAX, 1, false );
+      //addAsm( str_STA + "!rx-", 3, false );
+      addAsm( str_PLA, 1, false );
+      addAsm( str_TAY, 1, false );
+      //addAsm( str_STA + "!ry-", 3, false );
+   
       //==================================================================================
 
       addComment( "The argument is pulled off of the stack here" );
@@ -32280,7 +32285,12 @@ int main(int argc, char *argv[])
       addComment( "The return value is pushed onto the stack here" );
       addAsm( str_PHA );
       //==================================================================================
-      restoreReturnAddress();  
+      addAsm( str_TYA, 1, false );
+      addAsm( str_PHA, 1, false );
+      //addAsm( str_LDA + "!rx-", 3, false );
+      addAsm( str_TXA, 1, false );
+      addAsm( str_PHA, 1, false );
+      //restoreReturnAddress();  
       addAsm( str_RTS );
 
     }
