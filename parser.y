@@ -31093,10 +31093,10 @@ int main(int argc, char *argv[])
     }
   if( new_word2dec_is_needed )
     {
-      addComment( "--------------------------" );
-      addComment( "return address tmp storage" );
-      addAsm( "!rx:\t" + str_BYTE + "$00", 1, true );
-      addAsm( "!ry:\t" + str_BYTE + "$00", 1, true );
+      addComment( "-----------------------------------" );
+      //addComment( "return address tmp storage" );
+      //addAsm( "!rx:\t" + str_BYTE + "$00", 1, true );
+      //addAsm( "!ry:\t" + str_BYTE + "$00", 1, true );
       addComment( "string of PETSCII bytes tmp storage" );      
       addAsm( "!mem0:\t" + str_BYTE + "$00, $00, $00, $00, $00, $00, $00", 7, true );
       addComment( "------------------------------------------------------------" );
@@ -32133,15 +32133,18 @@ int main(int argc, char *argv[])
     }
   if( split_byte_is_needed )
     {
-      addAsm( "!rx:\t" + str_BYTE + "$00", 1, true );
-      addAsm( "!ry:\t" + str_BYTE + "$00", 1, true );
+      //addAsm( "!rx:\t" + str_BYTE + "$00", 1, true );
+      //addAsm( "!ry:\t" + str_BYTE + "$00", 1, true );
       addAsm( "SPLITBYTE:\t\t" + commentmarker + "S1 -> S1=Hi Bits\tS0=Lo Bits", 0, true );
       addComment( "Destroys $52 in ZP" );
 
+      // TODO: Fix this to use TAX and TAY
       addAsm( str_PLA, 1, false );
-      addAsm( str_STA + "!rx-", 3, false );
+      addAsm( str_TAX, 1, false );
+      //addAsm( str_STA + "!rx-", 3, false );
       addAsm( str_PLA, 1, false );
-      addAsm( str_STA + "!ry-", 3, false );
+      addAsm( str_TAY, 1, false );
+      //addAsm( str_STA + "!ry-", 3, false );
       //==================================================================================
       addAsm( str_PLA );
       addAsm( str_STA + "$52", 2, false);
@@ -32159,15 +32162,18 @@ int main(int argc, char *argv[])
       addAsm( str_ADC + "#$30", 2, false );
       addAsm( str_PHA );      
       //==================================================================================
-      addAsm( str_LDA + "!ry-", 3, false );
+      //addAsm( str_LDA + "!ry-", 3, false );
+      addAsm( str_TYA, 1, false );
       addAsm( str_PHA, 1, false );
-      addAsm( str_LDA + "!rx-", 3, false );
+      addAsm( str_TXA, 1, false );
+      //addAsm( str_LDA + "!rx-", 3, false );
       addAsm( str_PHA, 1, false );
       addAsm( str_RTS );
 
     }
   if( decimal_digit_is_needed )
     {
+      // TODO: Fix the "saveReturnAddress" thing
       addComment( "Turn number on stack into a decimal" );
       addAsm( string("DECDIG:\t\t"), 0, true );
 
@@ -32193,8 +32199,8 @@ int main(int argc, char *argv[])
     }
   if( div10_is_needed )
     {
-      addAsm( "!rx:\t" + str_BYTE + "$00", 1, true );
-      addAsm( "!ry:\t" + str_BYTE + "$00", 1, true );
+      //addAsm( "!rx:\t" + str_BYTE + "$00", 1, true );
+      //addAsm( "!ry:\t" + str_BYTE + "$00", 1, true );
       // DIVIDE BY 10 ROUTINE
       addAsm( "_div10:\t" + commentmarker + "Divide number on stack by 10", 0, true );
 
