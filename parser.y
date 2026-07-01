@@ -1541,6 +1541,26 @@ string replaceAll(string str, const string &from, const string &to)
            out << "$0D, ";
            i++;
          }
+       else if( a.text[i] == '\\' && a.text[i+1] == '0')
+         {
+           out << "$00, ";
+           i++;
+         }
+       else if( a.text[i] == '\\' && a.text[i+1] == '\"')
+         {
+           out << "$22, ";
+           i++;
+         }
+       else if( a.text[i] == '\\' && a.text[i+1] == '\'')
+         {
+           out << "$27, ";
+           i++;
+         }
+       else if( a.text[i] == '\\' && a.text[i+1] == '\\')
+         {
+           out << "$5C, ";
+           i++;
+         }
        else
          {
            out << "$" << toHex((int)a.text[i]) << ", ";
@@ -18742,7 +18762,8 @@ arithmetic[MATHOP] expression[OP2]
   else if( isIntID($1.name) && isUintIMM($4.name) )
     {
       addComment( "IntID math UintIMM: TOC" );
-      addAsm( str_LDA +  string($1.name), 3, false);
+      addAsm( str_LDA + getNameOf(getAddressOf($1.name)), 3, false );
+      //addAsm( str_LDA +  string($1.name), 3, false);
       if( op == string("+"))
 	{
 	  addCompilerMessage( "IntID + UintIMM is an 8-bit operation", 1);
@@ -30386,8 +30407,6 @@ return: RETURN ';'
 	addAsm( "// returning an A", 0, false );
 	addAsm( str_TYA, 1, false );	
 	addAsm( str_PHA, 1, false );
-	//addAsm( str_LDA + "#$01", 2, false );
-	//addAsm( str_PHA );
 	strcpy( $$.name, "_A" );
       }
     else if( isXA($3.name) )
@@ -30397,8 +30416,6 @@ return: RETURN ';'
 	addAsm( str_PHA, 1, false );
 	addAsm( str_TXA, 1, false );
 	addAsm( str_PHA, 1, false );
-	//addAsm( str_LDA + "#$02", 2, false );
-	//addAsm( str_PHA );
 	strcpy( $$.name, "_XA" );
       }
     else if( isFloatID($3.name) )
@@ -31094,9 +31111,6 @@ int main(int argc, char *argv[])
   if( new_word2dec_is_needed )
     {
       addComment( "-----------------------------------" );
-      //addComment( "return address tmp storage" );
-      //addAsm( "!rx:\t" + str_BYTE + "$00", 1, true );
-      //addAsm( "!ry:\t" + str_BYTE + "$00", 1, true );
       addComment( "string of PETSCII bytes tmp storage" );      
       addAsm( "!mem0:\t" + str_BYTE + "$00, $00, $00, $00, $00, $00, $00", 7, true );
       addComment( "------------------------------------------------------------" );
@@ -31104,10 +31118,8 @@ int main(int argc, char *argv[])
       addComment( "Taken from: http://6502.org/source/integers/hex2dec-more.htm" );
       addComment( " Modified to make jumps and addressing relative for KickAsm " );
       addComment( "------------------------------------------------------------" );
-      addAsm( "!mem1:\t" + str_BYTE + "$00, $00", 2, true );
-      addAsm( "!mem2:\t" + str_BYTE + "$00, $00, $00", 3, true );
-      addAsm( "!mem3:\t" + str_BYTE + "$00", 1, true );
-      addAsm( "!mem4:\t" + str_BYTE + "$00", 1, true );
+      addAsm( "!mem1:\t" + str_BYTE + "$00, $00, $00", 3, true );
+      addAsm( "!arg0:\t" + str_BYTE + "$00, $00", 2, true );
       
       
       addAsm( string("_display_word:\t\t") + commentmarker + "2 Byte Word to Decimal", 0, true );
@@ -31115,47 +31127,47 @@ int main(int argc, char *argv[])
       // save return address
       addAsm( str_PLA, 1, false );
       addAsm( str_TAX, 1, false );
-      //addAsm( str_STA + "!rx-", 3, false );
       addAsm( str_PLA, 1, false );
-      //addAsm( str_STA + "!ry-", 3, false );
       addAsm( str_TAY, 1, false );
-      // parameter
+
+      // argument
       addAsm( str_PLA, 1, false );
-      addAsm( str_STA + "!mem1- +1", 3, false );
+      addAsm( str_STA + "!arg0- +1", 3, false );
       addAsm( str_PLA, 1, false );
-      addAsm( str_STA + "!mem1-", 3, false );
+      addAsm( str_STA + "!arg0-", 3, false );
 
       // restore return address
-      //addAsm( str_LDA + "!ry-", 3, false );
       addAsm( str_TYA, 1, false );
       addAsm( str_PHA, 1, false );
-      //addAsm( str_LDA + "!rx-", 3, false );
       addAsm( str_TXA, 1, false );
       addAsm( str_PHA, 1, false );
       // ==================================================================================
 
       addAsm( str_SED );
       addAsm( str_LDA + "#$00", 2, false );
-      addAsm( str_STA + "!mem2-", 3, false );
-      addAsm( str_STA + "!mem2- +1", 3, false );
-      addAsm( str_STA + "!mem2- +2", 3, false );
+      addAsm( str_STA + "!mem1-", 3, false );
+      addAsm( str_STA + "!mem1- +1", 3, false );
+      addAsm( str_STA + "!mem1- +2", 3, false );
       addAsm( str_LDX + "#$10", 2, false );
-      addAsm( "!:\t" + str_ASL + "!mem1-", 3, true );
-      addAsm( str_ROL + "!mem1- +1", 3, false );
-      addAsm( str_LDA + "!mem2-", 3, false );
-      addAsm( str_ADC + "!mem2-", 3, false );
-      addAsm( str_STA + "!mem2-", 3, false );
-      addAsm( str_LDA + "!mem2- +1", 3, false );
-      addAsm( str_ADC + "!mem2- +1", 3, false );
-      addAsm( str_STA + "!mem2- +1", 3, false );
-      addAsm( str_LDA + "!mem2- +2", 3, false );
-      addAsm( str_ADC + "!mem2- +2", 3, false );
-      addAsm( str_STA + "!mem2- +2", 3, false );
+      
+      addAsm( "!:\t" + str_ASL + "!arg0-", 3, true );
+      addAsm( str_ROL + "!arg0- +1", 3, false );
+
+      addAsm( str_LDA + "!mem1-", 3, false );
+      addAsm( str_ADC + "!mem1-", 3, false );
+      addAsm( str_STA + "!mem1-", 3, false );
+      addAsm( str_LDA + "!mem1- +1", 3, false );
+      addAsm( str_ADC + "!mem1- +1", 3, false );
+      addAsm( str_STA + "!mem1- +1", 3, false );
+      addAsm( str_LDA + "!mem1- +2", 3, false );
+      addAsm( str_ADC + "!mem1- +2", 3, false );
+      addAsm( str_STA + "!mem1- +2", 3, false );
       addAsm( str_DEX );
       addAsm( str_BNE + "!-", 2, false );
       addAsm( str_CLD );
       addComment( "------------------------------------------------------------" );
-      addAsm( str_LDA + "!mem2-", 3, false);
+      
+      addAsm( str_LDA + "!mem1-", 3, false);
       addAsm( str_PHA );
       addAsm( str_LSR );
       addAsm( str_LSR );
@@ -31169,27 +31181,27 @@ int main(int argc, char *argv[])
       addAsm( str_STA + "!mem0- +5", 3, false);
       
 
-      addAsm( str_LDA + "!mem2- +1", 3, false);
+      addAsm( str_LDA + "!mem1- +1", 3, false);
       addAsm( str_PHA );
       addAsm( str_LSR );
       addAsm( str_LSR );
       addAsm( str_LSR );
       addAsm( str_LSR );
-
       addAsm( str_ORA + "#$30", 2, false);
       addAsm( str_STA + "!mem0- +2", 3, false);
-      addAsm( str_PLA );
+      addAsm( str_PLA );      
       addAsm( str_AND + "#$0F", 2, false);
       addAsm( str_ORA + "#$30", 2, false);
       addAsm( str_STA + "!mem0- +3", 3, false);
 
-      addAsm( str_LDA + "!mem2- +2", 3, false);
+
+      
+      addAsm( str_LDA + "!mem1- +2", 3, false);
       addAsm( str_PHA );
       addAsm( str_LSR );
       addAsm( str_LSR );
       addAsm( str_LSR );
       addAsm( str_LSR );
-
       addAsm( str_ORA + "#$30", 2, false);
       addAsm( str_STA + "!mem0-", 3, false);
       addAsm( str_PLA );
@@ -31197,6 +31209,7 @@ int main(int argc, char *argv[])
       addAsm( str_ORA + "#$30", 2, false);
       addAsm( str_STA + "!mem0- +1", 3, false);
 
+      
       // now print it
       addAsm( str_LDX + "#$00", 2, false );
       addAsm( "!:\t" + str_LDA + "!mem0-,X", 3, true );
