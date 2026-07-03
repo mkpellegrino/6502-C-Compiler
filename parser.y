@@ -13513,14 +13513,10 @@ statement: datatype ID init
     {
       addComment( "UINT array[(U)IntID] = XA;" );
       addCompilerMessage( "uint " + arg0 + "[uint/int] is being initialised with a word.  lost fidelity.", 1 );
-      addAsm( str_TAY );
       int tmp_i = getAddressOf( arg1.c_str() );
       int tmp_v = getAddressOf( arg0.c_str() );
-      addComment( "TODO: Check to see if the next line is an Address or what!" );
-      addAsm( str_LDA + "$" + toHex(tmp_i), 3, false ); 
-      addAsm( str_TAX );
-      addAsm( str_TYA );
-      addAsm( str_STA + "$" + toHex( tmp_v ) + string( ",X" ), 3, false );
+      addAsm( str_LDX + getNameOf(tmp_i), 3, false ); 
+      addAsm( str_STA + getNameOf(tmp_v) + ",X", 3, false );
     }
   else if( isUintID( arg0.c_str() ) && (isUintIMM(arg1.c_str()) || isIntIMM(arg1.c_str())) && isA(arg2.c_str()) )
     {
@@ -13535,7 +13531,7 @@ statement: datatype ID init
       int tmp_v = getAddressOf(arg2.c_str());
       int tmp_index = atoi(stripFirst(arg1.c_str()).c_str());
       addAsm( str_LDA + getNameOf(tmp_v), 3, false );
-      addAsm( str_STA + getNameOf( current_variable_base_address ) + "+" + stripFirst(arg1.c_str()), 3, false );
+      addAsm( str_STA + getNameOf(current_variable_base_address) + "+" + stripFirst(arg1.c_str()), 3, false );
     }
   else if( isUintID( arg0.c_str() ) && (isUintID(arg1.c_str()) || isIntID(arg1.c_str())) && isUintID(arg2.c_str()) )
     {
