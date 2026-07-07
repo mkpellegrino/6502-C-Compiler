@@ -5931,9 +5931,9 @@ body: WHILE
       int inst_size = 3;
       if( base_address_op1 < 256 ) inst_size = 2;
       addAsm( str_LDA + getNameOf(base_address_op1), inst_size, false );
-      addAsm( str_PHA, 1, false );
-      addAsm( str_LDA + getNameOf(base_address_op1) + " +1", inst_size, false );
-      addAsm( str_PHA, 1, false );
+      //addAsm( str_PHA, 1, false );
+      addAsm( str_LDX + getNameOf(base_address_op1) + " +1", inst_size, false );
+      //addAsm( str_PHA, 1, false );
       addAsm( str_JSR + "_display_word", 3, false );
     }
   else if( isXA($3.name) )
@@ -5941,9 +5941,9 @@ body: WHILE
       addComment( "printf(XA);" );
       new_word2dec_is_needed = true;
       current_variable_base_address = getAddressOf($3.name);
-      addAsm( str_PHA, 1, false );
-      addAsm( str_TXA, 1, false );
-      addAsm( str_PHA, 1, false );
+      //addAsm( str_PHA, 1, false );
+      //addAsm( str_TXA, 1, false );
+      //addAsm( str_PHA, 1, false );
       addAsm( str_JSR + "_display_word", 3, false );
     }
   else if( isWordIMM($3.name) )
@@ -5953,9 +5953,9 @@ body: WHILE
       int tmp = atoi( stripFirst($3.name).c_str() );
       new_word2dec_is_needed = true;
       addAsm( str_LDA + "#$"  + toHex( get_word_L( tmp )), 2, false );
-      addAsm( str_PHA, 1, false );      
-      addAsm( str_LDA + "#$" + toHex( get_word_H( tmp )), 2, false );
-      addAsm( str_PHA, 1, false );
+      //addAsm( str_PHA, 1, false );      
+      addAsm( str_LDX + "#$" + toHex( get_word_H( tmp )), 2, false );
+      //addAsm( str_PHA, 1, false );
       addAsm( str_JSR + "_display_word", 3, false );
 
     }
@@ -5969,9 +5969,9 @@ body: WHILE
       addAsm( str_JSR + "$FFD2", 3, false );
       new_word2dec_is_needed = true;
       addAsm( str_LDA + "#$"  + toHex( get_word_L( tmp )), 2, false );
-      addAsm( str_PHA, 1, false );      
-      addAsm( str_LDA + "#$00", 2, false );
-      addAsm( str_PHA, 1, false );
+      //addAsm( str_PHA, 1, false );      
+      addAsm( str_LDX + "#$00", 2, false );
+      //addAsm( str_PHA, 1, false );
       addAsm( str_JSR + "_display_word", 3, false );
     }
     else if(isUintIMM($3.name))
@@ -5981,9 +5981,9 @@ body: WHILE
       int tmp = atoi( stripFirst($3.name).c_str() );
       new_word2dec_is_needed = true;
       addAsm( str_LDA + "#$"  + toHex( get_word_L( tmp )), 2, false );
-      addAsm( str_PHA, 1, false );      
-      addAsm( str_LDA + "#$00", 2, false );
-      addAsm( str_PHA, 1, false );
+      //addAsm( str_PHA, 1, false );      
+      addAsm( str_LDX + "#$00", 2, false );
+      //addAsm( str_PHA, 1, false );
       addAsm( str_JSR + "_display_word", 3, false );
     }
   else
@@ -11500,24 +11500,11 @@ statement: datatype ID init
   if( a < 256 ) size_of_instruction = 2;
   if( isWordID($3.name ) )
     {
-      addComment( "inc(WordID)" );
-      addCompilerMessage( "inc(" + a_name + ") just adds 0x0001 to the value", 0 );
-      addAsm( str_LDA + "#$01", 2, false );
-      addAsm( str_CLC );
-      addAsm( str_ADC + a_name, size_of_instruction, false );
-      addAsm( str_STA + a_name, size_of_instruction, false );
-      a++;
-      if( a < 256 )
-	{
-	  size_of_instruction = 2;
-	}
-      else
-	{
-	  size_of_instruction = 3;
-	}
-      addAsm( str_LDA + "#$00", 2, false );
-      addAsm( str_ADC + a_name + " +1", size_of_instruction, false );
-      addAsm( str_STA + a_name + " +1", size_of_instruction, false );
+      addComment( "inc(WordID) - updated 2026 07 07" );
+      addAsm( str_INC + a_name, size_of_instruction, false );
+      addAsm( str_BNE + "!_skip+", 2, false );
+      addAsm( str_INC + a_name + " +1", size_of_instruction, false );
+      addAsm( "!_skip:", 0, true );
     }
   else if( isUintID($3.name) || isIntID($3.name) )
     {
@@ -31121,22 +31108,22 @@ int main(int argc, char *argv[])
       addAsm( string("_display_word:\t\t") + commentmarker + "2 Byte Word to Decimal", 0, true );
 
       // save return address
-      addAsm( str_PLA, 1, false );
-      addAsm( str_TAX, 1, false );
-      addAsm( str_PLA, 1, false );
-      addAsm( str_TAY, 1, false );
+      //addAsm( str_PLA, 1, false );
+      //addAsm( str_TAX, 1, false );
+      //addAsm( str_PLA, 1, false );
+      //addAsm( str_TAY, 1, false );
 
       // argument
-      addAsm( str_PLA, 1, false );
-      addAsm( str_STA + "!arg0- +1", 3, false );
-      addAsm( str_PLA, 1, false );
+      //addAsm( str_PLA, 1, false );
+      addAsm( str_STX + "!arg0- +1", 3, false );
+      //addAsm( str_PLA, 1, false );
       addAsm( str_STA + "!arg0-", 3, false );
 
       // restore return address
-      addAsm( str_TYA, 1, false );
-      addAsm( str_PHA, 1, false );
-      addAsm( str_TXA, 1, false );
-      addAsm( str_PHA, 1, false );
+      //addAsm( str_TYA, 1, false );
+      //addAsm( str_PHA, 1, false );
+      //addAsm( str_TXA, 1, false );
+      //addAsm( str_PHA, 1, false );
       // ==================================================================================
 
       addAsm( str_SED );
