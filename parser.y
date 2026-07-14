@@ -671,13 +671,6 @@
       }
     return return_value;
   }
-
-  //string getSpecificLabel( int MAJOR, int MINOR, bool colon=true )
-  //{
-  //string return_value = string( "LBL" ) + itos( MAJOR ) + "L" + itos( MINOR );
-  //if( colon ) return_value += string( ":" );
-  //return return_value;
-  //}
   
   string getLabel( char* s, bool colon=true )
   {
@@ -924,12 +917,13 @@
     return return_value;
   }
 
-  string character2value( char a )
-  {
-    
-
-
-  }
+  //  string character2value( char a )
+  //{
+  // 
+  //
+  //
+  //}
+  
   string ascii2petscii( int a )
   {
     // for use in CHARACTER
@@ -1415,18 +1409,10 @@
 
   void addIncludeFile( string s )
   {
+    addCompilerMessage( "Adding include file: " + s, 1  );
     include_file_vector.push_back( s );
   }
 
-
-  // 
-
-  //void addFunction( string s, string l )
-  //{
-  // asm_function * ptr_function = new asm_function( s, l );
-  //asm_functions.push_back( ptr_function );
-  //
-  //}
 
   void addFunction( string s, string l, int t = 0 )
   {
@@ -1544,42 +1530,47 @@
     {
       // TODO: Make this output '.text "THE STRING", $00
       //out << commentmarker << "; $" << std::hex << a.address << "\t\t\t\"" << a.text << "\"" << endl;
-      out << a.name << ":\t";
-      out << commentmarker << ".text " << "\"" << a.text << "\"" << endl;
-      out << "\t" << str_BYTE << " ";
-      for( int i = 0; i<a.text.size(); i++ )
+      out << a.name << ":" << endl;
+      out << "\t" << commentmarker << ".text " << "\"" << a.text << "\"" << endl;
+      out << "\t" << commentmarker << ".byte $00" << endl;
+      if( true )
 	{
-	  if( a.text[i] == '\\' && a.text[i+1] == 'n')
+	  out << "\t" << str_BYTE << " ";
+	  for( int i = 0; i<a.text.size(); i++ )
 	    {
-	      out << "$0D, ";
-	      i++;
+	      if( a.text[i] == '\\' && a.text[i+1] == 'n')
+		{
+		  out << "$0D, ";
+		  i++;
+		}
+	      else if( a.text[i] == '\\' && a.text[i+1] == '0')
+		{
+		  out << "$00, ";
+		  i++;
+		}
+	      else if( a.text[i] == '\\' && a.text[i+1] == '\"')
+		{
+		  out << "$22, ";
+		  i++;
+		}
+	      else if( a.text[i] == '\\' && a.text[i+1] == '\'')
+		{
+		  out << "$27, ";
+		  i++;
+		}
+	      else if( a.text[i] == '\\' && a.text[i+1] == '\\')
+		{
+		  out << "$5C, ";
+		  i++;
+		}
+	      else
+		{
+		  out << "$" << toHex((int)a.text[i]) << ", ";
+		}	 
 	    }
-	  else if( a.text[i] == '\\' && a.text[i+1] == '0')
-	    {
-	      out << "$00, ";
-	      i++;
-	    }
-	  else if( a.text[i] == '\\' && a.text[i+1] == '\"')
-	    {
-	      out << "$22, ";
-	      i++;
-	    }
-	  else if( a.text[i] == '\\' && a.text[i+1] == '\'')
-	    {
-	      out << "$27, ";
-	      i++;
-	    }
-	  else if( a.text[i] == '\\' && a.text[i+1] == '\\')
-	    {
-	      out << "$5C, ";
-	      i++;
-	    }
-	  else
-	    {
-	      out << "$" << toHex((int)a.text[i]) << ", ";
-	    }	 
+	  out << "$00" << endl;
+
 	}
-      out << "$00" << endl;
       return out;
     }
 
@@ -4480,7 +4471,7 @@
 
 //%parse-param { FILE* fp }
 %token VOID 
-%token <nd_obj> CHAR tFCLOSE tFOPEN tFCLRCHN tFCHROUT tFCHRIN tFREADST tFCHKOUT tFCHKIN tSETLFS tSETNAM tSAVE tLOAD tIMPORT tSPRPTR /* tPUSH tPOP */ tCOMMENT tDATA tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tLN tABS tSIN tCOS tTAN /*tMOB*/ tSIDIRQ tSIDOFF tSTRTOFLOAT tSTRTOWORD tTOFLOAT tINTTOWORD tTOUINT tTOWORD tTOBIT tDEC tINC tROL tROR tLSR tGETPC tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJUMP tSETSCR tJSR tIRQ tROMOUT tROMIN tLDA tASL tSPRITESET  tSPRITEOFF tSPRITETOGGLE tRND tXXX tINLINE tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tPEEK tPOKE NEWLINE CHARACTER tPRINTS PRINTFF SCANFF INT FLOAT WHILE FOR IF ELSE TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE EXPONENT tSQRT UNARY INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL tSCREEN tNULL tMEMCPY tSEED tNEEDS tPI tE tBL tBS
+%token <nd_obj> CHAR tFCLOSE tFOPEN tFCLRCHN tFCHROUT tFCHRIN tFREADST tFCHKOUT tFCHKIN tSETLFS tSETNAM tSAVE tLOAD tIMPORT tSPRPTR /* tPUSH tPOP */ tCOMMENT tDATA tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tLN tABS tSIN tCOS tTAN /*tMOB*/ tSIDIRQ tSIDOFF tSTRTOFLOAT tSTRTOWORD tTOFLOAT tINTTOWORD tTOUINT tTOWORD tTOBIT tDEC tINC tROL tROR tLSR tGETPC tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJUMP tSETSCR tJSR tIRQ tROMOUT tROMIN tLDA tASL tSPRITESET  tSPRITEOFF tSPRITETOGGLE tRND tXXX tINLINE tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tPEEK tPOKE CHARACTER tPRINTS PRINTFF SCANFF INT FLOAT WHILE FOR IF ELSE TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE EXPONENT tSQRT INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL tSCREEN tNULL tMEMCPY tSEED tNEEDS tPI tE tBL tBS
 %type <nd_obj> headers main body return function datatype statement arithmetic relop program else 
    %type <nd_obj2> init value expression /*charlist*/ numberlist parameterlist argumentlist
       %type <nd_obj3> condition
@@ -4496,7 +4487,9 @@ headers:
 {
   string tmp_str = stripQuotes($2.name);
   addCompilerMessage( string( "including: " ) + $2.name, 0 );
-  addIncludeFile( tmp_str );   
+  addIncludeFile( tmp_str );
+  strcpy($$.name, $1.name);
+  
 };
 | tNEEDS '('  STR  ')' ';'
 {
@@ -4659,6 +4652,7 @@ headers:
     {
       addCompilerMessage( string( "adding built-in functionality: " ) + s, 0 );
     }
+  strcpy($$.name, $1.name);
 
 }
 | headers INCLUDE STR
@@ -6118,7 +6112,7 @@ body: WHILE
       addAsm( str_LDY + "#<STRLBL" + itos(s), 3, false );
       addAsm( str_LDX + "#>STRLBL" + itos(s), 3, false );
       addAsm( str_JSR + "_new_formatted_printf", 3, false );
-     }
+    }
   else if( isWordIMM($5.name) )
     {
       formatted_word = true;
@@ -6136,8 +6130,8 @@ body: WHILE
       addAsm( str_LDY + "#<STRLBL" + itos(s), 3, false );
       addAsm( str_LDX + "#>STRLBL" + itos(s), 3, false );
       addAsm( str_JSR + "_new_formatted_printf", 3, false );
-     }
-   else if( isXA($5.name) )
+    }
+  else if( isXA($5.name) )
     {
       formatted_word = true;
       new_word2dec_is_needed = true;
@@ -6149,38 +6143,38 @@ body: WHILE
       addAsm( str_LDX + "#>STRLBL" + itos(s), 3, false );
       addAsm( str_JSR + "_new_formatted_printf", 3, false );      
     }
-   else if( isFloatID($5.name) )
-     {
-       formatted_float = true;
-       addAsm( str_LDA + "#<" + getNameOf(getAddressOf($5.name)), 2, false );
-       addAsm( str_LDY + "#>" + getNameOf(getAddressOf($5.name)), 2, false );
-       // load it into FAC
-       addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false ); // FP ->FAC
-       // call the FOUT
+  else if( isFloatID($5.name) )
+    {
+      formatted_float = true;
+      addAsm( str_LDA + "#<" + getNameOf(getAddressOf($5.name)), 2, false );
+      addAsm( str_LDY + "#>" + getNameOf(getAddressOf($5.name)), 2, false );
+      // load it into FAC
+      addAsm( str_JSR + "$BBA2" + commentmarker + "MEM -> FAC", 3, false ); // FP ->FAC
+      // call the FOUT
       
-       addAsm( str_LDA + "#$03" + commentmarker + "Float Type", 2, false );
-       addAsm( str_LDY + "#<STRLBL" + itos(s), 3, false );
-       addAsm( str_LDX + "#>STRLBL" + itos(s), 3, false );
-       addAsm( str_JSR + "_new_formatted_printf", 3, false );
-     }
-   else if( isFloatIMM($5.name) )
-     {
-       addCompilerMessage( string("Just Hardcode this you goon!") + stripFirst( $5.name ).c_str(), 1 );
-       formatted_float = true;
-       inlineFloat($5.name);
-       addAsm( str_LDA + "#$03" + commentmarker + "Float Type", 2, false );
-       addAsm( str_LDY + "#<STRLBL" + itos(s), 3, false );
-       addAsm( str_LDX + "#>STRLBL" + itos(s), 3, false );
-       addAsm( str_JSR + "_new_formatted_printf", 3, false );
-     }
-   else if( isFAC($5.name) )
-     {
-       formatted_float = true;
-       addAsm( str_LDA + "#$03" + commentmarker + "Float Type", 2, false );
-       addAsm( str_LDY + "#<STRLBL" + itos(s), 3, false );
-       addAsm( str_LDX + "#>STRLBL" + itos(s), 3, false );
-       addAsm( str_JSR + "_new_formatted_printf", 3, false );
-     }
+      addAsm( str_LDA + "#$03" + commentmarker + "Float Type", 2, false );
+      addAsm( str_LDY + "#<STRLBL" + itos(s), 3, false );
+      addAsm( str_LDX + "#>STRLBL" + itos(s), 3, false );
+      addAsm( str_JSR + "_new_formatted_printf", 3, false );
+    }
+  else if( isFloatIMM($5.name) )
+    {
+      addCompilerMessage( string("Just Hardcode this you goon!") + stripFirst( $5.name ).c_str(), 1 );
+      formatted_float = true;
+      inlineFloat($5.name);
+      addAsm( str_LDA + "#$03" + commentmarker + "Float Type", 2, false );
+      addAsm( str_LDY + "#<STRLBL" + itos(s), 3, false );
+      addAsm( str_LDX + "#>STRLBL" + itos(s), 3, false );
+      addAsm( str_JSR + "_new_formatted_printf", 3, false );
+    }
+  else if( isFAC($5.name) )
+    {
+      formatted_float = true;
+      addAsm( str_LDA + "#$03" + commentmarker + "Float Type", 2, false );
+      addAsm( str_LDY + "#<STRLBL" + itos(s), 3, false );
+      addAsm( str_LDX + "#>STRLBL" + itos(s), 3, false );
+      addAsm( str_JSR + "_new_formatted_printf", 3, false );
+    }
   else
     {
       addCompilerMessage( "formatted printf: unknown type", 3 );
@@ -8347,6 +8341,14 @@ body: WHILE
     {
       addCompilerMessage( "poke argument out of range (it's negative)", 3 );
     }
+  else if(isFloatIMM(param1)||isFAC(param1)||isFloatID(param1))
+    {
+      addCompilerMessage( "poke address cannot be a floating point number", 3 );
+    }
+  else if(isFloatIMM(param2)||isFAC(param2)||isFloatID(param2))
+    {
+      addCompilerMessage( "poke argument cannot be a floating point number", 3 );
+    }
   else
     {
       addCompilerMessage( "Invalid Poke Parameters", 3 );
@@ -8436,8 +8438,6 @@ condition: expression[LHS]
   if( isA($RHS.name ) )
     {
       tc+=string( "A" );
-      //addComment( "Why is this here?" );
-      //addAsm( str_STA + "$02", 2, false );
     }
   if( isXA($RHS.name) ) tc+=string( "XA" );
   if( isUintID($RHS.name) ) tc+=string( "UintID" );
@@ -8506,10 +8506,10 @@ condition: expression[LHS]
   // A RELOP
   if( isA($LHS.name) && isA($RHS.name) )
     {
-      addComment( "A relop A: TOC" );
-      addAsm( str_STA + "$02", 2, false );
+      addComment( "A relop A: TOC (uses self-modifying code)" );
+      addAsm( str_STA + "!+ +1", 2, false );
       addAsm( str_PLA, 1, false );
-      addAsm( str_CMP + "$02", 2, false );      
+      addAsm( "!:\t" + str_CMP + "#$00" + commentmarker + "will be over-written", 2, true );      
     }
   else if( isA($LHS.name) && isFAC($RHS.name) )
     {
@@ -8674,6 +8674,7 @@ condition: expression[LHS]
     }
   else if( isA($LHS.name) && isWordIMM($RHS.name) )
     {
+      // TODO: test this
       addComment( "A relop WordIMM: TOC" );
       int tmp_v = atoi(stripFirst($RHS.name).c_str());
       int tmp_H = get_word_H(tmp_v);
@@ -8691,7 +8692,7 @@ condition: expression[LHS]
     }    
   else if( isA($LHS.name) && isXA($RHS.name) )
     {
-      addComment( "A relop XA: TOC (destroys $02)" );
+      addComment( "A relop XA: TOC (uses self-modifying code)" );
       if( string($OP.name) == string("<") )
 	{
 	  addCompilerMessage( "A relop XA: Relative Operator Manipulation", 0 );
@@ -8717,9 +8718,11 @@ condition: expression[LHS]
       addAsm( str_TXA, 1, false );
       addAsm( str_BNE + "!+", 2, false );
       addAsm( str_PLA, 1, false );
-      addAsm( str_STA + "$02", 2, false );
+      //addAsm( str_STA + "$02", 2, false );
+      addAsm( str_STA + "!+ -1", 2, false );
       addAsm( str_TYA, 1, false );
-      addAsm( str_CMP + "$02", 2, false );
+      addAsm( str_CMP + "#$00" + commentmarker + "will be over-written", 2, false );
+      //addAsm( str_CMP + "$02", 2, false );
       addAsm( "!:", 0, true );
     }
   else if( isFAC($LHS.name) && isA($RHS.name) )
@@ -10685,7 +10688,6 @@ condition: expression[LHS]
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
-      //addCompilerMessage( "Deleted Mnemonics", 0 );
       cmpFACMEM( "#$19", "#$00" );
     }
   else if( isXA($LHS.name) && isIntID($RHS.name) )
@@ -10763,23 +10765,16 @@ condition: expression[LHS]
     }
   else if( isXA($LHS.name) && isXA($RHS.name) )
     {
-      addCompilerMessage( "XA relop XA: Destroys zp $02-$05", 1 );
-      addComment( "XA relop XA: TOC" );
-      addAsm( str_STX + "$05", 2, false );
-      addAsm( str_STA + "$04", 2, false );
+      addComment( "XA relop XA: TOC (uses self-modifying code)" );
+      addAsm( str_STX + "!+ +1", 2, false );
+      addAsm( str_STA + "!++ -1", 2, false );
       addAsm( str_PLA, 1, false );
-      addAsm( str_STA + "$03", 2, false );
+      addAsm( str_TAX, 1, false );
       addAsm( str_PLA, 1, false );
-      addAsm( str_STA + "$02", 2, false );
-
-      addAsm( str_LDA + "$03", 2, false );
-      addAsm( str_CMP + "$05", 2, false );
-      
+      addAsm( "!:\t" + str_CPX + "#$00" + commentmarker + "will be over-written", 2, true );
       addAsm( str_BNE + "!+", 2, false );
-      addAsm( str_LDA + "$02", 2, false );
-      addAsm( str_CMP + "$04", 2, false );
-      addAsm( "!:", 0, true );
-      
+      addAsm( str_CMP + "#$00" + commentmarker + "will be over-written", 2, false );
+      addAsm( "!:", 0, true );      
     }
   else
     {
@@ -32683,7 +32678,7 @@ int main(int argc, char *argv[])
 	  addAsm( str_PLA, 1, false );
 	  addAsm( str_STA + "$02", 2, false );
 	  addAsm( str_JMP + "_back_to_printf", 3, false );
-      // ------------------------------------
+	  // ------------------------------------
 	}
     }
 
@@ -32706,385 +32701,385 @@ int main(int argc, char *argv[])
       addComment( "Robust Scanf" );
       addAsm( "_scanf:", 0, true );
       addComment( "Taken from: https://codebase64.org/doku.php?id=base:robust_string_input" );
-	      addComment( "Code by: Schema" );
-	      addComment( "I modified it _slightly_ to make the naming conventions of the labels" );
-	      addComment( "consistent with the rest of the code." );
-	      addAsm( str_LDA + "#>_acceptable_text", 2, false );
-	      addAsm( str_LDX + "#<_acceptable_text", 2, false );
-	      //addAsm( str_LDY + "#$26", 2, false );
-	      //addComment( "FINPUT");
-	      //addAsm( str_STY + "_scanfmaxchars", 3, false );
-	      addAsm( str_STX + "!++ +1", 3, false ); 
-	      addAsm( str_STA + "!++ +2", 3, false );
+      addComment( "Code by: Schema" );
+      addComment( "I modified it _slightly_ to make the naming conventions of the labels" );
+      addComment( "consistent with the rest of the code." );
+      addAsm( str_LDA + "#>_acceptable_text", 2, false );
+      addAsm( str_LDX + "#<_acceptable_text", 2, false );
+      //addAsm( str_LDY + "#$26", 2, false );
+      //addComment( "FINPUT");
+      //addAsm( str_STY + "_scanfmaxchars", 3, false );
+      addAsm( str_STX + "!++ +1", 3, false ); 
+      addAsm( str_STA + "!++ +2", 3, false );
 
-	      addAsm( str_LDA + "#$00", 2, false );
-	      addAsm( str_STA + "_inputy", 3, false );
+      addAsm( str_LDA + "#$00", 2, false );
+      addAsm( str_STA + "_inputy", 3, false );
 
-	      addComment("INPUTGET");
-	      addAsm( "!:\t" + str_JSR + "$FFE4", 3, true );
-	      addAsm( str_BEQ + "!-", 2, false );
-	      addAsm( str_STA + "_lastchar", 3, false );
-	      addAsm( str_CMP + "#$14" + commentmarker + "Delete key", 2, false );
-	      addAsm( str_BEQ + "!++++", 2, false );
-	      addAsm( str_CMP + "#$0D" + commentmarker + "Carriage Return", 2, false );
-	      addAsm( str_BEQ + "!+++", 2, false );
-	      addAsm( str_LDX + "#$00", 2, false );
-	      addComment("CHECKALLOWED");
+      addComment("INPUTGET");
+      addAsm( "!:\t" + str_JSR + "$FFE4", 3, true );
+      addAsm( str_BEQ + "!-", 2, false );
+      addAsm( str_STA + "_lastchar", 3, false );
+      addAsm( str_CMP + "#$14" + commentmarker + "Delete key", 2, false );
+      addAsm( str_BEQ + "!++++", 2, false );
+      addAsm( str_CMP + "#$0D" + commentmarker + "Carriage Return", 2, false );
+      addAsm( str_BEQ + "!+++", 2, false );
+      addAsm( str_LDX + "#$00", 2, false );
+      addComment("CHECKALLOWED");
       
-	      addAsm( "!:\t" + str_LDA + "$FFFF,X" + commentmarker + "Address will be Overwritten", 3, true );
-	      addAsm( str_BEQ + "!--" + commentmarker + "Reached end of list (NULL)", 0, false );
-	      addAsm( str_CMP + "_lastchar", 3, false );
-	      addAsm( str_BEQ + "!+", 2, false );
-	      addAsm( str_INX );
-	      addAsm( str_JMP + "!-", 3, false );
-	      addComment("INPUTOK");
-	      addAsm( "!:\t" + str_LDA + "_lastchar" + commentmarker + "Get the char back", 3, true );
-	      addAsm( str_LDY + "_inputy", 3, false );
-	      addAsm( str_STA + "_gotinput,y" + commentmarker + "Add it to string", 3, false );
-	      addAsm( str_JSR + "$FFD2" + commentmarker + "Print it", 3, false );
-	      addAsm( str_INC + "_inputy" + commentmarker + "Next character", 3, false );
-	      addAsm( str_LDA + "_inputy", 3, false );
-	      addAsm( str_CMP + "_scanfmaxchars", 3, false );
-	      //addAsm( str_BEQ + "!+", 2, false );
-	      //addAsm( str_JMP + "!---", 3, false );
-	      addAsm( str_BNE + "!---", 3, false );
-	      addComment("INPUTDONE");
-	      addAsm("!:\t" + str_LDY + "_inputy", 3, true );
-	      addAsm( str_LDA + "#$00", 2, false );
-	      addAsm( str_STA + "_gotinput,Y" + commentmarker + "Zero-terminate", 3, false );
+      addAsm( "!:\t" + str_LDA + "$FFFF,X" + commentmarker + "Address will be Overwritten", 3, true );
+      addAsm( str_BEQ + "!--" + commentmarker + "Reached end of list (NULL)", 0, false );
+      addAsm( str_CMP + "_lastchar", 3, false );
+      addAsm( str_BEQ + "!+", 2, false );
+      addAsm( str_INX );
+      addAsm( str_JMP + "!-", 3, false );
+      addComment("INPUTOK");
+      addAsm( "!:\t" + str_LDA + "_lastchar" + commentmarker + "Get the char back", 3, true );
+      addAsm( str_LDY + "_inputy", 3, false );
+      addAsm( str_STA + "_gotinput,y" + commentmarker + "Add it to string", 3, false );
+      addAsm( str_JSR + "$FFD2" + commentmarker + "Print it", 3, false );
+      addAsm( str_INC + "_inputy" + commentmarker + "Next character", 3, false );
+      addAsm( str_LDA + "_inputy", 3, false );
+      addAsm( str_CMP + "_scanfmaxchars", 3, false );
+      //addAsm( str_BEQ + "!+", 2, false );
+      //addAsm( str_JMP + "!---", 3, false );
+      addAsm( str_BNE + "!---", 3, false );
+      addComment("INPUTDONE");
+      addAsm("!:\t" + str_LDY + "_inputy", 3, true );
+      addAsm( str_LDA + "#$00", 2, false );
+      addAsm( str_STA + "_gotinput,Y" + commentmarker + "Zero-terminate", 3, false );
 
-	      addComment( "this is for the memcpy after the RTS" );
-	      addAsm( str_LDA + "#<_scanfbuf -2", 2, false );
-	      addAsm( str_STA + "$FB", 2, false );
-	      addAsm( str_LDA + "#>_scanfbuf -2", 2, false );
-	      addAsm( str_STA + "$FC", 2, false );
-	      addAsm( str_RTS, 1, false );
+      addComment( "this is for the memcpy after the RTS" );
+      addAsm( str_LDA + "#<_scanfbuf -2", 2, false );
+      addAsm( str_STA + "$FB", 2, false );
+      addAsm( str_LDA + "#>_scanfbuf -2", 2, false );
+      addAsm( str_STA + "$FC", 2, false );
+      addAsm( str_RTS, 1, false );
       
-	      addComment("DELETE");
-	      addAsm( "!:\t" + str_LDA + "_inputy", 3, true );
-	      //addAsm( str_BNE + "!+", 2, false );
-	      //addAsm( str_JMP + "!-----", 3, false );
-	      addAsm( str_BEQ + "!-----", 3, false );
-	      addComment("DELETEOK");
-	      addAsm( "!:\t" + str_DEC + "_inputy", 3, true );
-	      addAsm( str_LDY + "_inputy", 3, false );
-	      addAsm( str_LDA + "#$00", 2, false );
-	      addAsm( str_STA + "_gotinput,y", 3, false );
-	      addAsm( str_LDA + "#$14", 2, false );
-	      addAsm( str_JSR + "$FFD2", 3, false );
-	      addAsm( str_JMP + "!------", 3, false );
+      addComment("DELETE");
+      addAsm( "!:\t" + str_LDA + "_inputy", 3, true );
+      //addAsm( str_BNE + "!+", 2, false );
+      //addAsm( str_JMP + "!-----", 3, false );
+      addAsm( str_BEQ + "!-----", 3, false );
+      addComment("DELETEOK");
+      addAsm( "!:\t" + str_DEC + "_inputy", 3, true );
+      addAsm( str_LDY + "_inputy", 3, false );
+      addAsm( str_LDA + "#$00", 2, false );
+      addAsm( str_STA + "_gotinput,y", 3, false );
+      addAsm( str_LDA + "#$14", 2, false );
+      addAsm( str_JSR + "$FFD2", 3, false );
+      addAsm( str_JMP + "!------", 3, false );
 
 
-	      addAsm("_acceptable_text:", 0, true );
-	      // these are the acceptable characters for scanf
-	      addComment( "acceptable PETSCII characters for input" );
-	      if( kick )
-		{
-		  addAsm( str_TEXT + "\" ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890.,-+!#$%&()*\"", 50, false );
-		}
-	      else
-		{
-		  addAsm( str_BYTE + "\" ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890.,-+!#$%&()*\"", 49, false );
-		}
-	      addAsm( str_BYTE + "$00", 1, false );
-	      addAsm( "_scanfmaxchars:\t" + str_BYTE + "$00", 1, true );
-	      addAsm( "_lastchar:\t" + str_BYTE + "$00", 1, true );
-	      addAsm( "_inputy:\t" + str_BYTE + "$00", 1, true );
-	      addAsm( "_gotinput:\t" + str_BYTE + "$39", 1, true );
-	      addAsm( "_scanfbuf:", 0, true );
-	      if( kick )
-		{
-		  string sbs = str_BYTE;
-		  for(int i=0; i<scanf_buffer_size; i++ )
-		    {
-		      sbs+=string("$00");
-		      if( i<scanf_buffer_size-1 )
-			{
-			  sbs+=string(", ");
-			}
-		    }
-		  addAsm( sbs, scanf_buffer_size, false );
-		}
-	      else
-		{
-		  string sbs = str_BYTE + "\"";
-		  for(int i=0; i<scanf_buffer_size; i++ )
-		    {
-		      sbs+=string(" ");
-		    }
-		  sbs+=string("\"");
-		  addAsm( sbs, scanf_buffer_size, false );
-
-		  addAsm(str_BYTE + "\"                \"", scanf_buffer_size, false );
-		}
-	      addAsm(str_BYTE + "$00", 1, false );
-
-	      addAsm( "_initscanbuf:", 0, true );
-	      addComment( "Initialise scanf buffer" );
-	      addAsm( str_LDX + "#$" + toHex(scanf_buffer_size), 2, false);
-	      addAsm( str_LDA + "#<_scanfbuf -2", 2, false );
-	      addAsm( str_STA + "!+ +1", 3, false );
-	      addAsm( str_LDA + "#>_scanfbuf -2", 2, false );
-	      addAsm( str_STA + "!+ +2", 3, false );
-	      addAsm( str_LDA + "#$00", 2, false );
-	      addAsm( "!:\t" + str_STA + "$FFFF,X", 3, true );
-	      addAsm( str_DEX, 1, false );
-	      addAsm( str_BPL + "!-", 2, false );
-	      addAsm( str_RTS, 1, false );
-	      addAsm(commentmarker + string("-------------------------------------------------"), 0, true );
-	      }
-	if( getkey_is_needed )
-	  {
-	    // puts a keypress on the stack
-	    addAsm( "_getkey:", 0, true );
-	    addAsm( str_JSR + "$FFE4", 3, false );
-
-	    // 2023 06 07 - maybe take out the following line ??
-	    //addAsm( str_CMP + "#$00", 2, false );
-	    addAsm( str_BEQ + "_getkey", 2, false );
-	    /* this memory loc could be anywhere */
-	    /* I chose $CFDF because it's right */
-	    /* before the input buffer for "scanf" */
-	    addAsm( str_STA + "$CFDF", 3, false );
-	    addAsm( str_RTS );
-	  }
-      if(sqrrt8_is_needed)
+      addAsm("_acceptable_text:", 0, true );
+      // these are the acceptable characters for scanf
+      addComment( "acceptable PETSCII characters for input" );
+      if( kick )
 	{
-	  addAsm( "_sqrrt8:\t" + str_BYTE + " $00, $01, $01, $02, $02, $02, $02, $03, $03, $03, $03, $03, $03, $04, $04, $04, $04, $04, $04, $04, $04, $05, $05, $05, $05, $05, $05, $05, $05, $05, $05, $06, $06, $06, $06, $06, $06, $06, $06, $06, $06, $06, $06, $07, $07, $07, $07, $07, $07, $07, $07, $07, $07, $07, $07, $07, $07, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10", 255, true );
-
-
+	  addAsm( str_TEXT + "\" ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890.,-+!#$%&()*\"", 50, false );
 	}
-      if( stack_is_needed )
+      else
 	{
-	  addComment( "software stack" );
-	  addDebugComment( "my rendition of a software stack at $CF00" );
-	  addDebugComment( "Y is not destroyed" );
-	  addAsm( "!:\t" + str_BYTE + "$00", 1, true);
-	  addAsm( "!:\t" + str_BYTE + "$00", 1, true );
-	  addAsm( "PUSH:", 0, true );
-	  addAsm( str_STX + "!-", 3, false );
-	  addAsm( str_LDX + "!--", 3, false );
-	  addAsm( str_INX );
-	  addAsm( str_STA + "$CF00,X", 3, false );
-	  addAsm( str_STX + "!--", 3, false );
-	  addAsm( str_LDX + "!-", 3, false );
-	  addAsm( str_RTS );
-	  addAsm( "POP:", 0, true );
-	  addAsm( str_STX + "!-", 3, false );
-	  addAsm( str_LDX + "!--", 3, false );
-	  addAsm( str_LDA + "$CF00,X", 3, false );
-	  addAsm( str_DEX );
-	  addAsm( str_STX + "!--", 3, false );
-	  addAsm( str_LDX + "!-", 3, false );
-	  addAsm( str_RTS );
+	  addAsm( str_BYTE + "\" ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890.,-+!#$%&()*\"", 49, false );
 	}
-
-      if( illegal_operations_are_needed )
+      addAsm( str_BYTE + "$00", 1, false );
+      addAsm( "_scanfmaxchars:\t" + str_BYTE + "$00", 1, true );
+      addAsm( "_lastchar:\t" + str_BYTE + "$00", 1, true );
+      addAsm( "_inputy:\t" + str_BYTE + "$00", 1, true );
+      addAsm( "_gotinput:\t" + str_BYTE + "$39", 1, true );
+      addAsm( "_scanfbuf:", 0, true );
+      if( kick )
 	{
-	  if( !kick ) cout << ".OPT ILLEGALS" << endl;
+	  string sbs = str_BYTE;
+	  for(int i=0; i<scanf_buffer_size; i++ )
+	    {
+	      sbs+=string("$00");
+	      if( i<scanf_buffer_size-1 )
+		{
+		  sbs+=string(", ");
+		}
+	    }
+	  addAsm( sbs, scanf_buffer_size, false );
 	}
-
-      //addCompilerMessage( "TODO: Process Includes Here!", 0 );
-      //ProcessIncludes();
-      int countn_tmp = countn;
-      processing_includes = true;
-      for( int i = 0; i < include_file_vector.size(); i++ )
+      else
 	{
-	  countn = 0;
-	  addCompilerMessage( string( "Processing included file: " ) + include_file_vector[i], 0 );      
-	  yyin = fopen( include_file_vector[i].c_str(), "r" );
-	  yyparse();
-	  fclose(yyin);
+	  string sbs = str_BYTE + "\"";
+	  for(int i=0; i<scanf_buffer_size; i++ )
+	    {
+	      sbs+=string(" ");
+	    }
+	  sbs+=string("\"");
+	  addAsm( sbs, scanf_buffer_size, false );
+
+	  addAsm(str_BYTE + "\"                \"", scanf_buffer_size, false );
 	}
-      countn = countn_tmp;
-  
+      addAsm(str_BYTE + "$00", 1, false );
 
-      removetags();
-      if( arg_optimize ) Optimize(1);
-      if( arg_optimize ) Optimize(0);
-      ProcessComments();
-      ProcessVariables();
-      ProcessFunctions();
-      // ProcessReturnTypes();
-      //ProcessMemoryLocationsOfCode();
-      ProcessStrings();
-      ProcessReturnValues();
-      ProcessBranches();
-      ProcessBranches();
-      //ProcessMobs();
-      current_code_location = code_start;  // reset the memory counter
-  
-      ProcessMemoryLocationsOfCode();
-      //ProcessStrings();
-  
-      /* replace labels with addresses */
-      if( !arg_show_labels ) ProcessLabels();
+      addAsm( "_initscanbuf:", 0, true );
+      addComment( "Initialise scanf buffer" );
+      addAsm( str_LDX + "#$" + toHex(scanf_buffer_size), 2, false);
+      addAsm( str_LDA + "#<_scanfbuf -2", 2, false );
+      addAsm( str_STA + "!+ +1", 3, false );
+      addAsm( str_LDA + "#>_scanfbuf -2", 2, false );
+      addAsm( str_STA + "!+ +2", 3, false );
+      addAsm( str_LDA + "#$00", 2, false );
+      addAsm( "!:\t" + str_STA + "$FFFF,X", 3, true );
+      addAsm( str_DEX, 1, false );
+      addAsm( str_BPL + "!-", 2, false );
+      addAsm( str_RTS, 1, false );
+      addAsm(commentmarker + string("-------------------------------------------------"), 0, true );
+    }
+  if( getkey_is_needed )
+    {
+      // puts a keypress on the stack
+      addAsm( "_getkey:", 0, true );
+      addAsm( str_JSR + "$FFE4", 3, false );
 
-      if( symbol_table_is_needed) SymbolTable();
+      // 2023 06 07 - maybe take out the following line ??
+      //addAsm( str_CMP + "#$00", 2, false );
+      addAsm( str_BEQ + "_getkey", 2, false );
+      /* this memory loc could be anywhere */
+      /* I chose $CFDF because it's right */
+      /* before the input buffer for "scanf" */
+      addAsm( str_STA + "$CFDF", 3, false );
+      addAsm( str_RTS );
+    }
+  if(sqrrt8_is_needed)
+    {
+      addAsm( "_sqrrt8:\t" + str_BYTE + " $00, $01, $01, $02, $02, $02, $02, $03, $03, $03, $03, $03, $03, $04, $04, $04, $04, $04, $04, $04, $04, $05, $05, $05, $05, $05, $05, $05, $05, $05, $05, $06, $06, $06, $06, $06, $06, $06, $06, $06, $06, $06, $06, $07, $07, $07, $07, $07, $07, $07, $07, $07, $07, $07, $07, $07, $07, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10", 255, true );
 
-      //NodeTable();
-  
-      /* dump all of the assembler instructions */
-      for(int i=0; i<asm_instr.size(); i++){cout << *asm_instr[i];}
-  
-      //cout << "ending memory location: " << current_code_location << endl;
-      /* dump all the strings */
-      for( int i=0; i<asm_strings.size(); i++){ cout << *asm_strings[i];}
-      //cout << " bytes: " << current_code_location-code_start << endl;
-      for( int i=0; i<asm_datum.size(); i++){ cout << *asm_datum[i];}
 
     }
+  if( stack_is_needed )
+    {
+      addComment( "software stack" );
+      addDebugComment( "my rendition of a software stack at $CF00" );
+      addDebugComment( "Y is not destroyed" );
+      addAsm( "!:\t" + str_BYTE + "$00", 1, true);
+      addAsm( "!:\t" + str_BYTE + "$00", 1, true );
+      addAsm( "PUSH:", 0, true );
+      addAsm( str_STX + "!-", 3, false );
+      addAsm( str_LDX + "!--", 3, false );
+      addAsm( str_INX );
+      addAsm( str_STA + "$CF00,X", 3, false );
+      addAsm( str_STX + "!--", 3, false );
+      addAsm( str_LDX + "!-", 3, false );
+      addAsm( str_RTS );
+      addAsm( "POP:", 0, true );
+      addAsm( str_STX + "!-", 3, false );
+      addAsm( str_LDX + "!--", 3, false );
+      addAsm( str_LDA + "$CF00,X", 3, false );
+      addAsm( str_DEX );
+      addAsm( str_STX + "!--", 3, false );
+      addAsm( str_LDX + "!-", 3, false );
+      addAsm( str_RTS );
+    }
 
-  int search(char *type) {
-    int i;
-    //  for(i=count-1; i>=0; i--) {
-    //  if(strcmp(symbol_table[i].id_name, type)==0) {
-    //   return -1;
-    //   break;
-    // }
-    //}
+  if( illegal_operations_are_needed )
+    {
+      if( !kick ) cout << ".OPT ILLEGALS" << endl;
+    }
+  
+  //addCompilerMessage( "TODO: Process Includes Here!", 0 );
+  //ProcessIncludes();
+  int countn_tmp = countn;
+  processing_includes = true;
+  for( int i = 0; i < include_file_vector.size(); i++ )
+    {
+      countn = 0;
+      addCompilerMessage( string( "Processing included file: " ) + include_file_vector[i], 0 );      
+      yyin = fopen( include_file_vector[i].c_str(), "r" );
+      yyparse();
+      fclose(yyin);
+    }
+  countn = countn_tmp;
+  
+
+  removetags();
+  if( arg_optimize ) Optimize(1);
+  if( arg_optimize ) Optimize(0);
+  ProcessComments();
+  ProcessVariables();
+  ProcessFunctions();
+  // ProcessReturnTypes();
+  //ProcessMemoryLocationsOfCode();
+  ProcessStrings();
+  ProcessReturnValues();
+  ProcessBranches();
+  ProcessBranches();
+  //ProcessMobs();
+  current_code_location = code_start;  // reset the memory counter
+  
+  ProcessMemoryLocationsOfCode();
+  //ProcessStrings();
+  
+  /* replace labels with addresses */
+  if( !arg_show_labels ) ProcessLabels();
+
+  if( symbol_table_is_needed) SymbolTable();
+
+  //NodeTable();
+  
+  /* dump all of the assembler instructions */
+  for(int i=0; i<asm_instr.size(); i++){cout << *asm_instr[i];}
+  
+  //cout << "ending memory location: " << current_code_location << endl;
+  /* dump all the strings */
+  for( int i=0; i<asm_strings.size(); i++){ cout << *asm_strings[i];}
+  //cout << " bytes: " << current_code_location-code_start << endl;
+  for( int i=0; i<asm_datum.size(); i++){ cout << *asm_datum[i];}
+
+}
+
+int search(char *type) {
+  int i;
+  //  for(i=count-1; i>=0; i--) {
+  //  if(strcmp(symbol_table[i].id_name, type)==0) {
+  //   return -1;
+  //   break;
+  // }
+  //}
+  return 0;
+}
+
+void check_declaration(char *c) {
+}
+
+void check_return_type(char *value) {
+}
+
+int check_types(char *type1, char *type2){
+  // declaration with no init
+  if(!strcmp(type2, "null"))
+    return -1;
+  // both datatypes are same
+  if(!strcmp(type1, type2))
     return 0;
-  }
+  // both datatypes are different
+  if(!strcmp(type1, "int") && !strcmp(type2, "float"))
+    return 1;
+  if(!strcmp(type1, "float") && !strcmp(type2, "int"))
+    return 2;
+  if(!strcmp(type1, "int") && !strcmp(type2, "char"))
+    return 3;
+  if(!strcmp(type1, "char") && !strcmp(type2, "int"))
+    return 4;
+  if(!strcmp(type1, "float") && !strcmp(type2, "char"))
+    return 5;
+  if(!strcmp(type1, "char") && !strcmp(type2, "float"))
+    return 6;
+}
 
-  void check_declaration(char *c) {
-  }
+char *get_type(char *var){
+  //for(int i=0; i<count; i++) {
+  // Handle case of use before declaration
+  //  if(!strcmp(symbol_table[i].id_name, var)) {
+  //    return symbol_table[i].data_type;
+  // }
+  // }
+}
 
-  void check_return_type(char *value) {
-  }
-
-  int check_types(char *type1, char *type2){
-    // declaration with no init
-    if(!strcmp(type2, "null"))
-      return -1;
-    // both datatypes are same
-    if(!strcmp(type1, type2))
-      return 0;
-    // both datatypes are different
-    if(!strcmp(type1, "int") && !strcmp(type2, "float"))
-      return 1;
-    if(!strcmp(type1, "float") && !strcmp(type2, "int"))
-      return 2;
-    if(!strcmp(type1, "int") && !strcmp(type2, "char"))
-      return 3;
-    if(!strcmp(type1, "char") && !strcmp(type2, "int"))
-      return 4;
-    if(!strcmp(type1, "float") && !strcmp(type2, "char"))
-      return 5;
-    if(!strcmp(type1, "char") && !strcmp(type2, "float"))
-      return 6;
-  }
-
-  char *get_type(char *var){
-    //for(int i=0; i<count; i++) {
-    // Handle case of use before declaration
-    //  if(!strcmp(symbol_table[i].id_name, var)) {
-    //    return symbol_table[i].data_type;
-    // }
-    // }
-  }
-
-  void add(char c) {
-    if(c == 'V'){
-      for(int i=0; i<10; i++){
-	if(!strcmp(reserved[i], strdup(yytext)))
-	  {
-	    sprintf(errors[sem_errors], "Line %d: Variable name \"%s\" is a reserved keyword!\n", countn+1, yytext);
-	    sem_errors++;
-	    return;
-	  }
-      }
+void add(char c) {
+  if(c == 'V'){
+    for(int i=0; i<10; i++){
+      if(!strcmp(reserved[i], strdup(yytext)))
+	{
+	  sprintf(errors[sem_errors], "Line %d: Variable name \"%s\" is a reserved keyword!\n", countn+1, yytext);
+	  sem_errors++;
+	  return;
+	}
     }
-    q=search(yytext);
-
   }
+  q=search(yytext);
 
-  struct node* mknode(struct node *left, struct node *right, char *token) {	
-    struct node *newnode = (struct node *)malloc(sizeof(struct node));
-    char *newstr = (char *)malloc(strlen(token)+1);
-    strcpy(newstr, token);
-    newnode->left = left;
-    newnode->right = right;
-    newnode->token = newstr;
-    return(newnode);
-  }
+}
 
-  // mkpellegrino
-  struct node* createNode( char *token )
-  {
-    struct node* Node = (struct node*) malloc( sizeof(struct node));
-    Node->token = token;
-    Node->left = NULL;
-    Node->right = NULL;
-    return( Node );
+struct node* mknode(struct node *left, struct node *right, char *token) {	
+  struct node *newnode = (struct node *)malloc(sizeof(struct node));
+  char *newstr = (char *)malloc(strlen(token)+1);
+  strcpy(newstr, token);
+  newnode->left = left;
+  newnode->right = right;
+  newnode->token = newstr;
+  return(newnode);
+}
 
-  }
+// mkpellegrino
+struct node* createNode( char *token )
+{
+  struct node* Node = (struct node*) malloc( sizeof(struct node));
+  Node->token = token;
+  Node->left = NULL;
+  Node->right = NULL;
+  return( Node );
 
-  void print_tree(struct node* tree) {
-    //print_tree_util(tree, 0);
-    //printf("\n\nInorder traversal of the Parse Tree is: \n\n");
-    //print_inorder(tree);
-  }
+}
 
-  // 2022 09 06 - mkpellegrino
-  void print_inorder(struct node* tree)
-  {
-    if( tree == NULL ) return;
-    int i;
-    if (tree->left)
-      {
-	print_inorder(tree->left);
-      }
-    printf("%s, ", tree->token);
-    if (tree->right)
-      {
-	print_inorder(tree->right);
-      }
-  }
+void print_tree(struct node* tree) {
+  //print_tree_util(tree, 0);
+  //printf("\n\nInorder traversal of the Parse Tree is: \n\n");
+  //print_inorder(tree);
+}
 
-  void print_tree_util(struct node *root, int space) {
-    if(root == NULL)
-      return;
-    space += 7;
-    print_tree_util(root->right, space);
-    for (int i = 7; i < space; i++)
-      printf(" ");
-    printf("%s\n", root->token);
-    print_tree_util(root->left, space);
-  }
+// 2022 09 06 - mkpellegrino
+void print_inorder(struct node* tree)
+{
+  if( tree == NULL ) return;
+  int i;
+  if (tree->left)
+    {
+      print_inorder(tree->left);
+    }
+  printf("%s, ", tree->token);
+  if (tree->right)
+    {
+      print_inorder(tree->right);
+    }
+}
 
-  void insert_type() {
-    strcpy(type, yytext);
-  }
+void print_tree_util(struct node *root, int space) {
+  if(root == NULL)
+    return;
+  space += 7;
+  print_tree_util(root->right, space);
+  for (int i = 7; i < space; i++)
+    printf(" ");
+  printf("%s\n", root->token);
+  print_tree_util(root->left, space);
+}
 
-  void yyerror(const char* msg)
-  {
-    cerr << msg << ": line " << countn+1 << endl;
-  }
+void insert_type() {
+  strcpy(type, yytext);
+}
+
+void yyerror(const char* msg)
+{
+  cerr << msg << ": line " << countn+1 << endl;
+}
 
 
-  /* BASIC 2.0 SPRITE ROUTINE */
+/* BASIC 2.0 SPRITE ROUTINE */
 
-  /* V = 53248  -- Base Sprite Address*/
-  /* POKE V+21, 255  -- turn on all sprites */
-  /* POKE 2040+SPRITE#, 192+SPRITE#  -- SPRITE# = 0-7 */
-  /* SPRITE DATA is AT:   (192+SPRITE#)*64  - (192+SPRITE#)*64 + 62 */
-  /* poke V+39+sprite#, colour */
-  /* poke V+2*SPRITE#, X  -- x position */
-  /* poke V+(2*SPRITE#)+1, Y -- y position */
+/* V = 53248  -- Base Sprite Address*/
+/* POKE V+21, 255  -- turn on all sprites */
+/* POKE 2040+SPRITE#, 192+SPRITE#  -- SPRITE# = 0-7 */
+/* SPRITE DATA is AT:   (192+SPRITE#)*64  - (192+SPRITE#)*64 + 62 */
+/* poke V+39+sprite#, colour */
+/* poke V+2*SPRITE#, X  -- x position */
+/* poke V+(2*SPRITE#)+1, Y -- y position */
 
-  /* multicolour hi-res screen  */
+/* multicolour hi-res screen  */
 
-  /* setup */
+/* setup */
 
-  /* poke( 0xD011, 59 ); */
-  /* poke( 0xD016, 24 ); */
-  /* poke( 0xD018, 24 ); */
+/* poke( 0xD011, 59 ); */
+/* poke( 0xD016, 24 ); */
+/* poke( 0xD018, 24 ); */
 
-  /* multicolours: */
-  /* 0xD021  = 00 */ 
-  /* 0x0400H = 01 */
-  /* 0x0400L = 10 */
-  /* 0xD800  = 11 */
+/* multicolours: */
+/* 0xD021  = 00 */ 
+/* 0x0400H = 01 */
+/* 0x0400L = 10 */
+/* 0xD800  = 11 */
 
-  /* bit data */
-  /* 0x2000 */
+/* bit data */
+/* 0x2000 */
