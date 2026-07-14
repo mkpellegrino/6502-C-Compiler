@@ -8605,7 +8605,6 @@ condition: expression[LHS]
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
-      //addCompilerMessage( "Deleted Mnemonics", 0 );
       cmpFACMEM( "#$19", "#$00" );
     }    
   else if( isA($LHS.name) && isIntID($RHS.name) )
@@ -8621,7 +8620,7 @@ condition: expression[LHS]
     }    
   else if( isA($LHS.name) && isIntIMM($RHS.name))
     {
-      addCompilerMessage( "A relop IntIMM: could produce unexpected behavior", 1 );
+      addCompilerMessage( "A relop IntIMM: may produce unexpected behavior", 1 );
       addComment( "A relop IntIMM: TOC" );
       if( string($OP.name) == "!=" )
 	{
@@ -9291,9 +9290,9 @@ condition: expression[LHS]
 	  addCompilerMessage( "IntID relop A: Relative Operator Manipulation", 0 );
 	  strcpy( $OP.name, ">=" );
 	}
-      
-      addComment( "IntID relop A: TOC" );
-    
+      // TODO: FIX THIS!!!!
+      addComment( "IntID relop A: TOC... This fails when IntID is Positive" );
+      addCompilerMessage( "This fails when IntID is Positive!", 2 );
       addAsm( str_TAX, 1, false );
       addAsm( str_SEC, 1, false );
       addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
@@ -10542,7 +10541,7 @@ condition: expression[LHS]
     }
   else if( isWordIMM($LHS.name) && isXA($RHS.name) )
     {
-      addComment( "WordIMM relop XA: TOC (testing)" );
+      addComment( "WordIMM relop XA: TOC" );
       // switchy switchy
       if( string($OP.name) == string("<") )
 	{
@@ -10568,32 +10567,24 @@ condition: expression[LHS]
       int i = atoi(stripFirst($LHS.name).c_str());
       int i_L = get_word_L(i);
       int i_H = get_word_H(i);
-      addAsm( str_TAY, 1, false );
-      addAsm( str_TXA, 1, false );
-      addAsm( str_CMP + "#$" + toHex(i_H), 2, false );
+      addAsm( str_CPX + "#$" + toHex(i_H), 2, false );
       addAsm( str_BNE + "!+", 2, false );
-      addAsm( str_TYA, 1, false );
       addAsm( str_CMP + "#$" + toHex(i_L), 2, false );
       addAsm( "!:", 0, true );
     }
   else if( isXA($LHS.name) && isA($RHS.name) )
     {
-      addComment( "XA relop A: TOC" );
-      addDebugComment( "Destroys $02/$03/$04/$05" );
-      addAsm( str_STA + "$04", 2, false );
-      addAsm( str_LDX + "#$00", 2, false );
-      addAsm( str_STX + "$05", 2, false );
+      addComment( "XA relop A: TOC (uses self-modifying code)" );
+      addAsm( str_STA + "!+ -1", 2, false );
 
+      // XA is on the stack
       addAsm( str_PLA, 1, false );
-      addAsm( str_STA + "$03", 2, false );
+      addAsm( str_TAX, 1, false );
       addAsm( str_PLA, 1, false );
-      addAsm( str_STA + "$02", 2, false );
 
-      addAsm( str_LDA + "$03", 2, false );
-      addAsm( str_CMP + "$05", 2, false );
+      addAsm( str_CPX + "#$00", 2, false );
       addAsm( str_BNE + "!+", 2, false );
-      addAsm( str_LDA + "$02", 2, false );
-      addAsm( str_CMP + "$04", 2, false );
+      addAsm( str_CMP + "#$00" + commentmarker + "will be over-written", 2, false );
       addAsm( "!:", 0, true );
     }
   else if( isXA($LHS.name) && isFAC($RHS.name) )
@@ -10714,28 +10705,25 @@ condition: expression[LHS]
     }
   else if( isXA($LHS.name) && isUintID($RHS.name) )
     {
+      // TODO: This needs to be thoroughly tested
+      // if lda and ldx are not the previous 2
+      // instructions, I am not sure that this
+      // will work.
       addComment( "XA relop UintID: TOC" );
-      addAsm( str_TAY, 1, false );
-      addAsm( str_TXA, 1, false );
       addAsm( str_SEC, 1, false );
+      addAsm( str_CPX + "#$00", 2, false );
       addAsm( str_BNE + "!+", 2, false );
-      addAsm( str_TYA, 1, false );
       addAsm( str_CMP + getNameOf(getAddressOf( $RHS.name ) ), 3, false );
       addAsm( "!:", 0, true );
 
     }
   else if( isXA($LHS.name) && isUintIMM($RHS.name))
     {
-      addAsm( "// XA relop UintIMM: TOC", 0, true);
       addComment( "XA relop UintIMM: TOC" );
       int tmp_v = atoi(stripFirst($RHS.name).c_str());
 
-      // save A in Y
-      addAsm( str_TAY );
-      addAsm( str_TXA );
-      addAsm( str_CMP + "#$00", 2, false ); 
+      addAsm( str_CPX + "#$00", 2, false ); 
       addAsm( str_BNE + "!+", 2, false );
-      addAsm( str_TYA );
       addAsm( str_CMP + "#$" + toHex( tmp_v ), 2, false );
       addAsm( "!:", 0, true );
     }
