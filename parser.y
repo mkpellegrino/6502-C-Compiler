@@ -9264,7 +9264,6 @@ condition: expression[LHS]
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
-      //addCompilerMessage( "Deleted Mnemonics", 0 );
       cmpFACMEM("#$19", "#$00");
     }
   else if( isIntID($LHS.name) && isA($RHS.name) )
@@ -9290,17 +9289,12 @@ condition: expression[LHS]
 	  addCompilerMessage( "IntID relop A: Relative Operator Manipulation", 0 );
 	  strcpy( $OP.name, ">=" );
 	}
-      // TODO: FIX THIS!!!!
-      addComment( "IntID relop A: TOC... This fails when IntID is Positive" );
-      addCompilerMessage( "This fails when IntID is Positive!", 2 );
-      addAsm( str_TAX, 1, false );
+      
       addAsm( str_SEC, 1, false );
-      addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
+      addAsm( str_BIT + getNameOf(getAddressOf($LHS.name)), 3, false );
       addAsm( str_BMI + "!+", 2, false );
-      addAsm( str_TXA, 1, false );
       addAsm( str_CMP + getNameOf(getAddressOf($LHS.name)), 3, false );
       addAsm( "!:",0,true );
-
     }
   else if( isIntID($LHS.name) && isFAC($RHS.name) )
     {
@@ -31147,7 +31141,7 @@ int main(int argc, char *argv[])
       addAsm( "!rx:\t" + str_BYTE + "$00", 1, false );
       addAsm( "!ry:\t" + str_BYTE + "$00", 1, false );      
       stack_is_needed = true;
-      addAsm( string("_signed_comparison: ") + commentmarker + string(" Signed Comparison"), 0, true );
+      addAsm( "_signed_comparison:\t" + commentmarker + string(" Signed Comparison"), 0, true );
       addAsm( str_PLA, 1, false );
       addAsm( str_STA + "!ry-", 3, false );
       addAsm( str_PLA, 1, false );
