@@ -294,6 +294,7 @@
   bool memcpy_is_needed=false;
   bool mobcpy_is_needed=false;
   bool signed_comparison_is_needed=false;
+  bool new_signed_comparison_is_needed=false;
   bool twos_complement_is_needed = false;
   bool byte2hex_is_needed = false;
   bool byt2str_is_needed = false;
@@ -9396,7 +9397,6 @@ condition: expression[LHS]
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
-      //addCompilerMessage( "Deleted Mnemonics", 0 );
       cmpFACMEM( "#$69", "#$00" );
       
     }
@@ -9404,29 +9404,41 @@ condition: expression[LHS]
     {
       addComment( "IntID relop IntID: TOC" );
 
-      signed_comparison_is_needed = true;
+      //signed_comparison_is_needed = true;
+      //addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
+      //addAsm( str_PHA );
+      //addAsm( str_LDA + getNameOf(getAddressOf($RHS.name)), 3, false );
+      //addAsm( str_PHA );
+      //addAsm( str_JSR + "_signed_comparison", 3, false );
+      //addAsm( str_PLP );
+
+      new_signed_comparison_is_needed = true;
       addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
-      addAsm( str_PHA );
-      addAsm( str_LDA + getNameOf(getAddressOf($RHS.name)), 3, false );
-      addAsm( str_PHA );
-      addAsm( str_JSR + "_signed_comparison", 3, false );
-      addAsm( str_PLP );
+      addAsm( str_LDX + getNameOf(getAddressOf($RHS.name)), 3, false );
+      addAsm( str_JSR + "_new_signed_comparison", 3, false );
+      //addAsm( str_PHA, 1, false );
+      //addAsm( str_PLP, 1, false );
+      
+
+
     }
   else if( isIntID($LHS.name) && isIntIMM($RHS.name) )
     {
       addComment( "IntID relop IntIMM: TOC" );
 
-      signed_comparison_is_needed = true;
+      //signed_comparison_is_needed = true;
+      new_signed_comparison_is_needed = true;
       addAsm( str_LDA + getNameOf(getAddressOf($LHS.name)), 3, false );
-      addAsm( str_PHA );
+      //addAsm( str_PHA );
       
       int i = atoi(stripFirst(stripFirst($RHS.name).c_str()).c_str() );
       i = twos_complement( i );
       
-      addAsm( str_LDA + "#$" + toHex(i), 2, false );
-      addAsm( str_PHA );
-      addAsm( str_JSR + "_signed_comparison", 3, false );
-      addAsm( str_PLP );
+      addAsm( str_LDX + "#$" + toHex(i), 2, false );
+      //addAsm( str_PHA );
+      addAsm( str_JSR + "_new_signed_comparison", 3, false );
+      //addAsm( str_PHA );
+      //addAsm( str_PLP );
     }
   else if( isIntID($LHS.name) && isUintID($RHS.name) )
     {
@@ -9542,7 +9554,6 @@ condition: expression[LHS]
       deletePreviousAsm();
       deletePreviousAsm();
       deletePreviousAsm();
-      //addCompilerMessage( "Deleted Mnemonics", 0 );
       cmpFACMEM( "#$19", "#$00" );  
     }
   else if( isIntIMM($LHS.name) && isFloatID($RHS.name) )
@@ -9601,18 +9612,19 @@ condition: expression[LHS]
       addCompilerMessage( "IntIMM relop IntID: User experience may vary", 1 );
       addComment( "IntIMM relop IntID: TOC");
 
-      signed_comparison_is_needed = true;
+      new_signed_comparison_is_needed = true;
       int OP1 = atoi(stripFirst($LHS.name).c_str());
       if( OP1 < 0 )
 	{
 	  OP1 = twos_complement( OP1 );
 	}
       addAsm( str_LDA + "#$" + toHex( OP1 ), 2, false );
-      addAsm( str_PHA );
-      addAsm( str_LDA + getNameOf(getAddressOf($RHS.name)), 3, false );
-      addAsm( str_PHA );
-      addAsm( str_JSR + "_signed_comparison", 3, false );
-      addAsm( str_PLP );
+      //addAsm( str_PHA );
+      addAsm( str_LDX + getNameOf(getAddressOf($RHS.name)), 3, false );
+      //addAsm( str_PHA );
+      addAsm( str_JSR + "_new_signed_comparison", 3, false );
+      //addAsm( str_PHA );
+      //addAsm( str_PLP );
     }
   else if( isIntIMM($LHS.name) && isIntIMM($RHS.name) )
     {
@@ -31141,7 +31153,7 @@ int main(int argc, char *argv[])
       addAsm( "!rx:\t" + str_BYTE + "$00", 1, false );
       addAsm( "!ry:\t" + str_BYTE + "$00", 1, false );      
       stack_is_needed = true;
-      addAsm( "_signed_comparison:\t" + commentmarker + string(" Signed Comparison"), 0, true );
+      addAsm( "_signed_comparison:", 0, true );
       addAsm( str_PLA, 1, false );
       addAsm( str_STA + "!ry-", 3, false );
       addAsm( str_PLA, 1, false );
@@ -31197,6 +31209,32 @@ int main(int argc, char *argv[])
       addAsm( str_PHA, 1, false );
       addAsm( str_RTS );
     }
+
+
+  if( new_signed_comparison_is_needed )
+    {
+      stack_is_needed = true;
+      addAsm( "_new_signed_comparison:", 0, true );
+      
+      addAsm( str_STX + "$02", 2, false ); 
+      addAsm( str_STA + "$03", 2, false );
+      
+      addAsm( str_EOR + "$02", 2, false);
+      addAsm( str_ROL ); // C is now set (if warrented)
+      
+      addAsm( str_BCS + "!+", 2, false );
+      addAsm( str_LDX + "$02", 2, false );
+      addAsm( str_LDA + "$03", 2, false );
+      addAsm( str_STA + "$02", 2, false );
+      addAsm( str_STX + "$03", 2, false );
+      addAsm( "!:\t" + str_LDA + "$02", 2, true );
+      addAsm( str_CMP + "$03", 2, false );
+      //addAsm( str_PHP );
+      //addAsm( str_PLA );
+      addAsm( str_RTS );
+    }
+
+
   // TODO: REMOVE THIS SECTION... WORD2DEC IS NO LONGER USED
   if( word2dec_is_needed )
     {      
