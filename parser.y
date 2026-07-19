@@ -12037,7 +12037,7 @@ statement: datatype ID init
     }
   else if( isUintIMM($3.name) && isXA($5.name) )
     {
-      addComment( "spriteX( UintIMM, XA )" );
+      addComment( "spritex( UintIMM, XA )" );
       sprite_address = atoi( stripFirst($3.name).c_str() );
       int tmp_bit = (int)pow(2,sprite_address);
       int tmp_others = tmp_bit ^ 255;
@@ -12077,7 +12077,6 @@ statement: datatype ID init
 	  addCompilerMessage( "spritex( #, x )... # out of range", 3 );
 	}
       addAsm( str_AND + "$D010", 3, false );
-      addAsm( str_STA + "$D010", 3, false );
       addAsm( str_JMP + "!++", 3, false );
       switch( s )
 	{
@@ -12109,18 +12108,16 @@ statement: datatype ID init
 	  addCompilerMessage( "spritex( #, x )... # out of range", 3 );
 	}
       addAsm( str_ORA + "$D010", 3, false );
-      addAsm( str_STA + "$D010", 3, false );
-      addAsm( "!:", 0, true );
+      addAsm( "!:\t" + str_STA + "$D010", 3, true );
       
     }
   else if(  (isXA($3.name) && isWordID($5.name) ) ||
 	    (isA($3.name) && isWordID($5.name) ))
     {
-      // TODO: Completely Rework this
       addComment( "spritex( XA/A, WordID );" );
       if( isXA($3.name) )
 	{
-	  addCompilerMessage( "spritex cannot take XA as first parameter... losing High Byte", 1 );
+	  addCompilerMessage( "spritex cannot take a word in XA as first parameter... losing High Byte", 1 );
 	}
       int value_addr = getAddressOf( $5.name );
       
@@ -12132,20 +12129,16 @@ statement: datatype ID init
       addAsm( str_LDA + getNameOf( value_addr ), 3, false ); // this is the LOW byte of the X coord
       addAsm( str_STA + "$D000,X", 3, false );
       addAsm( str_TYA, 1, false );
-      //addAsm( str_PLA );
       bin2bit_is_needed = true;
-      addAsm( str_JSR + "_bin_to_bit", 3, false);
 
-      
-      // ========== ^^^^ BIN2BIT ^^^^ ==========
+      addAsm( str_JSR + "_bin_to_bit", 3, false);
       addAsm( str_TAY );
       addAsm( str_EOR + "#$FF", 2, false );
       addAsm( str_AND + "$D010", 3, false );
       addAsm( str_TAX, 1, false );
       
       addAsm( str_LDA + getNameOf(hexToDecimal($5.name)) + " +1", 3, false );
-      addAsm( str_LSR, 1, false );
-      addAsm( str_BCS + "!+", 2, false ); // if bit then store a 1 there x there
+      addAsm( str_BNE + "!+", 2, false ); // if bit then store a 1 there x there
       addAsm( str_STX + "$D010", 3, false );
       addAsm( str_JMP + "!++", 3, false );
       addAsm( "!:\t" + str_TYA, 1, true );
@@ -12188,10 +12181,7 @@ statement: datatype ID init
     }
   else if( (isUintID($3.name) && isWordID($5.name)) ||
 	   (isIntID($3.name) && isWordID($5.name)) )
-    {
-      
-      // 2026 07 17 - STILL WONKY!
-      // TODO: Completely Rework this
+    {      
       addComment( "spritex( UintID, WordID ); or spritex( IntID, WordID );" );
       
       int sprite_addr = getAddressOf( $3.name );
@@ -12199,150 +12189,88 @@ statement: datatype ID init
 
       // the low byte
       addAsm( str_LDA + getNameOf( getAddressOf( $3.name ) ), 3, false );
-      addAsm( str_ASL ); // multiply by 2
-      addAsm( str_TAX ); // move it to X
+      addAsm( str_ASL, 1, false ); // multiply by 2
+      addAsm( str_TAX, 1, false ); // move it to X
       addAsm( str_LDA + getNameOf( getAddressOf( $5.name ) ), 3, false ); // this is the LOW byte of the X coord
       addAsm( str_STA + "$D000,X", 3, false );
-
-
       
       // the high byte
-      // 2024 04 27 - mkpellegrino
-      if( false )
-	{
-	  bin2bit_is_needed = true;
-	  addAsm( str_LDA + getNameOf( sprite_addr ), 3, false );
-	  addAsm( str_JSR + "_bin_to_bit", 3, false);
-	  addAsm( str_EOR + "#$FF", 2, false );
-	  addAsm( str_AND + "$D010", 3, false );
-	  //addAsm( str_STA + "$D010", 3, false );
-
-	  addAsm( str_STA + "$02", 2, false );
-
-	  // 2023 03 07 - mkpellegrino
-	  addAsm( str_LDX + getNameOf( getAddressOf( $3.name ) ), 3, false );
-	  addAsm( str_LDA + getNameOf( value_addr ) + " +1" , 3, false ); // this is the HIGH byte of the X coord
-	  addAsm( "!:\t" + str_ASL, 1, true );
-	  addAsm( str_DEX );
-	  addAsm( str_BNE + "!-", 2, false );
-	  addAsm( str_ORA + "$02", 2, false );
-	  addAsm( str_STA + "$D010", 3, false );
-
-	}
       // ========================
       bin2bit_is_needed = true;
-      addAsm( str_LDA + getNameOf(value_addr) + " +1", 3, false ); // this is the HIGH byte of the X coord
-      addAsm( str_BEQ + "!+", 2, false );
       addAsm( str_LDA + getNameOf( sprite_addr ), 3, false );
       addAsm( str_JSR + "_bin_to_bit", 3, false);
-      addAsm( str_STA + "!+ +1", 3, false );
-      
-      //addAsm( "!:\t" + str_LDA + getNameOf( sprite_addr ), 3, true );
-      //addAsm( str_JSR + "_bin_to_bit", 3, false);
+
+      addAsm( str_TAY, 1, false );
       addAsm( str_EOR + "#$FF", 2, false );
       addAsm( str_AND + "$D010", 3, false );
-      addAsm( "!:\t" + str_ORA + "#$00" + commentmarker + "will be modified", 2, true );
+      addAsm( str_TAX, 1, false );
+      
+      addAsm( str_LDA + getNameOf(hexToDecimal($5.name)) + " +1", 3, false );
+      addAsm( str_BNE + "!+", 2, false ); // if bit then store a 1 there x there
+      addAsm( str_STX + "$D010", 3, false );
+      addAsm( str_JMP + "!++", 3, false );
+      addAsm( "!:\t" + str_TYA, 1, true );
+      addAsm( str_ORA + "$D010", 3, false );
       addAsm( str_STA + "$D010", 3, false );
-      
-
-      
+      addAsm( "!:", 0, true );
     }
   else if(isUintID($3.name) && isXA($5.name))
     {
-      // 2026 07 17 - STILL WONKY!
-      // TODO: Completely Rework this
-      //============================================
       addComment( "spritex( UintID, XA );" );
-      addAsm( str_TAY );
-      
-      // save $02 & $03 & $05
-      addAsm( str_LDA + "$02", 2, false);
-      addAsm( str_PHA );
-      addAsm( str_LDA + "$03", 2, false);
-      addAsm( str_PHA );
-      //addAsm( str_LDA + "$05", 2, false );
-      //addAsm( str_PHA );
-      //====================
-      // put AX in $02 $03
-      addAsm( str_STY + "$02", 2, false );
-      addAsm( str_STX + "$03" + commentmarker + "temporarily store the High Byte", 2, false );
-      //====================
-      
-      
-      int sprite_number = getAddressOf( $3.name );
+      addCompilerMessage( "spritex(uintid, XA) is fairly inefficient... maybe rethink this?", 1 );
+      addAsm( str_TAY, 1, false );
+      // save $03
+      addAsm( str_LDA + "$03", 2, false );
+      addAsm( str_PHA, 1, false );
+      addAsm( str_STX + "$03", 2, false );
 
-      // the low byte
-      addAsm( str_LDA + getNameOf( sprite_number ) + commentmarker + "sprite # -> A", 3, false );
+      addAsm( str_LDA + getNameOf(hexToDecimal($3.name)), 3, false );
+      addAsm( str_ASL, 1, false );
+      addAsm( str_TAX, 1, false );      
+      addAsm( str_TYA, 1, false );      
+      addAsm( str_STA + "$D000,X", 3, false );
 
-      addAsm( str_PHA );
-      addAsm( str_ASL + commentmarker + "multiply it by 2", 1, false ); // multiply by 2
-      addAsm( str_TAX + commentmarker + "make Sprite# * 2 the index (X)", 1, false); // move it to X
-      addAsm( str_TYA + commentmarker + "move the Low Byte of x-coord to A", 1, false);
-      addAsm( str_STA + "$D000,X" + commentmarker + "set the low-byte value", 3, false );
-      // the high byte
-      addAsm( str_PLA );
-      
+      addAsm( str_LDA + getNameOf(hexToDecimal($3.name)), 3, false );
 
       bin2bit_is_needed = true;
       addAsm( str_JSR + "_bin_to_bit", 3, false);
-
+      addAsm( str_TAY, 1, false );
       addAsm( str_EOR + "#$FF", 2, false );
       addAsm( str_AND + "$D010", 3, false );
-      addAsm( str_STA + "$05", 2, false );
-      
-      addAsm( str_LDX + getNameOf( sprite_number ), 3, false );
-      addAsm( str_INX );
-      addAsm( str_LDA + "$03" + commentmarker + "puts the High Byte of the x-coord into A (it's a 1 or a 0)", 2, false );
-      addAsm( str_LSR + commentmarker + "puts that 1 or 0 into the carry flag", 1, false  );
-      addAsm( "!:\t" + str_ROL, 1, true ); // used to be ASL
-      addAsm( str_DEX );
-      addAsm( str_BNE + "!-", 2, false );
-      //addAsm( str_BYTE + "$D0, $FC" + commentmarker + "BNE top-of-loop", 2, false );
-      addAsm( str_ORA + "$05", 2, false );
+      addAsm( str_LDX + "$03", 2, false );
+      addAsm( str_CPX + "#$00", 2, false );
+      addAsm( str_BNE + "!+", 2, false ); // if bit then store a 1 there x there
       addAsm( str_STA + "$D010", 3, false );
-      //====================
-      // restore $03 & $02
-      //addAsm( str_PLA );
-      //addAsm( str_STA + "$05", 2, false );
-      addAsm( str_PLA );
+      addAsm( str_JMP + "!++", 3, false );
+      addAsm( "!:\t" + str_TYA, 1, true );
+      addAsm( str_ORA + "$D010", 3, false );
+      addAsm( str_STA + "$D010", 3, false );
+      addAsm( "!:", 0, true );
+      // restore $03
+      addAsm( str_PLA, 1, false );
       addAsm( str_STA + "$03", 2, false );
-      addAsm( str_PLA );
-      addAsm( str_STA + "$02", 2, false );
       //============================================
     }
   else if( (isUintID($3.name) && isA($5.name)) ||
 	   (isIntID($3.name) && isA($5.name)))
     {
-      // TODO: Completely Rework this
+      addCompilerMessage( "spritex(uintid, A): x-values could be larger than 255... just sayin'", 1 );
       addComment( "spritex( UIntID, A );" );
       int sprite_addr = getAddressOf( $3.name );
-      
       int value_addr = getAddressOf( $5.name );
-      //addAsm( str_PHA );
       addAsm( str_TAY );
 
       // the low byte
+      addComment( "-- low byte --" );
       addAsm( str_LDA + getNameOf( sprite_addr ), 3, false );
       addAsm( str_ASL ); // multiply by 2
       addAsm( str_TAX ); // move it to X
       addAsm( str_TYA );
       addAsm( str_STA + "$D000,X", 3, false );
 
-      // the high byte
-      addAsm( str_LDA + getNameOf( sprite_addr ), 3, false );
-
-      // 2024 05 01 - mkpellegrino
-      //addAsm( str_TAX );
-      //addAsm( str_INX );
-      //addAsm( str_LDA + "#$00", 2, false );
-      //addAsm( str_SEC );
-      //addAsm( "!:\t" + str_ROL, 1, true );
-      //addAsm( str_DEX );
-      //addAsm( str_BNE + "!-", 2, false );
-
-
-
+      addComment( "-- high bit (should be clear) --" );
       // clear the High Bit
+      addAsm( str_LDA + getNameOf( sprite_addr ), 3, false );
       bin2bit_is_needed = true;
       addAsm( str_JSR + "_bin_to_bit", 3, false);
       addAsm( str_EOR + "#$FF", 2, false );
@@ -12352,21 +12280,18 @@ statement: datatype ID init
   else if( (isUintIMM($3.name) && isWordID($5.name)) ||
 	   (isIntIMM($3.name) && isWordID($5.name)))
     {
-      // TODO: Completely Rework this
-      addComment( "spritex( UIntIMM, WordID );" );
+      addComment( "spritex( UintIMM, WordID );" );
 
       sprite_address = atoi( stripFirst($3.name).c_str() );
       sprite_address*=2;
       sprite_address+=base_address;
       int addr = hexToDecimal($5.name);
-      // 2024 04 14 - mkpellegrino
-      // Low Byte
+
       addAsm( str_LDA + getNameOf( getAddressOf( $5.name ) ), 3, false );
       addAsm( str_STA + "$" + toHex( sprite_address ), 3, false );
+
       // High Byte
-      // 2024 04 27 - mkpellegrino
-      addAsm( str_LDA + "#$01", 2, false );
-      addAsm( str_BIT + getNameOf(addr)+" +1", 3, false );
+      addAsm( str_LDA + getNameOf( getAddressOf( $5.name )) + " +1", 3, false );
       addAsm( str_BEQ + "!+", 2, false );
 
       // find out which sprite number we're talking about
@@ -12419,14 +12344,13 @@ statement: datatype ID init
 	  addAsm( "!:\t" + str_LDA + "#$FD", 2, true);
 	  break;
 	case 0:
-	  addComment( str_LDA + "#$01" );
-	  //addAsm( str_LDA + "#$01", 2, false);
+	  addAsm( str_LDA + "#$01", 2, false );
 	  addAsm( str_ORA + "$D010", 3, false );
 	  addAsm( str_JMP + "!++", 3, false );
 	  addAsm( "!:\t" + str_LDA + "#$FE", 2, true);
 	  break;
 	default:
-	  addCompilerMessage( "Non-sprite number used as IMMEDIATE value\nRange is: 0 to 7", 3 );
+	  addCompilerMessage( "Invalid sprite number used as argument (Range is: 0 to 7)", 3 );
 	  break;
 	}
 
@@ -12490,6 +12414,7 @@ statement: datatype ID init
       addComment( "spritex( UIntID, UIntID );" );
       // 2024 04 29 - mkpellegrino
       addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
+      addAsm( str_TAY, 1, false ); // save it for later... don't run away don't run away don't let me down
       // addAsm( str_CLC );
       addAsm( str_ASL ); // 2x
       addAsm( str_TAX );
@@ -12501,22 +12426,14 @@ statement: datatype ID init
 
 
 
-      addDebugComment( "turn off the 9th bit in $D010" );
-      addAsm( str_LDA + "#$01", 2, false );
-      addAsm( str_LDX + getNameOf(getAddressOf($3.name)), 3, false );
-      //addAsm( str_INX, 1, false );
-      //addAsm( str_DEX, 1, false );
+      addComment( "turn off the 9th bit in $D010" );
+      addAsm( str_TYA, 1, false );
+      bin2bit_is_needed = true;
+      addAsm( str_JSR + "_bin_to_bit", 3, false);
+      addAsm( str_EOR + "#$FF", 2, false );
+      addAsm( str_AND + "$D010", 3, false );
+      addAsm( str_STA + "$D010", 3, false );
 
-      addAsm( "!:\t" + str_BEQ + "!+", 2, true );
-      addAsm( str_ASL, 1, false );
-      addAsm( str_DEX, 1, false );
-      addAsm( str_JMP + "!-", 2, false );
-
-      // now A contains the bit
-      addAsm( "!:\t" + str_EOR + "#$FF", 2, true );
-      // mask out the high bit for x
-      addAsm( str_AND + "$D010", 3, false ); 
-      addAsm( str_STA + "$D010", 3, false ); 
     }
   else if( (isUintID($3.name) && isUintIMM($5.name)) ||
 	   (isUintID($3.name) && isIntIMM($5.name)) ||
@@ -12526,83 +12443,65 @@ statement: datatype ID init
       addComment( "spritex( UIntID, UIntIMM );" );
    
       addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
-      //addAsm( str_CLC );
+      addAsm( str_TAY, 1, false );
+
       addAsm( str_ASL ); // 2x
       addAsm( str_TAX );
       addAsm( str_LDA + "#$" + toHex(atoi(stripFirst(string($5.name)).c_str())), 2, false );
       addAsm( str_STA + "$D000,X" + commentmarker + "set the x-coord", 3, false );
 
-      // turn OFF the high bit if necessary
-      // turn the sprite # into a binary number
-      //addDebugComment( "turn off the 9th bit in $D010" );
-      //addAsm( str_LDA + "#$01", 2, false );
-      //addAsm( str_LDX + getNameOf(getAddressOf($3.name)), 3, false );
-      //addAsm( str_INX, 1, false );
-      //addAsm( str_DEX, 1, false );
-      //addAsm( "!:\t" + str_BEQ + "!+", 2, true );
-      //addAsm( str_ASL, 1, false );
-      //addAsm( str_DEX, 1, false );
-      //addAsm( str_JMP + "!-", 2, false );
-      
-      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
+      addComment( "turn off the 9th bit in $D010" );
+      addAsm( str_TYA, 1, false );
       bin2bit_is_needed = true;
       addAsm( str_JSR + "_bin_to_bit", 3, false);
-      
-      // now A contains the bit
-      addAsm( "!:\t" + str_EOR + "#$FF", 2, true );
-      // mask out the high bit for x
-      addAsm( str_AND + "$D010", 3, false ); 
-      addAsm( str_STA + "$D010", 3, false ); 
+      addAsm( str_EOR + "#$FF", 2, false );
+      addAsm( str_AND + "$D010", 3, false );
+      addAsm( str_STA + "$D010", 3, false );
 
     }
   else if( isUintID($3.name) && isWordIMM($5.name) )
     {
+      // LEFT OFF HERE
       // 2024 04 29 - mkpellegrino
       addComment( "spritex( UintID, WordIMM )");
 
       addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
+      addAsm( str_TAY, 1, false ); // save it for later... don't run away - don't run away - don't let me do-o-o-own
       //addAsm( str_CLC );
       addAsm( str_ASL ); // 2x
       addAsm( str_TAX );
-      addAsm( str_LDA + "#$" + toHex(get_word_L(atoi(stripFirst($5.name).c_str()))), 2, false );
-      addAsm( str_STA + "$D000,X" + commentmarker + "set the x-coord", 3, false );
+      addAsm( str_LDA + "#$" + toHex(get_word_L(atoi(stripFirst($5.name).c_str()))) + commentmarker + "low byte", 2, false );
+      addAsm( str_STA + "$D000,X", 3, false );
 
-      // turn OFF the high bit if necessary
-      // turn the sprite # into a binary number
-      
-      //addDebugComment( "turn off the 9th bit in $D010" );
-      //addAsm( str_LDA + "#$" + toHex(get_word_H(atoi(stripFirst($5.name).c_str()))), 2, false );
-      //addAsm( str_LDX + getNameOf(getAddressOf($3.name)), 3, false );
-      //addAsm( "!:\t" + str_BEQ + "!+", 2, true );
-      //addAsm( str_ASL, 1, false );
-      //addAsm( str_DEX, 1, false );
-      //addAsm( str_JMP + "!-", 2, false );
-      //addAsm( "!:\t" + str_ORA + "$D010", 3, true );
 
-      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
+      addAsm( str_TYA, 1, false );
       bin2bit_is_needed = true;
       addAsm( str_JSR + "_bin_to_bit", 3, false);
+      addAsm( str_LDX + "#$" + toHex(get_word_H(atoi(stripFirst($5.name).c_str()))) + commentmarker + "high byte", 2, false );
+      addAsm( str_STA + "!_skip+ -1", 3, false );
       
-      // now A contains the bit
-      addAsm( "!:\t" + str_EOR + "#$FF", 2, true );
-      // mask out the high bit for x
-      addAsm( str_AND + "$D010", 3, false ); 
-      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
-      bin2bit_is_needed = true;
-      addAsm( str_JSR + "_bin_to_bit", 3, false);
-      
-      // now A contains the bit
-      addAsm( "!:\t" + str_EOR + "#$FF", 2, true );
-      // mask out the high bit for x
-      addAsm( str_AND + "$D010", 3, false ); 
-      
-      addAsm( str_STA + "$D010", 3, false ); 
+      addAsm( str_EOR + "#$FF", 2, false );
+      addAsm( str_AND + "$D010", 3, false );
+      addAsm( str_CPX + "#$01", 2, false );
+      addAsm( str_BNE + "!_skip+", 2, false );
+      addAsm( str_ORA + "#$00" + commentmarker + "will be modified", 2, false );
+      addAsm( "!_skip:\t" + str_STA + "$D010", 3, true );
+
     }
   else
     {
       string s = string( "spritex error - invalid type - " ) + $3.name + ":" + $5.name;
-      addCompilerMessage( s, 1 );
+      addCompilerMessage( s, 3 );
     }
+
+  // TODO:
+  // TBD: spritex( XA, WordIMM );
+  // TBD: spritex( A, WordIMM );
+  // TBD: spritex( A, A );
+  // TBD: spritex( A, XA );
+  // TBD: spritex( XA, A );
+  // TBD: spritex( XA, XA )
+  
 };
 
 // TODO: add spritexy( imm, XA, XA );
@@ -30423,20 +30322,12 @@ value: FLOAT_NUM
     {
       N.erase(0,2);
       int val = hexToDecimal(N);
-      //string return_value = string("u") + toString(val);
       string return_value = "_u" + toString(val);
       strcpy( $$.name, return_value.c_str() );
     }
 };
-//| INT
-//{
-//addDebugComment(string("RULE: value: INT :") +  string($1.name));
-//  addComment( "INT: ..." );
-//  strcpy($$.name, $1.name);
-//};
 | NUMBER
 {
-  //addComment( "found a #!" );
   int v = atoi($1.name);
 
   if( getTypeOf($1.name) != -1 )
@@ -30458,7 +30349,7 @@ value: FLOAT_NUM
       if( atoi($1.name) > 127 || atoi($1.name) < -128 )
 	{
 
-	  addCompilerMessage( "int out of range (-128 to +127) converting to word in 2's comp.", 0 );
+	  addCompilerMessage( "int out of range (-128 to +127) converting to word in 2's comp.", 1 );
 	  int tmp_i = atoi( $1.name );
 	  tmp_i = twos_complement( tmp_i );
 	  current_variable_type = 2;
@@ -30466,17 +30357,17 @@ value: FLOAT_NUM
 	}
       else
 	{
-	  strcpy($$.name, string( string("_i") + string($1.name)).c_str());
+	  strcpy($$.name, string( "_i" + string($1.name)).c_str());
 	}
       
     }
   else if( current_variable_type == 2 )
     {
-      strcpy($$.name, string( string("_w") + string($1.name)).c_str());
+      strcpy($$.name, string( "_w" + string($1.name)).c_str());
     }
   else
     {
-      strcpy($$.name, string( string("_i") + string($1.name)).c_str());
+      strcpy($$.name, string( "_i" + string($1.name)).c_str());
     }
 }
 | tWORD
@@ -30494,10 +30385,6 @@ value: FLOAT_NUM
 | CHARACTER
 {
   addCompilerMessage( "FOUND A CHARACTER" );
-  //N.erase(0,2);
-  //int val = hexToDecimal(N);
-  //string return_value = string("u") + toString(val);
-  //strcpy( $$.name, return_value.c_str() );
 
   string senduptheline = string("");
   if( $1.name[1] == '\\' )
@@ -30605,8 +30492,6 @@ return: RETURN ';'
       addAsm( str_PHA );
       addAsm( str_LDA + "#$" + toHex(x_register), 2, false );
       addAsm( str_PHA );
-      //addAsm( str_LDA + "#$02", 2, false );
-      //addAsm( str_PHA );
       strcpy( $$.name, "_XA" );
     }
   else if( isWordID($3.name) )
@@ -30616,8 +30501,6 @@ return: RETURN ';'
       addAsm( str_PHA );
       addAsm( str_LDA + getNameOf(v), 3, false );
       addAsm( str_PHA );
-      //addAsm( str_LDA + "#$02", 2, false );
-      //addAsm( str_PHA );
       strcpy( $$.name, "_XA" );
     }
   else if( isA($3.name) )
