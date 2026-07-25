@@ -5973,11 +5973,8 @@ body: WHILE
       int tmp = atoi( stripFirst($3.name).c_str() );
       word2dec_is_needed = true;
       addAsm( str_LDA + "#$"  + toHex( get_word_L( tmp )), 2, false );
-      //addAsm( str_PHA, 1, false );      
       addAsm( str_LDX + "#$" + toHex( get_word_H( tmp )), 2, false );
-      //addAsm( str_PHA, 1, false );
       addAsm( str_JSR + "_display_word", 3, false );
-
     }
   else if( isIntIMM($3.name ))
     {
@@ -6079,7 +6076,7 @@ body: WHILE
       byt2str_is_needed = true;
       addCompilerMessage( "Just Hardcode this you goon!", 1 );
       formatted_int = true;
-      int v = atoi( stripFirst(stripFirst( $5.name )).c_str());
+      int v = atoi(stripFirst($5.name).c_str());
       v = twos_complement( v );
       addAsm( str_LDA + "#$" + toHex(v), 2, false );
       addAsm( str_PHA, 1, false );
@@ -6087,7 +6084,6 @@ body: WHILE
       addAsm( str_LDY + "#<STRLBL" + itos(s), 3, false );
       addAsm( str_LDX + "#>STRLBL" + itos(s), 3, false );
       addAsm( str_JSR + "_new_formatted_printf", 3, false );
-      
     }
   else if( isUintIMM($5.name) )
     {
@@ -8202,8 +8198,7 @@ body: WHILE
   else if( isXA(param1) && (isUintIMM(param2) || isIntIMM(param2)) )
     {
       deletePreviousAsmUntil( "// MARKED_FOR_DELETION");
-      //addCompilerMessage( "Deleted Mnemonics", 0 );
-      addComment( "deleted instructions" );
+      addComment( "^^^--- deleted instructions ---^^^" );
       addComment( "poke( XA, UIntIMM) (self modifying code)" );
       int valu_addr = getAddressOf(param2);
       addAsm( str_STA + "!+", 3, false );
@@ -11003,7 +10998,6 @@ condition: expression[LHS]
 	      addComment( "long branch" );
 	      addAsm( str_BCC + "!body+", 2, false );
 	      addAsm( str_JMP + "!else" + toString(if_depth) + "+" + commentmarker + "jump to ELSE (OPTIMIZE)", 3, false );
-
 	      strcpy($$.name, "exp < exp lb" ); // longbranches
 	    }
 	}
@@ -11073,10 +11067,6 @@ condition: expression[LHS]
 	    }
 	  deletePreviousAsm();
 	  deletePreviousAsm();
-	  //addComment( "deleted previous 2 instructions" );
-	  //addCompilerMessage( "Deleted Mnemonics", 0 );
-
-	  //deletePreviousAsm();
 	  addAsm( str_JMP + getLabel( label_vector[label_major]+2, false), 3, false);
 	  addAsm( "!_skip:", 0, true );
 	}
@@ -11091,9 +11081,7 @@ condition: expression[LHS]
 	  deletePreviousAsm();
 	  deletePreviousAsm();
 	  deletePreviousAsm();
-	  //addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addComment( "deleted previous 5 instructions" );
- 
 	  addAsm( str_JMP + getLabel( label_vector[label_major]+2, false), 3, false);
 	  addAsm( "!_skip:", 0, true );
 	  addAsm( str_BNE + "!_skip+", 2, false );
@@ -11133,7 +11121,6 @@ condition: expression[LHS]
 	  
 	  deletePreviousAsm();
 	  deletePreviousAsm();
-	  //addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addComment( "deleted previous 2 instructions" );
  
 	  addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "JMP to else", 3, false);
@@ -11148,7 +11135,6 @@ condition: expression[LHS]
 	  
 	  deletePreviousAsm();
 	  deletePreviousAsm();
-	  //addCompilerMessage( "Deleted Mnemonics", 0 );
 	  addComment( "deleted previous 2 instructions" );
       
 	  addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "JMP to else", 3, false);
@@ -11160,12 +11146,9 @@ condition: expression[LHS]
 	    {
 	      deletePreviousAsm();
 	    }
-	  
 	  deletePreviousAsm();
 	  deletePreviousAsm();
-	  //addCompilerMessage( "Deleted 2 Mnemonics", 0 );
 	  addComment( "deleted previous 2 instructions" );
-      
 	  addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "JMP to else", 3, false);
 	  addAsm( "!_skip:", 0, true );
 	}
@@ -11261,8 +11244,8 @@ statement: datatype ID init
   else if(isFloatDT(_dt) && isFloatID(_id) && isIntIMM(_init))
     {
       addComment( "initialising a float with IntIMM" );
-      int v = twos_complement(atoi( stripFirst(stripFirst(_init).c_str()).c_str()));
-      addAsm( str_LDY + "#$" + toHex(v), 2, false );
+      int v = twos_complement(atoi(stripFirst(_init).c_str()));
+      //int v = twos_complement(atoi( stripFirst(stripFirst(_init).c_str()).c_str()));      addAsm( str_LDY + "#$" + toHex(v), 2, false );
       addAsm( str_LDA + "#$FF", 2, false );
       addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
       addAsm( str_LDX + "#<" + getNameOf(getAddressOf( _id )), 2, false );
@@ -11327,7 +11310,8 @@ statement: datatype ID init
       addCompilerMessage("Initialising Unsigned Integer with Signed Integer... chaos may ensue!", 1);
       int instr_size = 3;
       if( current_variable_base_address < 256 ) instr_size = 2;
-      int v = twos_complement(atoi( stripFirst(stripFirst( _init ).c_str()).c_str() ));
+      int v = twos_complement(atoi(stripFirst( _init ).c_str()) );
+      //int v = twos_complement(atoi( stripFirst(stripFirst( _init ).c_str()).c_str() ));
       addAsm( str_LDA + "#$" + toHex(v), 2, false );
       addAsm( str_STA + _id, instr_size, false );
     }
@@ -11336,7 +11320,8 @@ statement: datatype ID init
       addComment( "int IntID = IntIMM" );
       int instr_size = 3;
       if( current_variable_base_address < 256 ) instr_size = 2;
-      int v = twos_complement(atoi( stripFirst(stripFirst( _init ).c_str()).c_str() ));
+      //int v = twos_complement(atoi( stripFirst(stripFirst( _init ).c_str()).c_str() ));
+      int v = twos_complement(atoi(stripFirst( _init ).c_str() ));
       addAsm( str_LDA + "#$" + toHex(v), 2, false );
       addAsm( str_STA + _id, instr_size, false );
     }
@@ -11347,7 +11332,8 @@ statement: datatype ID init
 
       int instr_size = 3;
       if( current_variable_base_address < 256 ) instr_size = 2;
-      int v = twos_complement(atoi( stripFirst(stripFirst( _init ).c_str()).c_str() ));
+      //int v = twos_complement(atoi( stripFirst(stripFirst( _init ).c_str()).c_str() ));
+      int v = twos_complement(atoi(stripFirst( _init ).c_str()) );
       addAsm( str_LDA + "#$" + toHex(v), 2, false );
       addAsm( str_LDX + "#$FF", 2, false );
       addAsm( str_STA + _id, instr_size, false );
@@ -11406,11 +11392,6 @@ statement: datatype ID init
       addComment("uint ID = FAC" );
       addCompilerMessage( "initialising UintID with FAC ... possible sign conflict... you will likely be eaten by a Grue.", 1 );
       addAsm( str_JSR + "$B1AA" + commentmarker + "FAC -> WORD", 3, false );
-      // if A is != #$00, then Y should = #$FF
-      
-      //addAsm( str_CMP + "#$00", 2, false );
-      //addAsm( str_BMI + "!+", 2, false );
-      //addAsm( str_LDY + "#$FF", 2, false );
       addAsm( "!:\t" + str_STY + getNameOf(getAddressOf($2.name)), 3, true );
     }
   else if(isIntDT(_dt) && isIntID(_id) && isFAC(_init))
@@ -11422,10 +11403,6 @@ statement: datatype ID init
       addAsm( str_JSR + "$B1AA" + commentmarker + "FAC -> WORD (ylo ahi)", 3, false );
       addAsm( str_STY + getNameOf(getAddressOf($2.name)), 3, false );
     }
-  //else if(isMOB(_init))
-  //{
-  //  addCompilerMessage( "MOB type has been removed", 3 );
-  //}
   else if( isNULL(_init) )
     {
       addCompilerMessage( "Uninitialised variable may contain garbage", 0 );
@@ -11653,9 +11630,6 @@ statement: datatype ID init
       addCompilerMessage( "dec(??) error - invalid argument type", 3 );
     } 
 };
-
-
-
 | tROL '(' expression ')'
 {
   addComment( "rol statement" );
@@ -12996,68 +12970,147 @@ statement: datatype ID init
 	   (isUintIMM($3.name) && isWordIMM($5.name) && isIntIMM($7.name)) ||
 	   (isUintIMM($3.name) && isWordIMM($5.name) && isUintIMM($7.name)) )
     {
+      // TODO: Fix this - it's broken because it doesn't take into account
+      // the high bit of x
       addComment( "spritexy( UIntIMM, WordIMM, UIntIMM );");
       addCompilerMessage( "Y is unnecessarily a WordIMM; save a byte, make it a UintIMM!", 1 );
       addAsm( str_LDA + "#$" + toHex(atoi(stripFirst($3.name).c_str())), 2, false );
-      addAsm( str_ASL ); // 2x
-      addAsm( str_TAX );
+      addAsm( str_ASL, 1, false ); // 2x
+      addAsm( str_TAX, 1, false );
       addAsm( str_LDA + "#$" + toHex(get_word_L(atoi(stripFirst(string($5.name)).c_str()))), 2, false );
       addAsm( str_STA + "$D000,X" + commentmarker + "set the x-coord", 3, false );
 
-      addAsm( str_INX );
+      addAsm( str_INX, 1, false );
       addAsm( str_LDA + "#$" + toHex(atoi(stripFirst($7.name).c_str())), 2, false );
       addAsm( str_STA + "$D000,X" + commentmarker + "set the y-coord", 3, false );
 
-      addComment( "clear high byte because it's a uintimm" );
+      //addAsm( str_LDA + "#$" + toHex(get_word_H(atoi(stripFirst(string($5.name)).c_str()))), 2, false );
 
       int sprite_number = atoi( stripFirst($3.name).c_str() );
+      int high_byte = atoi( stripFirst($5.name).c_str())/256;
+      bool set;
+      bool clear;
 
+      if( high_byte != 0 )
+	{
+	  set = true;
+	  clear = false;
+	}
+      else
+	{
+	  set = false;
+	  clear = true;
+	}
+      
       // set the bit
       switch( sprite_number )
 	{
 	case 0:
 	  {
-	    addAsm( str_LDA + "#$FE", 2, false );
+	    if( set )
+	      {
+		addAsm( str_LDA + "#$01", 2, false );
+	      }
+	    else
+	      {
+		addAsm( str_LDA + "#$FE", 2, false );
+	      }
 	    break;
 	  }
 	case 1:
 	  {
-	    addAsm( str_LDA + "#$FD", 2, false );
+	    if( set )
+	      {
+		addAsm( str_LDA + "#$02", 2, false );
+	      }
+	    else
+	      {
+		addAsm( str_LDA + "#$FD", 2, false );
+	      }
 	    break;
 	  }
 	case 2:
 	  {
-	    addAsm( str_LDA + "#$FB", 2, false );
+	    if( set )
+	      {
+		addAsm( str_LDA + "#$04", 2, false );
+	      }
+	    else
+	      {
+		addAsm( str_LDA + "#$FB", 2, false );
+	      }
 	    break;
 	  }
 	case 3:
 	  {
-	    addAsm( str_LDA + "#$F7", 2, false );
+	    if( set )
+	      {
+		addAsm( str_LDA + "#$08", 2, false );
+	      }
+	    else
+	      {
+		addAsm( str_LDA + "#$F7", 2, false );
+	      }
 	    break;
 	  }
 	case 4:
 	  {
-	    addAsm( str_LDA + "#$EF", 2, false );
+	    if( set )
+	      {
+		addAsm( str_LDA + "#$10", 2, false );
+	      }
+	    else
+	      {
+		addAsm( str_LDA + "#$EF", 2, false );
+	      }
 	    break;
 	  }
 	case 5:
 	  {
-	    addAsm( str_LDA + "#$DF", 2, false );
+	    if( set )
+	      {
+		addAsm( str_LDA + "#$20", 2, false );
+	      }
+	    else
+	      {
+		addAsm( str_LDA + "#$DF", 2, false );
+	      }
 	    break;
 	  }
 	case 6:
 	  {
-	    addAsm( str_LDA + "#$BF", 2, false );
+	    if( set )
+	      {
+		addAsm( str_LDA + "#$40", 2, false );
+	      }
+	    else
+	      {
+		addAsm( str_LDA + "#$BF", 2, false );
+	      }
 	    break;
 	  }
 	case 7:
 	  {
-	    addAsm( str_LDA + "#$7F", 2, false );
+	    if( set )
+	      {
+		addAsm( str_LDA + "#$80", 2, false );
+	      }
+	    else
+	      {
+		addAsm( str_LDA + "#$7F", 2, false );
+	      }
 	    break;
 	  }
 	  
 	}
-      addAsm( str_AND + "$D010", 3, false );
+      if( clear )
+	{
+	  addAsm( str_AND + "$D010", 3, false );
+	}
+      if( set )
+	{
+	  addAsm( str_ORA + "$D010", 3, false );
+	}
       addAsm( str_STA + "$D010", 3, false );
     }  
   else
@@ -13131,15 +13184,9 @@ statement: datatype ID init
       addAsm( str_LDA + getNameOf(x_addr), 3, false );
       addAsm( str_STA + "$FA", 2, false );
       
-      // X High
-      //addAsm( str_LDA+"#$00", 2, false ); // High Byte not needed
-      //addAsm( str_STA + "$FB", 2, false );
-
       // Y
       addAsm( str_LDA + getNameOf(y_addr), 3, false );
       addAsm( str_STA + "$FC", 2, false );
-      //addAsm( str_JSR + "_mcplot", 3, false );
-
 
       // colour
       addAsm( str_LDA + getNameOf(c_addr), 3, false );
@@ -13159,10 +13206,6 @@ statement: datatype ID init
       addAsm( str_LDA + getNameOf(x_addr), 3, false );
       addAsm( str_STA + "$FA", 2, false );
       
-      // X High
-      //addAsm( str_LDA+"#$00", 2, false ); // High Byte not needed
-      //addAsm( str_STA + "$FB", 2, false );
-
       // Y
       addAsm( str_LDA + getNameOf(y_addr), 3, false );
       addAsm( str_STA + "$FC", 2, false );
@@ -15000,8 +15043,9 @@ arithmetic[MATHOP] expression[OP2]
   else if( isA($1.name) && isIntIMM($4.name) )
     {
       addComment( "A math IntIMM: TOC" );
-      int O2_int = atoi(stripFirst(stripFirst($4.name).c_str()).c_str());      
-      if( op == string( "+" ) )
+      //int O2_int = atoi(stripFirst(stripFirst($4.name).c_str()).c_str());
+      int O2_int = atoi(stripFirst($4.name).c_str());
+       if( op == string( "+" ) )
 	{
 	  addComment( "A + IntIMM --> A" );
 	  addAsm( str_SEC, 1, false );
@@ -16615,7 +16659,8 @@ arithmetic[MATHOP] expression[OP2]
       addComment( "FloatID math IntIMM: TOC");
       
       // get OP2 as a word
-      int tmp_int = atoi(stripFirst(stripFirst($4.name).c_str()).c_str());
+      //int tmp_int = atoi(stripFirst(stripFirst($4.name).c_str()).c_str());
+      int tmp_int = atoi(stripFirst($4.name).c_str());
 
       string low_byte = toHex(twos_complement(tmp_int));
       
@@ -18455,7 +18500,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_ADC + "#$01", 2, false );
 	  addAsm( "!:", 0, true );
 	  // take the negative sign off of OP2
-	  int op2 = atoi(stripFirst(stripFirst($4.name).c_str()).c_str() );
+	  int op2 = atoi(stripFirst($4.name).c_str()) ;
 
 	  addComment( string( "OP2: " ) + itos( op2 ) );
 	  if( op2 == 1 )
@@ -19261,7 +19306,7 @@ arithmetic[MATHOP] expression[OP2]
 	{
 	  addComment( "IntIMM * A --> XA" );
 	  // this takes the negative sign off of the number
-	  int OP1value = atoi( stripFirst(stripFirst($1.name).c_str()).c_str() );
+	  int OP1value = atoi(stripFirst($1.name).c_str()) ;
 
 	  mul16_is_needed = true;
 	  addAsm( str_STA + "_MUL16_FB", 3, false );	  
@@ -19915,7 +19960,7 @@ arithmetic[MATHOP] expression[OP2]
     {
       addComment( "IntIMM math WordID: TOC" );
       
-      string positive_op1 = toHex(atoi( stripFirst(stripFirst($1.name).c_str()).c_str() ));
+      string positive_op1 = toHex(atoi(stripFirst($1.name).c_str()) );
       //string negative_op1 = toHex(twos_complemtn(atoi( stripFirst($1.name).c_str())));
       if( op==string( "+" ))
 	{
@@ -20147,7 +20192,7 @@ arithmetic[MATHOP] expression[OP2]
       else if( op == string( "/" ) )
 	{
 	  addComment( "IntIMM / XA --> XA" );
-	  int OP1value = (atoi(stripFirst(stripFirst($1.name).c_str()).c_str() ));
+	  int OP1value = atoi(stripFirst($1.name).c_str());
 	  div16_is_needed = true;
 	  addAsm( str_STA + "_DIV16_FD", 3, false );	  
 	  addAsm( str_STX + "_DIV16_FE", 3, false );	  
@@ -20665,7 +20710,7 @@ arithmetic[MATHOP] expression[OP2]
       else if( op == string("/") )
 	{
 	  int addr_op1 = hexToDecimal($1.name);
-	  int op2 = atoi(stripFirst(stripFirst($4.name).c_str()).c_str());
+	  int op2 = atoi(stripFirst($4.name).c_str());
 	  addComment( "UintID / IntIMM --> A" );
 	  div16_is_needed = true;
 	  addAsm( str_LDA + getNameOf(addr_op1), 3, false );
@@ -23894,7 +23939,7 @@ arithmetic[MATHOP] expression[OP2]
       // it would be possible to add some specific optimizations here.
       // if the IMM is a power of 2 then just add lsr's until it's divided out
       int a = getAddressOf($1.name);
-      int IMMvalue = atoi(stripFirst(stripFirst($4.name).c_str()).c_str());
+      int IMMvalue = atoi(stripFirst($4.name).c_str());
       if( op == string( "+" ) )
 	{
 	  addAsm( str_SEC, 1, false );
@@ -24114,7 +24159,7 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_LDA + getNameOf(addr_op1) + " +1", 3, false );
 	  addAsm( str_STA + "_DIV16_FC", 3, false );
 
-	  addAsm( str_LDA + "#$" + toHex(atoi(stripFirst(stripFirst($4.name).c_str()).c_str())), 2, false );
+	  addAsm( str_LDA + "#$" + toHex(atoi(stripFirst($4.name).c_str())), 2, false );
 	  addAsm( str_STA + "_DIV16_FD", 3, false );
 	  addAsm( str_LDA + "#$00", 2, false );
 	  addAsm( str_STA + "_DIV16_FE", 3, false );
@@ -26154,7 +26199,7 @@ arithmetic[MATHOP] expression[OP2]
 	{
 	  addComment( "XA / IntIMM --> XA" );
 	  div16_is_needed = true;
-	  int tmp_v = atoi(stripFirst(stripFirst($4.name).c_str()).c_str());
+	  int tmp_v = atoi(stripFirst($4.name).c_str());
 	  addAsm( str_STA + "_DIV16_FB", 3, false);
 	  addAsm( str_STX + "_DIV16_FC", 3, false);
 	  addAsm( str_LDA + "#$" + toHex(tmp_v), 2, false );
@@ -28777,7 +28822,7 @@ arithmetic[MATHOP] expression[OP2]
     {
       addComment( "touint(IntIMM) --> A");
       addCompilerMessage( "touint(IntIMM) --> A: may produce unexpected results", 1 );
-      int tmp_val = atoi( stripFirst(stripFirst($3.name).c_str()).c_str() );
+      int tmp_val = atoi((stripFirst($3.name).c_str()) );
       addAsm( str_LDA + "#$" + toHex(get_word_L(tmp_val )), 2, false );
     }
   else if( isUintIMM($3.name) )
@@ -30060,7 +30105,7 @@ arithmetic[MATHOP] expression[OP2]
       addComment( "peek( IntIMM );" );
       addCompilerMessage( "peek(IntIMM): using abs( IntIMM )", 1 );
 
-      int v = atoi( stripFirst(stripFirst($3.name).c_str()).c_str() );
+      int v = atoi((stripFirst($3.name).c_str()) );
       addAsm(str_LDA + "$" + toHex(v), 2, false );
     }
   else if(  isUintIMM($3.name) )
