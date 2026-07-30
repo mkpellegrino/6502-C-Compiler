@@ -26,18 +26,13 @@ frmt  [{\t}|{\n}]
 "fopen"         { strcpy(yylval.nd_obj.name,(yytext)); return tFOPEN; }
 "setlfs"         { strcpy(yylval.nd_obj.name,(yytext)); return tSETLFS; }
 "setfilename"         { strcpy(yylval.nd_obj.name,(yytext)); return tSETNAM; }
-"save"         { strcpy(yylval.nd_obj.name,(yytext)); return tSAVE; }
-"load"         { strcpy(yylval.nd_obj.name,(yytext)); return tLOAD; }
 "import"          { strcpy(yylval.nd_obj.name,(yytext)); return tIMPORT; }
-"sprptr"          { strcpy(yylval.nd_obj.name,(yytext)); return tSPRPTR; }
 "ptr"             { strcpy(yylval.nd_obj.name,(yytext)); return tPOINTER; }
 "irq"              { strcpy(yylval.nd_obj.name,(yytext)); return tIRQ; }
 "sidoff"              { strcpy(yylval.nd_obj.name,(yytext)); return tSIDOFF; }
 "seed"              { strcpy(yylval.nd_obj.name,(yytext)); return tSEED; }
 "memcpy"              { strcpy(yylval.nd_obj.name,(yytext)); return tMEMCPY; }
 "NULL"                { strcpy(yylval.nd_obj.name,(yytext)); return tNULL; }
- /* "push"                { strcpy(yylval.nd_obj.name,(yytext)); return tPUSH; } */
- /* "pop"                { strcpy(yylval.nd_obj.name,(yytext)); return tPOP; } */
 "screen"                { strcpy(yylval.nd_obj.name,(yytext)); return tSCREEN; }
 "asmcomment"                { strcpy(yylval.nd_obj.name,(yytext)); return tCOMMENT; }
 "data"                { strcpy(yylval.nd_obj.name,(yytext)); return tDATA; }
@@ -101,7 +96,6 @@ frmt  [{\t}|{\n}]
 "prints"                    { strcpy(yylval.nd_obj.name,(yytext)); return tPRINTS; }
 "scanf"                     { strcpy(yylval.nd_obj.name,(yytext)); return SCANFF; }
 "int"                       { strcpy(yylval.nd_obj.name,(yytext)); return INT; }
-   /*"mob"               { strcpy(yylval.nd_obj.name,(yytext)); return tMOB; }*/
 "float"                     { strcpy(yylval.nd_obj.name,(yytext)); return FLOAT; }
    /* "double"                    { strcpy(yylval.nd_obj.name,(yytext)); return tDOUBLE; } */
 "word"                    { strcpy(yylval.nd_obj.name,(yytext)); return tWORD; }
