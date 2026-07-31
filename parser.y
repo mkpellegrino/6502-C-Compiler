@@ -4468,7 +4468,7 @@
 
 //%parse-param { FILE* fp }
 %token VOID 
-%token <nd_obj> tREF CHAR tFCLOSE tFOPEN tFCLRCHN tFCHROUT tFCHRIN tFREADST tFCHKOUT tFCHKIN tSETLFS tSETNAM tIMPORT tCOMMENT tDATA tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tLN tABS tSIN tCOS tTAN tSIDIRQ tSIDOFF tSTRTOFLOAT tSTRTOWORD tTOFLOAT tINTTOWORD tTOUINT tTOWORD tTOBIT tDEC tINC tROL tROR tLSR tGETPC tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJUMP tSETSCR tJSR tIRQ tROMOUT tROMIN tLDA tASL tSPRITESET  tSPRITEOFF tSPRITETOGGLE tRND tXXX tINLINE tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tPEEK tPOKE CHARACTER tPRINTS PRINTFF SCANFF INT FLOAT WHILE FOR IF ELSE TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE EXPONENT tSQRT INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL tSCREEN tNULL tMEMCPY tSEED tNEEDS tPI tE tBL tBS
+%token <nd_obj> tREF CHAR tFCLOSE tFOPEN tFCLRCHN tFCHROUT tFCHRIN tFREADST tFCHKOUT tFCHKIN tSETLFS tSETNAM tIMPORT tCOMMENT tDATA tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tLN tABS tSIN tCOS tTAN tSIDIRQ tSIDOFF tSTRTOFLOAT tSTRTOWORD tTOFLOAT tINTTOWORD tTOUINT tTOWORD tTOBIT tDEC tINC tROL tROR tLSR tGETPC tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJUMP tSETSCR tJSR tIRQ tROMOUT tROMIN tLDA tASL tSPRITECLR tSPRITESET tSPRITEREG tSPRITEOFF tSPRITETOGGLE tRND tXXX tINLINE tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tPEEK tPOKE CHARACTER tPRINTS PRINTFF SCANFF INT FLOAT WHILE FOR IF ELSE TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE EXPONENT tSQRT INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL tSCREEN tNULL tMEMCPY tSEED tNEEDS tPI tE tBL tBS
 %type <nd_obj> headers main body return function datatype statement arithmetic relop program else 
    %type <nd_obj2> init value expression /*charlist*/ numberlist parameterlist argumentlist
       %type <nd_obj3> condition
@@ -11726,11 +11726,19 @@ statement: datatype ID init
 | tSPRITEON '(' expression ')'
 {
   addComment( "spriteon( exp );" );
-  
-  if( isIntIMM($3.name) || isUintIMM($3.name) )
+
+  if( isIntIMM($3.name) )
     {
-      addComment( "spriteon( UIntIMM );" );
+      addCompilerMessage( "Um... what is it that you're trying to do here?", 3 );
+    }
+  else if( isUintIMM($3.name) )
+    {
+      addComment( "spriteon( UintIMM );" );
       int x = atoi( stripFirst($3.name).c_str() );
+      if( x > 7 )
+	{
+	  addCompilerMessage( "argument too large for spriteon... [0-7 only]!", 3 );
+	}
       addAsm( str_LDA + "#$" + toHex( x ), 2, false );
       addAsm( str_ORA + "$D015", 3, false );
       addAsm( str_STA + "$D015", 3, false );
@@ -11738,57 +11746,195 @@ statement: datatype ID init
   else if( isA( $3.name ) )
     {
       addComment( "spriteon( A );" );
+      bin2bit_is_needed = true;
+      addAsm( str_JSR + "_bin_to_bit", 3, false);
+      addAsm( str_ORA + "$D015", 3, false );
+      addAsm( str_STA + "$D015", 3, false );
+    }
+  else if( isUintID($3.name) )
+    {
+      addComment( "spriteon( UintID );" );
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name) ), 3, false );
+      bin2bit_is_needed = true;
+      addAsm( str_JSR + "_bin_to_bit", 3, false);
+      addAsm( str_ORA + "$D015", 3, false );
+      addAsm( str_STA + "$D015", 3, false );
+    }
+  else if( isWordIMM( $3.name ) )
+    {
+      addComment( "spriteon( WordIMM );" );
+
+      int x = atoi( stripFirst($3.name).c_str() );
+      if( x > 7 )
+	{
+	  addCompilerMessage( "argument too large for spriteon... [0-7 only]!", 3 );
+	}
+      int y = pow(2,x);
+      y=y ^ 255;
+      
+      addAsm( str_LDA + "#$" + toHex( y ), 2, false );
+      addAsm( str_ORA + "$D015", 3, false );
+      addAsm( str_STA + "$D015", 3, false );
+    }
+  else if( isWordID($3.name) )    
+    {
+      addCompilerMessage( "spriteon( WordID ): losing high byte", 1 );
+      addComment( "spriteon( WordID );" );
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name) ), 3, false );
+      bin2bit_is_needed = true;
+      addAsm( str_JSR + "_bin_to_bit", 3, false);
       addAsm( str_ORA + "$D015", 3, false );
       addAsm( str_STA + "$D015", 3, false );
     }
   else
     {
-      addComment( "spriteon( ??? );" );
-      int x = getAddressOf($3.name);
-      addAsm( str_LDA + "$D015", 3, false );
-      // 2025 05 01 - mkpellegrino
-      addAsm( str_ORA + "$" + toHex( x ), 3, false );
+      addCompilerMessage( "spriteon: unknown argument type", 3 );
+    }
+  strcpy($$.name, "NULL");
+};
+// STATEMENT
+| tSPRITEREG '(' expression ')'
+{
+  if( isUintIMM($3.name) )
+    {
+      addComment( "spritereg(UintIMM);" );
+      int x = atoi( stripFirst($3.name).c_str() );
+      addAsm( str_LDA + "#$" + toHex( x ), 2, false );
       addAsm( str_STA + "$D015", 3, false );
     }
-};
+  else if( isUintID($3.name) )
+    {
+      addComment( "spritereg(UintID);" );
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name) ), 3, false );
+      addAsm( str_STA + "$D015", 3, false );
+    }
+  else if( isIntID($3.name) )
+    {
+      addCompilerMessage( "spritereg(arg): arg must be positive... I sure do hope you know what you're doing!", 1);
+      addComment( "spritereg(IntID);" );
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name) ), 3, false );
+      addAsm( str_STA + "$D015", 3, false );
 
+    }
+  else if( isWordID($3.name) )
+    {
+      addComment( "spritereg(WordID); (losing high byte)" );
+      addCompilerMessage( "spritereg(WordID): losing high byte", 1 );
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name) ), 3, false );
+      addAsm( str_STA + "$D015", 3, false );
+      
+
+    }
+  else if( isWordIMM($3.name) )
+    {
+      addComment( "spritereg(WordIMM);" );
+      int x = atoi( stripFirst($3.name).c_str() );
+      if( x > 255 )
+	{
+	  addCompilerMessage( "spritereg(WordIMM): argument still needs to be between 0 and 255", 3 );
+	}
+      addAsm( str_LDA + "#$" + toHex( x ), 2, false );
+      addAsm( str_STA + "$D015", 3, false );
+    }
+  else if( isXA($3.name) )
+    {
+      addComment( "spritereg(XA);" );
+      addCompilerMessage( "spritereg(XA): losing high byte", 1 );
+      addAsm( str_STA + "$D015", 3, false );      
+    }
+  else if( isA($3.name) )
+    {
+      addComment( "spritereg(A);" );
+      addAsm( str_STA + "$D015", 3, false );
+    }
+  else
+    {
+      addCompilerMessage( "spritereg(arg0): invalid argument type.", 3 );
+    }
+  strcpy($$.name, "NULL" );
+};
 // STATEMENT
 | tSPRITEOFF '(' expression ')'
 {
-  addDebugComment( "TODO: this could be implemented better for IMMs" );
-  addComment( "spriteoff( exp );" );
+  // TODO: this could be implemented better for IMMs
 
-  
-  if( isIntIMM($3.name) || isUintIMM($3.name) )
+  if( isIntIMM($3.name) )
     {
-      addComment( "spriteoff( UIntIMM );" );
-
+      addCompilerMessage( "spriteoff( -? ) doesn't even make sense you weirdo!", 3 );
+    }
+  else if( isUintIMM($3.name) )
+    {
+      // TODO: Make Sprite Off/On work this way
+      // for all types
+      addComment( "spriteoff( UintIMM );" );
       int x = atoi( stripFirst($3.name).c_str() );
-      addAsm( str_LDA + "#$" + toHex( x ), 2, false );
-      addAsm( str_EOR + "#$FF", 2, false );
+      if( x > 7 )
+	{
+	  addCompilerMessage( "argument too large for spriteoff... [0-7 only]!", 3 );
+	}
+      int y = pow(2,x);
+      y=y ^ 255;
+      
+      addAsm( str_LDA + "#$" + toHex( y ), 2, false );
+      //bin2bit_is_needed = true;
+      //addAsm( str_JSR + "_bin_to_bit", 3, false);
+
+      //addAsm( str_EOR + "#$FF", 2, false );
       addAsm( str_AND + "$D015", 3, false );
       addAsm( str_STA + "$D015", 3, false );
 
+    }
+  else if( isWordID($3.name) )    
+    {
+      addCompilerMessage( "spriteoff( WordID ): losing high byte", 1 );
+      addComment( "spriteoff( WordID );" );
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name) ), 3, false );
+      bin2bit_is_needed = true;
+      addAsm( str_JSR + "_bin_to_bit", 3, false);
+      addAsm( str_EOR + "#$FF", 2, false );
+      addAsm( str_AND + "$D015", 3, false );
+      addAsm( str_STA + "$D015", 3, false );
+    }
+  else if( isUintID($3.name) )
+    {
+      addComment( "spriteoff( UintID );" );
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name) ), 3, false );
+      bin2bit_is_needed = true;
+      addAsm( str_JSR + "_bin_to_bit", 3, false);
+      addAsm( str_EOR + "#$FF", 2, false );
+      addAsm( str_AND + "$D015", 3, false );
+      addAsm( str_STA + "$D015", 3, false );
     }
   else if( isA( $3.name ) )
     {
       addComment( "spriteoff( A );" );
-
-      addComment( "not yet implemented" );
-      addCompilerMessage( "spriteoff( A ) not yet implemented", 3 );
-      //addAsm(str_EOR + "#$FF", 2, false );
-      //addAsm( str_AND + "$D015", 3, false );
-    }
-  else
-    {
-      addComment( "spriteoff( ??? );" );
-
-      int x = getAddressOf($3.name);
-      addAsm( str_LDA + "$" + toHex( x ), 3, false );
+      bin2bit_is_needed = true;
+      addAsm( str_JSR + "_bin_to_bit", 3, false);
       addAsm( str_EOR + "#$FF", 2, false );
       addAsm( str_AND + "$D015", 3, false );
       addAsm( str_STA + "$D015", 3, false );
     }
+  else if( isWordIMM( $3.name ) )
+    {
+      addComment( "spriteoff( WordIMM );" );
+
+      int x = atoi( stripFirst($3.name).c_str() );
+      if( x > 7 )
+	{
+	  addCompilerMessage( "argument too large for spriteoff... [0-7 only]!", 3 );
+	}
+      int y = pow(2,x);
+      y=y ^ 255;
+      
+      addAsm( str_LDA + "#$" + toHex( y ), 2, false );
+      addAsm( str_AND + "$D015", 3, false );
+      addAsm( str_STA + "$D015", 3, false );
+    }
+  else
+    {
+      addCompilerMessage( "spriteoff: unknown argument type", 3 );
+    }
+  strcpy($$.name, "NULL");
 };
 
 // STATEMENT
@@ -13128,28 +13274,152 @@ statement: datatype ID init
 };
 
 // STATEMENT
+| tSPRITECLR '(' expression ')'
+{
+  if( isIntIMM($3.name ) )
+    {
+      addCompilerMessage( "spriteclr( negative # )... what are you thinking?!?!", 3 );
+    }
+  else if( isWordIMM($3.name) )
+    {
+      addComment( "spriteclr( WordIMM );" );
+      int x = atoi( stripFirst($3.name).c_str() );
+      if( x > 255 )
+	{
+	  addCompilerMessage( "argument too large for spriteclr... [0-255 only]!", 3 );
+	}
+      int y = x ^ 255;
+      
+      addAsm( str_LDA + "#$" + toHex( y ), 2, false );
+      addAsm( str_AND + "$D015", 3, false );
+      addAsm( str_STA + "$D015", 3, false );
+    }
+  else if( isUintIMM($3.name) )
+    {
+      addComment( "spriteclr( UintIMM );" );
+      int x = atoi( stripFirst($3.name).c_str() );
+      int y = x ^ 255;
+      addAsm( str_LDA + "#$" + toHex( y ), 2, false );
+      addAsm( str_AND + "$D015", 3, false );
+      addAsm( str_STA + "$D015", 3, false );
+    }
+  else if( isUintID($3.name) )
+    {
+      addComment( "spriteclr( UintID );" );
+      addAsm( str_LDA + getNameOf( getAddressOf($3.name) ), 3, false );
+      addAsm( str_EOR + "#$FF", 2, false );
+      addAsm( str_AND + "$D015", 3, false );
+      addAsm( str_STA + "$D015", 3, false );
+    }
+  else if( isWordID($3.name) )
+    {
+      addComment( "spriteclr( WordID );" );
+      addCompilerMessage( "spriteclr(WordID) - losing high byte", 1 );
+      addAsm( str_LDA + getNameOf( getAddressOf($3.name) ), 3, false );
+      addAsm( str_EOR + "#$FF", 2, false );
+      addAsm( str_AND + "$D015", 3, false );
+      addAsm( str_STA + "$D015", 3, false );
+    }
+  else if( isA($3.name) )
+    {
+      addComment( "spriteclr( A );" );
+      addAsm( str_EOR + "#$FF", 2, false );
+      addAsm( str_AND + "$D015", 3, false );
+      addAsm( str_STA + "$D015", 3, false );
+    }
+  else if( isXA($3.name) )
+    {
+      addCompilerMessage( "spriteclr(XA) - losing high byte", 1 );
+      addComment( "spriteclr( XA );" );
+      addAsm( str_EOR + "#$FF", 2, false );
+      addAsm( str_AND + "$D015", 3, false );
+      addAsm( str_STA + "$D015", 3, false );
+    }
+  else if( isIntID($3.name) )
+    {
+      addComment( "spriteclr( IntID );" );
+      addCompilerMessage( "spriteclr(IntID): as long as it's > 0 then ... okay - yeah", 1 );
+      addAsm( str_LDA + getNameOf( getAddressOf($3.name) ), 3, false );
+      addAsm( str_EOR + "#$FF", 2, false );
+      addAsm( str_AND + "$D015", 3, false );
+      addAsm( str_STA + "$D015", 3, false );
+    }
+  else
+  {
+      addCompilerMessage( "spriteclr( exp ) of unknown type.", 3 );
+    }
+  strcpy($$.name, "NULL" );
+};
+
+
+// STATEMENT
 | tSPRITESET '(' expression ')'
 {
-  addComment( "spriteset( exp );" );
-  if( isIntIMM($3.name) || isUintIMM($3.name) )
+  if( isIntIMM($3.name ) )
     {
-      addComment( "spriteset( UIntIMM );" );
+      addCompilerMessage( "spriteset( negative # )... what are you even thinking?!?!", 3 );
+    }
+  else if( isWordIMM($3.name) )
+    {
+      addComment( "spriteset( WordIMM );" );
+      int x = atoi( stripFirst($3.name).c_str() );
+      if( x > 255 )
+	{
+	  addCompilerMessage( "argument too large for spriteset... [0-255 only]!", 3 );
+	}
+      addAsm( str_LDA + "#$" + toHex( x ), 2, false );
+      addAsm( str_ORA + "$D015", 3, false );
+      addAsm( str_STA + "$D015", 3, false );
+    }
+  else if( isUintIMM($3.name) )
+    {
+      addComment( "spriteset( UintIMM );" );
       int x = atoi( stripFirst($3.name).c_str() );
       addAsm( str_LDA + "#$" + toHex( x ), 2, false );
+      addAsm( str_ORA + "$D015", 3, false );
+      addAsm( str_STA + "$D015", 3, false );
+    }
+  else if( isUintID($3.name) )
+    {
+      addComment( "spriteset( UintID );" );
+      addAsm( str_LDA + getNameOf( getAddressOf($3.name) ), 3, false );
+      addAsm( str_ORA + "$D015", 3, false );
+      addAsm( str_STA + "$D015", 3, false );
+    }
+  else if( isWordID($3.name) )
+    {
+      addComment( "spriteset( WordID );" );
+      addCompilerMessage( "spriteset(WordID) - losing high byte", 1 );
+      addAsm( str_LDA + getNameOf( getAddressOf($3.name) ), 3, false );
+      addAsm( str_ORA + "$D015", 3, false );
+      addAsm( str_STA + "$D015", 3, false );
     }
   else if( isA($3.name) )
     {
       addComment( "spriteset( A );" );
+      addAsm( str_ORA + "$D015", 3, false );
+      addAsm( str_STA + "$D015", 3, false );
+    }
+  else if( isXA($3.name) )
+    {
+      addComment( "spriteset( XA );" );
+      addCompilerMessage( "spriteset(XA) - losing high byte", 1 );
+      addAsm( str_ORA + "$D015", 3, false );
+      addAsm( str_STA + "$D015", 3, false );
+    }
+  else if( isIntID($3.name) )
+    {
+      addComment( "spriteset( IntID );" );
+      addCompilerMessage( "spriteset(IntID): as long as it's > 0 then ... okay - yeah... I guess.", 1 );
+      addAsm( str_LDA + getNameOf( getAddressOf($3.name) ), 3, false );
+      addAsm( str_ORA + "$D015", 3, false );
+      addAsm( str_STA + "$D015", 3, false );
     }
   else
     {
       addCompilerMessage( "spriteset( exp ) of unknown type.", 3 );
-      addComment( "spriteset( ??? );" );
-
-      int x = getAddressOf($3.name);
-      addAsm( str_LDA + getNameOf( x ), 3, false );
     }
-  addAsm( str_STA + "$D015", 3, false );
+  strcpy($$.name, "NULL" );
 };
 
 
