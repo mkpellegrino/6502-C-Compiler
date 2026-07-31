@@ -11,11 +11,10 @@ frmt  [{\t}|{\n}]
 %%
 "#longbranches"     { strcpy(yylval.nd_obj.name,(yytext)); return tBL; }
 "#shortbranches"     { strcpy(yylval.nd_obj.name,(yytext)); return tBS; }
-"needs"     { strcpy(yylval.nd_obj.name,(yytext)); return tNEEDS; }
+"#needs"     { strcpy(yylval.nd_obj.name,(yytext)); return tNEEDS; }
 "inline"     { strcpy(yylval.nd_obj.name,(yytext)); return tINLINE; }
 "Math.PI"       {strcpy(yylval.nd_obj.name,(yytext)); return tPI; }
 "Math.E"       {strcpy(yylval.nd_obj.name,(yytext)); return tE; }
-"xxx"     { strcpy(yylval.nd_obj.name,(yytext)); return tXXX; }
 "fchrin"     { strcpy(yylval.nd_obj.name,(yytext)); return tFCHRIN; }
 "fchrout"     { strcpy(yylval.nd_obj.name,(yytext)); return tFCHROUT; }
 "fclrchn"     { strcpy(yylval.nd_obj.name,(yytext)); return tFCLRCHN; }
