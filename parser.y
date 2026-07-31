@@ -4468,7 +4468,7 @@
 
 //%parse-param { FILE* fp }
 %token VOID 
-%token <nd_obj> tREF CHAR tFCLOSE tFOPEN tFCLRCHN tFCHROUT tFCHRIN tFREADST tFCHKOUT tFCHKIN tSETLFS tSETNAM tIMPORT tCOMMENT tDATA tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tLN tABS tSIN tCOS tTAN tSIDIRQ tSIDOFF tSTRTOFLOAT tSTRTOWORD tTOFLOAT tINTTOWORD tTOUINT tTOWORD tTOBIT tDEC tINC tROL tROR tLSR tGETPC tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJUMP tSETSCR tJSR tIRQ tROMOUT tROMIN tLDA tASL tSPRITECLR tSPRITESET tSPRITEREG tSPRITEOFF tSPRITETOGGLE tRND tXXX tINLINE tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tPEEK tPOKE CHARACTER tPRINTS PRINTFF SCANFF INT FLOAT WHILE FOR IF ELSE TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE EXPONENT tSQRT INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL tSCREEN tNULL tMEMCPY tSEED tNEEDS tPI tE tBL tBS
+%token <nd_obj> tREF CHAR tFCLOSE tFOPEN tFCLRCHN tFCHROUT tFCHRIN tFREADST tFCHKOUT tFCHKIN tSETLFS tSETNAM tIMPORT tCOMMENT tDATA tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD tBYTE tDOUBLE tUINT tPOINTER tLN tABS tSIN tCOS tTAN tSIDIRQ tSIDOFF tSTRTOFLOAT tSTRTOWORD tTOFLOAT tINTTOWORD tTOUINT tTOWORD tTOBIT tDEC tINC tROL tROR tLSR tGETPC tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJUMP tSETSCR tJSR tIRQ tROMOUT tROMIN tLDA tASL tSPRITECLR tSPRITESET tSPRITEREG tSPRITEOFF tRND tXXX tINLINE tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tPEEK tPOKE CHARACTER tPRINTS PRINTFF SCANFF INT FLOAT WHILE FOR IF ELSE TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE EXPONENT tSQRT INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL tSCREEN tNULL tMEMCPY tSEED tNEEDS tPI tE tBL tBS
 %type <nd_obj> headers main body return function datatype statement arithmetic relop program else 
    %type <nd_obj2> init value expression /*charlist*/ numberlist parameterlist argumentlist
       %type <nd_obj3> condition
@@ -11945,12 +11945,9 @@ statement: datatype ID init
   int sprite_address = 0;
   //int x_coord = 0;
   int y_coord = 0;
-  if((isIntIMM($3.name) && isIntIMM($5.name))   ||
-     (isUintIMM($3.name) && isUintIMM($5.name)) ||
-     (isIntIMM($3.name) && isUintIMM($5.name))  ||
-     (isUintIMM($3.name) && isIntIMM($5.name)) )
+  if( isUintIMM($3.name) && isUintIMM($5.name) )
     {
-      addComment( "spritey( UIntIMM, UIntIMM );" );
+      addComment( "spritey( UintIMM, UintIMM );" );
 
       sprite_address = atoi( stripFirst($3.name).c_str() );
       sprite_address*=2;
@@ -11959,12 +11956,14 @@ statement: datatype ID init
       addAsm( str_LDA + "#$" + toHex( y_coord) , 2, false );
       addAsm( str_STA + "$" + toHex( sprite_address + 1 ), 3, false );
     }
-  else if((isIntIMM($3.name) && isIntID($5.name))    ||
-	  (isIntIMM($3.name) && isUintID($5.name))   ||
-	  (isUintIMM($3.name) && isIntID($5.name))   ||
-	  (isUintIMM($3.name) && isUintID($5.name)) )
+  else if( isIntIMM($3.name) || isIntIMM($5.name) )
     {
-      addComment( "spritey( UIntIMM, UIntID );" );
+      addCompilerMessage( "spritey: invalid argument(s) must be >= 0", 3 );
+    }
+  else if( (isUintIMM($3.name) && isIntID($5.name))   ||
+	   (isUintIMM($3.name) && isUintID($5.name)) )
+    {
+      addComment( "spritey( UintIMM, UintID );" );
 
       int addr = hexToDecimal($5.name);
 
@@ -11981,7 +11980,7 @@ statement: datatype ID init
 	  (isIntID($3.name) && isUintID($5.name)) ||
 	  (isIntID($3.name) && isIntID($5.name)) )
     {
-      addComment( "spritey( UIntID, UIntID );" );
+      addComment( "spritey( UintID, UintID );" );
 
       addAsm( str_LDA + string($3.name), 3, false );
       addAsm( str_ASL ); // 2x
@@ -11992,29 +11991,27 @@ statement: datatype ID init
   else if((isA($3.name) && isUintID($5.name)) ||
 	  (isA($3.name) && isIntID($5.name)))
     {
-      addComment( "spritey( A, UIntID );" );
+      addComment( "spritey( A, UintID );" );
       addAsm( str_ASL ); // 2x
       addAsm( str_TAX );
       addAsm( str_LDA + getNameOf(getAddressOf($5.name)), 3, false );
       addAsm( str_STA + "$D001,X" + commentmarker + "set the y-coord", 3, false );
 
     }
-  else if((isA($3.name) && isUintIMM($5.name)) ||
-	  (isA($3.name) && isIntIMM($5.name)))
+  else if(isA($3.name) && isUintIMM($5.name))
+	  
     {
-      addComment( "spritey( A, UIntIMM );" );
+      addComment( "spritey( A, UintIMM );" );
       addAsm( str_ASL ); // 2x
       addAsm( str_TAX );
       addAsm( str_LDA + "#$" + toHex(atoi(stripFirst(string($5.name)).c_str())), 3, false );
       addAsm( str_STA + "$D001,X" + commentmarker + "set the y-coord", 3, false );
 
     }
-  else if( (isUintID($3.name) && isIntIMM($5.name)) ||
-	   (isUintID($3.name) && isUintIMM($5.name)) ||
-	   (isIntID($3.name) && (isIntIMM($5.name))) ||
+  else if( (isUintID($3.name) && isUintIMM($5.name)) ||
 	   (isIntID($3.name) && (isUintIMM($5.name))) )
     {
-      addComment( "spritey( UIntID, UIntIMM );" );
+      addComment( "spritey( UintID, UintIMM );" );
        
       addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
       addAsm( str_ASL ); // 2x
@@ -12026,7 +12023,7 @@ statement: datatype ID init
   else if( (isUintID($3.name) && isA($5.name)) ||
 	   (isIntID($3.name) && isA($5.name)) )
     {
-      addComment( "spritey( UIntID, A );" );		 
+      addComment( "spritey( UintID, A );" );		 
       addAsm( str_PHA );
       addAsm( str_LDA + string($3.name), 3, false );
       addAsm( str_ASL ); // 2x
@@ -12034,8 +12031,7 @@ statement: datatype ID init
       addAsm( str_PLA );
       addAsm( str_STA + "$D001,X" + commentmarker + "set the y-coord", 3, false );
     }
-  else if( (isUintIMM($3.name) && isA($5.name)) ||
-	   (isIntIMM($3.name) && isA($5.name)) )
+  else if(isUintIMM($3.name) && isA($5.name) )
     {
       addComment( "spritey( UIntIMM, A );" );
 
@@ -12045,47 +12041,23 @@ statement: datatype ID init
     }
   else
     {
-      addCompilerMessage( "spritey error - invalid type", 1 );
+      addCompilerMessage( "spritey: error - invalid type", 3 );
     }
+  strcpy( $$.name, "NULL" );
 }
 
-// STATEMENT
-| tSPRITETOGGLE '(' expression ')'
-{
-  addComment( "spritetoggle( exp );" );
-  if( isIntIMM($3.name) || isUintIMM($3.name) )
-    {
-      addComment( "spritetoggle( UIntIMM );" );
-
-      int x = atoi( stripFirst($3.name).c_str() );
-      addAsm( str_LDA + "#$" + toHex( x ), 2, false );
-    }
-  else
-    {
-      addComment( "spritetoggle( ??? );" );
-
-      int x = getAddressOf($3.name);
-      addAsm( str_LDA + "$" + toHex( x ), 3, false );
-    }
-  addAsm( str_EOR + "$D015", 3, false );
-  addAsm( str_STA + "$D015", 3, false );
-};
 
 // STATEMENT
 | tSPRITEX '(' expression ',' expression ')'
 {
-  addDebugComment( string( "spritex( ") + string($3.name) + string(", ") + string($5.name) + string( " );" ) );
 
   int base_address = 53248;
   int sprite_address = 0;
   int x_coord = 0;
   int y_coord = 0;
-  if( (isIntIMM($3.name) && isIntIMM($5.name)) ||
-      (isIntIMM($3.name) && isUintIMM($5.name)) ||
-      (isUintIMM($3.name) && isIntIMM($5.name)) ||
-      (isUintIMM($3.name) && isUintIMM($5.name)) )
+  if( isUintIMM($3.name) && isUintIMM($5.name))
     {
-      addComment( "spritex( UIntIMM, UIntIMM );" );
+      addComment( "spritex( UintIMM, UintIMM );" );
       
       sprite_address = atoi( stripFirst($3.name).c_str() );
       int tmp_bit = (int)pow(2,sprite_address);
@@ -12101,6 +12073,10 @@ statement: datatype ID init
       addAsm( str_LDA + "#$" + toHex( tmp_others ), 2, false );
       addAsm( str_AND + "$D010", 3, false );
       addAsm( str_STA + "$D010", 3, false );
+    }
+  else if( isIntIMM($3.name) || isIntIMM($5.name) )
+    {
+      addCompilerMessage( "oh - the humanity... negative spritex arguments?!?!", 3 );
     }
   else if( isUintIMM($3.name) && isXA($5.name) )
     {
@@ -12214,10 +12190,8 @@ statement: datatype ID init
       addAsm( "!:", 0, true );
 
     }
-  else if(  (isUintIMM($3.name) && isWordIMM($5.name) ) ||
-	    (isIntIMM($3.name) && isWordIMM($5.name) ) )
+  else if(isUintIMM($3.name) && isWordIMM($5.name) )
     {
-
       int sprite_base = 53248;
       
       addComment( "spritex( UIntIMM, WordIMM );" );
@@ -12344,8 +12318,7 @@ statement: datatype ID init
       addAsm( str_AND + "$D010", 3, false );
       addAsm( str_STA + "$D010", 3, false );
     }
-  else if( (isUintIMM($3.name) && isWordID($5.name)) ||
-	   (isIntIMM($3.name) && isWordID($5.name)))
+  else if(isUintIMM($3.name) && isWordID($5.name))
     {
       addComment( "spritex( UintIMM, WordID );" );
 
@@ -12425,9 +12398,7 @@ statement: datatype ID init
       addAsm( "!:\t" + str_STA + "$D010", 3, true );
       
     }
-  else if( (isIntIMM($3.name) && isIntID($5.name)) ||
-	   (isIntIMM($3.name) && isUintID($5.name)) ||
-	   (isUintIMM($3.name) && isIntID($5.name)) ||
+  else if( (isUintIMM($3.name) && isIntID($5.name)) ||
 	   (isUintIMM($3.name) && isUintID($5.name)) )
     {
       addComment( "spritex( UIntIMM, UIntID );" );
@@ -12490,9 +12461,6 @@ statement: datatype ID init
 
       // turn OFF the high bit if necessary
       // turn the sprite # into a binary number
-
-
-
       addComment( "turn off the 9th bit in $D010" );
       addAsm( str_TYA, 1, false );
       bin2bit_is_needed = true;
@@ -12503,9 +12471,7 @@ statement: datatype ID init
 
     }
   else if( (isUintID($3.name) && isUintIMM($5.name)) ||
-	   (isUintID($3.name) && isIntIMM($5.name)) ||
-	   (isIntID($3.name) && isUintIMM($5.name)) ||
-	   (isIntID($3.name) && isIntIMM($5.name)) )
+	   (isIntID($3.name) && isUintIMM($5.name)))
     {
       addComment( "spritex( UIntID, UIntIMM );" );
    
@@ -12534,7 +12500,6 @@ statement: datatype ID init
 
       addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
       addAsm( str_TAY, 1, false ); // save it for later... don't run away - don't run away - don't let me do-o-o-own
-      //addAsm( str_CLC );
       addAsm( str_ASL ); // 2x
       addAsm( str_TAX );
       addAsm( str_LDA + "#$" + toHex(get_word_L(atoi(stripFirst($5.name).c_str()))) + commentmarker + "low byte", 2, false );
@@ -12568,7 +12533,7 @@ statement: datatype ID init
   // TBD: spritex( A, XA );
   // TBD: spritex( XA, A );
   // TBD: spritex( XA, XA )
-  
+  strcpy( $$.name, "NULL" );
 };
 
 // TODO: add spritexy( imm, XA, XA );
@@ -12579,21 +12544,13 @@ statement: datatype ID init
   int sprite_address = 0;
   int x_coord = 0;
   int y_coord = 0;
-  if((isIntIMM($3.name) && isIntIMM($5.name) && isIntIMM($7.name)) ||
-     (isUintIMM($3.name) && isIntIMM($5.name) && isIntIMM($7.name)) ||
-     (isIntIMM($3.name) && isUintIMM($5.name) && isIntIMM($7.name)) ||
-     (isUintIMM($3.name) && isUintIMM($5.name) && isIntIMM($7.name)) ||
-     (isIntIMM($3.name) && isIntIMM($5.name) && isUintIMM($7.name)) ||
-     (isUintIMM($3.name) && isIntIMM($5.name) && isUintIMM($7.name)) ||
-     (isIntIMM($3.name) && isUintIMM($5.name) && isUintIMM($7.name)) ||
-     (isUintIMM($3.name) && isUintIMM($5.name) && isUintIMM($7.name)) )
+  if( isIntIMM($3.name) || isIntIMM($5.name) || isIntIMM($7.name) )
+    {
+      addCompilerMessage( "oh - the humanity... negative spritexy arguments?!?!", 3 );
+    }
+  else if(isUintIMM($3.name) && isUintIMM($5.name) && isUintIMM($7.name))
     {
       addComment( "spritexy( " + string($3.name) + " " + string($5.name) + " " + string($7.name) + ");");
-      //addCompilerMessage( $5.name, 1);
-      //addCompilerMessage( $7.name, 1);
-      
-      //addComment( "spritexy( " + $3.name + ", " + $5.name + ", " + $7.name +  " );"  );
-      //addComment( "spritexy( UIntIMM, UIntIMM, UintIMM );");
       sprite_address = atoi( stripFirst($3.name).c_str() );
       sprite_address*=2;
       sprite_address+=base_address;
@@ -12638,13 +12595,9 @@ statement: datatype ID init
       addAsm( str_AND + "$D010", 3, false ); 
       addAsm( str_STA + "$D010", 3, false );
     }
-  else if((isIntIMM($3.name) && isWordID($5.name) && isIntIMM($7.name)) ||
-	  (isIntIMM($3.name) && isWordID($5.name) && isUintIMM($7.name)) ||
-	  (isUintIMM($3.name) && isWordID($5.name) && isIntIMM($7.name)) ||
-	  (isUintIMM($3.name) && isWordID($5.name) && isUintIMM($7.name)))
+  else if(isUintIMM($3.name) && isWordID($5.name) && isUintIMM($7.name))
     {
-
-      addComment( "spritexy( UIntIMM, WordID, UintIMM );");
+      addComment( "spritexy( UintIMM, WordID, UintIMM );");
 
       sprite_address = atoi( stripFirst($3.name).c_str() );
       sprite_address*=2;
@@ -12735,9 +12688,7 @@ statement: datatype ID init
       addAsm( str_AND + "$D010", 3, false );
       addAsm( "!:\t" + str_STA + "$D010", 3, true );
     }
-  else if((isIntIMM($3.name) && isWordID($5.name) && isIntID($7.name)) ||
-	  (isIntIMM($3.name) && isWordID($5.name) && isUintID($7.name)) ||
-	  (isUintIMM($3.name) && isWordID($5.name) && isIntID($7.name)) ||
+  else if((isUintIMM($3.name) && isWordID($5.name) && isIntID($7.name)) ||
 	  (isUintIMM($3.name) && isWordID($5.name) && isUintID($7.name)))
     {
       addComment( "spritexy( UintIMM, WordID, UintID );");
@@ -12755,7 +12706,7 @@ statement: datatype ID init
       addAsm( str_STA + "$" + toHex( sprite_address+1 ), 3, false );
 
       addComment( "set x-coordinate (low)" );
-      addAsm( str_LDA + getNameOf(getAddressOf($5.name)) + commentmarker + "(this _wasn't_ working)", 3, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($5.name)), 3, false );
       addAsm( str_STA + "$" + toHex( sprite_address ), 3, false );
       //============================================0--0-
       // 9th Bit
@@ -12826,13 +12777,7 @@ statement: datatype ID init
       addAsm( str_AND + "$D010", 3, false );
       addAsm( "!:\t" + str_STA + "$D010", 3, true );
     }
-  else if((isIntIMM($3.name) && isIntIMM($5.name) && isIntID($7.name)) ||
-	  (isIntIMM($3.name) && isIntIMM($5.name) && isUintID($7.name)) ||
-	  (isIntIMM($3.name) && isUintIMM($5.name) && isIntID($7.name)) ||
-	  (isIntIMM($3.name) && isUintIMM($5.name) && isUintID($7.name)) ||
-	  (isUintIMM($3.name) && isIntIMM($5.name) && isIntID($7.name)) ||
-	  (isUintIMM($3.name) && isIntIMM($5.name) && isUintID($7.name)) ||
-	  (isUintIMM($3.name) && isUintIMM($5.name) && isIntID($7.name)) ||
+  else if((isUintIMM($3.name) && isUintIMM($5.name) && isIntID($7.name)) ||
 	  (isUintIMM($3.name) && isUintIMM($5.name) && isUintID($7.name)) )
     {
       addComment( "spritexy( UIntIMM, UIntIMM, UIntID );");
@@ -12880,17 +12825,13 @@ statement: datatype ID init
       addAsm( str_AND + "$D010", 3, false ); 
       addAsm( str_STA + "$D010", 3, false );
     }
-  else if((isIntIMM($3.name) && isIntID($5.name) && isIntID($7.name)) ||
-	  (isIntIMM($3.name) && isIntID($5.name) && isUintID($7.name)) ||
-	  (isIntIMM($3.name) && isUintID($5.name) && isIntID($7.name)) ||
-	  (isIntIMM($3.name) && isUintID($5.name) && isUintID($7.name)) ||
-	  (isUintIMM($3.name) && isIntID($5.name) && isIntID($7.name)) ||
+  else if((isUintIMM($3.name) && isIntID($5.name) && isIntID($7.name)) ||
 	  (isUintIMM($3.name) && isIntID($5.name) && isUintID($7.name)) ||
 	  (isUintIMM($3.name) && isUintID($5.name) && isIntID($7.name)) ||
 	  (isUintIMM($3.name) && isUintID($5.name) && isUintID($7.name)) )
     {
 
-      addComment( "spritexy( UIntIMM, UIntID, UIntID );");
+      addComment( "spritexy( UintIMM, UintID, UintID );");
 
       sprite_address = atoi( stripFirst($3.name).c_str() );
       sprite_address*=2;
@@ -12933,16 +12874,10 @@ statement: datatype ID init
       addAsm( str_AND + "$D010", 3, false ); 
       addAsm( str_STA + "$D010", 3, false );
     }
-  else if((isIntIMM($3.name) && isIntID($5.name) && isIntIMM($7.name)) ||
-	  (isIntIMM($3.name) && isIntID($5.name) && isUintIMM($7.name)) ||
-	  (isIntIMM($3.name) && isUintID($5.name) && isIntIMM($7.name)) ||
-	  (isIntIMM($3.name) && isUintID($5.name) && isUintIMM($7.name)) ||
-	  (isUintIMM($3.name) && isIntID($5.name) && isIntIMM($7.name)) ||
-	  (isUintIMM($3.name) && isIntID($5.name) && isUintIMM($7.name)) ||
-	  (isUintIMM($3.name) && isUintID($5.name) && isIntIMM($7.name)) ||
+  else if((isUintIMM($3.name) && isIntID($5.name) && isUintIMM($7.name)) ||
 	  (isUintIMM($3.name) && isUintID($5.name) && isUintIMM($7.name)) )
     {
-      addComment( "spritexy( UIntIMM, UIntID, UIntIMM );");
+      addComment( "spritexy( UintIMM, UintID, UintIMM );");
 
       sprite_address = atoi( stripFirst($3.name).c_str() );
       sprite_address*=2;
@@ -13040,8 +12975,8 @@ statement: datatype ID init
       addAsm( str_STA + "$D000,X" + commentmarker + "set the y-coord", 3, false );
 
       // determine bit of sprite from $3.name
-      addDebugComment( "determine bit for $D010 of sprite # located in $3.name" );
-      addAsm( str_LDA + getNameOf(hexToDecimal($3.name)), 3, false );
+      //addDebugComment( "determine bit for $D010 of sprite # located in $3.name" );
+      //addAsm( str_LDA + getNameOf(hexToDecimal($3.name)), 3, false );
 
       bin2bit_is_needed = true;
       addComment( "clear high byte because it's a uintid" );
@@ -13052,13 +12987,7 @@ statement: datatype ID init
       addAsm( str_AND + "$D010", 3, false );
       addAsm( str_STA + "$D010", 3, false );
     }
-  else if( (isIntID($3.name) && isIntIMM($5.name) && isIntIMM($7.name)) ||
-	   (isIntID($3.name) && isIntIMM($5.name) && isUintIMM($7.name)) ||
-	   (isIntID($3.name) && isUintIMM($5.name) && isIntIMM($7.name)) ||
-	   (isIntID($3.name) && isUintIMM($5.name) && isUintIMM($7.name)) ||
-	   (isUintID($3.name) && isIntIMM($5.name) && isIntIMM($7.name)) ||
-	   (isUintID($3.name) && isIntIMM($5.name) && isUintIMM($7.name)) ||
-	   (isUintID($3.name) && isUintIMM($5.name) && isIntIMM($7.name)) ||
+  else if((isIntID($3.name) && isUintIMM($5.name) && isUintIMM($7.name)) ||
 	   (isUintID($3.name) && isUintIMM($5.name) && isUintIMM($7.name)) )
     {
       addComment( "spritexy( UIntID, UIntIMM, UIntIMM );");
@@ -13082,10 +13011,8 @@ statement: datatype ID init
       addAsm( str_AND + "$D010", 3, false );
       addAsm( str_STA + "$D010", 3, false );
     }
-  else if( (isIntID($3.name) && isWordIMM($5.name) && isIntIMM($7.name)) ||
-	   (isIntID($3.name) && isWordIMM($5.name) && isUintIMM($7.name)) ||
-	   (isUintID($3.name) && isWordIMM($5.name) && isIntIMM($7.name)) ||
-	   (isUintID($3.name) && isWordIMM($5.name) && isUintIMM($7.name)) )
+  else if((isIntID($3.name) && isWordIMM($5.name) && isUintIMM($7.name)) ||
+	  (isUintID($3.name) && isWordIMM($5.name) && isUintIMM($7.name)) )
     {
       //bin2bit_is_needed = true;
       addComment( "spritexy( UIntID, WordIMM, UIntIMM );");
@@ -13119,10 +13046,7 @@ statement: datatype ID init
 	}
       addAsm( str_STA + "$D010", 3, false );
     }  
-  else if( (isIntIMM($3.name) && isWordIMM($5.name) && isIntIMM($7.name)) ||
-	   (isIntIMM($3.name) && isWordIMM($5.name) && isUintIMM($7.name)) ||
-	   (isUintIMM($3.name) && isWordIMM($5.name) && isIntIMM($7.name)) ||
-	   (isUintIMM($3.name) && isWordIMM($5.name) && isUintIMM($7.name)) )
+  else if( isUintIMM($3.name) && isWordIMM($5.name) && isUintIMM($7.name))
     {
       // TODO: Fix this - it's broken because it doesn't take into account
       // the high bit of x
@@ -13271,6 +13195,7 @@ statement: datatype ID init
     {
       addCompilerMessage( "unidentified argument type in spritexy", 3 );
     }
+  strcpy( $$.name, "NULL" );
 };
 
 // STATEMENT
@@ -13346,7 +13271,7 @@ statement: datatype ID init
     }
   else
   {
-      addCompilerMessage( "spriteclr( exp ) of unknown type.", 3 );
+      addCompilerMessage( "spriteclr( exp ) invalid argument type.", 3 );
     }
   strcpy($$.name, "NULL" );
 };
@@ -13655,6 +13580,8 @@ statement: datatype ID init
   addAsm( str_JSR + "POP", 3, false );
   addAsm( str_STA + "$02", 2, false );
   addAsm( "#endif", 0, true );
+  strcpy($$.name, "NULL" );
+
 };
 | tCOMMENT '(' STR  ')'
 {

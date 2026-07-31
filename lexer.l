@@ -59,7 +59,6 @@ frmt  [{\t}|{\n}]
 "spritex"               { strcpy(yylval.nd_obj.name,(yytext)); return tSPRITEX; }
 "spritey"               { strcpy(yylval.nd_obj.name,(yytext)); return tSPRITEY; }
 "spritecolour"               { strcpy(yylval.nd_obj.name,(yytext)); return tSPRITECOLOUR; }
-"spritetoggle"     { strcpy(yylval.nd_obj.name,(yytext)); return tSPRITETOGGLE; }
 "spritereg"         { strcpy(yylval.nd_obj.name,(yytext)); return tSPRITEREG; }
 "spriteon"         { strcpy(yylval.nd_obj.name,(yytext)); return tSPRITEON; }
 "spriteoff"        { strcpy(yylval.nd_obj.name,(yytext)); return tSPRITEOFF; }
