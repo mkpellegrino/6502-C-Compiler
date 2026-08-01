@@ -14,6 +14,7 @@ frmt  [{\t}|{\n}]
 "#needs"     { strcpy(yylval.nd_obj.name,(yytext)); return tNEEDS; }
 "inline"     { strcpy(yylval.nd_obj.name,(yytext)); return tINLINE; }
 "Math.PI"       {strcpy(yylval.nd_obj.name,(yytext)); return tPI; }
+"Math.PHI"       {strcpy(yylval.nd_obj.name,(yytext)); return tPHI; }
 "Math.E"       {strcpy(yylval.nd_obj.name,(yytext)); return tE; }
 "fchrin"     { strcpy(yylval.nd_obj.name,(yytext)); return tFCHRIN; }
 "fchrout"     { strcpy(yylval.nd_obj.name,(yytext)); return tFCHROUT; }
@@ -112,8 +113,8 @@ frmt  [{\t}|{\n}]
    /* ^"#include"[ ]*<.+\.h>      { strcpy(yylval.nd_obj.name,(yytext)); return INCLUDE; } */
    /* ^"#include"[ ]*<.+\.asm>      { strcpy(yylval.nd_obj.name,(yytext)); return INCLUDE; } */
    /* ^"#include"[ ]*<.+\.c>      { strcpy(yylval.nd_obj.name,(yytext)); return INCLUDE; } */ 
-"true"                      { strcpy(yylval.nd_obj.name,(yytext)); return TRUE; }
-"false"                     { strcpy(yylval.nd_obj.name,(yytext)); return FALSE; }
+   /* "true"                      { strcpy(yylval.nd_obj.name,(yytext)); return TRUE; } */
+  /* "false"                     { strcpy(yylval.nd_obj.name,(yytext)); return FALSE; } */
 "0x"({digit}|{halpha})+      { strcpy(yylval.nd_obj.name,(yytext)); return HEX_NUM; }
 [-]?{digit}+\.{digit}+      { strcpy(yylval.nd_obj.name,(yytext)); return FLOAT_NUM; }
 [-]?{digit}+                { strcpy(yylval.nd_obj.name,(yytext)); return NUMBER; }

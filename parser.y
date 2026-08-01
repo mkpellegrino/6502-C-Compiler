@@ -3736,7 +3736,10 @@
 	      {
 		// remove the ambiguous=return-value-code
 		asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+13);
-		if(arg_asm_comments) asm_instr.erase(asm_instr.begin()+i+1,asm_instr.begin()+i+5);
+		if(arg_asm_comments)
+		  {
+		    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+5);
+		  }
 		switch(ft)
 		  {
 		  case 0:
@@ -4467,7 +4470,7 @@
 
 //%parse-param { FILE* fp }
 %token VOID 
-%token <nd_obj> /*tREF*/ CHAR tFCLOSE tFOPEN tFCLRCHN tFCHROUT tFCHRIN tFREADST tFCHKOUT tFCHKIN tSETLFS tSETNAM tIMPORT tCOMMENT tDATA tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD /*tBYTE*/ /*tDOUBLE*/ tUINT tPOINTER tLN tABS tSIN tCOS tTAN tSIDIRQ tSIDOFF tSTRTOFLOAT tSTRTOWORD tTOFLOAT tINTTOWORD tTOUINT tTOWORD tTOBIT tDEC tINC tROL tROR tLSR tGETPC tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJUMP tSETSCR tJSR tIRQ tROMOUT tROMIN tLDA tASL tSPRITECLR tSPRITESET tSPRITEREG tSPRITEOFF tRND tXXX tINLINE tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tPEEK tPOKE CHARACTER tPRINTS PRINTFF SCANFF INT FLOAT WHILE FOR IF ELSE TRUE FALSE NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE EXPONENT tSQRT INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL tSCREEN tNULL tMEMCPY tSEED tNEEDS tPI tE tBL tBS
+%token <nd_obj> /*tREF*/ CHAR tFCLOSE tFOPEN tFCLRCHN tFCHROUT tFCHRIN tFREADST tFCHKOUT tFCHKIN tSETLFS tSETNAM tIMPORT tCOMMENT tDATA tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD /*tBYTE*/ /*tDOUBLE*/ tUINT tPOINTER tLN tABS tSIN tCOS tTAN tSIDIRQ tSIDOFF tSTRTOFLOAT tSTRTOWORD tTOFLOAT tINTTOWORD tTOUINT tTOWORD tTOBIT tDEC tINC tROL tROR tLSR tGETPC tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJUMP tSETSCR tJSR tIRQ tROMOUT tROMIN tLDA tASL tSPRITECLR tSPRITESET tSPRITEREG tSPRITEOFF tRND tXXX tINLINE tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tPEEK tPOKE CHARACTER tPRINTS PRINTFF SCANFF INT FLOAT WHILE FOR IF ELSE /* TRUE FALSE */  NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE EXPONENT tSQRT INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL tSCREEN tNULL tMEMCPY tSEED tNEEDS tPI tPHI tE tBL tBS
 %type <nd_obj> headers main body return function datatype statement arithmetic relop program else 
    %type <nd_obj2> init value expression /*charlist*/ numberlist parameterlist argumentlist
       %type <nd_obj3> condition
@@ -5167,8 +5170,6 @@ body:
       iterator_stack.push( asm_instr[asm_instr.size()-1] );
       s = iterator_stack.top()->getString();
       deletePreviousAsm();
-      //addCompilerMessage( "Deleted Mnemonics", 0 );
-
     }
   addComment( "- - - - - - - moved iterator from here to down below" );
   
@@ -5319,14 +5320,11 @@ body:
 };
 // STATEMENT
 
- else: ELSE
-	 {
-	   add('K');
-	 }
-'{' body '}'
+ else: ELSE {} '{' body '}'
 {
   //addAsm( "!body:",0,true );
   $$.nd = mknode(NULL, $4.nd, $1.name);
+  strcpy( $$.name, $4.name);
 }
 |
 {
@@ -5335,6 +5333,7 @@ body:
   asm_instr.erase( asm_instr.end()-2 );  
   addComment( "(OPTIMIZED) Removed unnecessary 'jmp'" );	       
   $$.nd = NULL;
+  strcpy( $$.name, "_NULL" );
 }
 
 // COMPARISONS
@@ -6537,8 +6536,6 @@ condition:
     }
   else if( isIntIMM($LHS.name) && isIntID($RHS.name) )
     {
-      // TODO: Clean this up a bit.
-      addCompilerMessage( "IntIMM relop IntID: User experience may vary", 1 );
       addComment( "IntIMM relop IntID: TOC");
 
       signed_comparison_is_needed = true;
@@ -8603,7 +8600,7 @@ statement:
     {
       deletePreviousAsmUntil( "// MARKED_FOR_DELETION");
       addComment( "^^^--- deleted instructions ---^^^" );
-      addComment( "poke( XA, UIntIMM) (self modifying code)" );
+      addComment( "poke( XA, UintIMM) (self modifying code)" );
       int valu_addr = getAddressOf(param2);
       addAsm( str_STA + "!+", 3, false );
       addAsm( str_STX + "!++", 3, false );
@@ -8623,6 +8620,7 @@ statement:
       int instr_size = 3;
       if( addr_addr < 256 ) instr_size = 2; // it's in Zero Page
       
+
       /* get & store the low byte of the poke address */
       addAsm( str_LDA + getNameOf(addr_addr), instr_size, false );
       addAsm( str_STA + "!+", 3, false );
@@ -8763,7 +8761,6 @@ statement:
 };
 | tJMP '(' expression ')'
 {
-  // TODO: Add more types here
   if( isWordIMM( $3.name ) )
     {
       int where_to = atoi(stripFirst($3.name).c_str());
@@ -8771,9 +8768,27 @@ statement:
       if( where_to > 65535 || where_to < 0 ) addCompilerMessage( "invalid JMP (address out of range)", 3 );
       addAsm(str_JMP + "$" + toHex(where_to), 3, false );
     }
+  else if( isWordID( $3.name ) )
+    {
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
+      addAsm( str_LDX + getNameOf(getAddressOf($3.name)) + " +1", 3, false );
+      addAsm( str_STA + "!+", 3, false );
+      addAsm( str_STX + "!++", 3, false );
+      addAsm( str_BYTE + "$4C" + commentmarker + " <-- JMP abs", 1, false );
+      addAsm( "!:\t" + str_BYTE + "$00", 1, true );
+      addAsm( "!:\t" + str_BYTE + "$00", 1, true );      
+    }
+  else if( isXA( $3.name ) )
+    {
+      addAsm( str_STA + "!+", 3, false );
+      addAsm( str_STX + "!++", 3, false );
+      addAsm( str_BYTE + "$4C" + commentmarker + " <-- JMP abs", 1, false );
+      addAsm( "!:\t" + str_BYTE + "$00", 1, true );
+      addAsm( "!:\t" + str_BYTE + "$00", 1, true );      
+    }
   else
     {
-      addCompilerMessage( "invalid JMP", 3 );
+      addCompilerMessage( "invalid JMP argument (must be a word of some sort or another)", 3 );
     }
   strcpy( $$.name, "_NULL" );
 };
@@ -8875,7 +8890,7 @@ statement:
 {
   // TODO: Add more types here
   addComment( "set screen memory address" );
-  if( isUintIMM( $3.name ) || isIntIMM( $3.name ) )
+  if( isUintIMM( $3.name ) )
     {
       int v = 16 * atoi( stripFirst( $3.name ).c_str());
       addAsm( str_LDA + "$D018", 3, false );
@@ -8883,9 +8898,47 @@ statement:
       addAsm( str_ORA + "#$" + toHex(v), 2, false);
       addAsm( str_STA + "$D018", 3, false );
     }
+  else if( isUintID($3.name) )
+    {
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
+      addAsm( str_ASL, 1, false );
+      addAsm( str_ASL, 1, false );
+      addAsm( str_ASL, 1, false );
+      addAsm( str_ASL, 1, false );
+      addAsm( str_TAY, 1, false );
+      addAsm( str_LDX + "$02", 2, false );
+      addAsm( str_LDA + "$D018", 3, false );
+      addAsm( str_AND + "#$0F", 2, false );
+      addAsm( str_STA + "$02", 2, false );
+      addAsm( str_TYA, 1, false );
+      addAsm( str_ORA + "$02", 2, false );
+      addAsm( str_STA + "$D018", 2, false );
+      addAsm( str_STX + "$02", 2, false );
+
+    }
+  else if( isA($3.name) )
+    {
+      addAsm( str_ASL, 1, false );
+      addAsm( str_ASL, 1, false );
+      addAsm( str_ASL, 1, false );
+      addAsm( str_ASL, 1, false );
+      addAsm( str_TAY, 1, false );
+      addAsm( str_LDX + "$02", 2, false );
+      addAsm( str_LDA + "$D018", 3, false );
+      addAsm( str_AND + "#$0F", 2, false );
+      addAsm( str_STA + "$02", 2, false );
+      addAsm( str_TYA, 1, false );
+      addAsm( str_ORA + "$02", 2, false );
+      addAsm( str_STA + "$D018", 2, false );
+      addAsm( str_STX + "$02", 2, false );
+    }
+  else if( isIntIMM($3.name) )
+    {
+      addCompilerMessage( "invalid argument for setscreen... must be > 0", 3 );
+    }
   else
     {
-      addCompilerMessage( "wrong type for setting screen address", 3);
+      addCompilerMessage( "invalid argument type for setting screen address", 3);
     }
   strcpy( $$.name, "_NULL" );
 };
@@ -28267,7 +28320,7 @@ arithmetic[MATHOP] expression[OP2]
 
   // get BNK
   addAsm( str_LDA + "$DD00", 3, false );
-  addAsm(str_EOR + "#$FF", 2, false );
+  addAsm( str_EOR + "#$FF", 2, false );
   addAsm( str_AND + "#$03", 2, false );
   //addAsm( str_CLC );
   addAsm( str_ASL );
@@ -28320,7 +28373,7 @@ arithmetic[MATHOP] expression[OP2]
 {
   string arg0 = string($3.name);
   string arg1 = string($6.name);
-  
+  stack_is_needed = true;
   addComment( "Save $02, $03, $5C, and $5D" );
 
   if( isA( arg1.c_str() ))
@@ -28430,35 +28483,28 @@ arithmetic[MATHOP] expression[OP2]
 {
   if( isUintID($3.name) || isIntID($3.name ) )
     {
-      addAsm( str_LDX + "$" + toHex( getAddressOf( $3.name ) ), 3, false );
-      addAsm( str_INX );
-      addAsm( str_LDA + "#$00", 2, false );
-      addAsm( str_SEC );
-      addAsm( "!:\t" + str_ROL, 1, true);
-      addAsm( str_DEX );
-      
-      addAsm( str_BNE + "!-" + commentmarker + "BNE top-of-loop", 2, false );
+      addAsm( str_LDA + "$" + toHex( getAddressOf( $3.name ) ), 3, false );
+      bin2bit_is_needed = true;
+      addAsm( str_JSR + "_bin_to_bit", 3, false );      
 
     }
-  else if( isUintIMM($3.name) || isIntIMM($3.name) )
+  else if( isIntIMM($3.name) )
     {
-      addAsm( str_LDX + "#$" + toHex(atoi(stripFirst($3.name).c_str())), 2, false );
-      addAsm( str_INX );
-      addAsm( str_LDA + "#$00", 2, false );
-      addAsm( str_SEC );
-      addAsm( "!:\t" + str_ROL, 1, true);
-      addAsm( str_DEX );
-      addAsm( str_BNE + "!-" + commentmarker + "BNE top-of-loop", 2, false );
+      addCompilerMessage( "tobit: invalid argument (can't be negative)", 3 );
+    }
+  else if( isUintIMM($3.name) )
+    {
+      int y = pow( 2, atoi(stripFirst($3.name).c_str()));
+      if( atoi(stripFirst($3.name).c_str()) > 7 )
+	{
+	  addCompilerMessage( "tobit: invalid argument (must be 0-7)", 3 );  
+	}
+      addAsm( str_LDA + "#$" + toHex(y), 2, false );
     }
   else if( isA( $3.name) )
     {
-      addAsm( str_TAX );
-      addAsm( str_INX );
-      addAsm( str_LDA + "#$00", 2, false );
-      addAsm( str_SEC );
-      addAsm( "!:\t" + str_ROL, 1, true);
-      addAsm( str_DEX );
-      addAsm( str_BNE + "!-" + commentmarker + "BNE top-of-loop", 2, false );
+      bin2bit_is_needed = true;
+      addAsm( str_JSR + "_bin_to_bit", 3, false );      
     }
   else
     {
@@ -29063,6 +29109,10 @@ arithmetic[MATHOP] expression[OP2]
 | tPI
 {
   strcpy($$.name, "_f3.14159265" );
+};
+| tPHI
+{
+  strcpy($$.name, "_f0.61803397" );
 };
 | tLN '(' expression ')'
 {
@@ -30524,33 +30574,6 @@ int main(int argc, char *argv[])
       addAsm( str_TAX, 1, false );
       addAsm( str_LDA + "!mem0-,X", 3, false );
       addAsm( str_RTS, 1, false );
-    }
-  if( bin2bit_is_needed && false )
-    {
-      addComment( "-----------------------------" );
-      addAsm( "!rx:\t" + str_BYTE + "$00", 1, false );
-      addAsm( "_bin_to_bit:\t"+ commentmarker + "Convert an integer in A to the Ath bit", 0, true );
-      addAsm( str_PLA, 1, false );
-      addAsm( str_STA + "!rx-", 3, false );
-      addAsm( str_PLA, 1, false );
-      addAsm( str_TAY, 1, false );
-      // ==================================================================================
-      addAsm( str_PLA, 1, false );
-      addAsm( str_TAX, 1, false );
-      addAsm( str_INX, 1, false);
-      addAsm( str_LDA + "#$00", 2, false );
-      addAsm( str_SEC, 1, false );
-      addAsm( "!:\t" + str_ROL, 1, true );
-      addAsm( str_DEX, 1, false );
-      addAsm( str_BNE + "!-", 2, false );
-      addAsm( str_PHA + commentmarker + "return value on processor stack", 1, false);// the return value will be on the stack
-      // ==================================================================================
-      addAsm( str_TYA, 1, false );
-      addAsm( str_PHA, 1, false );
-      addAsm( str_LDA + "!rx-", 3, false );
-      addAsm( str_PHA, 1, false );
-      addAsm( str_RTS );
-      addComment( "-----------------------------" );
     }
 
   if( signed_comparison_is_needed )
