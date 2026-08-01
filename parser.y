@@ -1763,19 +1763,7 @@
     if( s == string("_FAC")) return_value = true;
     return return_value;
   }
-  //bool isMOB( string s )
-  //{
-  // bool return_value = false;
-  // if( s == string("_MOB")) return_value = true;
-  // return return_value;
-  //}
 
-  bool isRET( string s )
-  {
-    bool return_value = false;
-    if( s == string("RET")) return_value = true;
-    return return_value;
-  }
 
   bool isNULL( string s )
   {
@@ -1901,15 +1889,11 @@
   
   void addByte( string s, int instruction_size=1, bool l = false)
   {
-    //int a = asm_datum[asm_datum.size()-1]->getSize();
-    //asm_datum[asm_datum.size()-1]->setSize( a + instruction_size );
     asm_datum[asm_datum.size()-1]->setSize(asm_datum[asm_datum.size()-1]->getSize()+instruction_size);
     asm_datum[asm_datum.size()-1]->setString(asm_datum[asm_datum.size()-1]->getString() + s);
-    //cerr << "adding byte to data: " << s << " (" << asm_datum[asm_datum.size()-1]->getSize() << ")" << endl;
     return;
   }
 
-  
   void addAsm( string s, int instruction_size, bool l = false)
   {
     asm_instruction * my_asm = new asm_instruction( s );
@@ -1932,8 +1916,6 @@
     return;
   }
 
-
-  
   void addParserComment( string s )
   {
     if( arg_parser_comments ) addAsm( stripFirst(commentmarker.c_str()) + s, 0, true );
@@ -2024,7 +2006,6 @@
     if( t == 0 || t == 1 || t == 2 || t == 4 || t == 8 )
       {
 	//addCompilerMessage( string( "Adding: " ) + string(id) + string(" of type: ") + s, 2 );
-	addDebugComment( string( "Adding: " ) + string(id) + string(" of type: ") + s  );
 	asm_variable * new_asm_variable = new asm_variable( id, t );
 	asm_variables.push_back( new_asm_variable ); // add the variable to the list of variables
 	return_value = true;
@@ -4996,7 +4977,6 @@ main: datatype ID
 function: function function
 | datatype ID
 {
-
   if(strcmp($1.name,"void"))
     {
       //function_return_value=true;
@@ -5018,7 +4998,6 @@ function: function function
 
   //addCompilerMessage( "Adding function of type: " + string($1.name), 2 );
   addFunction( string($2.name), getLabel( label_vector[label_major]-1 ), getDataTypeValue($1.name));
-
 
   //addAsm( "// MARKED_FOR_DELETION", 0, true );
   addAsm( str_PLA, 1, false );
@@ -5046,6 +5025,9 @@ function: function function
   
 } '{' {} body return '}'
   {
+
+    // TODO: is this "return" where the type gets passed up the pike?
+    
     // add this label to the list of functions and their addresses
     // any time we come across the function with this ID
     // we can JSR to it
@@ -5055,8 +5037,7 @@ function: function function
     //{
     //             // we may want to consider
     //             // adding a return value here
-    //addComment( "*** Testing 1 2 3 ***" );
-    //addAsm(str_RTS); // add a return statement
+
 	
     //}
     function_argument_count=0;
@@ -7610,10 +7591,6 @@ condition:
     }
   else if( isXA($LHS.name) && isUintID($RHS.name) )
     {
-      // TODO: This needs to be thoroughly tested
-      // if lda and ldx are not the previous 2
-      // instructions, I am not sure that this
-      // will work.
       addComment( "XA relop UintID: TOC" );
       addAsm( str_SEC, 1, false );
       addAsm( str_CPX + "#$00", 2, false );
@@ -8888,7 +8865,6 @@ statement:
 };
 | tSETSCR '(' expression ')'
 {
-  // TODO: Add more types here
   addComment( "set screen memory address" );
   if( isUintIMM( $3.name ) )
     {
@@ -11388,17 +11364,73 @@ statement:
     }
   strcpy( $$.name, "_NULL" );
 };
-| tDEC '(' ID ',' NUMBER ')'
+| tDEC '(' expression {} ',' expression {} ')'
 {
-  // TODO: Fix this to not use addresses unless necessary
-  addComment( "dec( ID, IMM )   [for bytes only!]");
-  int a = getAddressOf($3.name);
-  int size_of_instruction = 3;
-  if( a < 256 ) size_of_instruction = 2;
-  int l = atoi($5.name);
-  for( int i = 0; i < l; i++ ) addAsm( str_DEC + getNameOf( a ), size_of_instruction, false );
-  strcpy( $$.name, "_NULL" );
+  if( isUintID($3.name) && isUintID($6.name) )
+    {
+      addCompilerMessage( "this is basically doing subtraction", 0 );
+      int a = getAddressOf($3.name);
+      int b = getAddressOf($6.name);
+      int instr0_size = 3;
+      if( a < 256 ) instr0_size--;
+      addAsm( str_SEC, 1, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), instr0_size, false );
+      int instr1_size = 3;
+      if( b < 256 ) instr1_size--;
+      addAsm( str_SBC + getNameOf(getAddressOf($6.name)), instr1_size, false );
+      addAsm( str_STA + getNameOf(getAddressOf($3.name)), instr0_size, false );
+    }
+  else if( isUintID($3.name) && isUintIMM($6.name) )
+    {
+      int a = getAddressOf($3.name);
+      int instr0_size = 3;
+      int x = atoi(stripFirst($6.name).c_str());
+      string cyc;
+      if( x < 3 )
+	{
+	  if( a < 256 )
+	    {
+	      cyc = string("5 cyc");
+	      instr0_size--;
+	    }
+	  else
+	    {
+	      cyc = string("6 cyc");
+	    }
+	  addAsm( str_DEC + getNameOf(getAddressOf($3.name)) + commentmarker + cyc, instr0_size, false );
+	  addAsm( str_DEC + getNameOf(getAddressOf($3.name)) + commentmarker + cyc, instr0_size, false );
+	}
+      else
+	{
+	  if( a < 256 )
+	    {
+	      cyc = string("3 cyc");
+	      instr0_size--;
+	    }
+	  else
+	    {
+	      cyc = string("4 cyc");
+	    }
+	  addAsm( str_SEC + commentmarker + "2 cyc", 1, false );
+	  addAsm( str_LDA + getNameOf(getAddressOf($3.name)) + commentmarker + cyc, instr0_size, false );
+	  addAsm( str_SBC + "#$" + toHex(x) + commentmarker + "2 cyc", 2, false );
+	  addAsm( str_STA + getNameOf(getAddressOf($3.name)) + commentmarker + cyc, instr0_size, false );
+	}
+    }
+  else addCompilerMessage( "dec(x,y): invalid argument... just use subtraction", 3 );
+  strcpy($$.name, "_NULL" );
 };
+//| tDEC '(' ID ',' NUMBER ')'
+//{
+  // TODO: Fix this to not use addresses unless necessary
+//  addComment( "dec( ID, IMM )   [for bytes only!]");
+//int a = getAddressOf($3.name);
+//int size_of_instruction = 3;
+//if( a < 256 ) size_of_instruction = 2;
+//int l = atoi($5.name);
+//for( int i = 0; i < l; i++ ) addAsm( str_DEC + getNameOf( a ), size_of_instruction, false );
+//strcpy( $$.name, "_NULL" );
+//};
 // STATEMENT
 | tINC '(' expression ',' expression ')'
 {
@@ -11419,7 +11451,7 @@ statement:
     }
   else if( isUintID($3.name) && isUintID($5.name) )
     {
-      addDebugComment( "this just adds the 2 UintID's together" );
+      addCompilerMessage( "this just uses basic addition", 0 );
       addComment( "inc( UintID, UintID )" );
       addAsm( str_LDA + getNameOf( getAddressOf($5.name)), 3, false );
       addAsm( str_CLC );
@@ -11435,7 +11467,6 @@ statement:
 // STATEMENT
 | tINC '(' expression ')'
 {
-  addDebugComment( "inc(expression)");
   int a = getAddressOf($3.name);
   string a_name = getNameOf( a );
   int size_of_instruction = 3;
@@ -11489,7 +11520,6 @@ statement:
 	  size_of_instruction = 3;
 	}
       addAsm( str_BNE + "!+", 2, false );
-      //addAsm( str_BYTE + "$D0, $" + toHex(size_of_instruction) + commentmarker + "BNE +3", 2, false );
       addAsm( str_DEC + getNameOf(getAddressOf($3.name))+ " +1", size_of_instruction, false );
       addAsm( "!:", 0, true );
     }
@@ -11517,14 +11547,30 @@ statement:
 };
 | tROL '(' expression ')'
 {
+  // TODO: Bitwise Operations not fully flushed out
   addComment( "rol statement" );
-  if( isWordIMM($3.name))
+  if(isWordIMM($3.name))
     {
-      addAsm( str_LDA + "$" + toHex(atoi(stripFirst($3.name).c_str())), 3, false );
-      addAsm( str_ASL, 1, false );
+      addCompilerMessage( "rol(WordIMM) rolls at memory location!, not the WordIMM itself", 1 );
+      addAsm( str_ASL + "$" + toHex(atoi(stripFirst($3.name).c_str())), 3, false );
       addAsm( str_BCC + "!+", 2, false );
-      addAsm( str_ORA + "#$01", 2, false );
-      addAsm( "!:\t" + str_STA + "$" + toHex(atoi(stripFirst($3.name).c_str())), 3, true );
+      addAsm( str_INC + "$" + toHex(atoi(stripFirst($3.name).c_str())), 3, false );
+      addAsm( "!:", 0, true );
+    }
+  else if(isWordID($3.name))
+    {
+      addAsm( str_ASL + getNameOf(getAddressOf($3.name)), 3, false );
+      addAsm( str_ROL + getNameOf(getAddressOf($3.name)) + " +1", 3, false );
+      addAsm( str_BCC + "!+", 2, false );
+      addAsm( str_INC + getNameOf(getAddressOf($3.name)), 3, false );
+      addAsm( "!:", 0, true );
+    }
+  else if(isUintID($3.name))
+    {
+      addAsm( str_ASL + getNameOf(getAddressOf($3.name)), 3, false );
+      addAsm( str_BCC + "!+", 2, false );
+      addAsm( str_INC + getNameOf(getAddressOf($3.name)), 3, false );
+      addAsm( "!:", 0, true );
     }
   else
     {
@@ -11537,11 +11583,32 @@ statement:
   addComment( "ror statement" );
   if( isWordIMM($3.name))
     {
+      addCompilerMessage( "ror(WordIMM) rolls at memory location!, not the WordIMM itself", 1 );
       addAsm( str_LDA + "$" + toHex(atoi(stripFirst($3.name).c_str())), 3, false );
       addAsm( str_LSR, 1, false );
       addAsm( str_BCC + "!+", 2, false );
       addAsm( str_ORA + "#$80", 2, false );
       addAsm( "!:\t" + str_STA + "$" + toHex(atoi(stripFirst($3.name).c_str())), 3, true );
+    }
+  else if(isUintID($3.name))
+    {
+      addAsm( str_LSR + getNameOf(getAddressOf($3.name)), 3, false );
+      addAsm( str_BCC + "!+", 2, false );
+      addAsm( str_LDA + "#$80", 2, false );
+      addAsm( str_ORA + getNameOf(getAddressOf($3.name)), 3, false );
+      addAsm( str_STA + getNameOf(getAddressOf($3.name)), 3, false );
+      addAsm( "!:", 0, true );
+    }
+  else if(isWordID($3.name))
+    {
+      addAsm( str_LSR + getNameOf(getAddressOf($3.name)) + " +1", 3, false );
+      addAsm( str_ROR + getNameOf(getAddressOf($3.name)), 3, false );
+      
+      addAsm( str_BCC + "!+", 2, false );
+      addAsm( str_LDA + "#$80", 2, false );
+      addAsm( str_ORA + getNameOf(getAddressOf($3.name)) + " +1", 3, false );
+      addAsm( str_STA + getNameOf(getAddressOf($3.name)) + " +1", 3, false );
+      addAsm( "!:", 0, true );
     }
   else
     {
@@ -11554,7 +11621,17 @@ statement:
   addComment( "lsr statement" );
   if( isWordIMM($3.name))
     {
+      addCompilerMessage( "lsr(WordIMM) rolls at memory location!, not the WordIMM itself", 1 );
       addAsm( str_LSR + "$" + toHex(atoi(stripFirst($3.name).c_str())), 3, false );
+    }
+  else if( isUintID($3.name) )
+    {
+      addAsm( str_LSR + getNameOf(getAddressOf($3.name)), 3, false );
+    }
+  else if( isWordID($3.name) )
+    {
+      addAsm( str_LSR + getNameOf(getAddressOf($3.name)) + " +1", 3, false );
+      addAsm( str_ROR + getNameOf(getAddressOf($3.name)), 3, false );
     }
   else
     {
@@ -11567,7 +11644,17 @@ statement:
   addComment( "asl statement" );
   if( isWordIMM($3.name))
     {
+      addCompilerMessage( "asl(WordIMM) rolls at memory location!, not the WordIMM itself", 1 );
       addAsm( str_ASL + "$" + toHex(atoi(stripFirst($3.name).c_str())), 3, false );
+    }
+  else if( isUintID($3.name) )
+    {
+      addAsm( str_ASL + getNameOf(getAddressOf($3.name)), 3, false );
+    }  
+  else if( isWordID($3.name) )
+    {
+      addAsm( str_ASL + getNameOf(getAddressOf($3.name)), 3, false );
+      addAsm( str_ROL + getNameOf(getAddressOf($3.name)) + " +1", 3, false );
     }
   else
     {
