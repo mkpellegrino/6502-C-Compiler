@@ -255,12 +255,9 @@
   bool p2=false;
   bool p3=false;
 
-  bool load_is_needed=false;
-  bool load16_is_needed=false;
-  //bool save_is_needed=false;
   bool sid_was_imported=false;
+
   bool basic_upstart=false;
-  
   bool function_labels_are_still_needed=true;
 
   bool stack_is_needed=false;
@@ -291,7 +288,7 @@
   bool cls_is_needed=false;
   bool memcpy_is_needed=false;
   bool mobcpy_is_needed=false;
-  //bool signed_comparison_is_needed=false;
+
   bool signed_comparison_is_needed=false;
   bool twos_complement_is_needed = false;
   bool byte2hex_is_needed = false;
@@ -307,7 +304,7 @@
   
 
   bool printf_is_needed = false;
-
+  bool strlen_is_needed = false;
 
 
   bool scanf_is_needed = false;
@@ -553,10 +550,23 @@
     return return_value;
   }
 
+  bool isLiteralString( string s )
+  {
+    bool return_value = false;
+    if( s[0] == '\"' && s[s.length()-1] == '\"' )
+      {
+	return_value = true;
+      }
+    return return_value;
+  }
+  
   bool isString( string s )
   {
     bool return_value = false;
-    if(s == string("str")) return_value = true;
+    if(s == string("_s"))
+      {
+	return_value = true;
+      }
     return return_value;  
   }
   
@@ -4451,7 +4461,7 @@
 
 //%parse-param { FILE* fp }
 %token VOID 
-%token <nd_obj> /*tREF*/ CHAR tFCLOSE tFOPEN tFCLRCHN tFCHROUT tFCHRIN tFREADST tFCHKOUT tFCHKIN tSETLFS tSETNAM tIMPORT tCOMMENT tDATA tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD /*tBYTE*/ /*tDOUBLE*/ tUINT tPOINTER tLN tABS tSIN tCOS tTAN tSIDIRQ tSIDOFF tSTRTOFLOAT tSTRTOWORD tTOFLOAT tINTTOWORD tTOUINT tTOWORD tTOBIT tDEC tINC tROL tROR tLSR tGETPC tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJUMP tSETSCR tJSR tIRQ tROMOUT tROMIN tLDA tASL tSPRITECLR tSPRITESET tSPRITEREG tSPRITEOFF tRND tXXX tINLINE tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tPEEK tPOKE CHARACTER tPRINTS PRINTFF SCANFF INT FLOAT WHILE FOR IF ELSE /* TRUE FALSE */  NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE EXPONENT tSQRT INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL tSCREEN tNULL tMEMCPY tSEED tNEEDS tPI tPHI tE tBL tBS
+%token <nd_obj> /*tREF*/ CHAR tFCLOSE tFOPEN tFCLRCHN tFCHROUT tFCHRIN tFREADST tFCHKOUT tFCHKIN tSETLFS tSETNAM tIMPORT tCOMMENT tDATA tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD /*tBYTE*/ /*tDOUBLE*/ tUINT tPOINTER tLN tABS tSIN tCOS tTAN tSIDIRQ tSIDOFF tSTRTOFLOAT tSTRTOWORD tTOFLOAT tINTTOWORD tTOUINT tTOWORD tTOBIT tDEC tINC tROL tROR tLSR tGETPC tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJUMP tSETSCR tJSR tIRQ tROMOUT tROMIN tLDA tASL tSPRITECLR tSPRITESET tSPRITEREG tSPRITEOFF tRND tXXX tINLINE tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tPEEK tPOKE CHARACTER tPRINTS PRINTFF SCANFF tSTRLEN INT FLOAT WHILE FOR IF ELSE /* TRUE FALSE */  NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE EXPONENT tSQRT INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL tSCREEN tNULL tMEMCPY tSEED tNEEDS tPI tPHI tE tBL tBS
 %type <nd_obj> headers main body return function datatype statement arithmetic relop program else 
    %type <nd_obj2> init value expression /*charlist*/ numberlist parameterlist argumentlist
       %type <nd_obj3> condition
@@ -4654,7 +4664,6 @@ argumentlist:
 };
 | datatype ID
 {
-  addDebugComment(string("Argument: ") + $2.name);
   int t = getDataTypeValue($1.name); // datatype
   addAsmVariable(string($2.name), t);
 
@@ -8119,19 +8128,12 @@ statement:
 }
 | datatype ID init
 {
-  // Variable Initialisations
   string _dt = string($1.name);
   string _id = string($2.name);
   string _init = string($3.name);
 
-
-  if( int_uint )
-    {
-      // addCompilerMessage( "Initialising a signed integer with an unsigned integer that is > 127.  Chaos may ensue.", 1 );
-    }
   int_uint = false;
-      
-  //  ASSIGNMENTS
+
   current_variable_type = getDataTypeValue( _dt );
 
   // this adds the variable to the list of variables
@@ -8190,11 +8192,16 @@ statement:
 	  addCompilerMessage( "Uninitialised float may contain garbage", 0 );
 	}
     }
+  else if(isWordDT(_dt) && isWordID(_id) && isString(_init))
+    {
+      addComment( "word WordID = STR" );
+      addAsm( str_STA + getNameOf(getAddressOf( _id )), 3, false );
+      addAsm( str_STX + getNameOf(getAddressOf( _id )) + " +1", 3, false );
+    }
   else if(isFloatDT(_dt) && isFloatID(_id) && isIntIMM(_init))
     {
       addComment( "initialising a float with IntIMM" );
       int v = twos_complement(atoi(stripFirst(_init).c_str()));
-      //int v = twos_complement(atoi( stripFirst(stripFirst(_init).c_str()).c_str()));
       addAsm( str_LDY + "#$" + toHex(v), 2, false );
       addAsm( str_LDA + "#$FF", 2, false );
       addAsm( str_JSR + "$B391" + commentmarker + "WORD -> FAC", 3, false );
@@ -14227,20 +14234,18 @@ statement:
     {
       addCompilerMessage( "unexpected type", 3);
     }
-  strcpy( $$.name, "_NULL" );
-  
+  strcpy( $$.name, "_NULL" );  
 };
 | tSETNAM '(' STR ')'
 {
-  addComment( "Set Filename" );
-  int s = string_number;
-  addString( string("STRLBL") + itos(string_number++), string($3.name).substr(1,string($3.name).length()-2), asm_instr.size() );
-  addAsm( str_LDA + "#$" + toHex( string($3.name).length()-2), 2, false );
-  addAsm( str_LDX + "#<STRLBL" + itos(s), 2, false );
-  addAsm( str_LDY + "#>STRLBL" + itos(s), 2, false );
-  addAsm( str_JSR + "$FFBD", 3, false );
-  strcpy( $$.name, "_NULL" );
-};
+      int s = string_number;
+      addString( string("STRLBL") + itos(string_number++), string($3.name).substr(1,string($3.name).length()-2), asm_instr.size() );
+      addAsm( str_LDA + "#$" + toHex( string($3.name).length()-2), 2, false );
+      addAsm( str_LDX + "#<STRLBL" + itos(s), 2, false );
+      addAsm( str_LDY + "#>STRLBL" + itos(s), 2, false );
+      addAsm( str_JSR + "$FFBD", 3, false );      
+
+}
 | tFCLRCHN '(' ')'
 {
   addComment( "fclrchn" );
@@ -14280,9 +14285,13 @@ statement:
     {
       addAsm( str_LDX + getNameOf(hexToDecimal($3.name)), 3, false );
     }
+  else if( isA( $3.name) )
+    {
+      addAsm( str_TAX, 1, false );
+    }
   else
     {
-      addCompilerMessage( "for now Param1 (Logical#) must be a UintIMM", 3);
+      addCompilerMessage( "for now Param1 (Logical#) must be a UintIMM, UintID, or A", 3);
     }
   addAsm( str_JSR + "$FFC9", 3, false );
   strcpy( $$.name, "_NULL" );
@@ -14316,6 +14325,7 @@ statement:
 | tSETLFS '(' expression ',' expression ',' expression ')'
 {
   addComment( "Set Logical File System" );
+  // ============vv=========
   if( isUintIMM( $3.name ) )
     {
       addAsm( str_LDA + "#$" + toHex(atoi(stripFirst($3.name).c_str())), 2, false );
@@ -14324,11 +14334,12 @@ statement:
     {
       addAsm( str_LDA + getNameOf(hexToDecimal($3.name)), 3, false );
     }
-
   else
     {
       addCompilerMessage( "for now Param1 (Logical#) must be a UintIMM", 3);
     }
+  
+  // ============vv=========
   if( isUintIMM( $5.name ) )
     {
       addAsm( str_LDX + "#$" + toHex(atoi(stripFirst($5.name).c_str())), 2, false ); 
@@ -14341,6 +14352,7 @@ statement:
     {
       addCompilerMessage( "for now Param2 (Device #) must be a UintIMM", 3);
     }
+  // ============vv=========
   if( isUintIMM( $7.name ) )
     {
       addAsm( str_LDY + "#$" + toHex(atoi(stripFirst($7.name).c_str())), 2, false );
@@ -14439,7 +14451,6 @@ statement:
   
 };
 
-
 // different types of initialisations
 init: '=' expression
 {
@@ -14478,8 +14489,6 @@ init: '=' expression
     }
   else if( isWordID( $2.name ) )
     {
-      /// TODO
-      // this seems to be where the problem is
       int tmp_addr = hexToDecimal($2.name);
       int instr_size = 3;
       if(tmp_addr < 256) instr_size = 2;
@@ -14496,7 +14505,6 @@ init: '=' expression
     {
       int tmp_addr = hexToDecimal($2.name); 
       addComment( "initialising with UintID" );
-      addComment( $2.name );
       int instr_size = 3;
       if(tmp_addr < 256) instr_size = 2;
       addAsm( str_LDA + getNameOf(tmp_addr), instr_size, false );
@@ -14527,26 +14535,11 @@ init: '=' expression
 	{
 	  int_uint = false;
 	}
-      
     }
   else if( isIntIMM($2.name) )
     {
       addComment( "The special case of IntIMM" );
       strcpy($$.name, $2.name );
-
-      
-      // this is a special case and should maybe be taken out
-      // until: dt id init
-      //addComment( "initialising with IntIMM" );
-      //int v = twos_complement( atoi( stripFirst($2.name).c_str() )) ;
-      //if( v < 0 )
-      //{
-      //addComment( "... two's complement ..." );
-		     
-      //  v = twos_complement(v);
-      //	}
-      //addAsm( str_LDA + "#$" + toHex(v), 2, false );
-      //strcpy( $$.name, "_A" );
     }
   else if( isWordIMM($2.name) )
     {
@@ -14569,11 +14562,15 @@ init: '=' expression
     {
       strcpy($$.name, $2.name );
     }
+  else if( isString($2.name) )
+    {
+      
+      strcpy($$.name, $2.name );
+    }
   else
     {
-      addComment( "What is this?  Pass it on!" );
-      addComment( $2.name );
-      strcpy($$.name, $2.name );
+      addCompilerMessage( "What even IS this?", 3 );
+      strcpy($$.name, "NULL" );
     }
 }
 |
@@ -26358,8 +26355,6 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_LDA + "#$00", 2, false );
 	  addAsm( str_STA + "_DIV16_FE", 3, false);
 	  addAsm( str_JSR + "DIV16", 3, false );
-	  //addAsm( str_LDA + "_DIV16_FB", 3, false );
-	  //addAsm( str_LDX + "_DIV16_FC" + commentmarker + "OPTIMIZE", 3, false );
 	  strcpy($$.name, "_XA");
 	}
       else if( op == string( "**" ) )
@@ -26871,8 +26866,6 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_LDA + O2 + " +1", sizeOP2B, false );
 	  addAsm( str_STA + "_MUL16_FE", 3, false);
 	  addAsm( str_JSR + "MUL16", 3, false );
-	  //addAsm( str_LDA + "MUL16R", 3, false );
-	  //addAsm( str_LDX + "MUL16R+1", 3, false );
 	  strcpy($$.name, "_XA" );
 	}
       else if( op == string("/") )
@@ -26888,8 +26881,6 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_STX + "_DIV16_FC", 3, false );
 	  addAsm( str_STA + "_DIV16_FB", 3, false );
 	  addAsm( str_JSR + "DIV16", 3, false );
-	  //addAsm( str_LDA + "_DIV16_FB", 3, false );
-	  //addAsm( str_LDX + "_DIV16_FC", 3, false );
 	  strcpy($$.name, "_XA" );
 	}
       else if( op == string( "**" ) )
@@ -27239,8 +27230,6 @@ arithmetic[MATHOP] expression[OP2]
 	      addAsm( str_LDA + "#$" + toHex(get_word_H(tmp_v)), 2, false );
 	      addAsm( str_STA + "_MUL16_FE", 3, false);
 	      addAsm( str_JSR + "MUL16", 3, false );
-	      //addAsm( str_LDA + "MUL16R", 3, false );
-	      //addAsm( str_LDX + "MUL16R +1", 3, false );
 	      strcpy($$.name, "_XA" );
 	    }		
 	}
@@ -27389,8 +27378,7 @@ arithmetic[MATHOP] expression[OP2]
 	      addAsm( str_LSR, 1, false );
 	      strcpy($$.name, "_XA" );
 	      break;
-	    default:
-	  
+	    default:	  
 	      int tmp_v_L = get_word_L( tmp_v );
 	      int tmp_v_H = get_word_H( tmp_v );
 	      div16_is_needed = true;
@@ -27401,8 +27389,6 @@ arithmetic[MATHOP] expression[OP2]
 	      addAsm( str_LDA + "#$" + toHex(tmp_v_H), 2, false );
 	      addAsm( str_STA + "_DIV16_FE", 3, false);
 	      addAsm( str_JSR + "DIV16", 3, false );
-	      //addAsm( str_LDA + "_DIV16_FB", 3, false );
-	      //addAsm( str_LDX + "_DIV16_FC", 3, false );	  
 	      strcpy($$.name, "_XA" );
 	    }
 	}
@@ -27438,7 +27424,6 @@ arithmetic[MATHOP] expression[OP2]
       addComment( "XA math XA: TOC" );
       if( op == string("+") )
 	{
-	  // TODO: Redo this with self-modifying code
 	  addComment( "XA + XA --> XA (new)" );
 	  addAsm( str_STA + "!mem+", 3, false ); // the A in 
 	  addAsm( str_STX + "!mem++", 3, false );
@@ -27486,8 +27471,6 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_PLA );
 	  addAsm( str_STA + "_MUL16_FB", 3, false);
 	  addAsm( str_JSR + "MUL16", 3, false );
-	  //addAsm( str_LDA + "MUL16R", 3, false );
-	  //addAsm( str_LDX + "MUL16R+1", 3, false );
 	  strcpy($$.name, "_XA" );
 	}
       else if( op == string("/") )
@@ -27501,15 +27484,12 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_PLA );
 	  addAsm( str_STA + "_DIV16_FB", 3, false );
 	  addAsm( str_JSR + "DIV16", 3, false );
-	  //addAsm( str_LDA + "_DIV16_FB", 3, false );
-	  //addAsm( str_LDX + "_DIV16_FC", 3, false );
 	  strcpy($$.name, "_XA" );
 	}
       else if( op == string( "**" ) )
 	{
 	  addCompilerMessage( "XA ** XA: exponent restricted to Low Byte of op2 (A)", 1 );
 	  addComment( "XA ** XA --> XA" );
-	  //mul16_is_needed = true;
 	  pow16_is_needed = true;
 	  addAsm( str_PHA, 1, false );
 	  addAsm( str_JSR + "_pow16", 3, false );
@@ -27529,6 +27509,31 @@ arithmetic[MATHOP] expression[OP2]
       addCompilerMessage( "Unknown Types (for the indicated operation)", 3 );
     }
   // END OF MATH
+};
+| tSTRLEN '(' expression ')'
+{
+  if( isWordID($3.name) )
+    {
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
+      addAsm( str_LDX + getNameOf(getAddressOf($3.name)) + " +1", 3, false );
+    }
+  else if( isXA($3.name) )
+    {
+      // Do Nothing - X & A are both already set correctly
+    }
+  else if( isWordIMM($3.name) )
+    {
+      int val = atoi(stripFirst($3.name).c_str());
+      addAsm( str_LDA + "#$" + toHex(get_word_L(val)), 2, false  );
+      addAsm( str_LDX + "#$" + toHex(get_word_H(val)), 2, false  );
+    }
+  else
+    {
+      addCompilerMessage( "strlen: invalid argument type ... it's gotta be a 16-bit word", 3 );
+    }
+  strlen_is_needed = true;
+  addAsm( str_JSR + "_strlen", 3, false );
+  strcpy( $$.name, "_XA" );
 };
 | tNULL
 {
@@ -27582,6 +27587,7 @@ arithmetic[MATHOP] expression[OP2]
     }
   else if( isWordIMM($3.name))
     {
+      // TODO... test this ... is it correct?
       addComment( "asl( WordIMM (address) ) -> A" );
       addAsm( str_LDA + "$" + toHex(atoi(stripFirst($3.name).c_str())), 3, false );
       addAsm( str_ASL, 1, false );
@@ -27590,14 +27596,14 @@ arithmetic[MATHOP] expression[OP2]
     }
   else
     {
-      addCompilerMessage("some kind of error occurred.  look at the ASL instructions", 3 );
+      addCompilerMessage("some kind of error occurred.  look at the ASL instruction here.", 3 );
     }
 };
 | tROL '(' expression ')'
 {
   if( isUintID($3.name) || isIntID($3.name)  )
     {
-      addComment( "rol( UIntID ) -> A" );
+      addComment( "rol( UintID ) -> A" );
       int a = getAddressOf($3.name);
       int size_of_instruction = 3;
       if( a < 256 ) size_of_instruction = 2;
@@ -30150,6 +30156,14 @@ relop: LT { current_state = string( "LT" );  }
 | NE { current_state = string( "NE" ); }
 ;
 
+
+  /* ASM VARIABLE TYPES & SIZES */
+  /* 0 - unsigned int - 1 bytes */
+  /* 1 - signed int - 1 bytes */
+  /* 2 - word - 2 bytes */
+  /* 4 - double - 2 bytes */
+  /* 8 - float - 5 bytes */
+
 value: FLOAT_NUM
 {
   strcpy($$.name, string(string("_f") + $1.name).c_str());
@@ -30173,15 +30187,14 @@ value: FLOAT_NUM
       strcpy( $$.name, return_value.c_str() );
     }
 };
-| NUMBER
+// Unsigned Integers, Integers, and Words
+| NUMBER 
 {
   int v = atoi($1.name);
-
   if( getTypeOf($1.name) != -1 )
     {
       current_variable_type = getTypeOf($1.name);
     }
-
   if( atoi($1.name) > 255 ) current_variable_type = 2;
   else if( atoi($1.name) < 0 ) current_variable_type = 1;
   else current_variable_type = 0;
@@ -30195,7 +30208,6 @@ value: FLOAT_NUM
     {
       if( atoi($1.name) > 127 || atoi($1.name) < -128 )
 	{
-
 	  addCompilerMessage( "int out of range (-128 to +127) converting to word in 2's comp.", 1 );
 	  int tmp_i = atoi( $1.name );
 	  tmp_i = twos_complement( tmp_i );
@@ -30205,8 +30217,7 @@ value: FLOAT_NUM
       else
 	{
 	  strcpy($$.name, string( "_i" + string($1.name)).c_str());
-	}
-      
+	}      
     }
   else if( current_variable_type == 2 )
     {
@@ -30217,21 +30228,9 @@ value: FLOAT_NUM
       strcpy($$.name, string( "_i" + string($1.name)).c_str());
     }
 }
-//| tWORD
-//{
-  /* ASM VARIABLE TYPES & SIZES */
-  /* 0 - unsigned int - 1 bytes */
-  /* 1 - signed int - 1 bytes */
-  /* 2 - word - 2 bytes */
-  /* 4 - double - 2 bytes */
-  /* 8 - float - 5 bytes */
-
-//  addCompilerMessage( "Does this ever happen?", 3 );
-//  strcpy($$.name, $1.name);
-//}
 | CHARACTER
 {
-  addCompilerMessage( "FOUND A CHARACTER", 0);
+  addCompilerMessage( "Found a character", 0);
 
   string senduptheline = string("");
   if( $1.name[1] == '\\' )
@@ -30264,12 +30263,13 @@ value: FLOAT_NUM
 }
 | STR
 {
+  addCompilerMessage( "Found a string", 0);
   int s = string_number;
-  addString( string("STRLBL") + itos(string_number++), string($1.name).substr(1,string($1.name).length()-2), 0   );
+  addString( string("STRLBL") + itos(string_number++), string($1.name).substr(1,string($1.name).length()-2), 0 );
 
   addAsm( str_LDA + "#<STRLBL" + itos(s), 2, false );
   addAsm( str_LDX + "#>STRLBL" + itos(s), 2, false );
-  strcpy( $$.name, "str" );
+  strcpy( $$.name, "_s" );
 };
 return: RETURN ';'
   {
@@ -32006,6 +32006,64 @@ int main(int argc, char *argv[])
 	}
     }
 
+  if( strlen_is_needed )
+    {
+      // start at XA and loop until a zero is found.
+      // return XA (the number of iterations)
+      addAsm( "_strlen:", 0, true );
+      addAsm( str_STA + "!++", 3, false );
+      addAsm( str_STX + "!+++", 3, false );
+
+      addAsm( str_LDA + "$04", 2, false );
+      addAsm( str_PHA, 1, false );
+      addAsm( str_LDA + "$05", 2, false );
+      addAsm( str_PHA, 1, false );
+
+      addAsm( str_LDA + "#$00", 2, false );
+      addAsm( str_STA + "$04", 2, false );
+      addAsm( str_STA + "$05", 2, false );
+
+      addAsm( "!:\t" + str_BYTE + "$AD" + commentmarker + "<-- LDA abs", 3, true );
+      addAsm( "!:\t" + str_BYTE + "$00", 1, true );
+      addAsm( "!:\t" + str_BYTE + "$00", 1, true );
+      //addAsm( str_CMP + "#$00", 2, false );
+      addAsm( str_BEQ + "!+", 2, false );
+
+      addComment( "Increment the pointer" );
+      addAsm( str_CLC, 1, false );
+      addAsm( str_LDA + "#$01", 2, false );
+      addAsm( str_ADC + "!--", 2, false );
+      addAsm( str_STA + "!--", 2, false );
+      
+      addAsm( str_LDA + "#$00", 2, false );
+      addAsm( str_ADC + "!-", 2, false );
+      addAsm( str_STA + "!-", 2, false );
+
+      addComment( "Increment the counter" );
+      addAsm( str_CLC, 1, false );
+      addAsm( str_LDA + "#$01", 2, false );
+      addAsm( str_ADC + "$04", 2, false );
+      addAsm( str_STA + "$04", 2, false );
+      
+      addAsm( str_LDA + "#$00", 2, false );
+      addAsm( str_ADC + "$05", 2, false );
+      addAsm( str_STA + "$05", 2, false );
+      addAsm( str_JMP + "!---", 3, false );
+
+      
+      
+      addAsm( "!:\t" + str_LDX + "$05", 2, true );
+      addAsm( str_LDY + "$04", 2, false );
+      
+      addAsm( str_PLA, 1, false );
+      addAsm( str_STA + "$05", 2, false );
+      
+      addAsm( str_PLA, 1, false );
+      addAsm( str_STA + "$04", 2, false );
+
+      addAsm( str_TYA, 1, false );
+      addAsm( str_RTS, 1, false );
+    }
   
   if( printf_is_needed )
     {

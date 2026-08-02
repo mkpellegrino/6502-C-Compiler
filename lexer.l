@@ -95,14 +95,12 @@ frmt  [{\t}|{\n}]
 "poke"                    { strcpy(yylval.nd_obj.name,(yytext)); return tPOKE; }
 "printf"                    { strcpy(yylval.nd_obj.name,(yytext)); return PRINTFF; }
 "prints"                    { strcpy(yylval.nd_obj.name,(yytext)); return tPRINTS; }
+"strlen"                    { strcpy(yylval.nd_obj.name,(yytext)); return tSTRLEN; }
 "scanf"                     { strcpy(yylval.nd_obj.name,(yytext)); return SCANFF; }
 "int"                       { strcpy(yylval.nd_obj.name,(yytext)); return INT; }
 "float"                     { strcpy(yylval.nd_obj.name,(yytext)); return FLOAT; }
-   /* "double"                    { strcpy(yylval.nd_obj.name,(yytext)); return tDOUBLE; } */
 "word"                    { strcpy(yylval.nd_obj.name,(yytext)); return tWORD; }
-   /* "byte"                    { strcpy(yylval.nd_obj.name,(yytext)); return tBYTE; } */
 "uint"                    { strcpy(yylval.nd_obj.name,(yytext)); return tUINT; }
-   /* "char"                      { strcpy(yylval.nd_obj.name,(yytext)); return CHAR; } */
 "void"                      { strcpy(yylval.nd_obj.name,(yytext)); return VOID; }
 "return"                    { strcpy(yylval.nd_obj.name,(yytext)); return RETURN; }
 "for"	                    { strcpy(yylval.nd_obj.name,(yytext)); return FOR; }
