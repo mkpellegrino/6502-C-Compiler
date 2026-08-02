@@ -305,6 +305,7 @@
 
   bool printf_is_needed = false;
   bool strlen_is_needed = false;
+  bool word_strlen_is_needed = false;
 
 
   bool scanf_is_needed = false;
@@ -4439,10 +4440,14 @@
   %}
 
 
-%union { struct var_name { 
-  char name[100]; 
-  struct node* nd;
-} nd_obj;
+
+%union
+ {
+   struct var_name
+   { 
+     char name[65535]; 
+     struct node* nd;
+   } nd_obj;
 
   struct var_name2 { 
     char name[100]; 
@@ -4461,11 +4466,12 @@
 
 //%parse-param { FILE* fp }
 %token VOID 
-%token <nd_obj> /*tREF*/ CHAR tFCLOSE tFOPEN tFCLRCHN tFCHROUT tFCHRIN tFREADST tFCHKOUT tFCHKIN tSETLFS tSETNAM tIMPORT tCOMMENT tDATA tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD /*tBYTE*/ /*tDOUBLE*/ tUINT tPOINTER tLN tABS tSIN tCOS tTAN tSIDIRQ tSIDOFF tSTRTOFLOAT tSTRTOWORD tTOFLOAT tINTTOWORD tTOUINT tTOWORD tTOBIT tDEC tINC tROL tROR tLSR tGETPC tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJUMP tSETSCR tJSR tIRQ tROMOUT tROMIN tLDA tASL tSPRITECLR tSPRITESET tSPRITEREG tSPRITEOFF tRND tXXX tINLINE tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tPEEK tPOKE CHARACTER tPRINTS PRINTFF SCANFF tSTRLEN INT FLOAT WHILE FOR IF ELSE /* TRUE FALSE */  NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE EXPONENT tSQRT INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL tSCREEN tNULL tMEMCPY tSEED tNEEDS tPI tPHI tE tBL tBS
+%token <nd_obj> /*tREF*/ CHAR tFCLOSE tFOPEN tFCLRCHN tFCHROUT tFCHRIN tFREADST tFCHKOUT tFCHKIN tSETLFS tSETNAM tIMPORT tCOMMENT tDATA tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD /*tBYTE*/ /*tDOUBLE*/ tUINT tPOINTER tLN tABS tSIN tCOS tTAN tSIDIRQ tSIDOFF tSTRTOFLOAT tSTRTOWORD tTOFLOAT tINTTOWORD tTOUINT tTOWORD tTOBIT tDEC tINC tROL tROR tLSR tGETPC tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJUMP tSETSCR tJSR tIRQ tROMOUT tROMIN tLDA tASL tSPRITECLR tSPRITESET tSPRITEREG tSPRITEOFF tRND tXXX tINLINE tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tPEEK tPOKE CHARACTER tPRINTS PRINTFF SCANFF tSTRLEN tWORDSTRLEN INT FLOAT WHILE FOR IF ELSE /* TRUE FALSE */  NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE EXPONENT tSQRT INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL tSCREEN tNULL tMEMCPY tSEED tNEEDS tPI tPHI tE tBL tBS
 %type <nd_obj> headers main body return function datatype statement arithmetic relop program else 
    %type <nd_obj2> init value expression /*charlist*/ numberlist parameterlist argumentlist
       %type <nd_obj3> condition
 
+      
       %%
 
       program: headers main '(' ')' '{' body return '}' function {};
@@ -27533,6 +27539,31 @@ arithmetic[MATHOP] expression[OP2]
     }
   strlen_is_needed = true;
   addAsm( str_JSR + "_strlen", 3, false );
+  strcpy( $$.name, "_A" );
+}
+| tWORDSTRLEN '(' expression ')'
+{
+  if( isWordID($3.name) )
+    {
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
+      addAsm( str_LDX + getNameOf(getAddressOf($3.name)) + " +1", 3, false );
+    }
+  else if( isXA($3.name) )
+    {
+      // Do Nothing - X & A are both already set correctly
+    }
+  else if( isWordIMM($3.name) )
+    {
+      int val = atoi(stripFirst($3.name).c_str());
+      addAsm( str_LDA + "#$" + toHex(get_word_L(val)), 2, false  );
+      addAsm( str_LDX + "#$" + toHex(get_word_H(val)), 2, false  );
+    }
+  else
+    {
+      addCompilerMessage( "strlen: invalid argument type ... it's gotta be a 16-bit word", 3 );
+    }
+  word_strlen_is_needed = true;
+  addAsm( str_JSR + "_word_strlen", 3, false );
   strcpy( $$.name, "_XA" );
 };
 | tNULL
@@ -32008,10 +32039,26 @@ int main(int argc, char *argv[])
 
   if( strlen_is_needed )
     {
+      addAsm( "_strlen:", 0, true );
+      addAsm( str_STA + "!++", 3, false );
+      addAsm( str_STX + "!+++", 3, false );
+      addAsm( str_LDX + "#$00", 2, false );
+      addAsm( "!:\t" + str_BYTE + "$BD" + commentmarker + "<-- LDA abs,X", 3, true );
+      addAsm( "!:\t" + str_BYTE + "$00", 1, true );
+      addAsm( "!:\t" + str_BYTE + "$00", 1, true );
+      addAsm( str_BEQ + "!+", 2, false );
+      addAsm( str_INX, 1, false );
+      addAsm( str_BNE + "!---", 2, false );
+      addAsm( "!:\t" + str_TXA, 1, true );
+      addAsm( str_RTS, 1, false );
+    }
+  if( word_strlen_is_needed )
+    {
       // start at XA and loop until a zero is found.
       // return XA (the number of iterations)
       //addAsm( "!mem0:\t" + str_BYTE + "$00, $00", 2, true );
-      addAsm( "_strlen:", 0, true );
+      addComment( "This is a fairly slow routine because it is able to find lengths over 255 bytes." );
+      addAsm( "_word_strlen:", 0, true );
       addAsm( str_STA + "!++", 3, false );
       addAsm( str_STX + "!+++", 3, false );
       addAsm( str_LDA + "#$00", 2, false );

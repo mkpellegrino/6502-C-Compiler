@@ -2,6 +2,7 @@
 #include "y.tab.h"
  int countn=0;
 %}
+
 %option yylineno
 halpha[a-fA-F]
 alpha [a-zA-Z]
@@ -86,21 +87,22 @@ frmt  [{\t}|{\n}]
 "cos"                    { strcpy(yylval.nd_obj.name,(yytext)); return tCOS; }
 "jsr"                    { strcpy(yylval.nd_obj.name,(yytext)); return tJSR; }
 "lda"                    { strcpy(yylval.nd_obj.name,(yytext)); return tLDA; }
-"jmp"                    { strcpy(yylval.nd_obj.name,(yytext)); return tJMP; }
-"twos"                   { strcpy(yylval.nd_obj.name,(yytext)); return tTWOS; }
-"byte2hex"                   { strcpy(yylval.nd_obj.name,(yytext)); return tBYTE2HEX; }
-"peek"                    { strcpy(yylval.nd_obj.name,(yytext)); return tPEEK; }
-"getH"                    { strcpy(yylval.nd_obj.name,(yytext)); return tGETH; }
-"getL"                    { strcpy(yylval.nd_obj.name,(yytext)); return tGETL; }
-"poke"                    { strcpy(yylval.nd_obj.name,(yytext)); return tPOKE; }
+"jmp"                       { strcpy(yylval.nd_obj.name,(yytext)); return tJMP; }
+"twos"                      { strcpy(yylval.nd_obj.name,(yytext)); return tTWOS; }
+"byte2hex"                  { strcpy(yylval.nd_obj.name,(yytext)); return tBYTE2HEX; }
+"peek"                      { strcpy(yylval.nd_obj.name,(yytext)); return tPEEK; }
+"getH"                      { strcpy(yylval.nd_obj.name,(yytext)); return tGETH; }
+"getL"                      { strcpy(yylval.nd_obj.name,(yytext)); return tGETL; }
+"poke"                      { strcpy(yylval.nd_obj.name,(yytext)); return tPOKE; }
 "printf"                    { strcpy(yylval.nd_obj.name,(yytext)); return PRINTFF; }
 "prints"                    { strcpy(yylval.nd_obj.name,(yytext)); return tPRINTS; }
 "strlen"                    { strcpy(yylval.nd_obj.name,(yytext)); return tSTRLEN; }
+"wordstrlen"               { strcpy(yylval.nd_obj.name,(yytext)); return tWORDSTRLEN; }
 "scanf"                     { strcpy(yylval.nd_obj.name,(yytext)); return SCANFF; }
 "int"                       { strcpy(yylval.nd_obj.name,(yytext)); return INT; }
 "float"                     { strcpy(yylval.nd_obj.name,(yytext)); return FLOAT; }
-"word"                    { strcpy(yylval.nd_obj.name,(yytext)); return tWORD; }
-"uint"                    { strcpy(yylval.nd_obj.name,(yytext)); return tUINT; }
+"word"                      { strcpy(yylval.nd_obj.name,(yytext)); return tWORD; }
+"uint"                      { strcpy(yylval.nd_obj.name,(yytext)); return tUINT; }
 "void"                      { strcpy(yylval.nd_obj.name,(yytext)); return VOID; }
 "return"                    { strcpy(yylval.nd_obj.name,(yytext)); return RETURN; }
 "for"	                    { strcpy(yylval.nd_obj.name,(yytext)); return FOR; }
