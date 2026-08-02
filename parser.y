@@ -32010,18 +32010,13 @@ int main(int argc, char *argv[])
     {
       // start at XA and loop until a zero is found.
       // return XA (the number of iterations)
+      //addAsm( "!mem0:\t" + str_BYTE + "$00, $00", 2, true );
       addAsm( "_strlen:", 0, true );
       addAsm( str_STA + "!++", 3, false );
       addAsm( str_STX + "!+++", 3, false );
-
-      addAsm( str_LDA + "$04", 2, false );
-      addAsm( str_PHA, 1, false );
-      addAsm( str_LDA + "$05", 2, false );
-      addAsm( str_PHA, 1, false );
-
       addAsm( str_LDA + "#$00", 2, false );
-      addAsm( str_STA + "$04", 2, false );
-      addAsm( str_STA + "$05", 2, false );
+      addAsm( str_STA + "!++++ +1", 3, false );
+      addAsm( str_STA + "!++++ +3", 3, false );
 
       addAsm( "!:\t" + str_BYTE + "$AD" + commentmarker + "<-- LDA abs", 3, true );
       addAsm( "!:\t" + str_BYTE + "$00", 1, true );
@@ -32042,26 +32037,16 @@ int main(int argc, char *argv[])
       addComment( "Increment the counter" );
       addAsm( str_CLC, 1, false );
       addAsm( str_LDA + "#$01", 2, false );
-      addAsm( str_ADC + "$04", 2, false );
-      addAsm( str_STA + "$04", 2, false );
+      addAsm( str_ADC + "!+ +3", 3, false );
+      addAsm( str_STA + "!+ +3", 3, false );
       
       addAsm( str_LDA + "#$00", 2, false );
-      addAsm( str_ADC + "$05", 2, false );
-      addAsm( str_STA + "$05", 2, false );
+      addAsm( str_ADC + "!+ +1", 3, false );
+      addAsm( str_STA + "!+ +1", 3, false );
       addAsm( str_JMP + "!---", 3, false );
 
-      
-      
-      addAsm( "!:\t" + str_LDX + "$05", 2, true );
-      addAsm( str_LDY + "$04", 2, false );
-      
-      addAsm( str_PLA, 1, false );
-      addAsm( str_STA + "$05", 2, false );
-      
-      addAsm( str_PLA, 1, false );
-      addAsm( str_STA + "$04", 2, false );
-
-      addAsm( str_TYA, 1, false );
+      addAsm( "!:\t" + str_LDX + "#$00" + commentmarker + "<-- will be overwritten", 2, true );
+      addAsm( str_LDA + "#$00" + commentmarker + "<-- will be overwritten", 2, false );      
       addAsm( str_RTS, 1, false );
     }
   
