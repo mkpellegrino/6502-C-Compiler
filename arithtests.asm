@@ -1,314 +1,1052 @@
-.org $C000
-	LDA #$21; C000
-	STA $0344; C002
-	LDA #$C1; C005
-	STA $03; C007
-	LDA #$43; C009
-	STA $02; C00B
-	JSR PRN; C00D
-	LDA $0344; C010
-	PHA; C013
-	JSR BYTE2HEX; C014
-	JSR LBL0L0; cr(); C017
-	LDA #$21; C01A
-	STA $0345; C01C
-	LDA #$C1; C01F
-	STA $03; C021
-	LDA #$56; C023
-	STA $02; C025
-	JSR PRN; C027
-	LDA $0345; C02A
-	PHA; C02D
-	JSR BYTE2HEX; C02E
-	JSR LBL0L0; cr(); C031
-	LDA #$00; C034
-	STA $0346; C036
-	LDA #$C1; C039
-	STA $03; C03B
-	LDA #$69; C03D
-	STA $02; C03F
-	JSR PRN; C041
-	LDA $0346; C044
-	PHA; C047
-	JSR BYTE2HEX; C048
-	JSR LBL0L0; cr(); C04B
-	LDA #$2A; C04E
-	STA $0344; C050
-	LDA #$C1; C053
-	STA $03; C055
-	LDA #$7C; C057
-	STA $02; C059
-	JSR PRN; C05B
-	LDA $0344; C05E
-	PHA; C061
-	JSR BYTE2HEX; C062
-	JSR LBL0L0; cr(); C065
-	LDA $0346; C068
-	CLC; C06B
-	ADC #$2D; C06C
-	STA $0344; C06E
-	LDA #$C1; C071
-	STA $03; C073
-	LDA #$8F; C075
-	STA $02; C077
-	JSR PRN; C079
-	LDA $0344; C07C
-	PHA; C07F
-	JSR BYTE2HEX; C080
-	JSR LBL0L0; cr(); C083
-	LDA $0346; C086
-	CLC; C089
-	ADC $0344; C08A
-	STA $0344; C08D
-	LDA #$C1; C090
-	STA $03; C092
-	LDA #$A2; C094
-	STA $02; C096
-	JSR PRN; C098
-	LDA $0344; C09B
-	PHA; C09E
-	JSR BYTE2HEX; C09F
-	JSR LBL0L0; cr(); C0A2
-	LDA $0346; C0A5
-	CLC; C0A8
-	ADC #$3D; C0A9
-	STA $0344; C0AB
-	LDA #$C1; C0AE
-	STA $03; C0B0
-	LDA #$B5; C0B2
-	STA $02; C0B4
-	JSR PRN; C0B6
-	LDA $0344; C0B9
-	PHA; C0BC
-	JSR BYTE2HEX; C0BD
-	JSR LBL0L0; cr(); C0C0
-	RTS; C0C3
-LBL0L0:
-	LDA #$C1; C0C4
-	STA $03; C0C6
-	LDA #$C8; C0C8
-	STA $02; C0CA
-	JSR PRN; C0CC
-	RTS; C0CF
-FMULT:
-	PLA; C0D0
-	STA $0341; C0D1
-	PLA; C0D4
-	STA $0342; C0D5
-	LDA $0342; C0D8
-	PHA; C0DB
-	LDA $0341; C0DC
-	PHA; C0DF
-	RTS; C0E0
-FIN:
-	PLA; C0E1
-	STA $0341; C0E2
-	PLA; C0E5
-	STA $0342; C0E6
-	PLA; C0E9
-	STA $7A; C0EA
-	PLA; C0EC
-	STA $7B; C0ED
-	JSR $0079; C0EF
-	JSR $BCF3; C0F2
-	LDA $0342; C0F5
-	PHA; C0F8
-	LDA $0341; C0F9
-	PHA; C0FC
-	RTS; C0FD
-BYTE2HEX:		;Display a Hexadecimal Byte
-	PLA; C0FE
-	STA $0341; C0FF
-	PLA; C102
-	STA $0342; C103
-	CLD; C106
-	PLA; C107
-	TAX; C108
-	AND #$F0; C109
-	LSR; C10B
-	LSR; C10C
-	LSR; C10D
-	LSR; C10E
-	CMP #$0A; C10F
-	.BYTE #$90; C111
-	.BYTE #$03; C112
-	CLC; C113
-	ADC #$07; C114
-	ADC #$30; C116
-	JSR $FFD2; C118
-	TXA; C11B
-	AND #$0F; C11C
-	CMP #$0A; C11E
-	.BYTE #$90; C120
-	.BYTE #$03; C121
-	CLC; C122
-	ADC #$07; C123
-	ADC #$30; C125
-	JSR $FFD2; C127
-	LDA $0342; C12A
-	PHA; C12D
-	LDA $0341; C12E
-	PHA; C131
-	RTS; C132
-PRN:
-	LDY #$00; C133
-PRN_LOOP:
-	LDA ($02),Y; C135
-	CMP #$00; C137
-	BEQ PRN_END; C139
-	JSR $FFD2; C13B
-	INY; C13E
-	JMP PRN_LOOP; C13F
-PRN_END:
-	RTS; C142
-; $c143			"INT M=33      M = "
+ //  Variable Labels
+.label wID0 = $C000
+.label wID1 = $C002
+.label wID2 = $C004
+.label uID0 = $C006
+.label uID1 = $C007
+.label uID2 = $C008
+.label f = $C009
+* = $0801
+BasicUpstart($080D)
+* = $080D
+// =========================================================
+//                         main()
+// =========================================================
+	sta wID0
+	stx wID0 +1
+// initialising with WordIMM
+	lda #$34
+	ldx #$12
+// word WordID = XA
+	sta wID1
+	stx wID1 +1
+	sta wID2
+	stx wID2 +1
+// initialising with UintIMM
+	lda #$0A
+// uint UintID = A
+	sta uID0
+	sta uID1
+	sta uID2
+// initialising with UintIMM
+	lda #$24
+// UintID = A
+	sta uID1
+// initialising with UintIMM
+	lda #$05
+// UintID = A
+	sta uID2
+// printf("A VS. A\n\n");
+	lda #<STRLBL0
+	sta $02
+	lda #>STRLBL0
+	sta $03
+	jsr _prn
+// touint(WordID|UintID) --> A
+	lda uID1
+// OP1 (A)
+	pha
+// touint(WordID|UintID) --> A
+	lda uID2
+// A math A: TOC
+// A + A --> A (12 cycles)
+	sta !+ +1
+	pla
+	clc
+!:	adc #$00 // will be overwritten
+// initialising with A
+// UintID = A
+	sta uID0
+	jsr showUint
+// printf("41");
+	lda #<STRLBL1
+	sta $02
+	lda #>STRLBL1
+	sta $03
+	jsr _prn
+// touint(WordID|UintID) --> A
+	lda uID1
+// OP1 (A)
+	pha
+// touint(WordID|UintID) --> A
+	lda uID2
+// A math A: TOC
+// A - A --> A (12 cycles)
+	sta !+
+	pla
+	sec 
+	.byte $E9 // <-- SBC imm
+!:	.byte $00
+// initialising with A
+// UintID = A
+	sta uID0
+	jsr showUint
+// printf("31");
+	lda #<STRLBL2
+	sta $02
+	lda #>STRLBL2
+	sta $03
+	jsr _prn
+// touint(WordID|UintID) --> A
+	lda uID1
+// OP1 (A)
+	pha
+// touint(WordID|UintID) --> A
+	lda uID2
+// A math A: TOC
+// A * A --> A
+	pha
+	lda $02
+	tay
+	lda $03
+	tax
+	pla
+	sta $02
+	pla
+	sta $03
+	jsr UMUL
+	ldx $03
+	pla
+	sta $03
+	pla
+	sta $02
+	txa
+// initialising with A
+// UintID = A
+	sta uID0
+	jsr showUint
+// printf("180");
+	lda #<STRLBL3
+	sta $02
+	lda #>STRLBL3
+	sta $03
+	jsr _prn
+// touint(WordID|UintID) --> A
+	lda uID1
+// OP1 (A)
+	pha
+// touint(WordID|UintID) --> A
+	lda uID2
+// A math A: TOC
+// A / A --> A
+	sta _DIV16_FD
+	pla
+	sta _DIV16_FB
+	lda #$00
+	sta _DIV16_FC
+	sta _DIV16_FE
+	jsr DIV16
+// initialising with XA
+// IntID = XA
+	sta uID0
+	jsr showUint
+// printf("7");
+	lda #<STRLBL4
+	sta $02
+	lda #>STRLBL4
+	sta $03
+	jsr _prn
+// touint(UintIMM) --> A
+	lda #$03
+// OP1 (A)
+	pha
+// touint(UintIMM) --> A
+	lda #$05
+// A math A: TOC
+// A ** A --> XA
+	tax
+	lda #$00
+	pha
+	txa
+	pha
+	jsr _pow16
+	pla
+	tax
+	pla
+// initialising with XA
+// IntID = XA
+	sta uID0
+	jsr showUint
+// printf("243");
+	lda #<STRLBL5
+	sta $02
+	lda #>STRLBL5
+	sta $03
+	jsr _prn
+	jsr Pause
+// printf("A VS. FAC\n\n");
+	lda #<STRLBL6
+	sta $02
+	lda #>STRLBL6
+	sta $03
+	jsr _prn
+brkpt:
+// vvvvvvv
+// touint(WordID|UintID) --> A
+	lda uID1
+// OP1 (A)
+// ^^^--- OPTIMIZE ---^^^
+// A math FloatIMM: TOC
+	tay
+	lda #$00
+	sta $6F
+	jsr $B3A2 // WORD -> FAC
+	jsr $BC0F // FAC -> ARG
+// inline float: 5.0
+// 6 Byte FAC: .byte  $83, $A0, $00, $00, $00, $20
+// 5 Byte MEM: .byte  $83, $20, $00, $00, $00
+	lda #$83
+	sta $19
+	lda #$20
+	sta $1A
+	lda #$00
+	sta $1B
+	sta $1C
+	sta $1D
+	lda #$19 // OPTIMIZE?
+	ldy #$00
+	jsr $BBA2 // MEM -> FAC
+	jsr $BC2B // SIGN of FAC
+	bpl !skip+
+	dec $6F
+!skip:
+	jsr $B86A // ARG + FAC -> FAC
+// initialising with FAC
+// float FloatID = FAC
+	ldx #<f
+	ldy #>f
+	jsr $BBD4 // FAC -> MEM
+// ^^^^^^^
+	jsr showFloat
+// printf("41");
+	lda #<STRLBL7
+	sta $02
+	lda #>STRLBL7
+	sta $03
+	jsr _prn
+// touint(WordID|UintID) --> A
+	lda uID1
+// OP1 (A)
+// ^^^--- OPTIMIZE ---^^^
+// A math FloatIMM: TOC
+	tay
+	lda #$00
+	sta $6F
+	jsr $B3A2 // WORD -> FAC
+	jsr $BC0F // FAC -> ARG
+// inline float: 5.0
+// 6 Byte FAC: .byte  $83, $A0, $00, $00, $00, $20
+// 5 Byte MEM: .byte  $83, $20, $00, $00, $00
+	lda #$83
+	sta $19
+	lda #$20
+	sta $1A
+	lda #$00
+	sta $1B
+	sta $1C
+	sta $1D
+	lda #$19 // OPTIMIZE?
+	ldy #$00
+	jsr $BBA2 // MEM -> FAC
+	jsr $BC2B // SIGN of FAC
+	bpl !skip+
+	dec $6F
+!skip:
+	jsr $B853 // ARG - FAC -> FAC
+// initialising with FAC
+// UintID = FAC
+	jsr $B1AA // FAC -> WORD (y-lo a-hi)
+	sty uID0
+	jsr showUint
+// printf("31");
+	lda #<STRLBL8
+	sta $02
+	lda #>STRLBL8
+	sta $03
+	jsr _prn
+// touint(WordID|UintID) --> A
+	lda uID1
+// OP1 (A)
+// ^^^--- OPTIMIZE ---^^^
+// A math FloatIMM: TOC
+	tay
+	lda #$00
+	sta $6F
+	jsr $B3A2 // WORD -> FAC
+	jsr $BC0F // FAC -> ARG
+// inline float: 5.0
+// 6 Byte FAC: .byte  $83, $A0, $00, $00, $00, $20
+// 5 Byte MEM: .byte  $83, $20, $00, $00, $00
+	lda #$83
+	sta $19
+	lda #$20
+	sta $1A
+	lda #$00
+	sta $1B
+	sta $1C
+	sta $1D
+	lda #$19 // OPTIMIZE?
+	ldy #$00
+	jsr $BBA2 // MEM -> FAC
+	jsr $BC2B // SIGN of FAC
+	bpl !skip+
+	dec $6F
+!skip:
+	jsr $BA2B // ARG * FAC -> FAC
+// initialising with FAC
+// FloatID = FAC
+	ldx #<f
+	ldy #>f
+	jsr $BBD4 // FAC -> MEM
+	jsr showFloat
+// printf("180");
+	lda #<STRLBL9
+	sta $02
+	lda #>STRLBL9
+	sta $03
+	jsr _prn
+// touint(WordID|UintID) --> A
+	lda uID1
+// OP1 (A)
+// ^^^--- OPTIMIZE ---^^^
+// A math FloatIMM: TOC
+	tay
+	lda #$00
+	sta $6F
+	jsr $B3A2 // WORD -> FAC
+	jsr $BC0F // FAC -> ARG
+// inline float: 5.0
+// 6 Byte FAC: .byte  $83, $A0, $00, $00, $00, $20
+// 5 Byte MEM: .byte  $83, $20, $00, $00, $00
+	lda #$83
+	sta $19
+	lda #$20
+	sta $1A
+	lda #$00
+	sta $1B
+	sta $1C
+	sta $1D
+	lda #$19 // OPTIMIZE?
+	ldy #$00
+	jsr $BBA2 // MEM -> FAC
+	jsr $BC2B // SIGN of FAC
+	bpl !skip+
+	dec $6F
+!skip:
+	jsr $BB12 // ARG / FAC -> FAC
+// initialising with FAC
+// UintID = FAC
+	jsr $B1AA // FAC -> WORD (y-lo a-hi)
+	sty uID0
+	jsr showUint
+// printf("7");
+	lda #<STRLBL10
+	sta $02
+	lda #>STRLBL10
+	sta $03
+	jsr _prn
+// touint(UintIMM) --> A
+	lda #$03
+// OP1 (A)
+// ^^^--- OPTIMIZE ---^^^
+// A math FloatIMM: TOC
+	tay
+	lda #$00
+	sta $6F
+	jsr $B3A2 // WORD -> FAC
+	jsr $BC0F // FAC -> ARG
+// inline float: 5.0
+// 6 Byte FAC: .byte  $83, $A0, $00, $00, $00, $20
+// 5 Byte MEM: .byte  $83, $20, $00, $00, $00
+	lda #$83
+	sta $19
+	lda #$20
+	sta $1A
+	lda #$00
+	sta $1B
+	sta $1C
+	sta $1D
+	lda #$19 // OPTIMIZE?
+	ldy #$00
+	jsr $BBA2 // MEM -> FAC
+	jsr $BC2B // SIGN of FAC
+	bpl !skip+
+	dec $6F
+!skip:
+	jsr $BF7B // ARG ** FAC -> FAC
+// initialising with FAC
+// UintID = FAC
+	jsr $B1AA // FAC -> WORD (y-lo a-hi)
+	sty uID0
+	jsr showUint
+// printf("243");
+	lda #<STRLBL11
+	sta $02
+	lda #>STRLBL11
+	sta $03
+	jsr _prn
+	jsr Pause
+// initialising with UintIMM
+	lda #$0A
+// UintID = A
+	sta uID0
+// initialising with WordIMM
+	lda #$34
+	ldx #$12
+// WordID = XA
+	sta wID1
+	stx wID1 +1
+// touint(WordID|UintID) --> A
+	lda uID0
+// WordID math A: TOC
+// WordID + A --> XA
+	clc
+	adc wID1
+	tay
+	lda #$00
+	adc wID1 +1
+	tax
+	tya
+// initialising with XA
+// WordID = XA
+	sta wID0
+	stx wID0 +1
+	jsr showWord
+// printf("4670");
+	lda #<STRLBL12
+	sta $02
+	lda #>STRLBL12
+	sta $03
+	jsr _prn
+// touint(WordID|UintID) --> A
+	lda uID0
+// WordID math A: TOC
+// WordID - A --> XA
+	sec 
+	sta !+
+	lda wID1
+	.byte $E9 // <-- SBC imm
+!:	.byte $00
+	tay
+	lda wID1 +1
+	sbc #$00
+	tax
+	tya
+// initialising with XA
+// WordID = XA
+	sta wID0
+	stx wID0 +1
+	jsr showWord
+// printf("4650");
+	lda #<STRLBL13
+	sta $02
+	lda #>STRLBL13
+	sta $03
+	jsr _prn
+// touint(WordID|UintID) --> A
+	lda uID0
+// WordID math A: TOC
+// WordID * A --> XA
+	sta _MUL16_FD
+	lda #$00
+	sta _MUL16_FE
+	lda wID1 +1
+	sta _MUL16_FC
+	lda wID1
+	sta _MUL16_FB
+	jsr MUL16
+// initialising with XA
+// WordID = XA
+	sta wID0
+	stx wID0 +1
+	jsr showWord
+// printf("46600");
+	lda #<STRLBL14
+	sta $02
+	lda #>STRLBL14
+	sta $03
+	jsr _prn
+// touint(WordID|UintID) --> A
+	lda uID0
+// WordID math A: TOC
+// WordID / A --> XA
+	sta _DIV16_FD
+	lda #$00
+	sta _DIV16_FE
+	lda wID1 +1
+	sta _DIV16_FC
+	lda wID1
+	sta _DIV16_FB
+	jsr DIV16
+// initialising with XA
+// WordID = XA
+	sta wID0
+	stx wID0 +1
+	jsr showWord
+// printf("466");
+	lda #<STRLBL15
+	sta $02
+	lda #>STRLBL15
+	sta $03
+	jsr _prn
+// initialising with UintIMM
+	lda #$02
+// UintID = A
+	sta uID0
+// initialising with WordIMM
+	lda #$F0
+	ldx #$00
+// WordID = XA
+	sta wID1
+	stx wID1 +1
+// touint(WordID|UintID) --> A
+	lda uID0
+// WordID math A: TOC
+// WordID ** A --> XA
+	tax
+	lda wID1
+	pha
+	lda wID1 +1
+	pha
+	txa
+	pha
+	jsr _pow16
+	pla
+	tax
+	pla
+// initialising with XA
+// WordID = XA
+	sta wID0
+	stx wID0 +1
+	jsr showWord
+// printf("57600");
+	lda #<STRLBL16
+	sta $02
+	lda #>STRLBL16
+	sta $03
+	jsr _prn
+	jsr Pause // JSR+RTS chain (OPTIMIZE)
+	rts
+// Function: VOID: showWord
+// return address (OPTIMIZE)
+!rx:	.byte $00
+!ry:	.byte $00
+showWord:
+// vvv--- this is a work in progress ---vvv
+	lda wID0
+	pha
+	lda wID0 +1
+	pha
+	lda #$02 // Word Type
+	ldy #<STRLBL17
+	ldx #>STRLBL17
+	jsr _new_formatted_printf
+// ^^^--- this is a work in progress ---^^^
+	rts
+// Function: VOID: showUint
+// return address (OPTIMIZE)
+!rx:	.byte $00
+!ry:	.byte $00
+showUint:
+// vvv--- this is a work in progress ---vvv
+	lda uID0
+	pha
+	lda #$00 // Uint Type
+	ldy #<STRLBL18
+	ldx #>STRLBL18
+	jsr _new_formatted_printf
+// ^^^--- this is a work in progress ---^^^
+	rts
+// Function: VOID: showFloat
+// return address (OPTIMIZE)
+!rx:	.byte $00
+!ry:	.byte $00
+showFloat:
+// vvv--- this is a work in progress ---vvv
+	lda #<f
+	ldy #>f
+	jsr $BBA2 // MEM -> FAC
+	lda #$03 // Float Type
+	ldy #<STRLBL19
+	ldx #>STRLBL19
+	jsr _new_formatted_printf
+// ^^^--- this is a work in progress ---^^^
+	rts
+// Function: VOID: Pause
+// return address (OPTIMIZE)
+!rx:	.byte $00
+!ry:	.byte $00
+Pause:
+// printf("\n\nPRESS ANY KEY TO CONTINUE\n");
+	lda #<STRLBL20
+	sta $02
+	lda #>STRLBL20
+	sta $03
+	jsr _prn
+	jsr pause // JSR+RTS chain (OPTIMIZE)
+	rts
+// -----------------------------------
+// string of PETSCII bytes tmp storage
+!mem0:	.byte $00, $00, $00, $00, $00, $00, $00
+// ------------------------------------------------------------
+//     This chunk of code is by: Andrew Jacobs, 28-Feb-2004
+// Taken from: http://6502.org/source/integers/hex2dec-more.htm
+//  Modified to make jumps and addressing relative for KickAsm 
+// ------------------------------------------------------------
+!mem1:	.byte $00, $00, $00
+!arg0:	.byte $00, $00
+_display_word:		 // 2 Byte Word to Decimal
+	stx !arg0- +1
+	sta !arg0-
+	sed 
+	lda #$00
+	sta !mem1-
+	sta !mem1- +1
+	sta !mem1- +2
+	ldx #$10
+!:	asl !arg0-
+	rol !arg0- +1
+	lda !mem1-
+	adc !mem1-
+	sta !mem1-
+	lda !mem1- +1
+	adc !mem1- +1
+	sta !mem1- +1
+	lda !mem1- +2
+	adc !mem1- +2
+	sta !mem1- +2
+	dex 
+	bne !-
+	cld
+// ------------------------------------------------------------
+	lda !mem1-
+	tay
+	lsr 
+	lsr 
+	lsr 
+	lsr 
+	ora #$30
+	sta !mem0- +4
+	tya
+	and #$0F
+	ora #$30
+	sta !mem0- +5
+	lda !mem1- +1
+	tay
+	lsr 
+	lsr 
+	lsr 
+	lsr 
+	ora #$30
+	sta !mem0- +2
+	tya
+	and #$0F
+	ora #$30
+	sta !mem0- +3
+	lda !mem1- +2
+	tay
+	lsr 
+	lsr 
+	lsr 
+	lsr 
+	ora #$30
+	sta !mem0-
+	tya
+	and #$0F
+	ora #$30
+	sta !mem0- +1
+	ldx #$00
+!:	lda !mem0-,X
+	cmp #$30
+	bne !+
+	inx
+	jmp !-
+!:	cpx #$06
+	bne !+
+	dex 
+!:	lda !mem0-,X
+	beq !+
+	inx
+	jsr $FFD2
+	jmp !-
+!:	rts
+// --------------------------
+_DIV16_FD:
+	.byte $00
+_DIV16_FE:
+	.byte $00
+_DIV16_FB:
+	.byte $00
+_DIV16_FC:
+	.byte $00
+DIV16:
+	lda #$00
+	sta $02
+	sta $03
+	ldx #$10
+!:
+	asl _DIV16_FB
+	rol _DIV16_FC
+	rol $02
+	rol $03
+	lda $02
+	sec 
+	sbc _DIV16_FD
+	tay
+	lda $03
+	sbc _DIV16_FE
+	bcc !+
+	sta $03
+	sty $02
+	inc _DIV16_FB
+!:
+	dex 
+	bne !--
+	lda _DIV16_FB
+	ldx _DIV16_FC
+	rts
+!lv_arg0:	.byte $00, $00
+!lv_arg1:	.byte $00, $00
+!lv_ret:	.byte $00, $00
+!lv_mem0:	.byte $00, $00
+!rx:	.byte $00
+!ry:	.byte $00
+_pow16:
+	pla
+	sta !rx-
+	pla
+	sta !ry-
+	pla
+	sta !lv_arg1-
+	pla
+	sta !lv_arg0- +1
+	pla
+	sta !lv_arg0-
+	lda #$01
+	ldx #$00
+	sta !lv_ret-
+	stx !lv_ret- +1
+	stx !lv_mem0-
+	stx !lv_mem0- +1
+	lda !lv_arg1- +1
+	bne !+
+	lda !lv_arg1-
+	cmp #$01
+!:	bne !_skip+
+	lda !lv_arg0-
+	ldx !lv_arg0- +1
+	sta !lv_ret-
+	stx !lv_ret- +1
+!_skip:	lda !lv_arg1- +1
+	bne !+
+	lda !lv_arg1-
+	cmp #$01
+!:	bcc !+++
+	beq !+++
+	lda #$00
+	sta !lv_mem0-
+	sta !lv_mem0- +1
+!:	lda !lv_mem0- +1
+	cmp !lv_arg1- +1
+	bne !+
+	lda !lv_mem0-
+	cmp !lv_arg1-
+!:	bcs !+
+	lda !lv_ret-
+	sta _MUL16_FB
+	lda !lv_ret- +1
+	sta _MUL16_FC
+	lda !lv_arg0-
+	sta _MUL16_FD
+	lda !lv_arg0- +1
+	sta _MUL16_FE
+	jsr MUL16
+	sta !lv_ret-
+	stx !lv_ret- +1
+	clc
+	lda !lv_mem0-
+	adc #$01
+	sta !lv_mem0-
+	lda !lv_mem0- +1
+	adc #$00
+	sta !lv_mem0- +1
+	jmp !--
+!:	lda !lv_ret-
+	pha
+	lda !lv_ret- +1
+	pha
+	lda !ry-
+	pha
+	lda !rx-
+	pha
+	rts
+!:
+_MUL16_FB:
+	.byte $00
+!:
+_MUL16_FC:
+	.byte $00
+!:
+_MUL16_FD:
+	.byte $00
+!:
+_MUL16_FE:
+	.byte $00
+MUL16R:
+	.byte $00, $00, $00, $00
+MUL16:
+	lda #$00
+	sta MUL16R
+	sta MUL16R +1
+	sta MUL16R +2
+	sta MUL16R +3
+	ldx #$10
+!:	lsr !--
+	ror !---
+	bcc !+
+	tay
+	clc
+	lda !-----
+	adc MUL16R +2
+	sta MUL16R +2
+	tya
+	adc !----
+!:	ror 
+	ror MUL16R +2
+	ror MUL16R +1
+	ror MUL16R
+	dex 
+	bne !--
+	sta MUL16R+3
+	lda MUL16R
+	ldx MUL16R+1
+	rts
+UMUL:
+	lda #$00
+	ldx #$08
+!:	lsr $03
+	bcc !+
+	clc
+	adc $02
+!:	asl $02
+	dex 
+	bne !--
+	sta $03
+	rts
+// Turns a 1 byte value in A into 3 PETSCII chars in A, Y, and X
+// Destroys $61 & $62 in ZP
+_byte_to_string:
+// Taken from: codebase64.org/doku.php?id=base:tiny_.a_to_ascii_routine
+	ldy #$2F
+	ldx #$3A
+	sec 
+!:	iny
+	sbc #$64
+	bcs !-
+!:	dex 
+	adc #$0A
+	bmi !-
+	adc #$2F
+	sta $62
+	stx $61
+	tya
+	ldx $62
+	ldy $61
+	rts
+!rx:	.byte $00
+!ry:	.byte $00
+_new_formatted_printf:
+	sty $02
+	stx $03
+	tax // save the type until later
+	ldy #$00
+!:	lda ($02),Y
+	beq !+++
+	cmp #$25 // (%)
+	beq !+
+	jsr $FFD2
+	iny
+	jmp !-
+!:	iny
+	lda ($02),Y
+	cmp #$75 // (u)
+	bne !+
+	sty $04
+	cpx #$00
+	bne !a+
+	jmp _printf_uint
+!a:	cpx #$02
+	bne !a+
+	jmp _printf_word
+!a:	cpx #$03
+	bne !a+
+	jmp _printf_float
+!a:
+_back_to_printf:
+	ldy $04
+	iny
+	jmp !--
+!:	lda #$25
+	jsr $FFD2
+	jmp !---
+!:	rts
+_printf_uint:	 // _printf_uint
+	pla
+	sta !rx-
+	pla
+	sta !ry-
+	pla
+	jsr _byte_to_string
+	cmp #$30 // ----------
+	beq !a+++
+	jsr $FFD2
+	tya
+!a:	jsr $FFD2
+!a:	txa
+	jsr $FFD2
+	jmp !a++
+!a:	tya
+	cmp #$30
+	beq !a--
+	jmp !a--- // ----------
+!a:
+	lda !ry-
+	pha
+	lda !rx-
+	pha
+	jmp _back_to_printf
+_printf_word:	 // _printf_word
+	pla
+	sta !rx-
+	pla
+	sta !ry-
+	pla
+	tax
+	pla
+	jsr _display_word
+	lda !ry-
+	pha
+	lda !rx-
+	pha
+	jmp _back_to_printf
+_printf_float:	 // _printf_float
+	lda $02
+	pha
+	lda $03
+	pha
+	jsr $BDDD // FAC -> PETSCII (Stored at $0100)
+	lda #$00
+	sta $02
+	lda #$01
+	sta $03
+	jsr _prn
+	pla
+	sta $03
+	pla
+	sta $02
+	jmp _back_to_printf
+_prn:
+	ldy #$00
+!:	lda ($02),Y
+	beq !+
+	jsr $FFD2
+	iny
+	jmp !-
+!:	rts
 STRLBL0:
-	.BYTE #$49
-	.BYTE #$4E
-	.BYTE #$54
-	.BYTE #$20
-	.BYTE #$4D
-	.BYTE #$3D
-	.BYTE #$33
-	.BYTE #$33
-	.BYTE #$20
-	.BYTE #$20
-	.BYTE #$20
-	.BYTE #$20
-	.BYTE #$20
-	.BYTE #$20
-	.BYTE #$4D
-	.BYTE #$20
-	.BYTE #$3D
-	.BYTE #$20
-	.BYTE #$00
-; $c156			"INT Z=16+17   Z = "
+	 // .text "A VS. A\n\n"
+	 // .byte $00
+	.byte  $41, $20, $56, $53, $2E, $20, $41, $0D, $0D, $00
 STRLBL1:
-	.BYTE #$49
-	.BYTE #$4E
-	.BYTE #$54
-	.BYTE #$20
-	.BYTE #$5A
-	.BYTE #$3D
-	.BYTE #$31
-	.BYTE #$36
-	.BYTE #$2B
-	.BYTE #$31
-	.BYTE #$37
-	.BYTE #$20
-	.BYTE #$20
-	.BYTE #$20
-	.BYTE #$5A
-	.BYTE #$20
-	.BYTE #$3D
-	.BYTE #$20
-	.BYTE #$00
-; $c169			"INT Y;        Y = "
+	 // .text "41"
+	 // .byte $00
+	.byte  $34, $31, $00
 STRLBL2:
-	.BYTE #$49
-	.BYTE #$4E
-	.BYTE #$54
-	.BYTE #$20
-	.BYTE #$59
-	.BYTE #$3B
-	.BYTE #$20
-	.BYTE #$20
-	.BYTE #$20
-	.BYTE #$20
-	.BYTE #$20
-	.BYTE #$20
-	.BYTE #$20
-	.BYTE #$20
-	.BYTE #$59
-	.BYTE #$20
-	.BYTE #$3D
-	.BYTE #$20
-	.BYTE #$00
-; $c17c			"M = 23 + 19   M = "
+	 // .text "31"
+	 // .byte $00
+	.byte  $33, $31, $00
 STRLBL3:
-	.BYTE #$4D
-	.BYTE #$20
-	.BYTE #$3D
-	.BYTE #$20
-	.BYTE #$32
-	.BYTE #$33
-	.BYTE #$20
-	.BYTE #$2B
-	.BYTE #$20
-	.BYTE #$31
-	.BYTE #$39
-	.BYTE #$20
-	.BYTE #$20
-	.BYTE #$20
-	.BYTE #$4D
-	.BYTE #$20
-	.BYTE #$3D
-	.BYTE #$20
-	.BYTE #$00
-; $c18f			"M = Y + 45    M = "
+	 // .text "180"
+	 // .byte $00
+	.byte  $31, $38, $30, $00
 STRLBL4:
-	.BYTE #$4D
-	.BYTE #$20
-	.BYTE #$3D
-	.BYTE #$20
-	.BYTE #$59
-	.BYTE #$20
-	.BYTE #$2B
-	.BYTE #$20
-	.BYTE #$34
-	.BYTE #$35
-	.BYTE #$20
-	.BYTE #$20
-	.BYTE #$20
-	.BYTE #$20
-	.BYTE #$4D
-	.BYTE #$20
-	.BYTE #$3D
-	.BYTE #$20
-	.BYTE #$00
-; $c1a2			"M = Y + M     M = "
+	 // .text "7"
+	 // .byte $00
+	.byte  $37, $00
 STRLBL5:
-	.BYTE #$4D
-	.BYTE #$20
-	.BYTE #$3D
-	.BYTE #$20
-	.BYTE #$59
-	.BYTE #$20
-	.BYTE #$2B
-	.BYTE #$20
-	.BYTE #$4D
-	.BYTE #$20
-	.BYTE #$20
-	.BYTE #$20
-	.BYTE #$20
-	.BYTE #$20
-	.BYTE #$4D
-	.BYTE #$20
-	.BYTE #$3D
-	.BYTE #$20
-	.BYTE #$00
-; $c1b5			"M = 61 + Y    M = "
+	 // .text "243"
+	 // .byte $00
+	.byte  $32, $34, $33, $00
 STRLBL6:
-	.BYTE #$4D
-	.BYTE #$20
-	.BYTE #$3D
-	.BYTE #$20
-	.BYTE #$36
-	.BYTE #$31
-	.BYTE #$20
-	.BYTE #$2B
-	.BYTE #$20
-	.BYTE #$59
-	.BYTE #$20
-	.BYTE #$20
-	.BYTE #$20
-	.BYTE #$20
-	.BYTE #$4D
-	.BYTE #$20
-	.BYTE #$3D
-	.BYTE #$20
-	.BYTE #$00
-; $c1c8			"\n"
+	 // .text "A VS. FAC\n\n"
+	 // .byte $00
+	.byte  $41, $20, $56, $53, $2E, $20, $46, $41, $43, $0D, $0D, $00
 STRLBL7:
-	.BYTE #$0D
-	.BYTE #$00
+	 // .text "41"
+	 // .byte $00
+	.byte  $34, $31, $00
+STRLBL8:
+	 // .text "31"
+	 // .byte $00
+	.byte  $33, $31, $00
+STRLBL9:
+	 // .text "180"
+	 // .byte $00
+	.byte  $31, $38, $30, $00
+STRLBL10:
+	 // .text "7"
+	 // .byte $00
+	.byte  $37, $00
+STRLBL11:
+	 // .text "243"
+	 // .byte $00
+	.byte  $32, $34, $33, $00
+STRLBL12:
+	 // .text "4670"
+	 // .byte $00
+	.byte  $34, $36, $37, $30, $00
+STRLBL13:
+	 // .text "4650"
+	 // .byte $00
+	.byte  $34, $36, $35, $30, $00
+STRLBL14:
+	 // .text "46600"
+	 // .byte $00
+	.byte  $34, $36, $36, $30, $30, $00
+STRLBL15:
+	 // .text "466"
+	 // .byte $00
+	.byte  $34, $36, $36, $00
+STRLBL16:
+	 // .text "57600"
+	 // .byte $00
+	.byte  $35, $37, $36, $30, $30, $00
+STRLBL17:
+	 // .text "\nRESULT: %u  SHOULD BE:"
+	 // .byte $00
+	.byte  $0D, $52, $45, $53, $55, $4C, $54, $3A, $20, $25, $75, $20, $20, $53, $48, $4F, $55, $4C, $44, $20, $42, $45, $3A, $00
+STRLBL18:
+	 // .text "\nRESULT: %u  SHOULD BE:"
+	 // .byte $00
+	.byte  $0D, $52, $45, $53, $55, $4C, $54, $3A, $20, $25, $75, $20, $20, $53, $48, $4F, $55, $4C, $44, $20, $42, $45, $3A, $00
+STRLBL19:
+	 // .text "\nRESULT: %u  SHOULD BE:"
+	 // .byte $00
+	.byte  $0D, $52, $45, $53, $55, $4C, $54, $3A, $20, $25, $75, $20, $20, $53, $48, $4F, $55, $4C, $44, $20, $42, $45, $3A, $00
+STRLBL20:
+	 // .text "\n\nPRESS ANY KEY TO CONTINUE\n"
+	 // .byte $00
+	.byte  $0D, $0D, $50, $52, $45, $53, $53, $20, $41, $4E, $59, $20, $4B, $45, $59, $20, $54, $4F, $20, $43, $4F, $4E, $54, $49, $4E, $55, $45, $0D, $00
+!mem:	.byte $00 // <----+
+pause:            //      |    OPTIMIZE:
+	lda #$00  //      |    These lines can
+	sta $C6   //      |    be commented out
+	jsr $FFE4 //      |    unless you need
+	sta !mem- // <----|    the value from
+!:                //      |    which key was
+	lda !mem- // <----|    pressed
+	bne !+    //      |
+	jsr $FFE4 //      |
+	sta !mem- // <----+
+	jmp !-
+!:	rts 
