@@ -11898,7 +11898,7 @@ statement:
 
   if( isIntIMM($3.name) )
     {
-      addCompilerMessage( "Um... what is it that you're trying to do here?", 3 );
+      addCompilerMessage( "Um... what is it (exactly) that you're trying to do here?", 3 );
     }
   else if( isUintIMM($3.name) )
     {
@@ -12026,7 +12026,7 @@ statement:
 
   if( isIntIMM($3.name) )
     {
-      addCompilerMessage( "spriteoff( -? ) doesn't even make sense you weirdo!", 3 );
+      addCompilerMessage( "spriteoff( arg0 ) where arg0 < 0 doesn't even make sense you weirdo!", 3 );
     }
   else if( isUintIMM($3.name) )
     {
@@ -12042,10 +12042,6 @@ statement:
       y=y ^ 255;
       
       addAsm( str_LDA + "#$" + toHex( y ), 2, false );
-      //bin2bit_is_needed = true;
-      //addAsm( str_JSR + "_bin_to_bit", 3, false);
-
-      //addAsm( str_EOR + "#$FF", 2, false );
       addAsm( str_AND + "$D015", 3, false );
       addAsm( str_STA + "$D015", 3, false );
 
@@ -12104,110 +12100,249 @@ statement:
 };
 
 // STATEMENT
-| tSPRITEY '(' expression ',' expression ')'
+| tSPRITEY '(' expression {if(isA($3.name)||isXA($3.name))addAsm(str_PHA,1,false);} ',' expression ')'
 {
-  addComment( "spritey( " + string($3.name) + ", " + string($5.name) + " );"  );
   int base_address = 53248;
   int sprite_address = 0;
-  //int x_coord = 0;
   int y_coord = 0;
-  if( isUintIMM($3.name) && isUintIMM($5.name) )
+  if( isUintIMM($3.name) && isUintIMM($6.name) )
     {
-      addComment( "spritey( UintIMM, UintIMM );" );
-
-      sprite_address = atoi( stripFirst($3.name).c_str() );
-      sprite_address*=2;
-      sprite_address+=base_address;
-      y_coord = atoi( stripFirst($5.name).c_str() );
+      addComment( "spritey( " + string($3.name) + ", " + string($6.name) + " );"  );      
+      sprite_address = ( 2*atoi( stripFirst($3.name).c_str() )) + base_address;
+      y_coord = atoi( stripFirst($6.name).c_str() );
       addAsm( str_LDA + "#$" + toHex( y_coord) , 2, false );
       addAsm( str_STA + "$" + toHex( sprite_address + 1 ), 3, false );
     }
-  else if( isIntIMM($3.name) || isIntIMM($5.name) )
+  else if( isUintIMM($3.name) && isUintID($6.name) )
+    {
+      addComment( "spritey( " + string($3.name) + ", " + string($6.name) + " );"  );      
+      sprite_address = ( 2*atoi( stripFirst($3.name).c_str() )) + base_address;
+      addAsm( str_LDA + getNameOf(getAddressOf($6.name)) , 3, false );
+      addAsm( str_STA + "$" + toHex( sprite_address +1 ), 3, false );      
+    }
+  else if( isUintIMM($3.name) && isIntID($6.name) )
+    {
+      addCompilerMessage( "spritey(arg0,arg1): you're using an IntID as arg1... I sure do hope you know what you're doing!", 1 );
+      addComment( "spritey( " + string($3.name) + ", " + string($6.name) + " );"  );      
+      sprite_address = ( 2*atoi( stripFirst($3.name).c_str() )) + base_address;
+      addAsm( str_LDA + getNameOf(getAddressOf($6.name)) , 3, false );
+      addAsm( str_STA + "$" + toHex( sprite_address +1 ), 3, false );      
+    }
+  else if( isUintIMM($3.name) && isA($6.name) )
+    {
+      addComment( "spritey( " + string($3.name) + ", " + string($6.name) + " );"  );      
+      sprite_address = ( 2*atoi( stripFirst($3.name).c_str() )) + base_address;
+      addAsm( str_STA + "$" + toHex( sprite_address +1 ), 3, false );      
+    }
+  else if( isUintIMM($3.name) && isXA($6.name) )
+    {
+      addComment( "spritey( " + string($3.name) + ", " + string($6.name) + " );"  );      
+      sprite_address = ( 2*atoi( stripFirst($3.name).c_str() )) + base_address;
+      addAsm( str_STA + "$" + toHex( sprite_address +1 ), 3, false );      
+    }
+  else if( isUintID($3.name) && isUintIMM($6.name) )
+    {
+      addComment( "spritey( " + string($3.name) + ", " + string($6.name) + " );"  );             
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
+      addAsm( str_ASL + commentmarker + "*2", 1, false );
+      addAsm( str_TAX, 1, false );
+      addAsm( str_LDA + "#$" + toHex(atoi(stripFirst(string($6.name)).c_str())), 2, false );
+      addAsm( str_STA + "$D001,X" + commentmarker + "set the y-coord", 3, false );
+    }
+  else if( isUintID($3.name) && isUintID($6.name) )
+    {
+      addComment( "spritey( " + string($3.name) + ", " + string($6.name) + " );"  );             
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
+      addAsm( str_ASL + commentmarker + "*2", 1, false );
+      addAsm( str_TAX, 1, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($6.name)), 3, false );
+      addAsm( str_STA + "$D001,X" + commentmarker + "set the y-coord", 3, false );
+    }
+  else if( isUintID($3.name) && isIntID($6.name) )
+    {
+      addCompilerMessage( "spritey(arg0,arg1): you're using an IntID as arg1... I sure do hope you know what you're doing!", 1 );
+      addComment( "spritey( " + string($3.name) + ", " + string($6.name) + " );"  );             
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
+      addAsm( str_ASL + commentmarker + "*2", 1, false );
+      addAsm( str_TAX, 1, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($6.name)), 3, false );
+      addAsm( str_STA + "$D001,X" + commentmarker + "set the y-coord", 3, false );
+    }
+  else if( isUintID($3.name) && isA($6.name) )
+    {
+      addComment( "spritey( " + string($3.name) + ", " + string($6.name) + " );"  );
+      addAsm( str_TAY, 1, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
+      addAsm( str_ASL + commentmarker + "*2", 1, false );
+      addAsm( str_TAX, 1, false );
+      addAsm( str_TYA, 1, false );
+      addAsm( str_STA + "$D001,X" + commentmarker + "set the y-coord", 3, false );
+    }
+  else if( isUintID($3.name) && isXA($6.name) )
+    {
+      addComment( "spritey( " + string($3.name) + ", " + string($6.name) + " );"  );
+      addAsm( str_TAY, 1, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
+      addAsm( str_ASL + commentmarker + "*2", 1, false );
+      addAsm( str_TAX, 1, false );
+      addAsm( str_TYA, 1, false );
+      addAsm( str_STA + "$D001,X" + commentmarker + "set the y-coord", 3, false );
+    }
+  else if( isIntID($3.name) && isUintIMM($6.name) )
+    {
+      addCompilerMessage( "spritey(arg0,arg1): you're using an IntID as arg0... I sure do hope you know what you're doing!", 1 );
+      addComment( "spritey( " + string($3.name) + ", " + string($6.name) + " );"  );             
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
+      addAsm( str_ASL + commentmarker + "*2", 1, false );
+      addAsm( str_TAX, 1, false );
+      addAsm( str_LDA + "#$" + toHex(atoi(stripFirst(string($6.name)).c_str())), 2, false );
+      addAsm( str_STA + "$D001,X" + commentmarker + "set the y-coord", 3, false );
+    }
+  else if( isIntID($3.name) && isUintID($6.name) )
+    {
+      addCompilerMessage( "spritey(arg0,arg1): you're using an IntID as arg0... I sure do hope you know what you're doing!", 1 );
+      addComment( "spritey( " + string($3.name) + ", " + string($6.name) + " );"  );             
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
+      addAsm( str_ASL + commentmarker + "*2", 1, false );
+      addAsm( str_TAX, 1, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($6.name)), 3, false );
+      addAsm( str_STA + "$D001,X" + commentmarker + "set the y-coord", 3, false );
+    }
+  else if( isIntID($3.name) && isIntID($6.name) )
+    {
+      addCompilerMessage( "spritey(arg0,arg1): you're using an IntID as arg0 and arg1... I sure do hope you know what you're doing!", 1 );
+      addComment( "spritey( " + string($3.name) + ", " + string($6.name) + " );"  );             
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
+      addAsm( str_ASL + commentmarker + "*2", 1, false );
+      addAsm( str_TAX, 1, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($6.name)), 3, false );
+      addAsm( str_STA + "$D001,X" + commentmarker + "set the y-coord", 3, false );
+    }
+  else if( isIntID($3.name) && isA($6.name) )
+    {
+      addCompilerMessage( "spritey(arg0,arg1): you're using an IntID as arg0... I sure do hope you know what you're doing!", 1 );
+      addComment( "spritey( " + string($3.name) + ", " + string($6.name) + " );"  );
+      addAsm( str_TAY, 1, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
+      addAsm( str_ASL + commentmarker + "*2", 1, false );
+      addAsm( str_TAX, 1, false );
+      addAsm( str_TYA, 1, false );
+      addAsm( str_STA + "$D001,X" + commentmarker + "set the y-coord", 3, false );
+    }
+  else if( isIntID($3.name) && isXA($6.name) )
+    {
+      addCompilerMessage( "spritey(arg0,arg1): you're using an IntID as arg0... I sure do hope you know what you're doing!", 1 );
+      addComment( "spritey( " + string($3.name) + ", " + string($6.name) + " );"  );
+      addAsm( str_TAY, 1, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
+      addAsm( str_ASL + commentmarker + "*2", 1, false );
+      addAsm( str_TAX, 1, false );
+      addAsm( str_TYA, 1, false );
+      addAsm( str_STA + "$D001,X" + commentmarker + "set the y-coord", 3, false );
+    }
+  else if( isA($3.name) && isUintIMM($6.name) )
+    {
+      deletePreviousAsm();
+      addComment( "spritey( " + string($3.name) + ", " + string($6.name) + " );"  );             
+      addAsm( str_ASL + commentmarker + "*2", 1, false );
+      addAsm( str_TAX, 1, false );
+      addAsm( str_LDA + "#$" + toHex(atoi(stripFirst(string($6.name)).c_str())), 2, false );
+      addAsm( str_STA + "$D001,X" + commentmarker + "set the y-coord", 3, false );
+    }
+  else if( isA($3.name) && isUintID($6.name) )
+    {
+      deletePreviousAsm();
+      addComment( "spritey( " + string($3.name) + ", " + string($6.name) + " );"  );             
+      addAsm( str_ASL + commentmarker + "*2", 1, false );
+      addAsm( str_TAX, 1, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($6.name)), 3, false );
+      addAsm( str_STA + "$D001,X" + commentmarker + "set the y-coord", 3, false );
+    }
+  else if( isA($3.name) && isIntID($6.name) )
+    {
+      deletePreviousAsm();
+      addCompilerMessage( "spritey(arg0,arg1): you're using an IntID as arg1... I sure do hope you know what you're doing!", 1 );
+      addComment( "spritey( " + string($3.name) + ", " + string($6.name) + " );"  );             
+      addAsm( str_ASL + commentmarker + "*2", 1, false );
+      addAsm( str_TAX, 1, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($6.name)), 3, false );
+      addAsm( str_STA + "$D001,X" + commentmarker + "set the y-coord", 3, false );
+    }
+  else if( isA($3.name) && isA($6.name) )
+    {
+      addComment( "spritey( " + string($3.name) + ", " + string($6.name) + " );"  );
+      addAsm( str_TAY, 1, false );
+      addAsm( str_PLA, 1, false );
+      addAsm( str_ASL + commentmarker + "*2", 1, false );
+      addAsm( str_TAX, 1, false );
+      addAsm( str_TYA, 1, false );
+      addAsm( str_STA + "$D001,X" + commentmarker + "set the y-coord", 3, false );
+    }
+  else if( isA($3.name) && isXA($6.name) )
+    {
+      addComment( "spritey( " + string($3.name) + ", " + string($6.name) + " );"  );
+      addAsm( str_TAY, 1, false );
+      addAsm( str_PLA, 1, false );
+      addAsm( str_ASL + commentmarker + "*2", 1, false );
+      addAsm( str_TAX, 1, false );
+      addAsm( str_TYA, 1, false );
+      addAsm( str_STA + "$D001,X" + commentmarker + "set the y-coord", 3, false );
+    }
+  else if( isXA($3.name) && isUintIMM($6.name) )
+    {
+      deletePreviousAsm();
+      addComment( "spritey( " + string($3.name) + ", " + string($6.name) + " );"  );             
+      addAsm( str_ASL + commentmarker + "*2", 1, false );
+      addAsm( str_TAX, 1, false );
+      addAsm( str_LDA + "#$" + toHex(atoi(stripFirst(string($6.name)).c_str())), 2, false );
+      addAsm( str_STA + "$D001,X" + commentmarker + "set the y-coord", 3, false );
+    }
+  else if( isXA($3.name) && isUintID($6.name) )
+    {
+      deletePreviousAsm();
+      addComment( "spritey( " + string($3.name) + ", " + string($6.name) + " );"  );             
+      addAsm( str_ASL + commentmarker + "*2", 1, false );
+      addAsm( str_TAX, 1, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($6.name)), 3, false );
+      addAsm( str_STA + "$D001,X" + commentmarker + "set the y-coord", 3, false );
+    }
+  else if( isXA($3.name) && isIntID($6.name) )
+    {
+      deletePreviousAsm();
+      addCompilerMessage( "spritey(arg0,arg1): you're using an IntID as arg1... I sure do hope you know what you're doing!", 1 );
+      addComment( "spritey( " + string($3.name) + ", " + string($6.name) + " );"  );             
+      addAsm( str_ASL + commentmarker + "*2", 1, false );
+      addAsm( str_TAX, 1, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($6.name)), 3, false );
+      addAsm( str_STA + "$D001,X" + commentmarker + "set the y-coord", 3, false );
+    }
+  else if( isXA($3.name) && isA($6.name) )
+    {
+      addComment( "spritey( " + string($3.name) + ", " + string($6.name) + " );"  );
+      addAsm( str_TAY, 1, false );
+      addAsm( str_PLA, 1, false );
+      addAsm( str_ASL + commentmarker + "*2", 1, false );
+      addAsm( str_TAX, 1, false );
+      addAsm( str_TYA, 1, false );
+      addAsm( str_STA + "$D001,X" + commentmarker + "set the y-coord", 3, false );
+    }
+  else if( isXA($3.name) && isXA($6.name) )
+    {
+      addComment( "spritey( " + string($3.name) + ", " + string($6.name) + " );"  );
+      addAsm( str_TAY, 1, false );
+      addAsm( str_PLA, 1, false );
+      addAsm( str_ASL + commentmarker + "*2", 1, false );
+      addAsm( str_TAX, 1, false );
+      addAsm( str_TYA, 1, false );
+      addAsm( str_STA + "$D001,X" + commentmarker + "set the y-coord", 3, false );
+    }
+  else if( isIntIMM($3.name) || isIntIMM($6.name) )
     {
       addCompilerMessage( "spritey: invalid argument(s) must be >= 0", 3 );
     }
-  else if( (isUintIMM($3.name) && isIntID($5.name))   ||
-	   (isUintIMM($3.name) && isUintID($5.name)) )
-    {
-      addComment( "spritey( UintIMM, UintID );" );
-
-      int addr = hexToDecimal($5.name);
-
-      sprite_address = atoi( stripFirst($3.name).c_str() );
-      sprite_address*=2;
-      sprite_address+=base_address;
-      // 2024 04 14 - mkpellegrino
-      addAsm( str_LDA + getNameOf(addr) , 3, false );
-      //addAsm( str_LDA + string($5.name) , 3, false );
-      addAsm( str_STA + "$" + toHex( sprite_address +1 ), 3, false );
-    }
-  else if((isUintID($3.name) && isUintID($5.name)) ||
-	  (isUintID($3.name) && isIntID($5.name)) ||
-	  (isIntID($3.name) && isUintID($5.name)) ||
-	  (isIntID($3.name) && isIntID($5.name)) )
-    {
-      addComment( "spritey( UintID, UintID );" );
-
-      addAsm( str_LDA + string($3.name), 3, false );
-      addAsm( str_ASL ); // 2x
-      addAsm( str_TAX );
-      addAsm( str_LDA + string($5.name), 3, false );
-      addAsm( str_STA + "$D001,X" + commentmarker + "set the y-coord", 3, false );
-    }
-  else if((isA($3.name) && isUintID($5.name)) ||
-	  (isA($3.name) && isIntID($5.name)))
-    {
-      addComment( "spritey( A, UintID );" );
-      addAsm( str_ASL ); // 2x
-      addAsm( str_TAX );
-      addAsm( str_LDA + getNameOf(getAddressOf($5.name)), 3, false );
-      addAsm( str_STA + "$D001,X" + commentmarker + "set the y-coord", 3, false );
-
-    }
-  else if(isA($3.name) && isUintIMM($5.name))
-	  
-    {
-      addComment( "spritey( A, UintIMM );" );
-      addAsm( str_ASL ); // 2x
-      addAsm( str_TAX );
-      addAsm( str_LDA + "#$" + toHex(atoi(stripFirst(string($5.name)).c_str())), 3, false );
-      addAsm( str_STA + "$D001,X" + commentmarker + "set the y-coord", 3, false );
-
-    }
-  else if( (isUintID($3.name) && isUintIMM($5.name)) ||
-	   (isIntID($3.name) && (isUintIMM($5.name))) )
-    {
-      addComment( "spritey( UintID, UintIMM );" );
-       
-      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
-      addAsm( str_ASL ); // 2x
-      addAsm( str_TAX );
-      addAsm( str_LDA + "#$" + toHex(atoi(stripFirst(string($5.name)).c_str())), 2, false );
-      addAsm( str_STA + "$D001,X" + commentmarker + "set the y-coord", 3, false );
-
-    }
-  else if( (isUintID($3.name) && isA($5.name)) ||
-	   (isIntID($3.name) && isA($5.name)) )
-    {
-      addComment( "spritey( UintID, A );" );		 
-      addAsm( str_PHA );
-      addAsm( str_LDA + string($3.name), 3, false );
-      addAsm( str_ASL ); // 2x
-      addAsm( str_TAX );
-      addAsm( str_PLA );
-      addAsm( str_STA + "$D001,X" + commentmarker + "set the y-coord", 3, false );
-    }
-  else if(isUintIMM($3.name) && isA($5.name) )
-    {
-      addComment( "spritey( UIntIMM, A );" );
-
-      int sprite_number = 2*atoi(stripFirst(string($5.name)).c_str());
-      int sprite_addr = 53249 + sprite_number;
-      addAsm( str_STA + "$" + toHex(sprite_addr) + commentmarker + "set the y-coord", 3, false );
-    }
   else
     {
-      addCompilerMessage( "spritey: error - invalid type", 3 );
+      addCompilerMessage( "spritey: error - unknown type", 3 );
     }
   strcpy( $$.name, "_NULL" );
 }
