@@ -1877,6 +1877,9 @@
     int size; // how many bytes the code takes up on the 6502
     bool has_label;
     int cycles; // how many cycles the instruction uses
+    int opcode0;
+    int opcode1;
+    int opcode2;
   };
 
   ostream & operator << (ostream &out, const asm_instruction &a) 
@@ -2071,14 +2074,12 @@
       }
     byte_count -= asm_instr[asm_instr.size()-1]->getSize();
     asm_instr.erase( asm_instr.end()-1 );
-    //addCompilerMessage( "Removed mnemonics", 0 );
     return;
   }
 
   
   void deletePreviousAsmUntil( string s )
   {
-    //removes most recent lines of code until "s" is found
     string deletedinst = "";
     while( !cmpstr(deletedinst,s) )
       {
@@ -2096,16 +2097,6 @@
     addCompilerMessage( "Removed mnemonics", 0 );
     return;
   }
-
-  /* void NodeTable() */
-  /* { */
-  /*   cerr << "NODES" << endl; */
-  /*   for( int i=0; i<node_vector.size(); i++ ) */
-  /*     { */
-  /* 	cerr << node_vector[i] << endl; */
-  /*     } */
-  /*   return; */
-  /* } */
 
   void ProcessComments()
   {
@@ -2239,10 +2230,6 @@
     string sbc = string("sbc");
   
     string cmt = string("// ");
-
-
-
-
 
     if( asm_instr.size() > 10 && 1 )
       {
@@ -4470,10 +4457,7 @@
 %type <nd_obj> headers main body return function datatype statement arithmetic relop program else 
    %type <nd_obj2> init value expression /*charlist*/ numberlist parameterlist argumentlist
       %type <nd_obj3> condition
-
-      
       %%
-
       program: headers main '(' ')' '{' body return '}' function {};
 
 headers: 
@@ -4724,7 +4708,7 @@ argumentlist:
     case 0:
     case 1: // one byte argument
       addAsm(str_PLA, 1, false );
-      addAsm(str_STA+$2.name, 3, false);
+      addAsm(str_STA + $2.name, 3, false);
 
       break;
     case 2:
@@ -4942,7 +4926,6 @@ parameterlist:
     {
       addCompilerMessage( "Unhandled Parameter Type for function call", 3);
     }
-  
   strcpy($$.name, $1.name );
 };
 
@@ -5067,14 +5050,10 @@ datatype:
 CHAR {addParserComment( string("RULE: datatype: ") + $$.name); current_variable_type=0;strcpy($$.name, "CHAR");}
 |
 tUINT {addParserComment( string("RULE: datatype: ") + $$.name);current_variable_type=0; strcpy($$.name, "UINT");}
-//|
-//tBYTE {addParserComment( string("RULE: datatype: ") + $$.name); current_variable_type=0; strcpy($$.name, "BYTE");}
 |
 INT {addParserComment( string("RULE: datatype: ") + $$.name); current_variable_type=1; strcpy($$.name, "INT");}
 |
 tWORD {addParserComment( string("RULE: datatype: ") + $$.name); current_variable_type=2; strcpy($$.name, "WORD");}
-//|
-//tDOUBLE {addParserComment( string("RULE: datatype: ") + $$.name); current_variable_type=2; strcpy($$.name, "DOUBLE");}
 |
 FLOAT {addParserComment( string("RULE: datatype: ") + $$.name); current_variable_type=8;strcpy($$.name, "FLOAT");}
 |
@@ -5216,9 +5195,9 @@ body:
       if( arg_safe_loops )
 	{
 	  addComment( "Restore $02/$03" );
-	  addAsm( str_PLA );
+	  addAsm( str_PLA, 1, false );
 	  addAsm( str_STA + "$03", 2, false);
-	  addAsm( str_PLA );
+	  addAsm( str_PLA, 1, false );
 	  addAsm( str_STA + "$02", 2, false);
 	  addDebugComment( string( "^^^^---- Paired with: " ) + s );
 	}
@@ -5240,10 +5219,7 @@ body:
       addAsm( str_LDA + "$03", 2, false);
       addAsm( str_PHA );
     }
-
-
   pushScope("IF");
-  
 }
 '(' condition ')'
 {
@@ -5323,8 +5299,7 @@ body:
   strcpy( $$.name, $4.name);
 }
 |
-{
-  
+{  
   byte_count -= asm_instr[asm_instr.size()-2]->getSize();
   asm_instr.erase( asm_instr.end()-2 );  
   addComment( "(OPTIMIZED) Removed unnecessary 'jmp'" );	       
@@ -5422,20 +5397,9 @@ condition:
       tc+=string(getNameOf(getAddressOf($RHS.name)));
     }
   
-  //tc+=string($3.name);
-  
-  //addComment( tc );
-  
   if( scope_stack.top() == "FOR" ) addAsm( generateNewLabel() + commentmarker + "Top of FOR Loop", 0, true );  
   if( scope_stack.top() == "WHILE" ) addAsm( generateNewLabel() + commentmarker + "Top of WHILE Loop", 0, true );
-  if( scope_stack.top() == "IF" )
-    {
-      // INCREASE IF-DEPTH BY 1
-      //if_depth++;
-      //addComment( "condition" );
-      //addAsm( generateNewLabel() + commentmarker + "Top of IF statement", 0, true );
-    }
-
+  
   
   // at this point, we need to look at the type of the variable that is located
   // at the $1.name address, so we know how to compare it with another number
@@ -5455,7 +5419,6 @@ condition:
       addCompilerMessage( "INTs can ONLY be between -127 and +128... this line of code will lead to an infinite loop", 3 );
     }
  
-
   if( isIntID($LHS.name) && string($OP.name) == string( "<=" ) && (isUintIMM($RHS.name) || isIntIMM($RHS.name) ) && atoi(stripFirst($RHS.name).c_str()) == 128 ) 
     {
       addCompilerMessage( "INTs can ONLY be between -127 and +128... this line of code will lead to an infinite loop", 3 );
@@ -5534,7 +5497,6 @@ condition:
 	  addCompilerMessage( "A relop FloatID: Relative Operator Manipulation", 0 );
 	  strcpy( $OP.name, ">=" );
 	}
-
       cmpFACMEM( OP2L, OP2H );	  
     }    
   else if( isA($LHS.name) && isFloatIMM($RHS.name) )
@@ -5669,7 +5631,6 @@ condition:
 	  addCompilerMessage( "A relop XA: Relative Operator Manipulation", 0 );
 	  strcpy( $OP.name, ">=" );
 	}
-      
       addAsm( str_TAY, 1, false );
       addAsm( str_PLA, 1, false );
       addAsm( str_STA + "!+ -1", 2, false );
@@ -8521,7 +8482,6 @@ statement:
   // this makes it easier to change the number of sub-parameters
   string param1 = string($3.name);
   string param2 = string($6.name);
-
 
   // TODO: Split this out into 2 different sections
   addDebugComment( "poke( expression, expression );" );
@@ -11450,7 +11410,7 @@ statement:
   // TODO: Fix this to not use addresses unless necessary
   if( (isUintID($3.name)||isIntID($3.name)) && isUintIMM($5.name) )
     {
-      addComment( "inc( UIntID, UIntIMM )" );
+      addComment( "inc( UintID, UintIMM )" );
       int n = atoi(stripFirst($5.name).c_str());
       if( n > 2 )
 	{
@@ -11471,9 +11431,17 @@ statement:
       addAsm( str_ADC + getNameOf( getAddressOf($3.name)), 3, false );
       addAsm( str_STA + getNameOf( getAddressOf($3.name)), 3, false );
     }
+  else if( isUintID($3.name) && isA($5.name) )
+    {
+      addCompilerMessage( "this just uses basic addition", 0 );
+      addComment( "inc( UintID, A )" );
+      addAsm( str_CLC );
+      addAsm( str_ADC + getNameOf( getAddressOf($3.name)), 3, false );
+      addAsm( str_STA + getNameOf( getAddressOf($3.name)), 3, false );
+    }
   else
     {
-      addCompilerMessage( "invalid type(s) for inc(exp,exp)", 3 );
+      addCompilerMessage( "inc(exp,exp): invalid argument type or types", 3 );
     }
   strcpy( $$.name, "_NULL" );
 };
@@ -11540,11 +11508,6 @@ statement:
     {
       addComment( "dec(UintID or IntID)");
       addAsm( str_DEC + getNameOf( a ), size_of_instruction, false );
-    }
-  else if( isA($3.name) )
-    {
-      addComment( "dec(A)");
-      addCompilerMessage( "dec(expression) function not allowed here", 3 );
     }
   else if( isWordIMM($3.name) )
     {
@@ -11677,38 +11640,254 @@ statement:
 };
 
 // STATEMENT
-| tSPRITECOLOUR '(' expression ',' expression ')'
+| tSPRITECOLOUR '(' expression {if(isA($3.name)||isXA($3.name))addAsm(str_PHA,1,false);} ',' expression ')'
 {
-  addDebugComment( "statement: tSPRITECOLOUR '(' expression ',' expression ')' ';'" );
-  addComment( "spriteColour( exp, exp );" );
+  // the only reason we're not pushing both the X and the A in the MRA (only the A) is because we don't need the high byte
+  string arg0 = $3.name;
+  string arg1 = $6.name;
+
   int base_addr = 53248;
   int sprite_number = 0;
   int sprite_colour = 0;
 
   // COLOUR
-  if( isIntIMM($5.name) || isUintIMM($5.name))
-    {
-      sprite_colour = atoi( stripFirst($5.name).c_str() ); // the sprite colour
-      addAsm( str_LDA + "#$" + toHex( sprite_colour ), 2, false );
-    }
-  else if(isIntID($5.name) || isUintID($5.name))
-    {
-      sprite_colour = getAddressOf($5.name);
-      addAsm( str_LDA + getNameOf( sprite_colour ), 3, false );
-    }
 
-  // SPRITE NUMBER
-  if( isIntIMM($3.name) || isUintIMM($3.name))
+  if( isUintIMM(arg0) && isUintIMM(arg1)) // done
     {
-      sprite_number = atoi( stripFirst($3.name).c_str() ); // the sprite #
+      addComment( "spritecolour(UintIMM,UintIMM)" );
+      sprite_colour = atoi( stripFirst(arg1.c_str()).c_str() ); // the sprite colour
+      addAsm( str_LDA + "#$" + toHex( sprite_colour ), 2, false );
+      sprite_number = atoi( stripFirst(arg0.c_str()).c_str() ); // the sprite #
+      if( sprite_number > 7 ) addCompilerMessage( "sprite # out of range", 3 );
       addAsm( str_STA + "$" + toHex( base_addr+sprite_number+39 ), 3, false );
     }
-  else if(isIntID($3.name) || isUintID($3.name))
+  else if( isUintIMM(arg0) && isUintID(arg1)) // done
     {
-      sprite_number = getAddressOf($3.name);
-      addAsm( str_LDX + getNameOf( getAddressOf($3.name)), 3, false );
+      addComment( "spritecolour(UintIMM,UintID)" );
+      sprite_colour = getAddressOf(arg1.c_str());
+      addAsm( str_LDA + getNameOf( sprite_colour ), 3, false );
+      sprite_number = atoi( stripFirst(arg0.c_str()).c_str() ); // the sprite #
+      if( sprite_number > 7 ) addCompilerMessage( "sprite # out of range", 3 );
+      addAsm( str_STA + "$" + toHex( base_addr+sprite_number+39 ), 3, false );
+    }
+  else if( isUintIMM(arg0) && isA(arg1)) // done
+    {
+      addComment( "spritecolour(UintIMM,A)" );
+      sprite_number = atoi( stripFirst(arg0.c_str()).c_str() ); // the sprite #
+      if( sprite_number > 7 ) addCompilerMessage( "sprite # out of range", 3 );
+      addAsm( str_STA + "$" + toHex( base_addr+sprite_number+39 ), 3, false );
+    }
+  else if( isUintIMM(arg0) && isXA(arg1)) // done
+    {
+      addComment( "spritecolour(UintIMM,XA)" );
+      addCompilerMessage( "spritecolour: expected A, losing X", 1 );
+      sprite_number = atoi( stripFirst(arg0.c_str()).c_str() ); // the sprite #
+      if( sprite_number > 7 ) addCompilerMessage( "sprite # out of range", 3 );
+      addAsm( str_STA + "$" + toHex( base_addr+sprite_number+39 ), 3, false );
+    }
+  else if( isUintIMM(arg0) && isIntID(arg1)) // done
+    {
+      addComment( "spritecolour(UintIMM,IntID)" );
+      addCompilerMessage( "spritecolour(arg0,arg1): you're passing an IntID to arg1... I sure do hope you know what you're doing!" );
+      sprite_colour = getAddressOf(arg1.c_str());
+      addAsm( str_LDA + getNameOf( sprite_colour ), 3, false );
+      sprite_number = atoi( stripFirst(arg0.c_str()).c_str() ); // the sprite #
+      if( sprite_number > 7 ) addCompilerMessage( "sprite # out of range", 3 );
+      addAsm( str_STA + "$" + toHex( base_addr+sprite_number+39 ), 3, false );
+    }
+  else if( isUintID(arg0) && isUintIMM(arg1)) // done
+    {
+      addComment( "spritecolour(UintID,UintIMM)" );
+      sprite_colour = atoi( stripFirst(arg1.c_str()).c_str() ); // the sprite colour
+      addAsm( str_LDA + "#$" + toHex( sprite_colour ), 2, false );
+      sprite_number = getAddressOf(arg0.c_str());
+      addAsm( str_LDX + getNameOf( getAddressOf(arg0.c_str())), 3, false );
       addAsm( str_STA + "$D027,X", 3, false );
     }
+  else if( isUintID(arg0) && isUintID(arg1)) // done
+    {
+      addComment( "spritecolour(UintID,UintID)" );
+      sprite_colour = getAddressOf(arg1.c_str());
+      addAsm( str_LDA + getNameOf( sprite_colour ), 3, false );
+      sprite_number = getAddressOf(arg0.c_str());
+      addAsm( str_LDX + getNameOf( getAddressOf(arg0.c_str())), 3, false );
+      addAsm( str_STA + "$D027,X", 3, false );
+    }
+  else if( isUintID(arg0) && isA(arg1)) // done
+    {
+      addComment( "spritecolour(UintID,A)" );
+      sprite_number = getAddressOf(arg0.c_str());
+      addAsm( str_LDX + getNameOf( getAddressOf(arg0.c_str())), 3, false );
+      addAsm( str_STA + "$D027,X", 3, false );
+    }
+  else if( isUintID(arg0) && isXA(arg1)) // done
+    {
+      addComment( "spritecolour(UintID,XA)" );
+      addCompilerMessage( "spritecolour: expected A, losing X", 1 );
+      sprite_number = getAddressOf(arg0.c_str());
+      addAsm( str_LDX + getNameOf( getAddressOf(arg0.c_str())), 3, false );
+      addAsm( str_STA + "$D027,X", 3, false );
+    }
+  else if( isUintID(arg0) && isIntID(arg1)) // done
+    {
+      addComment( "spritecolour(UintID,IntID)" );
+      addCompilerMessage( "spritecolour(arg0,arg1): you're passing an IntID to arg1... I sure do hope you know what you're doing!" );
+      sprite_colour = getAddressOf(arg1.c_str());
+      addAsm( str_LDA + getNameOf( sprite_colour ), 3, false );
+      sprite_number = getAddressOf(arg0.c_str());
+      addAsm( str_LDX + getNameOf( getAddressOf(arg0.c_str())), 3, false );
+      addAsm( str_STA + "$D027,X", 3, false );
+    }
+  else if( isA(arg0) && isUintIMM(arg1)) // done
+    {
+      deletePreviousAsm();
+      addComment( "spritecolour(A,UintIMM)" );
+      sprite_colour = atoi( stripFirst(arg1.c_str()).c_str() ); // the sprite colour
+      addAsm( str_TAX, 1, false );
+      addAsm( str_LDA + "#$" + toHex( sprite_colour ), 2, false );
+      addAsm( str_STA + "$D027,X", 3, false );
+    }
+  else if( isA(arg0) && isUintID(arg1)) // done
+    {
+      deletePreviousAsm();
+      addComment( "spritecolour(A,UintID)" );
+      sprite_colour = getAddressOf(arg1.c_str());
+      addAsm( str_TAX, 1, false );
+      addAsm( str_LDA + getNameOf( sprite_colour ), 3, false );
+      addAsm( str_STA + "$D027,X", 3, false );
+    }
+  else if( isA(arg0) && isA(arg1))
+    {
+      addComment( "spritecolour(A,A)" );
+      addAsm( str_TAY, 1, false );
+      addAsm( str_PLA, 1, false );
+      addAsm( str_TAX, 1, false );
+      addAsm( str_TYA, 1, false );
+      addAsm( str_STA + "$D027,X", 3, false );
+    }
+  else if( isA(arg0) && isXA(arg1))
+    {
+      addComment( "spritecolour(A,XA)" );
+      addCompilerMessage( "spritecolour(arg0,arg1): arg1 should be a byte (not a word)... losing fidelity", 1 );
+      addAsm( str_TAY, 1, false );
+      addAsm( str_PLA, 1, false );
+      addAsm( str_TAX, 1, false );
+      addAsm( str_TYA, 1, false );
+      addAsm( str_STA + "$D027,X", 3, false );
+    }
+  else if( isA(arg0) && isIntID(arg1))
+    {
+      deletePreviousAsm();
+      addCompilerMessage( "spritecolour(arg0,arg1): you're passing an IntID to arg1... I sure do hope you know what you're doing!" );
+      addComment( "spritecolour(A,IntID)" );
+      sprite_colour = getAddressOf(arg1.c_str());
+      addAsm( str_TAX, 1, false );
+      addAsm( str_LDA + getNameOf( sprite_colour ), 3, false );
+      addAsm( str_STA + "$D027,X", 3, false );
+    }
+  else if( isXA(arg0) && isUintIMM(arg1)) // done
+    {
+      deletePreviousAsm();
+      addComment( "spritecolour(XA,UintIMM)" );
+      addCompilerMessage( "spritecolour: expected byte, losing high byte", 1 );
+      sprite_colour = atoi( stripFirst(arg1.c_str()).c_str() ); // the sprite colour
+      addAsm( str_TAX, 1, false );
+      addAsm( str_LDA + "#$" + toHex( sprite_colour ), 2, false );
+      addAsm( str_STA + "$D027,X", 3, false );
+    }
+  else if( isXA(arg0) && isUintID(arg1)) // done
+    {
+      deletePreviousAsm();
+      addComment( "spritecolour(XA,UintID)" );
+      addCompilerMessage( "spritecolour: expected A, losing X", 1 );
+      sprite_colour = getAddressOf(arg1.c_str());
+      addAsm( str_TAX, 1, false );
+      addAsm( str_LDA + getNameOf( sprite_colour ), 3, false );
+      addAsm( str_STA + "$D027,X", 3, false );
+    }
+  else if( isXA(arg0) && isA(arg1))
+    {
+      addCompilerMessage( "spritecolour: expected A, losing X", 1 );
+      addComment( "spritecolour(XA,A)" );
+      addAsm( str_TAY, 1, false );
+      addAsm( str_PLA, 1, false );
+      addAsm( str_TAX, 1, false );    
+      addAsm( str_TYA, 1, false );
+      addAsm( str_STA + "$D027,X", 3, false );      
+    }
+  else if( isXA(arg0) && isXA(arg1))
+    {
+      addCompilerMessage( "spritecolour: expected A, losing X", 1 );
+      addComment( "spritecolour(XA,XA)" );
+      addAsm( str_TAY, 1, false );
+      addAsm( str_PLA, 1, false );
+      addAsm( str_TAX, 1, false );    
+      addAsm( str_TYA, 1, false );
+      addAsm( str_STA + "$D027,X", 3, false );      
+    }
+  else if( isXA(arg0) && isIntID(arg1)) // done
+    {
+      deletePreviousAsm();
+      addComment( "spritecolour(XA,IntID)" );
+      addCompilerMessage( "spritecolour(arg0,arg1): you're passing an IntID to arg1... I sure do hope you know what you're doing!" );
+      addCompilerMessage( "spritecolour: expected A, losing X", 1 );
+      sprite_colour = getAddressOf(arg1.c_str());
+      addAsm( str_TAX, 1, false );
+      addAsm( str_LDA + getNameOf( sprite_colour ), 3, false );
+      addAsm( str_STA + "$D027,X", 3, false );
+    }
+  else if( isIntID(arg0) && isUintIMM(arg1)) // done
+    {
+      addComment( "spritecolour(IntID,UintIMM)" );
+      addCompilerMessage( "spritecolour(arg0,arg1): you're passing an IntID to arg0... I sure do hope you know what you're doing!" );
+      sprite_colour = atoi( stripFirst(arg1.c_str()).c_str() ); // the sprite colour
+      addAsm( str_LDA + "#$" + toHex( sprite_colour ), 2, false );
+      sprite_number = getAddressOf(arg0.c_str());
+      addAsm( str_LDX + getNameOf( getAddressOf(arg0.c_str())), 3, false );
+      addAsm( str_STA + "$D027,X", 3, false );
+    }
+  else if( isIntID(arg0) && isUintID(arg1)) // done
+    {
+      addComment( "spritecolour(IntID,UintID)" );
+      addCompilerMessage( "spritecolour(arg0,arg1): you're passing an IntID to arg0... I sure do hope you know what you're doing!" );
+      sprite_colour = getAddressOf(arg1.c_str());
+      addAsm( str_LDA + getNameOf( sprite_colour ), 3, false );
+      sprite_number = getAddressOf(arg0.c_str());
+      addAsm( str_LDX + getNameOf( getAddressOf(arg0.c_str())), 3, false );
+      addAsm( str_STA + "$D027,X", 3, false );
+    }
+  else if( isIntID(arg0) && isA(arg1)) // done
+    {
+      addComment( "spritecolour(IntID,A)" );
+      sprite_number = getAddressOf(arg0.c_str());
+      addCompilerMessage( "spritecolour(arg0,arg1): you're passing an IntID to arg0... I sure do hope you know what you're doing!" );
+      addAsm( str_LDX + getNameOf( getAddressOf(arg0.c_str())), 3, false );
+      addAsm( str_STA + "$D027,X", 3, false );
+    }
+  else if( isIntID(arg0) && isXA(arg1)) // done
+    {
+      addComment( "spritecolour(IntID,XA)" );
+      addCompilerMessage( "spritecolour: expected A, losing X", 1 );
+      addCompilerMessage( "spritecolour(arg0,arg1): you're passing an IntID to arg0... I sure do hope you know what you're doing!" );
+      sprite_number = getAddressOf(arg0.c_str());
+      addAsm( str_LDX + getNameOf( getAddressOf(arg0.c_str())), 3, false );
+      addAsm( str_STA + "$D027,X", 3, false );
+    }
+  else if( isIntID(arg0) && isIntID(arg1)) // done
+    {
+      addComment( "spritecolour(IntID,IntID)" );
+      addCompilerMessage( "spritecolour(arg0,arg1): you're passing an IntID to both arguments... I sure do hope you know what you're doing!" );
+      sprite_colour = getAddressOf(arg1.c_str());
+      addAsm( str_LDA + getNameOf( sprite_colour ), 3, false );
+      sprite_number = getAddressOf(arg0.c_str());
+      addAsm( str_LDX + getNameOf( getAddressOf(arg0.c_str())), 3, false );
+      addAsm( str_STA + "$D027,X", 3, false );
+    }
+  else
+    {
+      addCompilerMessage( "spritecolour: invalid argument type", 3 );
+    }
+
   strcpy( $$.name, "_NULL" );
 };
 
