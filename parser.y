@@ -12351,13 +12351,10 @@ statement:
 
 
 // STATEMENT
-| tSPRITEX '(' expression
-
-{if(isA($3.name)){addAsm(str_PHA);}else if(isXA($3.name)){addAsm(str_PHA);addAsm(str_TXA);addAsm(str_PHA);} } ',' expression
-{if(   isA($3.name)  && (!isA($6.name) && !isXA($6.name))){ deletePreviousAsm();}
-  else
-    if(   isXA($3.name)  && (!isA($6.name) && !isXA($6.name))){ deletePreviousAsm();deletePreviousAsm();deletePreviousAsm();}
-}
+| tSPRITEX '(' expression // all we need to preserve is A
+{if(isA($3.name)||isXA($3.name)) {addAsm(str_PHA);}}
+  ',' expression
+{if(  (isA($3.name)||isXA($3.name))  && (!isA($6.name)&&!isXA($6.name))){deletePreviousAsm();}}
 ')'
 {
   int base_address = 53248;
@@ -13124,9 +13121,7 @@ statement:
       addAsm( str_AND + "$D010", 3, false );
       addAsm( str_JMP + "!++", 3, false );
       addAsm( "!:\t" + str_ORA + "$D010", 3, true );
-      addAsm( "!:\t" + str_STA + "$D010", 3, true );
-
-      
+      addAsm( "!:\t" + str_STA + "$D010", 3, true );      
     }
   else if( isA($3.name) && isWordIMM($6.name) )
     {
@@ -13245,13 +13240,51 @@ statement:
     }
   else if( isXA($3.name) && isA($6.name) )
     {
-      // TODO: NYI
-      addCompilerMessage( "spritex( XA, A ): nyi", 3 );
+      addCompilerMessage( "spritex( XA, A ): dropping high byte (the X)", 1 );
+      addComment( "spritex( XA, A ): dropping high byte (the X)" );
+      addAsm( str_STA + "!+ +1", 3, false );
+      addAsm( str_PLA, 1, false );
+      // set the lower 8 bits
+      addAsm( str_TAY, 1, false );
+      addAsm( str_ASL, 1, false ); // multiply by 2
+      addAsm( str_TAX, 1, false ); // move it to X
+      addAsm( "!:\t" + str_LDA + "#$00" + commentmarker + "will be overwritten", 2, true );
+      addAsm( str_STA + "$D000,X", 3, false );
+      
+      // clear the high bit
+      // ========================
+      bin2bit_is_needed = true;
+      
+      addAsm( str_TYA, 1, false );
+      addAsm( str_JSR + "_bin_to_bit", 3, false);
+      addAsm( str_EOR + "#$FF", 2, false );
+      addAsm( str_AND + "$D010", 3, false );
+      addAsm( str_STA + "$D010", 3, false );
     }
   else if( isXA($3.name) && isXA($6.name) )
     {
-      // TODO: NYI
-      addCompilerMessage( "spritex( XA, XA ): nyi", 3 );
+      addCompilerMessage( "spritex( XA, XA ): losing high byte of first argument", 1 );
+      addComment( "spritex( XA, XA ): losing jigh byte of 1st argument" );
+      addAsm( str_STA + "!+ +1", 3, false );
+      addAsm( str_PLA, 1, false );
+      addAsm( str_CPX + "#$01", 2, false );
+      addAsm( str_PHP, 1, false );
+      // set the lower 8 bits
+      addAsm( str_TAY, 1, false );
+      addAsm( str_ASL, 1, false ); // multiply by 2
+      addAsm( str_TAX, 1, false ); // move it to X
+      addAsm( "!:\t" + str_LDA + "#$00" + commentmarker + "will be overwritten", 2, true );
+      addAsm( str_STA + "$D000,X", 3, false );
+      bin2bit_is_needed = true;
+      addAsm( str_TYA, 1, false );
+      addAsm( str_JSR + "_bin_to_bit", 3, false);
+      addAsm( str_PLP, 1, false );
+      addAsm( str_BEQ + "!+", 2, false );
+      addAsm( str_EOR + "#$FF", 2, false );
+      addAsm( str_AND + "$D010", 3, false );
+      addAsm( str_JMP + "!++", 3, false );
+      addAsm( "!:\t" + str_ORA + "$D010", 3, true );
+      addAsm( "!:\t" + str_STA + "$D010", 3, true );      
     }
   else if( isXA($3.name) && isWordIMM($6.name) )
     {
@@ -13863,13 +13896,6 @@ statement:
       string s = string( "spritex error - invalid type - " ) + $3.name + ":" + $6.name;
       addCompilerMessage( s, 3 );
     }
-
-
-  // TODO:
-  // TBD: spritex( A, A );
-  // TBD: spritex( A, XA );
-  // TBD: spritex( XA, A );
-  // TBD: spritex( XA, XA )
   strcpy( $$.name, "_NULL" );
 };
 
