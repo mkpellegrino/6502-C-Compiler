@@ -12352,9 +12352,25 @@ statement:
 
 // STATEMENT
 | tSPRITEX '(' expression // all we need to preserve is A
-{if(isA($3.name)||isXA($3.name)) {addAsm(str_PHA);}}
+{
+  if(isA($3.name))
+    {
+      addAsm(str_PHA, 1, false );
+    }
+  else if( isXA($3.name) )
+    {
+      deletePreviousAsm();
+      addAsm(str_PHA + commentmarker + "dropped the X", 1, false );
+    }
+}
   ',' expression
-{if(  (isA($3.name)||isXA($3.name))  && (!isA($6.name)&&!isXA($6.name))){deletePreviousAsm();}}
+{
+  if( (isA($3.name)||isXA($3.name)) && (!isA($6.name)&&!isXA($6.name)))
+    {
+      deletePreviousAsm();
+    }
+  
+}
 ')'
 {
   int base_address = 53248;
@@ -13264,7 +13280,7 @@ statement:
   else if( isXA($3.name) && isXA($6.name) )
     {
       addCompilerMessage( "spritex( XA, XA ): losing high byte of first argument", 1 );
-      addComment( "spritex( XA, XA ): losing jigh byte of 1st argument" );
+      addComment( "spritex( XA, XA ): losing high byte of 1st argument" );
       addAsm( str_STA + "!+ +1", 3, false );
       addAsm( str_PLA, 1, false );
       addAsm( str_CPX + "#$01", 2, false );
