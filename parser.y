@@ -1830,6 +1830,27 @@
     if( getTypeOf( s ) == 32 ) return_value = true;
     return return_value;
   }
+
+  bool isIMM( string s )
+  {
+    if( isWordIMM(s) || isUintIMM(s) ) return true;
+    return false;
+  }
+  bool isID( string s )
+  {
+    if( isWordID(s) || isUintID(s) | isIntID(s) ) return true;
+    return false;
+  }
+  bool isByteID( string s )
+  {
+    if( isUintID(s) || isIntID(s) ) return true;
+    return false;
+  }
+  bool isAXA( string s )
+  {
+    if( isA(s) || isXA(s) ) return true;
+    return false;
+  }
     
   // I really should add opcodes to these instructions
   class asm_instruction
@@ -13915,35 +13936,179 @@ statement:
   strcpy( $$.name, "_NULL" );
 };
 
-// TODO: add spritexy( imm, XA, XA );
-// TODO: add spritexy( imm, A, A );
-// TODO: add spritexy( imm, XA, A );
-// TODO: add spritexy( imm, A, XA );
-| tSPRITEXY '(' expression ',' expression ',' expression ')'
+
+/*
+   MISSING STILL:
+   
+
+UintIMM, UintID, A/XA
+UintIMM, UintID, UintIMM
+UintIMM, UintID, UintID
+
+UintIMM, A, A/XA
+UintIMM, A, UintIMM
+UintIMM, A, UintID
+
+UintIMM, WordIMM,
+
+spritexy(A/XA, XA, WordID)
+spritexy(UintIMM, XA, WordID)
+spritexy(UintID, XA, WordID)
+
+
+*/
+| tSPRITEXY '(' expression
+{
+  if(isXA($3.name))
+    {
+      deletePreviousAsm();
+      addCompilerMessage( "spritexy(): dropping high byte of Sprite Number (the X)", 1 );
+
+    }
+  if(isA($3.name)||isXA($3.name))
+    {
+      addAsm( str_STA + "!N+ +1", 3, false );
+      addAsm( str_STA + "!N++ +1", 3, false );
+    }
+
+} ',' expression
+{
+  if(isXA($6.name))
+    {
+      addAsm( str_STX + "!Xh+ +1", 3, false );
+      addAsm( str_STA + "!Xl+ +1", 3, false );
+    }
+  else if(isA($6.name))
+    {
+      addAsm( str_STA + "!X+ +1", 3, false );
+    }
+
+} ',' expression
+{
+  if(isXA($9.name))
+    {
+      deletePreviousAsm();
+      addCompilerMessage( "spritexy(): dropping high byte of y-coord (the X)", 1 );
+    }
+}
+
+')'
 {
   int base_address = 53248;
   int sprite_address = 0;
   int x_coord = 0;
   int y_coord = 0;
-  if( isIntIMM($3.name) || isIntIMM($5.name) || isIntIMM($7.name) )
+  if( isIntIMM($3.name) || isIntIMM($6.name) || isIntIMM($9.name) )
     {
       addCompilerMessage( "oh - the humanity... negative spritexy arguments?!?!", 3 );
     }
-  else if(isUintIMM($3.name) && isUintIMM($5.name) && isUintIMM($7.name))
-    {
-      addComment( "spritexy( " + string($3.name) + " " + string($5.name) + " " + string($7.name) + ");");
-      sprite_address = atoi( stripFirst($3.name).c_str() );
-      sprite_address*=2;
-      sprite_address+=base_address;
-      
-      x_coord = atoi( stripFirst($5.name).c_str() );
-      addAsm( str_LDA + "#$" + toHex( x_coord) , 2, false );
-      addAsm( str_STA + "$" + toHex( sprite_address ), 3, false );
-      y_coord = atoi( stripFirst($7.name).c_str() );
-      addAsm( str_LDA + "#$" + toHex( y_coord) , 2, false );
-      addAsm( str_STA + "$" + toHex( sprite_address+1 ), 3, false );
 
+
+  if( isAXA($3.name) && isA($6.name) && isAXA($9.name) )
+    {
+      addComment( "spritexy(AXA, A, AXA): testing" );
+      addAsm( str_TAY, 1, false );
+      addAsm( "!N:\t" + str_LDA + "#$00", 2, true );
+      bin2bit_is_needed = true;
+      addAsm( str_JSR + "_bin_to_bit", 3, false);
+      addComment( "clear the high bit" );
+      addAsm( str_EOR + "#$FF", 2, false );
+      addAsm( str_AND + "$D010", 3, false );
+      addAsm( str_STA + "$D010", 3, false );
+      addComment( "set the low bit" );
+      addAsm( "!N:\t" + str_LDA + "#$00", 2, true );
+      addAsm( str_ASL + commentmarker + "*2", 1, false ); 
+      addAsm( str_TAX, 1, false );
+      addAsm( "!X:\t" + str_LDA + "#$00" + commentmarker + "this will be overwritten", 2, true );
+      addAsm( str_STA + "$D000,X", 3, false );
+      addAsm( str_TYA, 1, false );
+      addAsm( str_STA + "$D001,X", 3, false );
+    }
+  else if( isID($3.name) && isA($6.name) && isAXA($9.name) )
+    {      
+      addComment( "spritexy(ID, A, AXA): testing" );
+      if( isXA($9.name) ) addCompilerMessage( "spritexy: dropping high-byte of y-coord", 1 );
+      addComment( "set y_coord" );
+      addAsm( str_TAY, 1, false );
+      // clear the high bit
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false);
+      addAsm( str_TAX, 1, false );
+      bin2bit_is_needed = true;
+      addAsm( str_JSR + "_bin_to_bit", 3, false);
+      addAsm( str_EOR + "#$FF", 2, false );
+      addAsm( str_AND + "$D010", 3, false );
+      addAsm( str_STA + "$D010", 3, false );
+      addAsm( str_TXA, 1, false );
+      addAsm( str_ASL + commentmarker + "*2", 1, false );
+      addAsm( str_TAX, 1, false );
+      
+      addAsm( "!X:\t" + str_LDA + "#$00" + commentmarker + "this will be overwritten", 2, true );
+      addAsm( str_STA + "$D000,X", 3, false );
+      addAsm( str_TYA, 1, false );
+      addAsm( str_STA + "$D001,X", 3, false );
+    }
+  else if( isID($3.name) && isA($6.name) && isIMM($9.name) )
+    {      
+      addComment( "spritexy(ID, A, IMM): testing" );
+      int y_coord = atoi( stripFirst($9.name).c_str());
+      if( y_coord > 255 )
+	{
+	  addCompilerMessage( "spritexy: y-value out of range", 3 );
+	}
+      else if( y_coord < 9 || y_coord > 248 )
+	{
+	   addCompilerMessage( "spritexy: y-value outside the screen borders", 1 );
+	}
+      // clear the high bit
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false);
+      addAsm( str_TAX, 1, false );
+      bin2bit_is_needed = true;
+      addAsm( str_JSR + "_bin_to_bit", 3, false);
+      addAsm( str_EOR + "#$FF", 2, false );
+      addAsm( str_AND + "$D010", 3, false );
+      addAsm( str_STA + "$D010", 3, false );
+      
+      addAsm( str_TXA, 1, false );
+      addAsm( str_ASL + commentmarker + "*2", 1, false );
+      addAsm( str_TAX, 1, false );
+      
+      addAsm( "!X:\t" + str_LDA + "#$00" + commentmarker + "this will be overwritten", 2, true );
+      addAsm( str_STA + "$D000,X", 3, false );
+      addAsm( str_LDA + "#$" + toHex(y_coord), 2, false );
+      addAsm( str_STA + "$D001,X", 3, false );
+    }
+  else if( isID($3.name) && isA($6.name) && isID($9.name) )
+    {      
+      addComment( "spritexy(ID, A, ID): testing" );
+      if( isWordID($9.name) ) addCompilerMessage( "spritexy: dropping high-byte of y_coord", 1 );
+      // clear the high bit
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false);
+      addAsm( str_TAX, 1, false );
+      bin2bit_is_needed = true;
+      addAsm( str_JSR + "_bin_to_bit", 3, false);
+      addAsm( str_EOR + "#$FF", 2, false );
+      addAsm( str_AND + "$D010", 3, false );
+      addAsm( str_STA + "$D010", 3, false );
+      
+      addAsm( str_TXA, 1, false );
+      addAsm( str_ASL + commentmarker + "*2", 1, false );
+      addAsm( str_TAX, 1, false );
+      
+      addAsm( "!X:\t" + str_LDA + "#$00" + commentmarker + "this will be overwritten", 2, true );
+      addAsm( str_STA + "$D000,X", 3, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($9.name)), 3, false );
+      addAsm( str_STA + "$D001,X", 3, false );
+    }
+
+  else if( isIMM($3.name) && isA($6.name) && isAXA($9.name) )
+    {      
+      addComment( "spritexy(IMM, A, AXA): testing" );
+      if( isXA($9.name) ) addCompilerMessage( "spritexy: dropping high-byte of y-coord", 1 );
       int sprite_number = atoi( stripFirst($3.name).c_str());
+      int sprite_address = (sprite_number * 2) + 53248;
+      addComment( "set y_coord" );
+      addAsm( str_STA + "$" + toHex(sprite_address + 1), 3, false );
+      // clear the high bit
       switch( sprite_number )
 	{
 	case 0:
@@ -13971,28 +14136,956 @@ statement:
 	  addAsm( str_LDA + "#$7F", 2, false );
 	  break;
 	default:
+	  addCompilerMessage( "spritexy: invalid sprite number [0-7]", 2 );
+	}
+      addAsm( str_AND + "$D010", 3, false );
+
+      addAsm( "!X:\t" + str_LDA + "#$00" + commentmarker + "this will be overwritten", 2, true );
+      addAsm( str_STA + "$" + toHex(sprite_address), 3, false );
+    }
+  else if( isIMM($3.name) && isA($6.name) && isIMM($9.name) )
+    {      
+      addComment( "spritexy(IMM, A, IMM): testing" );
+      if( isXA($9.name) ) addCompilerMessage( "spritexy: dropping high-byte of y-coord", 1 );
+      int sprite_number = atoi( stripFirst($3.name).c_str());
+      int y_coord = atoi( stripFirst($9.name).c_str());
+      if( y_coord > 255 )
+	{
+	   addCompilerMessage( "spritexy: y value out of range", 3 );
+	}
+      else if( y_coord < 9 || y_coord > 248 )
+	{
+	   addCompilerMessage( "spritexy: y value outside the screen borders", 1 );
+	}
+
+      int sprite_address = (sprite_number * 2) + 53248;
+      addComment( "set y_coord" );
+      addAsm( str_LDA + "#$" + toHex(y_coord), 2, false );
+      addAsm( str_STA + "$" + toHex(sprite_address + 1), 3, false );
+      // clear the high bit
+      switch( sprite_number )
+	{
+	case 0:
+	  addAsm( str_LDA + "#$FE", 2, false );
+	  break;
+	case 1:
+	  addAsm( str_LDA + "#$FD", 2, false );
+	  break;
+	case 2:
+	  addAsm( str_LDA + "#$FB", 2, false );
+	  break;
+	case 3:
+	  addAsm( str_LDA + "#$F7", 2, false );
+	  break;
+	case 4:
+	  addAsm( str_LDA + "#$EF", 2, false );
+	  break;
+	case 5:
+	  addAsm( str_LDA + "#$DF", 2, false );
+	  break;
+	case 6:
+	  addAsm( str_LDA + "#$BF", 2, false );
+	  break;
+	case 7:
+	  addAsm( str_LDA + "#$7F", 2, false );
+	  break;
+	default:
+	  addCompilerMessage( "spritexy: invalid sprite number [0-7]", 2 );
+	}
+      addAsm( str_AND + "$D010", 3, false );
+
+      addAsm( "!X:\t" + str_LDA + "#$00" + commentmarker + "this will be overwritten", 2, true );
+      addAsm( str_STA + "$" + toHex(sprite_address), 3, false );
+    }
+
+  else if( isIMM($3.name) && isA($6.name) && isID($9.name) )
+    {      
+      addComment( "spritexy(IMM, A, ID): testing" );
+      if( isXA($9.name) ) addCompilerMessage( "spritexy: dropping high-byte of y-coord", 1 );
+      int sprite_number = atoi( stripFirst($3.name).c_str());
+
+      int sprite_address = (sprite_number * 2) + 53248;
+      addComment( "set y_coord" );
+      addAsm( str_LDA + getNameOf(getAddressOf($9.name)), 3, false );
+      addAsm( str_STA + "$" + toHex(sprite_address + 1), 3, false );
+      // clear the high bit
+      switch( sprite_number )
+	{
+	case 0:
+	  addAsm( str_LDA + "#$FE", 2, false );
+	  break;
+	case 1:
+	  addAsm( str_LDA + "#$FD", 2, false );
+	  break;
+	case 2:
+	  addAsm( str_LDA + "#$FB", 2, false );
+	  break;
+	case 3:
+	  addAsm( str_LDA + "#$F7", 2, false );
+	  break;
+	case 4:
+	  addAsm( str_LDA + "#$EF", 2, false );
+	  break;
+	case 5:
+	  addAsm( str_LDA + "#$DF", 2, false );
+	  break;
+	case 6:
+	  addAsm( str_LDA + "#$BF", 2, false );
+	  break;
+	case 7:
+	  addAsm( str_LDA + "#$7F", 2, false );
+	  break;
+	default:
+	  addCompilerMessage( "spritexy: invalid sprite number [0-7]", 2 );
+	}
+      addAsm( str_AND + "$D010", 3, false );
+
+      addAsm( "!X:\t" + str_LDA + "#$00" + commentmarker + "this will be overwritten", 2, true );
+      addAsm( str_STA + "$" + toHex(sprite_address), 3, false );
+    }
+  else if( isAXA($3.name) && isXA($6.name) && isIMM($9.name) )
+    {
+      addComment( "spritexy(AXA, XA, IMM): testing" );
+      int y_coord = atoi(stripFirst($9.name).c_str());
+      if( y_coord > 255 )
+	{
+	   addCompilerMessage( "spritexy: y value out of range", 3 );
+	}
+      else if( y_coord < 9 || y_coord > 248 )
+	{
+	   addCompilerMessage( "spritexy: y value outside the screen borders", 1 );
+	}
+
+      addAsm( "!N:\t" + str_LDA + "#$00", 2, true );
+      bin2bit_is_needed = true;
+      
+      addAsm( str_JSR + "_bin_to_bit", 3, false);
+      addAsm( "!Xh:\t" + str_LDX + "#$00" + commentmarker + "this will be overwritten", 2, true );
+      addAsm( str_CPX + "#$00", 2, false );
+      addAsm( str_BNE + "!+", 2, false );
+      addComment( "clear the high bit" );
+      addAsm( str_EOR + "#$FF", 2, false );
+      addAsm( str_AND + "$D010", 3, false );
+      addAsm( str_JMP + "!++", 3, false );
+      addAsm( "!:\t" + str_ORA + "$D010", 3, true );
+      addAsm( "!:\t" + str_STA + "$D010", 3, true );
+
+      addComment( "set the low byte" );
+      addAsm( "!N:\t" + str_LDA + "#$00", 2, true );
+      addAsm( str_ASL + commentmarker + "*2", 1, false ); 
+      addAsm( str_TAX, 1, false );
+      addAsm( "!Xl:\t" + str_LDA + "#$00" + commentmarker + "this will be overwritten", 2, true );
+      addAsm( str_STA + "$D000,X", 3, false );
+      addAsm( str_LDA + "#$" + toHex(y_coord), 2, false );
+      addAsm( str_STA + "$D001,X", 3, false );
+
+      
+    }
+  else if( isAXA($3.name) && isXA($6.name) && isID($9.name) )
+    {
+      addComment( "spritexy(AXA, XA, ID): testing" );
+
+      addAsm( "!N:\t" + str_LDA + "#$00" + commentmarker + "this will be overwritten", 2, true );
+      bin2bit_is_needed = true;
+      
+      addAsm( str_JSR + "_bin_to_bit", 3, false);
+      addAsm( "!Xh:\t" + str_LDX + "#$00" + commentmarker + "this will be overwritten", 2, true );
+      addAsm( str_CPX + "#$00", 2, false );
+      addAsm( str_BNE + "!+", 2, false );
+      addComment( "clear the high bit" );
+      addAsm( str_EOR + "#$FF", 2, false );
+      addAsm( str_AND + "$D010", 3, false );
+      addAsm( str_JMP + "!++", 3, false );
+      addAsm( "!:\t" + str_ORA + "$D010", 3, true );
+      addAsm( "!:\t" + str_STA + "$D010", 3, true );
+
+      addComment( "set the low byte" );
+      addAsm( "!N:\t" + str_LDA + "#$00" + commentmarker + "this will be overwritten", 2, true );
+      addAsm( str_ASL + commentmarker + "*2", 1, false ); 
+      addAsm( str_TAX, 1, false );
+      addAsm( "!Xl:\t" + str_LDA + "#$00" + commentmarker + "this will be overwritten", 2, true );
+      addAsm( str_STA + "$D000,X", 3, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($9.name)), 3, false );
+      addAsm( str_STA + "$D001,X", 3, false );
+
+      
+    }
+  else if( isAXA($3.name) && isIMM($6.name) && isIMM($9.name) )
+    {
+      addComment( "spritexy(AXA, IMM, IMM): testing" );
+      if( atoi( stripFirst($9.name).c_str()) > 255 )
+	{
+	  addCompilerMessage( "spritexy: y value out of range", 3 );
+	}
+      else if( atoi( stripFirst($9.name).c_str()) < 9 || atoi( stripFirst($9.name).c_str()) > 248 )
+	{
+	   addCompilerMessage( "spritexy: y value outside the screen borders", 1 );
+	}
+
+      int x_coordL = get_word_L(atoi( stripFirst($6.name).c_str()));
+      int x_coordH = get_word_H(atoi( stripFirst($6.name).c_str()));
+
+      addAsm( "!N:\t" + str_LDA + "#$00", 2, true );
+      bin2bit_is_needed = true;
+      addAsm( str_JSR + "_bin_to_bit", 3, false);
+
+      if( x_coordH != 0 )
+	{
+	  // set
+	  addAsm( str_ORA + "$D010", 3, false );
+	}
+      else
+	{
+	  // clear
+	  addAsm( str_EOR + "#$FF", 2, false );
+	  addAsm( str_AND + "$D010", 3, false );
+	  
+	}
+      addAsm( str_STA + "$D010", 3, false );
+
+      
+      addComment( "set the low byte for X" );
+      addAsm( "!N:\t" + str_LDA + "#$00", 2, true );
+      addAsm( str_ASL + commentmarker + "*2", 1, false ); 
+      addAsm( str_TAX, 1, false );
+      addAsm( str_LDA + "#$" + toHex(x_coordL), 2, false );
+      addAsm( str_STA + "$D000,X", 3, false );
+
+      addAsm( str_LDA + "#$" + toHex(atoi( stripFirst($9.name).c_str())), 2, false );
+      addAsm( str_STA + "$D001,X", 3, false );
+    }
+  else if( isAXA($3.name) && isIMM($6.name) && isID($9.name) )
+    {
+      addComment( "spritexy(AXA, IMM, ID): testing" );
+      int x_coordL = get_word_L(atoi( stripFirst($6.name).c_str()));
+      int x_coordH = get_word_H(atoi( stripFirst($6.name).c_str()));
+      if( isWordID($9.name) ) addCompilerMessage( "spritexy: only using low byte for y-coordinate", 1 );
+      addAsm( "!N:\t" + str_LDA + "#$00", 2, true );
+      bin2bit_is_needed = true;
+      addAsm( str_JSR + "_bin_to_bit", 3, false);
+
+      if( x_coordH != 0 )
+	{
+	  // set
+	  addAsm( str_ORA + "$D010", 3, false );
+	}
+      else
+	{
+	  // clear
+	  addAsm( str_EOR + "#$FF", 2, false );
+	  addAsm( str_AND + "$D010", 3, false );
+	  
+	}
+      addAsm( str_STA + "$D010", 3, false );
+
+      
+      addComment( "set the low byte for X" );
+      addAsm( "!N:\t" + str_LDA + "#$00", 2, true );
+      addAsm( str_ASL + commentmarker + "*2", 1, false ); 
+      addAsm( str_TAX, 1, false );
+      addAsm( str_LDA + "#$" + toHex(x_coordL), 2, false );
+      addAsm( str_STA + "$D000,X", 3, false );
+
+      addAsm( str_LDA + getNameOf(getAddressOf($9.name)), 3, false );
+      addAsm( str_STA + "$D001,X", 3, false );
+    }
+  else if( isAXA($3.name) && isWordID($6.name) && isID($9.name) )
+    {
+      addComment( "spritexy(AXA, WordID, ID): testing" );
+      if(isWordID($9.name)) addCompilerMessage( "spritexy: losing highbyte of y-coordinate", 1 );
+
+      addAsm( "!N:\t" + str_LDA + "#$00", 2, true );
+      bin2bit_is_needed = true;
+      addAsm( str_JSR + "_bin_to_bit", 3, false);
+      addAsm( str_LDX + getNameOf(getAddressOf($6.name)) + " +1", 3, false );
+      addAsm( str_CPX + "#$00", 2, false );
+      addAsm( str_BNE + "!+", 2, false );
+      addComment( "clear the high bit" );
+      addAsm( str_EOR + "#$FF", 2, false );
+      addAsm( str_AND + "$D010", 3, false );
+      addAsm( str_JMP + "!++", 3, false );
+      addAsm( "!:\t" + str_ORA + "$D010", 3, true );
+      addAsm( "!:\t" + str_STA + "$D010", 3, true );
+      
+      addComment( "set the low bit" );
+      addAsm( "!N:\t" + str_LDA + "#$00", 2, true );
+      addAsm( str_ASL + commentmarker + "*2", 1, false ); 
+      addAsm( str_TAX, 1, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($6.name)), 3, false );
+      addAsm( str_STA + "$D000,X", 3, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($9.name)), 3, false );      
+      addAsm( str_STA + "$D001,X", 3, false );
+    }
+  else if( isAXA($3.name) && isWordID($6.name) && isIMM($9.name) )
+    {
+      addComment( "spritexy(AXA, WordID, IMM): testing" );
+
+      if( atoi( stripFirst($9.name).c_str()) > 255 )
+	{
+	  addCompilerMessage( "spritexy: y value out of range", 3 );
+	}
+      else if( atoi( stripFirst($9.name).c_str()) < 9 || atoi( stripFirst($9.name).c_str()) > 248 )
+	{
+	   addCompilerMessage( "spritexy: y value outside the screen borders", 1 );
+	}
+      addAsm( "!N:\t" + str_LDA + "#$00", 2, true );
+      bin2bit_is_needed = true;
+      addAsm( str_JSR + "_bin_to_bit", 3, false);
+      addAsm( str_LDX + getNameOf(getAddressOf($6.name)) + " +1", 3, false );
+      addAsm( str_CPX + "#$00", 2, false );
+      addAsm( str_BNE + "!+", 2, false );
+      addComment( "clear the high bit" );
+      addAsm( str_EOR + "#$FF", 2, false );
+      addAsm( str_AND + "$D010", 3, false );
+      addAsm( str_JMP + "!++", 3, false );
+      addAsm( "!:\t" + str_ORA + "$D010", 3, true );
+      addAsm( "!:\t" + str_STA + "$D010", 3, true );
+      
+      addComment( "set the low bit" );
+      addAsm( "!N:\t" + str_LDA + "#$00", 2, true );
+      addAsm( str_ASL + commentmarker + "*2", 1, false ); 
+      addAsm( str_TAX, 1, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($6.name)), 3, false );
+      addAsm( str_STA + "$D000,X", 3, false );
+      addAsm( str_LDA + "#$" + toHex(atoi( stripFirst($9.name).c_str())), 2, false );
+
+      addAsm( str_STA + "$D001,X", 3, false );
+    }
+  else if( isID($3.name) && isWordID($6.name) && isAXA($9.name)  )
+    {
+      addComment( "spritexy(ID, WordID, AXA): testing" );
+      addAsm( str_TAY, 1, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
+      bin2bit_is_needed = true;
+      addAsm( str_JSR + "_bin_to_bit", 3, false);
+
+      addAsm( str_LDX + getNameOf(getAddressOf($6.name)) + " +1", 3, false );
+      addAsm( str_CPX + "#$00", 2, false );
+      addAsm( str_BNE + "!+", 2, false );
+      addComment( "clear the high bit" );
+      addAsm( str_EOR + "#$FF", 2, false );
+      addAsm( str_AND + "$D010", 3, false );
+      addAsm( str_JMP + "!++", 3, false );
+      addAsm( "!:\t" + str_ORA + "$D010", 3, true );
+      addAsm( "!:\t" + str_STA + "$D010", 3, true );
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
+      addAsm( str_ASL + commentmarker + "*2", 1, false ); 
+      addAsm( str_TAX, 1, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($6.name)), 3, false );
+      addAsm( str_STA + "$D000,X", 3, false );
+      addAsm( str_TYA, 1, false );
+      addAsm( str_STA + "$D001,X", 3, false );
+    }
+  //  else if( isAXA($3.name) && isUintIMM($6.name) && isIMM($9.name) ) 
+  //{
+  //  addComment( "spritexy(AXA, UintIMM, IMM): testing" );
+  //
+  //  if( atoi( stripFirst($9.name).c_str()) > 255 )
+  //	{
+  //	  addCompilerMessage( "spritexy: y value out of range", 3 );
+  //	}
+  //  else if( atoi( stripFirst($9.name).c_str()) < 9 || atoi( stripFirst($9.name).c_str()) > 248 )
+  //	{
+  //	   addCompilerMessage( "spritexy: y value outside the screen borders", 1 );
+  //	}
+  //  addAsm( "!N:\t" + str_LDA + "#$00", 2, true );
+  //  bin2bit_is_needed = true;
+  //  addAsm( str_JSR + "_bin_to_bit", 3, false);
+  //  addComment( "clear the high bit" );
+  //  addAsm( str_EOR + "#$FF", 2, false );
+  //  addAsm( str_AND + "$D010", 3, false );
+  //  addAsm( str_STA + "$D010", 3, false );
+  //  addComment( "set the low bit" );
+  //  addAsm( "!N:\t" + str_LDA + "#$00", 2, true );
+  //  addAsm( str_ASL + commentmarker + "*2", 1, false ); 
+  //  addAsm( str_TAX, 1, false );
+  //  addAsm( str_LDA + "#$" + toHex(atoi( stripFirst($6.name).c_str())), 2, false );
+  //addAsm( str_STA + "$D000,X", 3, false );
+  //  addAsm( str_LDA + "#$" + toHex(atoi( stripFirst($9.name).c_str())), 2, false );
+  //  addAsm( str_STA + "$D001,X", 3, false );
+  //  }
+  else if( isAXA($3.name) && isA($6.name) &&  isIMM($9.name) )
+    {
+      addComment( "spritexy(AXA, A, IMM): testing" );
+
+      if( atoi( stripFirst($9.name).c_str()) > 255 )
+	{
+	  addCompilerMessage( "spritexy: y value out of range", 3 );
+	}
+      else if( atoi( stripFirst($9.name).c_str()) < 9 || atoi( stripFirst($9.name).c_str()) > 248 )
+	{
+	   addCompilerMessage( "spritexy: y value outside the screen borders", 1 );
+	}
+      addAsm( "!N:\t" + str_LDA + "#$00", 2, true );
+      bin2bit_is_needed = true;
+      addAsm( str_JSR + "_bin_to_bit", 3, false);
+      addComment( "clear the high bit" );
+      addAsm( str_EOR + "#$FF", 2, false );
+      addAsm( str_AND + "$D010", 3, false );
+      addAsm( str_STA + "$D010", 3, false );
+      addComment( "set the low bit" );
+      addAsm( "!N:\t" + str_LDA + "#$00", 2, true );
+      addAsm( str_ASL + commentmarker + "*2", 1, false ); 
+      addAsm( str_TAX, 1, false );
+      addAsm( "!X:\t" + str_LDA + "#$00" + commentmarker + "this will be overwritten", 2, true );
+      addAsm( str_STA + "$D000,X", 3, false );
+      addAsm( str_LDA + "#$" + toHex(atoi( stripFirst($9.name).c_str())), 2, false );
+      addAsm( str_STA + "$D001,X", 3, false );
+    }
+  else if( isAXA($3.name) && isA($6.name) && isID($9.name) )
+    {
+      addComment( "spritexy(AXA, A, ID): testing" );
+      addAsm( "!N:\t" + str_LDA + "#$00", 2, true );
+      bin2bit_is_needed = true;
+      addAsm( str_JSR + "_bin_to_bit", 3, false);
+      addComment( "clear the high bit" );
+      addAsm( str_EOR + "#$FF", 2, false );
+      addAsm( str_AND + "$D010", 3, false );
+      addAsm( str_STA + "$D010", 3, false );
+      addComment( "set the low byte" );
+      addAsm( "!N:\t" + str_LDA + "#$00", 2, true );
+      addAsm( str_ASL + commentmarker + "*2", 1, false ); 
+      addAsm( str_TAX, 1, false );
+      addAsm( "!X:\t" + str_LDA + "#$00" + commentmarker + "this will be overwritten", 2, true );
+      addAsm( str_STA + "$D000,X", 3, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($9.name)), 3, false );
+      addAsm( str_STA + "$D001,X", 3, false );
+    }
+
+  else if( isAXA($3.name) && isByteID($6.name) && isAXA($9.name) )
+    {
+      // TO DO: test this thoroughly
+      addComment( "spritexy(AXA, ByteID, AXA): testing" );
+      addAsm( str_TAY, 1, false );
+      
+      addAsm( "!N:\t" + str_LDA + "#$00", 2, true );
+
+      bin2bit_is_needed = true;
+      addAsm( str_JSR + "_bin_to_bit", 3, false);
+
+      addComment( "clear the high bit" );
+      addAsm( str_EOR + "#$FF", 2, false );
+      addAsm( str_AND + "$D010", 3, false );
+      addAsm( str_STA + "$D010", 3, false );
+      
+      addComment( "set the low byte" );
+      addAsm( "!N:\t" + str_LDA + "#$00", 2, true );
+      addAsm( str_ASL + commentmarker + "*2", 1, false ); 
+      addAsm( str_TAX, 1, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($6.name)), 3, false );
+      addAsm( str_STA + "$D000,X", 3, false );
+      addAsm( str_TYA, 1, false );
+      addAsm( str_STA + "$D001,X", 3, false );
+    }
+
+  else if( isAXA($3.name) && isByteID($6.name) && isIMM($9.name) )
+    {
+      addComment( "spritexy(AXA, ByteID, IMM): testing" );
+      int y_coord =  atoi( stripFirst($9.name).c_str());
+      if( y_coord > 255 )
+	{
+	  addCompilerMessage( "spritexy: y value out of range", 3 );
+	}
+      else if( y_coord < 9 || y_coord > 248 )
+	{
+	   addCompilerMessage( "spritexy: y value outside the screen borders", 1 );
+	}
+
+      
+      addAsm( "!N:\t" + str_LDA + "#$00", 2, true );
+
+      bin2bit_is_needed = true;
+      addAsm( str_JSR + "_bin_to_bit", 3, false);
+
+      addComment( "clear the high bit" );
+      addAsm( str_EOR + "#$FF", 2, false );
+      addAsm( str_AND + "$D010", 3, false );
+      addAsm( str_STA + "$D010", 3, false );
+      
+      addComment( "set the low byte" );
+      addAsm( "!N:\t" + str_LDA + "#$00", 2, true );
+      addAsm( str_ASL + commentmarker + "*2", 1, false ); 
+      addAsm( str_TAX, 1, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($6.name)), 3, false );
+      addAsm( str_STA + "$D000,X", 3, false );
+
+      addAsm( str_LDA + "#$" + toHex(y_coord), 2, false );
+      addAsm( str_STA + "$D001,X", 3, false );
+    }
+
+
+
+  // else if( isAXA($3.name) && isUintIMM($6.name) && isID($9.name) )
+  //{
+  //  addComment( "spritexy(AXA, UintIMM, ID): testing" );
+  //  int x_coord =  atoi( stripFirst($6.name).c_str());
+  //
+  //  if( isWordID($9.name) ) addCompilerMessage( "spritexy: dropping high byte of y_coord" );
+  //  addAsm( "!N:\t" + str_LDA + "#$00", 2, true );
+  //
+  //  bin2bit_is_needed = true;
+  //  addAsm( str_JSR + "_bin_to_bit", 3, false);
+  //
+  //  addComment( "clear the high bit" );
+  //  addAsm( str_EOR + "#$FF", 2, false );
+  //  addAsm( str_AND + "$D010", 3, false );
+  //  addAsm( str_STA + "$D010", 3, false );
+  //  
+  //  addComment( "set the low byte" );
+  //  addAsm( "!N:\t" + str_LDA + "#$00", 2, true );
+  //  addAsm( str_ASL + commentmarker + "*2", 1, false ); 
+  //  addAsm( str_TAX, 1, false );
+  //  addAsm( str_LDA + "#$" + toHex(x_coord), 2, false );
+  //  addAsm( str_STA + "$D000,X", 3, false );
+  //
+  //  addAsm( str_LDA + getNameOf(getAddressOf($9.name)), 3, false );
+  //  addAsm( str_STA + "$D001,X", 3, false );
+  //}
+
+  else if( isAXA($3.name) && isByteID($6.name) && isID($9.name) )
+    {
+      addComment( "spritexy(AXA, ByteID, ID): testing" );
+
+      if( isWordID($9.name) ) addCompilerMessage( "spritexy: dropping high byte of y_coord" );
+      addAsm( "!N:\t" + str_LDA + "#$00", 2, true );
+
+      bin2bit_is_needed = true;
+      addAsm( str_JSR + "_bin_to_bit", 3, false);
+
+      addComment( "clear the high bit" );
+      addAsm( str_EOR + "#$FF", 2, false );
+      addAsm( str_AND + "$D010", 3, false );
+      addAsm( str_STA + "$D010", 3, false );
+      
+      addComment( "set the low byte" );
+      addAsm( "!N:\t" + str_LDA + "#$00", 2, true );
+      addAsm( str_ASL + commentmarker + "*2", 1, false ); 
+      addAsm( str_TAX, 1, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($6.name)), 3, false );
+      addAsm( str_STA + "$D000,X", 3, false );
+
+      addAsm( str_LDA + getNameOf(getAddressOf($9.name)), 3, false );
+      addAsm( str_STA + "$D001,X", 3, false );
+    }
+
+  
+  else if( isAXA($3.name) && isWordID($6.name) && isAXA($9.name))
+    {
+      addComment( "spritexy(AXA, WordID, AXA): testing" );
+      addAsm( str_TAY, 1, false );
+      
+      addAsm( "!N:\t" + str_LDA + "#$00", 2, true );
+      bin2bit_is_needed = true;
+      addAsm( str_JSR + "_bin_to_bit", 3, false);
+
+      addAsm( str_LDX + getNameOf(getAddressOf($6.name)) + " +1", 3, false );
+      addAsm( str_CPX + "#$00", 2, false );
+      addAsm( str_BNE + "!+", 2, false );
+      addComment( "clear the high bit" );
+      addAsm( str_EOR + "#$FF", 2, false );
+      addAsm( str_AND + "$D010", 3, false );
+      addAsm( str_JMP + "!++", 3, false );
+      addAsm( "!:\t" + str_ORA + "$D010", 3, true );
+      addAsm( "!:\t" + str_STA + "$D010", 3, true );
+      
+      addComment( "set the low bit" );
+      addAsm( "!N:\t" + str_LDA + "#$00", 2, true );
+      addAsm( str_ASL + commentmarker + "*2", 1, false ); 
+      addAsm( str_TAX, 1, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($6.name)), 3, false );
+      addAsm( str_STA + "$D000,X", 3, false );
+      addAsm( str_TYA, 1, false );
+      addAsm( str_STA + "$D001,X", 3, false );
+    }
+  else if( isAXA($3.name) && isIMM($6.name) && isAXA($9.name) )
+    {
+      addComment( "spritexy(AXA, IMM, AXA): testing" );
+
+      int x_coordL = get_word_L(atoi( stripFirst($6.name).c_str()));
+      int x_coordH = get_word_H(atoi( stripFirst($6.name).c_str()));
+      
+      addAsm( str_TAY, 1, false );
+      
+      addAsm( "!N:\t" + str_LDA + "#$00", 2, true );
+      bin2bit_is_needed = true;
+      addAsm( str_JSR + "_bin_to_bit", 3, false);
+
+      if( x_coordH != 0 )
+	{
+	  addAsm( str_ORA + "$D010", 3, false );
+	}
+      else
+	{
+	  addAsm( str_EOR + "#$FF", 2, false );
+	  addAsm( str_AND + "$D010", 3, false );
+	}
+      addAsm( str_STA + "$D010", 3, false );
+      
+      
+      addComment( "set the low bit" );
+      addAsm( "!N:\t" + str_LDA + "#$00", 2, true );
+      addAsm( str_ASL + commentmarker + "*2", 1, false ); 
+      addAsm( str_TAX, 1, false );
+      addAsm( str_LDA + "#$" + toHex(x_coordL), 2, false );
+      addAsm( str_STA + "$D000,X", 3, false );
+      addAsm( str_TYA, 1, false );
+      addAsm( str_STA + "$D001,X", 3, false );
+    }
+
+  else if( isAXA($3.name) && isXA($6.name) && isAXA($9.name) )
+    {
+      addComment( "spritexy(AXA, XA, AXA): testing" );
+      addAsm( str_TAY, 1, false );
+      
+      addAsm( "!N:\t" + str_LDA + "#$00", 2, true );
+      bin2bit_is_needed = true;
+      addAsm( str_JSR + "_bin_to_bit", 3, false);
+
+      addAsm( "!Xh:\t" + str_LDX + "#$00" + commentmarker + "this will be overwritten", 2, true );
+      addAsm( str_CPX + "#$00", 2, false );
+      addAsm( str_BNE + "!+", 2, false );
+      addComment( "clear the high bit" );
+      addAsm( str_EOR + "#$FF", 2, false );
+      addAsm( str_AND + "$D010", 3, false );
+      addAsm( str_JMP + "!++", 3, false );
+      addAsm( "!:\t" + str_ORA + "$D010", 3, true );
+      addAsm( "!:\t" + str_STA + "$D010", 3, true );
+      
+      addComment( "set the low byte" );
+      addAsm( "!N:\t" + str_LDA + "#$00", 2, true );
+      addAsm( str_ASL + commentmarker + "*2", 1, false ); 
+      addAsm( str_TAX, 1, false );
+      addAsm( "!Xl:\t" + str_LDA + "#$00" + commentmarker + "this will be overwritten", 2, true );
+      addAsm( str_STA + "$D000,X", 3, false );
+      addAsm( str_TYA, 1, false );
+      addAsm( str_STA + "$D001,X", 3, false );
+    }
+  else if( isID($3.name) && isXA($6.name) && isAXA($9.name) )
+    {
+      addComment( "spritexy(ID, XA, AXA): testing" );
+      addAsm( str_TAY, 1, false );
+
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
+      
+      bin2bit_is_needed = true;
+      addAsm( str_JSR + "_bin_to_bit", 3, false);
+
+      addAsm( "!Xh:\t" + str_LDX + "#$00" + commentmarker + "this will be overwritten", 2, true );
+      addAsm( str_CPX + "#$00", 2, false );
+      addAsm( str_BNE + "!+", 2, false );
+      addComment( "clear the high bit" );
+      addAsm( str_EOR + "#$FF", 2, false );
+      addAsm( str_AND + "$D010", 3, false );
+      addAsm( str_JMP + "!++", 3, false );
+      addAsm( "!:\t" + str_ORA + "$D010", 3, true );
+      addAsm( "!:\t" + str_STA + "$D010", 3, true );
+      
+      addComment( "set the low bit" );
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
+      addAsm( str_ASL + commentmarker + "*2", 1, false ); 
+      addAsm( str_TAX, 1, false );
+      addAsm( "!Xl:\t" + str_LDA + "#$00" + commentmarker + "this will be overwritten", 2, true );
+      addAsm( str_STA + "$D000,X", 3, false );
+      addAsm( str_TYA, 1, false );
+      addAsm( str_STA + "$D001,X", 3, false );
+    }
+  else if( isID($3.name) && isXA($6.name) && isID($9.name) )
+    {
+      if( isWordID($9.name) ) addCompilerMessage( "spritexy: dropping high byte of y_coord", 1 );
+      
+      addComment( "spritexy(ID, XA, ID): testing" );
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
+      
+      bin2bit_is_needed = true;
+      addAsm( str_JSR + "_bin_to_bit", 3, false);
+
+      addAsm( "!Xh:\t" + str_LDX + "#$00" + commentmarker + "this will be overwritten", 2, true );
+      addAsm( str_CPX + "#$00", 2, false );
+      addAsm( str_BNE + "!+", 2, false );
+      addComment( "clear the high bit" );
+      addAsm( str_EOR + "#$FF", 2, false );
+      addAsm( str_AND + "$D010", 3, false );
+      addAsm( str_JMP + "!++", 3, false );
+      addAsm( "!:\t" + str_ORA + "$D010", 3, true );
+      addAsm( "!:\t" + str_STA + "$D010", 3, true );
+      
+      addComment( "set the low bit" );
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
+      addAsm( str_ASL + commentmarker + "*2", 1, false ); 
+      addAsm( str_TAX, 1, false );
+      addAsm( "!Xl:\t" + str_LDA + "#$00" + commentmarker + "this will be overwritten", 2, true );
+      addAsm( str_STA + "$D000,X", 3, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($9.name)), 3, false );
+      addAsm( str_STA + "$D001,X", 3, false );
+    }
+  else if( isID($3.name) && isXA($6.name) && isIMM($9.name) )
+    {
+      addComment( "spritexy(ID, XA, IMM): testing" );
+      int y_coord = atoi( stripFirst($9.name).c_str());
+      if( y_coord > 255 )
+	{
+	  addCompilerMessage( "spritexy: y-value out of range", 3 );
+	}
+      else if( y_coord < 9 || y_coord > 248 )
+	{
+	   addCompilerMessage( "spritexy: y-value outside the screen borders", 1 );
+	}
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
+
+      bin2bit_is_needed = true;
+      addAsm( str_JSR + "_bin_to_bit", 3, false);
+
+      addAsm( "!Xh:\t" + str_LDX + "#$00" + commentmarker + "this will be overwritten", 2, true );
+      addAsm( str_CPX + "#$00", 2, false );
+      addAsm( str_BNE + "!+", 2, false );
+      addComment( "clear the high bit" );
+      addAsm( str_EOR + "#$FF", 2, false );
+      addAsm( str_AND + "$D010", 3, false );
+      addAsm( str_JMP + "!++", 3, false );
+      addAsm( "!:\t" + str_ORA + "$D010", 3, true );
+      addAsm( "!:\t" + str_STA + "$D010", 3, true );
+      
+      addComment( "set the low bit" );
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
+      addAsm( str_ASL + commentmarker + "*2", 1, false ); 
+      addAsm( str_TAX, 1, false );
+      addAsm( "!Xl:\t" + str_LDA + "#$00" + commentmarker + "this will be overwritten", 2, true );
+      addAsm( str_STA + "$D000,X", 3, false );
+      addAsm( str_LDA + "#$" + toHex(y_coord), 2, false );
+      addAsm( str_STA + "$D001,X", 3, false );
+    }
+
+  else if( isIMM($3.name) && isXA($6.name) && isID($9.name) )
+    {
+      addComment( "spritexy(IMM, XA, ID): testing" );
+      int sprite_number = atoi( stripFirst($3.name).c_str());
+      switch( sprite_number )
+	{
+	case 0:
+	  addAsm( str_LDA + "#$01", 2, false );
+	  break;
+	case 1:
+	  addAsm( str_LDA + "#$02", 2, false );
+	  break;
+	case 2:
+	  addAsm( str_LDA + "#$04", 2, false );
+	  break;
+	case 3:
+	  addAsm( str_LDA + "#$08", 2, false );
+	  break;
+	case 4:
+	  addAsm( str_LDA + "#$10", 2, false );
+	  break;
+	case 5:
+	  addAsm( str_LDA + "#$20", 2, false );
+	  break;
+	case 6:
+	  addAsm( str_LDA + "#$40", 2, false );
+	  break;
+	case 7:
+	  addAsm( str_LDA + "#$80", 2, false );
+	  break;
+	default:
+	  addCompilerMessage( "spritexy: sprite number out of range", 3 );
+	}
+      addAsm( "!Xh:\t" + str_LDX + "#$00" + commentmarker + "this will be overwritten", 2, true );
+      addAsm( str_CPX + "#$00", 2, false );
+      addAsm( str_BNE + "!+", 2, false );
+      addComment( "clear the high bit" );
+      addAsm( str_EOR + "#$FF", 2, false );
+      addAsm( str_AND + "$D010", 3, false );
+      addAsm( str_JMP + "!++", 3, false );
+      addAsm( "!:\t" + str_ORA + "$D010", 3, true );
+      addAsm( "!:\t" + str_STA + "$D010", 3, true );
+      
+      addComment( "set the low bit" );
+      addAsm( str_LDA + "#$" + toHex(sprite_number), 2, false );
+      addAsm( str_ASL + commentmarker + "*2", 1, false ); 
+      addAsm( str_TAX, 1, false );
+      addAsm( "!Xl:\t" + str_LDA + "#$00" + commentmarker + "this will be overwritten", 2, true );
+      addAsm( str_STA + "$D000,X", 3, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($9.name)), 3, false );
+      addAsm( str_STA + "$D001,X", 3, false );      
+    }
+  else if( isIMM($3.name) && isXA($6.name) && isAXA($9.name) )
+    {
+      addComment( "spritexy(IMM, XA, AXA): testing ");
+      int sprite_number = atoi( stripFirst($3.name).c_str());
+      if( sprite_number > 7 )
+	{
+	  addCompilerMessage("spritexy: sprite number out of range [0-7]", 3);
+	}
+      addAsm( str_TAY, 1, false );      
+
+      addAsm( "!Xh:\t" + str_LDX + "#$00" + commentmarker + "this will be overwritten", 2, true );
+      addAsm( str_CPX + "#$00", 2, false );
+      addAsm( str_BNE + "!+", 2, false );
+      addComment( "clear the high bit" );
+
+      switch( sprite_number )
+	{
+	case 0:
+	  addAsm( str_LDA + "#$FE", 2, false );
+	  break;
+	case 1:
+	  addAsm( str_LDA + "#$FD", 2, false );
+	  break;
+	case 2:
+	  addAsm( str_LDA + "#$FB", 2, false );
+	  break;
+	case 3:
+	  addAsm( str_LDA + "#$F7", 2, false );
+	  break;
+	case 4:
+	  addAsm( str_LDA + "#$EF", 2, false );
+	  break;
+	case 5:
+	  addAsm( str_LDA + "#$DF", 2, false );
+	  break;
+	case 6:
+	  addAsm( str_LDA + "#$BF", 2, false );
+	  break;
+	case 7:
+	  addAsm( str_LDA + "#$7F", 2, false );
+	  break;
+	default:
+	  addCompilerMessage( "spritexy: invalid sprite number [0-7]", 2 );
+	}
+      addAsm( str_AND + "$D010", 3, false );
+      addAsm( str_JMP + "!++", 3, false );
+
+      switch( sprite_number )
+	{
+	case 0:
+	  addAsm( "!:\t" + str_LDA + "#$01", 2, true );
+	  break;
+	case 1:
+	  addAsm( "!:\t" + str_LDA + "#$02", 2, true );
+	  break;
+	case 2:
+	  addAsm( "!:\t" + str_LDA + "#$04", 2, true );
+	  break;
+	case 3:
+	  addAsm( "!:\t" + str_LDA + "#$08", 2, true );
+	  break;
+	case 4:
+	  addAsm( "!:\t" + str_LDA + "#$10", 2, true );
+	  break;
+	case 5:
+	  addAsm( "!:\t" + str_LDA + "#$20", 2, true );
+	  break;
+	case 6:
+	  addAsm( "!:\t" + str_LDA + "#$40", 2, true );
+	  break;
+	case 7:
+	  addAsm( "!:\t" + str_LDA + "#$80", 2, true );
+	  break;
+	default:
 	  addCompilerMessage( "invalid sprite number", 2 );
 	}
-      addAsm( str_AND + "$D010", 3, false ); 
-      addAsm( str_STA + "$D010", 3, false );
+      addAsm( str_ORA + "$D010", 3, false );
+      addAsm( "!:\t" + str_STA + "$D010", 3, true );
+      
+      addComment( "set the low bit" );
+      addAsm( str_LDX + "#$" + toHex(sprite_number * 2 ), 2, false );
+      addAsm( "!Xl:\t" + str_LDA + "#$00" + commentmarker + "this will be overwritten", 2, true );
+      addAsm( str_STA + "$D000,X", 3, false );
+      addAsm( str_TYA, 1, false );
+      addAsm( str_STA + "$D001,X", 3, false );
     }
-  else if(isUintIMM($3.name) && isWordID($5.name) && isUintIMM($7.name))
+
+  //else if( isIMM($3.name) && isUintIMM($6.name) && isIMM($9.name))
+  //{
+  //  addComment( "spritexy(IMM, UintIMM, IMM): testing" );
+  //  if( atoi( stripFirst($3.name).c_str()) > 8 )
+  //	{
+  //	  addCompilerMessage( "spritexy: sprite number out of range", 3 );
+  //	}
+  //
+  //  if( atoi( stripFirst($9.name).c_str()) > 255 )
+  //	{
+  //	  addCompilerMessage( "spritexy: y value out of range", 3 );
+  //	}
+  //  else if( atoi( stripFirst($9.name).c_str()) < 9 || atoi( stripFirst($9.name).c_str()) > 248 )
+  //	{
+  //	   addCompilerMessage( "spritexy: y value outside the screen borders", 1 );
+  //	}
+  //  addComment( "spritexy( " + string($3.name) + " " + string($6.name) + " " + string($9.name) + ");");
+  //  sprite_address = atoi( stripFirst($3.name).c_str() );
+  //  sprite_address*=2;
+  //  sprite_address+=base_address;
+  //  
+  //  x_coord = atoi( stripFirst($6.name).c_str() );
+  //  addAsm( str_LDA + "#$" + toHex( x_coord) , 2, false );
+  //  addAsm( str_STA + "$" + toHex( sprite_address ), 3, false );
+  //  y_coord = atoi( stripFirst($9.name).c_str() );
+  //  addAsm( str_LDA + "#$" + toHex( y_coord) , 2, false );
+  //  addAsm( str_STA + "$" + toHex( sprite_address+1 ), 3, false );
+  //
+  //  int sprite_number = atoi( stripFirst($3.name).c_str());
+  //  switch( sprite_number )
+  //	{
+  //	case 0:
+  //	  addAsm( str_LDA + "#$FE", 2, false );
+  //	  break;
+  //	case 1:
+  //	  addAsm( str_LDA + "#$FD", 2, false );
+  //	  break;
+  //	case 2:
+  //	  addAsm( str_LDA + "#$FB", 2, false );
+  //	  break;
+  //	case 3:
+  //	  addAsm( str_LDA + "#$F7", 2, false );
+  //	  break;
+  //	case 4:
+  //	  addAsm( str_LDA + "#$EF", 2, false );
+  //	  break;
+  //	case 5:
+  //	  addAsm( str_LDA + "#$DF", 2, false );
+  //	  break;
+  //	case 6:
+  //	  addAsm( str_LDA + "#$BF", 2, false );
+  //	  break;
+  //	case 7:
+  //	  addAsm( str_LDA + "#$7F", 2, false );
+  //	  break;
+  //	default:
+  //	  addCompilerMessage( "invalid sprite number", 2 );
+  //	}
+  //  addAsm( str_AND + "$D010", 3, false ); 
+  //  addAsm( str_STA + "$D010", 3, false );
+  //}
+  else if( isIMM($3.name) && isWordID($6.name) && isIMM($9.name) )
     {
-      addComment( "spritexy( UintIMM, WordID, UintIMM );");
+      addComment( "spritexy(IMM, WordID, IMM): testing" );
+      if( isWordIMM($9.name) ) addCompilerMessage( "losing high-byte of y-value", 1 );
+
+      if( atoi( stripFirst($3.name).c_str()) > 8 )
+	{
+	  addCompilerMessage( "spritexy: sprite number out of range", 3 );
+	}
+      if( atoi( stripFirst($9.name).c_str()) > 255 )
+	{
+	  addCompilerMessage( "spritexy: y value out of range", 3 );
+	}
+      else if( atoi( stripFirst($9.name).c_str()) < 9 || atoi( stripFirst($9.name).c_str()) > 248 )
+	{
+	   addCompilerMessage( "spritexy: y value outside the screen borders", 1 );
+	}
 
       sprite_address = atoi( stripFirst($3.name).c_str() );
       sprite_address*=2;
       sprite_address+=base_address;
 
-      int addr = hexToDecimal($5.name);
-      // 2025 05 04 - mkpellegrino - moved the next 2 lines to here for speed
-      addAsm( str_LDA + "#$" + toHex(atoi(stripFirst($7.name).c_str())) , 2, false );
-      addAsm( str_STA + "$" + toHex( sprite_address+1 ), 3, false );
+      int addr = hexToDecimal($6.name);
 
       // 2024 04 30 - mkpellegrino
       addAsm( str_LDA + getNameOf(addr) , 3, false );
-      addAsm( str_STA + "$" + toHex( sprite_address ), 3, false );
-      
+      addAsm( str_STA + "$" + toHex(sprite_address), 3, false );
+  
+      // 2025 05 04 - mkpellegrino - moved the next 2 lines to here for speed
+      addAsm( str_LDA + "#$" + toHex(get_word_L(atoi(stripFirst($9.name).c_str()))) , 2, false );
+      addAsm( str_STA + "$" + toHex( sprite_address+1 ), 3, false );
 
       // need to put the ninth bit into 0xD010
    
@@ -14002,9 +15095,11 @@ statement:
 
       //============================================0--0-
       // High Byte
+      // 2026 08 07 - fixed previous work
       // 2024 04 27 - mkpellegrino
-      addAsm( str_LDA + "#$01", 2, false );
-      addAsm( str_BIT + getNameOf(addr)+" +1", 3, false );
+      //addAsm( str_LDA + "#$01", 2, false );
+      
+      addAsm( str_LDA + getNameOf(addr)+" +1", 3, false );
       addAsm( str_BEQ + "!+", 2, false );
 
 
@@ -14055,8 +15150,8 @@ statement:
 	  addAsm( "!:\t" + str_LDA + "#$FD", 2, true);
 	  break;
 	case 0:
-	  addAsm( "// lda #$01", 0, false );
-	  //addAsm( str_LDA + "#$01", 2, false);
+	  //addAsm( "// lda #$01", 0, false );
+	  addAsm( str_LDA + "#$01", 2, false);
 	  addAsm( str_ORA + "$D010", 3, false );
 	  addAsm( str_JMP + "!++", 3, false );
 	  addAsm( "!:\t" + str_LDA + "#$FE", 2, true);
@@ -14069,32 +15164,211 @@ statement:
       addAsm( str_AND + "$D010", 3, false );
       addAsm( "!:\t" + str_STA + "$D010", 3, true );
     }
-  else if((isUintIMM($3.name) && isWordID($5.name) && isIntID($7.name)) ||
-	  (isUintIMM($3.name) && isWordID($5.name) && isUintID($7.name)))
+
+  else if( isIMM($3.name) && isWordID($6.name) && isAXA($9.name) )
     {
-      addComment( "spritexy( UintIMM, WordID, UintID );");
-      addComment( "spritexy( " + stripFirst($3.name) + ", " + getNameOf(getAddressOf($5.name)) + ", " + getNameOf(getAddressOf($7.name)) + ");");
+      addComment( "spritexy(IMM, WordID, AXA): testing" );
+      if( isXA($9.name) ) addCompilerMessage( "losing high-byte of y-value", 1 );
+
+      int sprite_number =  atoi( stripFirst($3.name).c_str());
+      if( sprite_number > 7 )
+	{
+	  addCompilerMessage( "spritexy: sprite number out of range", 3 );
+	}
+
+      sprite_address = (2 * sprite_number) + 53248;
+      addAsm( str_STA + "$" + toHex( sprite_address+1 ), 3, false );
+
+      // 2024 04 30 - mkpellegrino
+      addAsm( str_LDA + getNameOf(getAddressOf($6.name)) , 3, false );
+      addAsm( str_STA + "$" + toHex(sprite_address), 3, false );
+  
+      // need to put the ninth bit into 0xD010   
+      // find out which sprite number we're talking about
+
+      //============================================0--0-
+      // High Byte
+      // 2026 08 07 - fixed previous work
+      // 2024 04 27 - mkpellegrino
+      //addAsm( str_LDA + "#$01", 2, false );
+      
+      addAsm( str_LDA + getNameOf(getAddressOf($6.name)) + " +1", 3, false );
+      addAsm( str_BEQ + "!+", 2, false );
+
+
+      // 2024 04 26 - mkpellegrino
+      // hardcoded IMMs
+      switch( sprite_number )
+	{
+	case 7:
+	  addAsm( str_LDA + "#$80", 2, false);
+	  addAsm( str_ORA + "$D010", 3, false );
+	  addAsm( str_JMP + "!++", 3, false );
+	  addAsm( "!:\t" + str_LDA + "#$7F", 2, true);
+	  break;
+	case 6:
+	  addAsm( str_LDA + "#$40", 2, false);
+	  addAsm( str_ORA + "$D010", 3, false );
+	  addAsm( str_JMP + "!++", 3, false );
+	  addAsm( "!:\t" + str_LDA + "#$BF", 2, true);
+	  break;
+	case 5:
+	  addAsm( str_LDA + "#$20", 2, false);
+	  addAsm( str_ORA + "$D010", 3, false );
+	  addAsm( str_JMP + "!++", 3, false );
+	  addAsm( "!:\t" + str_LDA + "#$DF", 2, true);
+	  break;
+	case 4:
+	  addAsm( str_LDA + "#$10", 2, false);
+	  addAsm( str_ORA + "$D010", 3, false );
+	  addAsm( str_JMP + "!++", 3, false );
+	  addAsm( "!:\t" + str_LDA + "#$EF", 2, true);
+	  break;
+	case 3:
+	  addAsm( str_LDA + "#$08", 2, false);
+	  addAsm( str_ORA + "$D010", 3, false );
+	  addAsm( str_JMP + "!++", 3, false );
+	  addAsm( "!:\t" + str_LDA + "#$F7", 2, true);
+	  break;
+	case 2:
+	  addAsm( str_LDA + "#$04", 2, false);
+	  addAsm( str_ORA + "$D010", 3, false );
+	  addAsm( str_JMP + "!++", 3, false );
+	  addAsm( "!:\t" + str_LDA + "#$FB", 2, true);
+	  break;
+	case 1:
+	  addAsm( str_LDA + "#$02", 2, false);
+	  addAsm( str_ORA + "$D010", 3, false );
+	  addAsm( str_JMP + "!++", 3, false );
+	  addAsm( "!:\t" + str_LDA + "#$FD", 2, true);
+	  break;
+	case 0:
+	  //addAsm( "// lda #$01", 0, false );
+	  addAsm( str_LDA + "#$01", 2, false);
+	  addAsm( str_ORA + "$D010", 3, false );
+	  addAsm( str_JMP + "!++", 3, false );
+	  addAsm( "!:\t" + str_LDA + "#$FE", 2, true);
+	  break;
+	default:
+	  addCompilerMessage( "spritexy: Invalid sprite number used as IMMEDIATE value... Range is: 0 to 7", 3 );
+	  break;
+	}
+
+      addAsm( str_AND + "$D010", 3, false );
+      addAsm( "!:\t" + str_STA + "$D010", 3, true );
+    }
+  else if( isIMM($3.name) && isXA($6.name) && isIMM($9.name) )
+    {
+      addComment( "spritexy(IMM, XA, IMM): testing" );
+      int sprite_number = atoi( stripFirst($3.name).c_str() );
+      int y_coord = atoi( stripFirst($9.name).c_str() );
+
+      
+      if( isWordIMM($9.name)) addCompilerMessage( "losing high-byte of y-value", 1 );
+
+      if( sprite_number > 7 )
+	{
+	  addCompilerMessage( "spritexy: sprite number out of range [0-7]", 3 );
+	}
+      
+      if( y_coord > 255 )
+	{
+	  addCompilerMessage( "spritexy: y-value out of range", 3 );
+	}
+      else if( y_coord < 9 || y_coord > 248 )
+	{
+	   addCompilerMessage( "spritexy: y-value outside the screen borders", 1 );
+	}
+
+      int sprite_offset = (2 * sprite_number) + 53248;
+
+      addComment( "set the low bytes" );
+      addAsm( "!Xl:\t" + str_LDA + "#$00" + commentmarker + "this will be overwritten", 2, true );
+      addAsm( str_STA + "$" + toHex( sprite_offset ), 3, false );
+      addAsm( str_LDA + "#$" + toHex(y_coord), 2, false );
+      addAsm( str_STA + "$" + toHex( sprite_offset  + 1), 3, false );
+
+      addComment( "set/clear the high bit" );
+      addAsm( "!Xh:\t" + str_LDX + "#$00", 2, true );
+
+      int set_byte = 0;
+      int clr_byte = 0;
+      
+      switch(sprite_number)
+	{
+	case 0:
+	  set_byte = 1;
+	  clr_byte = 254;
+	  break;
+	case 1:
+	  set_byte = 2;
+	  clr_byte = 253;
+	  break;
+	case 2:
+	  set_byte = 4;
+	  clr_byte = 251;
+	  break;
+	case 3:
+	  set_byte = 8;
+	  clr_byte = 247;
+	  break;
+	case 4:
+	  set_byte = 16;
+	  clr_byte = 239;
+	  break;
+	case 5:
+	  set_byte = 32;
+	  clr_byte = 223;
+	  break;
+	case 6:
+	  set_byte = 64;
+	  clr_byte = 191;
+	  break;
+	case 7:
+	  set_byte = 128;
+	  clr_byte = 127;
+	  break;
+	default:
+	  addCompilerMessage( "spritexy: sprite number out of range", 3 );
+	  
+	}
+      
+      addAsm( str_CPX + "#$01", 2, false );     
+      addAsm( str_BEQ + "!+", 2, false );
+      addComment( "clear the high bit" );      
+      addAsm( str_LDA + "#$" + toHex(clr_byte), 2, false );
+      addAsm( str_AND + "$D010", 3, false );
+      addAsm( str_JMP + "!++", 3, false );
+      addAsm( "!:\t" + str_LDA + "#$" + toHex(set_byte), 2, false );
+      addAsm( str_ORA + "$D010", 3, false );     
+      addAsm( "!:\t" + str_STA + "$D010", 3, true );
+    }
+
+  
+  else if( isIMM($3.name) && isWordID($6.name) && isID($9.name) )
+    {
+      addComment( "spritexy(IMM, WordID, ID): testing");
       sprite_address = atoi( stripFirst($3.name).c_str() );
       sprite_address*=2;
       sprite_address+=base_address;
 
-      int addr = hexToDecimal($5.name);
+      int addr = hexToDecimal($6.name);
 
       // 2025 05 04 - mkpellegrino - swapped the order here, of setting y, and x
-      //addAsm( str_LDA + getNameOf(hexToDecimal(stripFirst($7.name).c_str())) , 3, false );
+      //addAsm( str_LDA + getNameOf(hexToDecimal(stripFirst($9.name).c_str())) , 3, false );
       addComment( "set y-coordinate" );
-      addAsm( str_LDA + getNameOf(getAddressOf($7.name)) , 3, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($9.name)) , 3, false );
       addAsm( str_STA + "$" + toHex( sprite_address+1 ), 3, false );
 
       addComment( "set x-coordinate (low)" );
-      addAsm( str_LDA + getNameOf(getAddressOf($5.name)), 3, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($6.name)), 3, false );
       addAsm( str_STA + "$" + toHex( sprite_address ), 3, false );
       //============================================0--0-
       // 9th Bit
       // 2024 05 01 - mkpellegrino
       // 2024 04 27 - mkpellegrino
       addComment( "set or clear x-coordinate (high)" );
-      addAsm( str_LDA + getNameOf( getAddressOf( $5.name )) + " +1", 3, false );
+      addAsm( str_LDA + getNameOf( getAddressOf( $6.name )) + " +1", 3, false );
       addAsm( str_BEQ + "!+", 2, false );
 
       int sprite_number = atoi(stripFirst($3.name).c_str());
@@ -14158,19 +15432,186 @@ statement:
       addAsm( str_AND + "$D010", 3, false );
       addAsm( "!:\t" + str_STA + "$D010", 3, true );
     }
-  else if((isUintIMM($3.name) && isUintIMM($5.name) && isIntID($7.name)) ||
-	  (isUintIMM($3.name) && isUintIMM($5.name) && isUintID($7.name)) )
+  else if(isIMM($3.name) && isIMM($6.name) && isID($9.name) )
     {
-      addComment( "spritexy( UIntIMM, UIntIMM, UIntID );");
+      addComment( "spritexy(IMM, IMM, ID): testing");
 
       sprite_address = atoi( stripFirst($3.name).c_str() );
       sprite_address*=2;
       sprite_address+=base_address;
-      x_coord = atoi( stripFirst($5.name).c_str() );
-      addAsm( str_LDA + "#$" + toHex(x_coord) , 2, false );
+      
+      x_coord = atoi( stripFirst($6.name).c_str() );
+      addAsm( str_LDA + "#$" + toHex(get_word_L(x_coord)) , 2, false );
       addAsm( str_STA + "$" + toHex( sprite_address ), 3, false );
-      //addAsm( str_LDA + getNameOf(hexToDecimal(stripFirst($7.name).c_str())) , 3, false );
-      addAsm( str_LDA + getNameOf(getAddressOf($7.name)) + " +1", 3, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($9.name)), 3, false );
+      addAsm( str_STA + "$" + toHex( sprite_address+1 ), 3, false );
+
+      int sprite_number = atoi( stripFirst($3.name).c_str());
+      if( x_coord < 256 )
+	{
+	  switch( sprite_number )
+	    {
+	    case 0:
+	      addAsm( str_LDA + "#$FE", 2, false );
+	      break;
+	    case 1:
+	      addAsm( str_LDA + "#$FD", 2, false );
+	      break;
+	    case 2:
+	      addAsm( str_LDA + "#$FB", 2, false );
+	      break;
+	    case 3:
+	      addAsm( str_LDA + "#$F7", 2, false );
+	      break;
+	    case 4:
+	      addAsm( str_LDA + "#$EF", 2, false );
+	      break;
+	    case 5:
+	      addAsm( str_LDA + "#$DF", 2, false );
+	      break;
+	    case 6:
+	      addAsm( str_LDA + "#$BF", 2, false );
+	      break;
+	    case 7:
+	      addAsm( str_LDA + "#$7F", 2, false );
+	      break;
+	    default:
+	      addCompilerMessage( "invalid sprite number", 3 );
+	    }
+	  addAsm( str_AND + "$D010", 3, false );
+	}
+      else
+	{
+	  switch( sprite_number )
+	    {
+	    case 0:
+	      addAsm( str_LDA + "#$01", 2, false );
+	      break;
+	    case 1:
+	      addAsm( str_LDA + "#$02", 2, false );
+	      break;
+	    case 2:
+	      addAsm( str_LDA + "#$04", 2, false );
+	      break;
+	    case 3:
+	      addAsm( str_LDA + "#$08", 2, false );
+	      break;
+	    case 4:
+	      addAsm( str_LDA + "#$10", 2, false );
+	      break;
+	    case 5:
+	      addAsm( str_LDA + "#$20", 2, false );
+	      break;
+	    case 6:
+	      addAsm( str_LDA + "#$40", 2, false );
+	      break;
+	    case 7:
+	      addAsm( str_LDA + "#$80", 2, false );
+	      break;
+	    default:
+	      addCompilerMessage( "invalid sprite number", 3 );
+	    }
+	  addAsm( str_ORA + "$D010", 3, false );
+
+	}
+      addAsm( str_STA + "$D010", 3, false );
+    }
+  else if(isIMM($3.name) && isIMM($6.name) && isAXA($9.name) )
+    {
+      addComment( "spritexy(IMM, IMM, AXA): testing");
+      
+      sprite_address = atoi( stripFirst($3.name).c_str() );
+      sprite_address*=2;
+      sprite_address+=base_address;
+      
+      addAsm( str_STA + "$" + toHex( sprite_address+1 ), 3, false );
+
+      x_coord = atoi( stripFirst($6.name).c_str() );
+      addAsm( str_LDA + "#$" + toHex(get_word_L(x_coord)) , 2, false );
+      addAsm( str_STA + "$" + toHex( sprite_address ), 3, false );
+    
+      int sprite_number = atoi( stripFirst($3.name).c_str());
+      if( x_coord < 256 )
+	{
+	  switch( sprite_number )
+	    {
+	    case 0:
+	      addAsm( str_LDA + "#$FE", 2, false );
+	      break;
+	    case 1:
+	      addAsm( str_LDA + "#$FD", 2, false );
+	      break;
+	    case 2:
+	      addAsm( str_LDA + "#$FB", 2, false );
+	      break;
+	    case 3:
+	      addAsm( str_LDA + "#$F7", 2, false );
+	      break;
+	    case 4:
+	      addAsm( str_LDA + "#$EF", 2, false );
+	      break;
+	    case 5:
+	      addAsm( str_LDA + "#$DF", 2, false );
+	      break;
+	    case 6:
+	      addAsm( str_LDA + "#$BF", 2, false );
+	      break;
+	    case 7:
+	      addAsm( str_LDA + "#$7F", 2, false );
+	      break;
+	    default:
+	      addCompilerMessage( "invalid sprite number", 3 );
+	    }
+	  addAsm( str_AND + "$D010", 3, false );
+	}
+      else
+	{
+	  switch( sprite_number )
+	    {
+	    case 0:
+	      addAsm( str_LDA + "#$01", 2, false );
+	      break;
+	    case 1:
+	      addAsm( str_LDA + "#$02", 2, false );
+	      break;
+	    case 2:
+	      addAsm( str_LDA + "#$04", 2, false );
+	      break;
+	    case 3:
+	      addAsm( str_LDA + "#$08", 2, false );
+	      break;
+	    case 4:
+	      addAsm( str_LDA + "#$10", 2, false );
+	      break;
+	    case 5:
+	      addAsm( str_LDA + "#$20", 2, false );
+	      break;
+	    case 6:
+	      addAsm( str_LDA + "#$40", 2, false );
+	      break;
+	    case 7:
+	      addAsm( str_LDA + "#$80", 2, false );
+	      break;
+	    default:
+	      addCompilerMessage( "invalid sprite number", 3 );
+	    }
+	  addAsm( str_ORA + "$D010", 3, false );
+
+	}
+      addAsm( str_STA + "$D010", 3, false );
+    }
+
+  else if( isIMM($3.name) && isByteID($6.name) && isID($9.name) )
+    {
+      addComment( "spritexy(IMM, ByteID, ID): testing");
+      if( isWordID($9.name) ) addCompilerMessage( "spritexy: losing high byte of y-coord", 1 );
+
+      sprite_address = atoi( stripFirst($3.name).c_str() );
+      sprite_address*=2;
+      sprite_address+=base_address;
+      addAsm( str_LDA + getNameOf(getAddressOf($6.name)), 3, false );
+      addAsm( str_STA + "$" + toHex( sprite_address ), 3, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($9.name)), 3, false );
       addAsm( str_STA + "$" + toHex( sprite_address+1 ), 3, false );
 
       int sprite_number = atoi( stripFirst($3.name).c_str());
@@ -14206,21 +15647,17 @@ statement:
       addAsm( str_AND + "$D010", 3, false ); 
       addAsm( str_STA + "$D010", 3, false );
     }
-  else if((isUintIMM($3.name) && isIntID($5.name) && isIntID($7.name)) ||
-	  (isUintIMM($3.name) && isIntID($5.name) && isUintID($7.name)) ||
-	  (isUintIMM($3.name) && isUintID($5.name) && isIntID($7.name)) ||
-	  (isUintIMM($3.name) && isUintID($5.name) && isUintID($7.name)) )
+  else if( isIMM($3.name) && isByteID($6.name) && isAXA($9.name) )
     {
-
-      addComment( "spritexy( UintIMM, UintID, UintID );");
+      addComment( "spritexy(IMM, ByteID, AXA): testing");
+      if( isXA($9.name) ) addCompilerMessage( "spritexy: losing high byte of y-coord", 1 );
 
       sprite_address = atoi( stripFirst($3.name).c_str() );
       sprite_address*=2;
       sprite_address+=base_address;
-      addAsm( str_LDA + getNameOf(getAddressOf($5.name)), 3, false );
+      addAsm( str_STA + "$" + toHex(sprite_address+1) + commentmarker + "y_coord", 3, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($6.name)), 3, false );
       addAsm( str_STA + "$" + toHex( sprite_address ), 3, false );
-      addAsm( str_LDA + getNameOf(getAddressOf($7.name)), 3, false );
-      addAsm( str_STA + "$" + toHex( sprite_address+1 ), 3, false );
 
       int sprite_number = atoi( stripFirst($3.name).c_str());
       switch( sprite_number )
@@ -14255,18 +15692,31 @@ statement:
       addAsm( str_AND + "$D010", 3, false ); 
       addAsm( str_STA + "$D010", 3, false );
     }
-  else if((isUintIMM($3.name) && isIntID($5.name) && isUintIMM($7.name)) ||
-	  (isUintIMM($3.name) && isUintID($5.name) && isUintIMM($7.name)) )
+
+  else if( isIMM($3.name) && isByteID($6.name) && isIMM($9.name) )
     {
-      addComment( "spritexy( UintIMM, UintID, UintIMM );");
+      addComment( "spritexy(IMM, ByteID, IMM): testing" );
+      if( atoi( stripFirst($3.name).c_str()) > 7 )
+	{
+	  addCompilerMessage( "spritexy: sprite number out of range", 3 );
+	}
+
+      if( atoi( stripFirst($9.name).c_str()) > 255 )
+	{
+	  addCompilerMessage( "spritexy: y value out of range", 3 );
+	}
+      else if( atoi( stripFirst($9.name).c_str()) < 9 || atoi( stripFirst($9.name).c_str()) > 248 )
+	{
+	   addCompilerMessage( "spritexy: y value outside the screen borders", 1 );
+	}
 
       sprite_address = atoi( stripFirst($3.name).c_str() );
       sprite_address*=2;
       sprite_address+=base_address;
-      addAsm( str_LDA + getNameOf(getAddressOf($5.name)), 3, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($6.name)), 3, false );
 
       addAsm( str_STA + "$" + toHex( sprite_address ), 3, false );
-      y_coord = atoi( stripFirst($7.name).c_str() );
+      y_coord = atoi( stripFirst($9.name).c_str() );
       addAsm( str_LDA + "#$" + toHex( y_coord), 2, false );
       addAsm( str_STA + "$" + toHex( sprite_address+1 ), 3, false );
 
@@ -14303,110 +15753,208 @@ statement:
       addAsm( str_AND + "$D010", 3, false ); 
       addAsm( str_STA + "$D010", 3, false );
     }
-  else if((isIntID($3.name) && isIntID($5.name) && isIntID($7.name)) ||
-	  (isIntID($3.name) && isIntID($5.name) && isUintID($7.name)) ||
-	  (isIntID($3.name) && isUintID($5.name) && isIntID($7.name)) ||
-	  (isIntID($3.name) && isUintID($5.name) && isUintID($7.name)) ||
-	  (isUintID($3.name) && isIntID($5.name) && isIntID($7.name)) ||
-	  (isUintID($3.name) && isIntID($5.name) && isUintID($7.name)) ||
-	  (isUintID($3.name) && isUintID($5.name) && isIntID($7.name)) ||
-	  (isUintID($3.name) && isUintID($5.name) && isUintID($7.name)) )
+  else if( isID($3.name) && isByteID($6.name) && isID($9.name) )
     {
-      addComment( "spritexy( UIntID, UIntID, UIntID );");
+      addComment( "spritexy(ID, ByteID, ID): testing");
 
       addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
 
       addAsm( str_ASL ); // 2x
       addAsm( str_TAX );
-      addAsm( str_LDA + getNameOf(getAddressOf($5.name)), 3, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($6.name)), 3, false );
       addAsm( str_STA + "$D000,X" + commentmarker + "set the x-coord (low)", 3, false );
-      addAsm( str_INX );
-      addAsm( str_LDA + getNameOf(getAddressOf($7.name)), 3, false );
-      addAsm( str_STA + "$D000,X" + commentmarker + "set the y-coord", 3, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($9.name)), 3, false );
+      addAsm( str_STA + "$D001,X" + commentmarker + "set the y-coord", 3, false );
 
       bin2bit_is_needed = true;
       addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
 
-      addComment( "clear high byte because it's a uintid" );
+      addComment( "clear high byte because it's a byteid" );
       addAsm( str_JSR + "_bin_to_bit", 3, false);
       addAsm( str_EOR + "#$FF", 2, false );
       addAsm( str_AND + "$D010", 3, false );
       addAsm( str_STA + "$D010", 3, false );      
     }
-  else if((isIntID($3.name) && isWordID($5.name) && isIntID($7.name)) ||
-	  (isUintID($3.name) && isWordID($5.name) && isIntID($7.name)) ||
-	  (isIntID($3.name) && isWordID($5.name) && isUintID($7.name)) ||
-	  (isUintID($3.name) && isWordID($5.name) && isUintID($7.name)))
+  else if( isID($3.name) && isByteID($6.name) && isIMM($9.name) )
     {
-      addComment( "spritexy( UIntID, WordID, UIntID ); (still being tested)");
-      addCompilerMessage( "spritexy( UIntID, WordID, UIntID ); (still being tested)", 0 );
+      addComment( "spritexy(ID, ByteID, IMM): testing");
+      int y_coord = atoi( stripFirst($9.name).c_str());
+      if( y_coord > 255 )
+	{
+	  addCompilerMessage( "spritexy: y-value out of range", 3 );
+	}
+      else if( y_coord < 9 || y_coord > 248 )
+	{
+	   addCompilerMessage( "spritexy: y-value outside the screen borders", 1 );
+	}
+
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
+
+      addAsm( str_ASL ); // 2x
+      addAsm( str_TAX );
+      addAsm( str_LDA + getNameOf(getAddressOf($6.name)), 3, false );
+      addAsm( str_STA + "$D000,X" + commentmarker + "set the x-coord (low)", 3, false );
+      addAsm( str_LDA + "#$" + toHex(y_coord), 2, false );
+      addAsm( str_STA + "$D001,X" + commentmarker + "set the y-coord", 3, false );
+
+      bin2bit_is_needed = true;
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
+
+      addComment( "clear high byte because it's a byteid" );
+      addAsm( str_JSR + "_bin_to_bit", 3, false);
+      addAsm( str_EOR + "#$FF", 2, false );
+      addAsm( str_AND + "$D010", 3, false );
+      addAsm( str_STA + "$D010", 3, false );      
+    }
+  else if( isID($3.name) && isByteID($6.name) && isAXA($9.name) )
+    {
+      addComment( "spritexy(ID, ByteID, AXA): testing");
+      if( isXA($9.name) ) addCompilerMessage( "spritexy: dropping high-byte of y_coord", 1 );
+      addAsm( str_TAY, 1, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
+
+      addAsm( str_ASL ); // 2x
+      addAsm( str_TAX );
+      addAsm( str_LDA + getNameOf(getAddressOf($6.name)), 3, false );
+      addAsm( str_STA + "$D000,X" + commentmarker + "set the x-coord (low)", 3, false );
+      addAsm( str_TYA, 1, false );
+      addAsm( str_STA + "$D001,X" + commentmarker + "set the y-coord", 3, false );
+
+      bin2bit_is_needed = true;
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
+
+      addComment( "clear high byte because it's a byteid" );
+      addAsm( str_JSR + "_bin_to_bit", 3, false);
+      addAsm( str_EOR + "#$FF", 2, false );
+      addAsm( str_AND + "$D010", 3, false );
+      addAsm( str_STA + "$D010", 3, false );      
+    }
+  else if( isID($3.name) && isWordID($6.name) && isID($9.name) )
+    {
+      addComment( "spritexy(ID, WordID, ID): testing");
 
       addAsm( str_LDA + getNameOf(hexToDecimal($3.name)) + commentmarker + "sprite number", 3, false );
 
       addAsm( str_ASL ); // 2x
       addAsm( str_TAX );
-      addAsm( str_LDA + getNameOf(hexToDecimal($5.name)), 3, false );
+      addAsm( str_LDA + getNameOf(hexToDecimal($6.name)), 3, false );
       addAsm( str_STA + "$D000,X" + commentmarker + "set the x-coord (bits 1-8)", 3, false );
-      addAsm( str_INX );
-      addAsm( str_LDA + getNameOf(hexToDecimal($7.name)), 3, false );
-      addAsm( str_STA + "$D000,X" + commentmarker + "set the y-coord", 3, false );
+      addAsm( str_LDA + getNameOf(hexToDecimal($9.name)), 3, false );
+      addAsm( str_STA + "$D001,X" + commentmarker + "set the y-coord", 3, false );
 
-      bin2bit_is_needed = true;
-      addComment( "clear high byte because it's a uintid" );
+      
+      addComment( "set or clear high byte" );
       addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
-
+      bin2bit_is_needed = true;
       addAsm( str_JSR + "_bin_to_bit", 3, false);
+
+      addAsm( str_LDX + getNameOf(hexToDecimal($6.name)) + " +1", 3, false );
+      addAsm( str_CPX + "#$01", 2, false );
+      addAsm( str_BEQ + "!+", 2, false );
+      
       addAsm( str_EOR + "#$FF", 2, false );
       addAsm( str_AND + "$D010", 3, false );
-      addAsm( str_STA + "$D010", 3, false );
+      addAsm( str_JMP + "!+", 3, false );
+      addAsm( str_EOR + "$D010", 3, false );      
+      addAsm( "!:\t" + str_STA + "$D010", 3, true );
     }
-  else if((isIntID($3.name) && isUintIMM($5.name) && isUintIMM($7.name)) ||
-	  (isUintID($3.name) && isUintIMM($5.name) && isUintIMM($7.name)) )
+  else if( isID($3.name) && isWordID($6.name) && isIMM($9.name) )
     {
-      addComment( "spritexy( UIntID, UIntIMM, UIntIMM );");
+      addComment( "spritexy(ID, WordID, IMM): testing");
+      int y_coord = atoi( stripFirst($9.name).c_str());
+      if( y_coord > 255 )
+	{
+	  addCompilerMessage( "spritexy: y-value out of range", 3 );
+	}
+      else if( y_coord < 9 || y_coord > 248 )
+	{
+	   addCompilerMessage( "spritexy: y-value outside the screen borders", 1 );
+	}
 
-      addAsm( str_LDA + getNameOf(hexToDecimal($3.name)), 3, false );
+      addAsm( str_LDA + getNameOf(hexToDecimal($3.name)) + commentmarker + "sprite number", 3, false );
 
       addAsm( str_ASL ); // 2x
       addAsm( str_TAX );
-      addAsm( str_LDA + "#$" + toHex(atoi(stripFirst(string($5.name)).c_str())), 2, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($6.name)), 3, false );
       addAsm( str_STA + "$D000,X" + commentmarker + "set the x-coord (bits 1-8)", 3, false );
+      addAsm( str_LDA + "#$" + toHex(y_coord), 2, false );
+      addAsm( str_STA + "$D001,X" + commentmarker + "set the y-coord", 3, false );
 
-      addAsm( str_INX );
-      addAsm( str_LDA + "#$" + toHex(atoi(stripFirst(string($7.name)).c_str())), 2, false );
-      addAsm( str_STA + "$D000,X" + commentmarker + "set the y-coord", 3, false );
-
+      
+      addComment( "set or clear high byte" );
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
       bin2bit_is_needed = true;
-
-      addAsm( str_LDA + getNameOf(hexToDecimal($3.name)), 3, false );
       addAsm( str_JSR + "_bin_to_bit", 3, false);
+
+      addAsm( str_LDX + getNameOf(hexToDecimal($6.name)) + " +1", 3, false );
+      addAsm( str_CPX + "#$01", 2, false );
+      addAsm( str_BEQ + "!+", 2, false );
+      
       addAsm( str_EOR + "#$FF", 2, false );
       addAsm( str_AND + "$D010", 3, false );
-      addAsm( str_STA + "$D010", 3, false );
+      addAsm( str_JMP + "!+", 3, false );
+      addAsm( str_EOR + "$D010", 3, false );      
+      addAsm( "!:\t" + str_STA + "$D010", 3, true );
     }
-  else if((isIntID($3.name) && isWordIMM($5.name) && isUintIMM($7.name)) ||
-	  (isUintID($3.name) && isWordIMM($5.name) && isUintIMM($7.name)) )
+  //else if( isID($3.name) && isUintIMM($6.name) && isIMM($9.name) )
+  //{
+  //  addComment( "spritexy(ID, UintIMM, IMM): testing" );
+  //
+  //  if( atoi( stripFirst($9.name).c_str()) > 255 )
+  //	{
+  //	  addCompilerMessage( "spritexy: y value out of range", 3 );
+  //	}
+  //  else if( atoi( stripFirst($9.name).c_str()) < 9 || atoi( stripFirst($9.name).c_str()) > 248 )
+  //	{
+  //	   addCompilerMessage( "spritexy: y value outside the screen borders", 1 );
+  //	}
+  //
+  //  addAsm( str_LDA + getNameOf(hexToDecimal($3.name)), 3, false );
+  //
+  //  addAsm( str_ASL ); // 2x
+  //  addAsm( str_TAX );
+  //  addAsm( str_LDA + "#$" + toHex(atoi(stripFirst(string($6.name)).c_str())), 2, false );
+  //  addAsm( str_STA + "$D000,X" + commentmarker + "set the x-coord (bits 1-8)", 3, false );
+  //
+  //  addAsm( str_LDA + "#$" + toHex(atoi(stripFirst(string($9.name)).c_str())), 2, false );
+  //  addAsm( str_STA + "$D001,X" + commentmarker + "set the y-coord", 3, false );
+  //
+  //  addComment( "clear the high but because it's a ByteIMM" );
+  //  addAsm( str_LDA + getNameOf(hexToDecimal($3.name)), 3, false );
+  //  bin2bit_is_needed = true;
+  //  addAsm( str_JSR + "_bin_to_bit", 3, false);
+  //  addAsm( str_EOR + "#$FF", 2, false );
+  //  addAsm( str_AND + "$D010", 3, false );
+  //  addAsm( str_STA + "$D010", 3, false );
+  //}
+  else if( isID($3.name) && isIMM($6.name) && isIMM($9.name) )
     {
-      addComment( "spritexy( UIntID, WordIMM, UIntIMM );");
+      addComment( "spritexy(ID, IMM, IMM): testing" );
+
+      if( atoi( stripFirst($9.name).c_str()) > 255 )
+	{
+	  addCompilerMessage( "spritexy: y value out of range", 3 );
+	}
+      else if( atoi( stripFirst($9.name).c_str()) < 9 || atoi( stripFirst($9.name).c_str()) > 248 )
+	{
+	   addCompilerMessage( "spritexy: y value outside the screen borders", 1 );
+	}
       addAsm( str_LDA + getNameOf(hexToDecimal($3.name)), 3, false );
       addAsm( str_TAY, 1, false );
       addAsm( str_ASL ); // 2x
       addAsm( str_TAX );
-      addAsm( str_LDA + "#$" + toHex(get_word_L(atoi(stripFirst(string($5.name)).c_str()))), 2, false );
+      addAsm( str_LDA + "#$" + toHex(get_word_L(atoi(stripFirst(string($6.name)).c_str()))), 2, false );
       addAsm( str_STA + "$D000,X" + commentmarker + "set the x-coord", 3, false );
-      addAsm( str_INX );
-      addAsm( str_LDA + "#$" + toHex(atoi(stripFirst(string($7.name)).c_str())), 2, false );
-      addAsm( str_STA + "$D000,X" + commentmarker + "set the y-coord", 3, false );
+      addAsm( str_LDA + "#$" + toHex(atoi(stripFirst(string($9.name)).c_str())), 2, false );
+      addAsm( str_STA + "$D001,X" + commentmarker + "set the y-coord", 3, false );
 
-      addComment( "clear high byte because it's a uintimm" );
 
       bin2bit_is_needed = true;
       addAsm( str_TYA, 1, false );
       addAsm( str_JSR + "_bin_to_bit", 3, false);
-      int high_byte = get_word_H(atoi(stripFirst(string($5.name)).c_str()));
+      int high_byte = get_word_H(atoi(stripFirst(string($6.name)).c_str()));
       switch( high_byte )
 	{
-	  cerr << high_byte << endl;
 	case 0:
 	  addComment( "clear the high bit" );
 	  addAsm( str_EOR + "#$FF", 2, false );
@@ -14418,21 +15966,93 @@ statement:
 	}
       addAsm( str_STA + "$D010", 3, false );
     }  
-  else if( isUintIMM($3.name) && isWordIMM($5.name) && isUintIMM($7.name))
+  else if( isID($3.name) && isIMM($6.name) && isAXA($9.name) )
     {
-      addComment( "spritexy( UintIMM, WordIMM, UintIMM );");
+      addComment( "spritexy(ID, IMM, AXA): testing" );
+      if( isXA($9.name) ) addCompilerMessage( "spritexy: dropping high-byte of y_coord", 1 );
+      addAsm( str_STA + "!+ +1", 3, false );
+      addAsm( str_LDA + getNameOf(hexToDecimal($3.name)), 3, false );
+      addAsm( str_TAY, 1, false );
+      addAsm( str_ASL ); // 2x
+      addAsm( str_TAX );
+      addAsm( str_LDA + "#$" + toHex(get_word_L(atoi(stripFirst(string($6.name)).c_str()))), 2, false );
+      addAsm( str_STA + "$D000,X" + commentmarker + "set the x-coord", 3, false );
+      addAsm( "!:\t" + str_LDA + "#$00" + commentmarker + "will be overwritten", 2, true );
+      addAsm( str_STA + "$D001,X" + commentmarker + "set the y-coord", 3, false );
+
+
+      bin2bit_is_needed = true;
+      addAsm( str_TYA, 1, false );
+      addAsm( str_JSR + "_bin_to_bit", 3, false);
+      int high_byte = get_word_H(atoi(stripFirst(string($6.name)).c_str()));
+      switch( high_byte )
+	{
+	case 0:
+	  addComment( "clear the high bit" );
+	  addAsm( str_EOR + "#$FF", 2, false );
+	  addAsm( str_AND + "$D010", 3, false );
+	  break;
+	default:
+	  addComment( "set the high bit" );
+	  addAsm( str_ORA + "$D010", 3, false );
+	}
+      addAsm( str_STA + "$D010", 3, false );
+    }  
+  else if( isID($3.name) && isIMM($6.name) && isID($9.name) )
+    {
+      addComment( "spritexy(ID, IMM, ID): testing" );
+      if( isWordID($9.name) ) addCompilerMessage( "spritexy: dropping high-byte of y_coord", 1 );
+      addAsm( str_LDA + getNameOf(hexToDecimal($3.name)), 3, false );
+      addAsm( str_TAY, 1, false );
+      addAsm( str_ASL ); // 2x
+      addAsm( str_TAX );
+      addAsm( str_LDA + "#$" + toHex(get_word_L(atoi(stripFirst(string($6.name)).c_str()))), 2, false );
+      addAsm( str_STA + "$D000,X" + commentmarker + "set the x-coord", 3, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($9.name)), 3, false );
+      addAsm( str_STA + "$D001,X" + commentmarker + "set the y-coord", 3, false );
+
+
+      bin2bit_is_needed = true;
+      addAsm( str_TYA, 1, false );
+      addAsm( str_JSR + "_bin_to_bit", 3, false);
+      int high_byte = get_word_H(atoi(stripFirst(string($6.name)).c_str()));
+      switch( high_byte )
+	{
+	case 0:
+	  addComment( "clear the high bit" );
+	  addAsm( str_EOR + "#$FF", 2, false );
+	  addAsm( str_AND + "$D010", 3, false );
+	  break;
+	default:
+	  addComment( "set the high bit" );
+	  addAsm( str_ORA + "$D010", 3, false );
+	}
+      addAsm( str_STA + "$D010", 3, false );
+    }  
+  else if( isIMM($3.name) && isIMM($6.name) && isIMM($9.name))
+    {
+      addComment( "spritexy(IMM, IMM, IMM): testing" );
+
+      if( atoi( stripFirst($3.name).c_str()) > 7 )
+	addCompilerMessage( "spritexy: sprite number out of range", 3 );
+      if( atoi( stripFirst($9.name).c_str()) > 255 )
+	{
+	  addCompilerMessage( "spritexy: y value out of range", 3 );
+	}
+      else if( atoi( stripFirst($9.name).c_str()) < 9 || atoi( stripFirst($9.name).c_str()) > 248 )
+	{
+	   addCompilerMessage( "spritexy: y value outside the screen borders", 1 );
+	}
       addAsm( str_LDA + "#$" + toHex(atoi(stripFirst($3.name).c_str())), 2, false );
       addAsm( str_ASL, 1, false ); // 2x
       addAsm( str_TAX, 1, false );
-      addAsm( str_LDA + "#$" + toHex(get_word_L(atoi(stripFirst(string($5.name)).c_str()))), 2, false );
+      addAsm( str_LDA + "#$" + toHex(get_word_L(atoi(stripFirst(string($6.name)).c_str()))), 2, false );
       addAsm( str_STA + "$D000,X" + commentmarker + "set the x-coord", 3, false );
-
-      addAsm( str_INX, 1, false );
-      addAsm( str_LDA + "#$" + toHex(atoi(stripFirst($7.name).c_str())), 2, false );
-      addAsm( str_STA + "$D000,X" + commentmarker + "set the y-coord", 3, false );
+      addAsm( str_LDA + "#$" + toHex(atoi(stripFirst($9.name).c_str())), 2, false );
+      addAsm( str_STA + "$D001,X" + commentmarker + "set the y-coord", 3, false );
 
       int sprite_number = atoi( stripFirst($3.name).c_str() );
-      int high_byte = atoi( stripFirst($5.name).c_str())/256;
+      int high_byte = atoi( stripFirst($6.name).c_str())/256;
       bool set;
       bool clear;
 
@@ -14564,6 +16184,7 @@ statement:
     }
   strcpy( $$.name, "_NULL" );
 };
+
 
 // STATEMENT
 | tSPRITECLR '(' expression ')'
