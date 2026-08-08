@@ -18395,8 +18395,6 @@ arithmetic[MATHOP] expression[OP2]
 		addAsm( str_LDA + "#$00", 2, false ); 
 		addAsm( str_STA + "_DIV16_FE", 3, false );
 		addAsm( str_JSR + "DIV16", 3, false );
-		//addAsm( str_LDA + "_DIV16_FB", 3, false );
-		//addAsm( str_LDX + "_DIV16_FC", 3, false );
 		strcpy($$.name, "_A" );
 	      }
 	    else if( op == string( "**" ) )
@@ -18970,6 +18968,7 @@ arithmetic[MATHOP] expression[OP2]
 		addAsm( str_STY + "$02", 2, false );  // 3
 		addAsm( str_LDY + "$03", 2, false );  // 3
 		addAsm( str_STX + "$03", 2, false );  // 3
+		
 		addAsm( str_TAX );               // 2
 		addAsm( str_PLA );               // 4
 		addAsm( str_SBC + "$02", 2, false );  // 3
@@ -21686,7 +21685,14 @@ arithmetic[MATHOP] expression[OP2]
 	    else if( op == string("*"))
 	      {
 		addComment( "IntID * IntIMM -> A" );
-		// TODO: Make this safe for $02/$03
+		if( !arg_unsafe_math )
+		  {
+		    addAsm( str_LDA + "$02", 2, false );
+		    addAsm( str_PHA, 1, false );
+		    addAsm( str_LDA + "$03", 2, false );
+		    addAsm( str_PHA, 1, false );
+		  }
+
 		addAsm( str_LDA + getNameOf(getAddressOf($1.name)), 3, false);	  
 		umul_is_needed = true;
 		int tmp_int = atoi(stripFirst($4.name).c_str());
@@ -21698,7 +21704,20 @@ arithmetic[MATHOP] expression[OP2]
 		addAsm( str_LDA + "#$" + toHex( tmp_int ) , 2, false );
 		addAsm( str_STA + "$03", 2, false );
 		addAsm( str_JSR + "UMUL", 3, false );
-		addAsm( str_LDA + "$03", 2, false );
+
+		if( !arg_unsafe_math )
+		  {
+		    addAsm( str_LDX + "$03", 2, false );
+		    addAsm( str_PLA, 1, false );
+		    addAsm( str_STA + "$03", 2, false );
+		    addAsm( str_PLA, 1, false );
+		    addAsm( str_STA + "$02", 2, false );
+		    addAsm( str_TXA, 1, false );
+		  }
+		else
+		  {
+		    addAsm( str_LDA + "$03", 2, false );
+		  }
 		strcpy($$.name, "_A" );
 	      }
 	    else if( op == string("/") )
@@ -22498,9 +22517,6 @@ arithmetic[MATHOP] expression[OP2]
 	      }
 	    else if( op == string("-") )
 	      {
-		// TODO:   -3 - A (when A is 15) doesn't work.
-		// if this is going to be 16-bit then the high byte
-		// must be set properly
 		addComment( "IntIMM - A --> XA" );
 		addAsm( str_SEC );
 		addAsm( str_STA + "!+", 3, false );
@@ -23464,8 +23480,6 @@ arithmetic[MATHOP] expression[OP2]
 	      }
 	    else if( op == string("-"))
 	      {
-		// TODO: Test this... I'm not sure it's correct
-		// it might be backwards (see IntID - A)
 		addComment( "UintID - A --> A" );
 		addAsm( str_STA + "!+", 3, false );
 		addAsm( str_LDA + O1, sizeOP1A, false );
@@ -23486,8 +23500,6 @@ arithmetic[MATHOP] expression[OP2]
 		addAsm( str_LDA + O1, sizeOP1A, false );
 		addAsm( str_STA + "_MUL16_FD", 3, false );	  
 		addAsm( str_JSR + "MUL16", 3, false );
-		//addAsm( str_LDA + "MUL16R", 3, false );
-		//addAsm( str_LDX + "MUL16R+1", 3, false );
 		strcpy($$.name, "_XA" );
 	      }
 	    else if( op == string("/") )
@@ -23503,8 +23515,6 @@ arithmetic[MATHOP] expression[OP2]
 		addAsm( str_STA + "_DIV16_FB", 3, false );
 	  
 		addAsm( str_JSR + "DIV16", 3, false );
-		//addAsm( str_LDA + "_DIV16_FB", 3, false );
-		//addAsm( str_LDX + "_DIV16_FC", 3, false );
 		strcpy($$.name, "_XA" );
 	      }
 	    else if( op == string("**"))
@@ -30635,7 +30645,6 @@ arithmetic[MATHOP] expression[OP2]
     }
   else if( isWordIMM($3.name))
     {
-      // TODO... test this ... is it correct?
       addComment( "asl( WordIMM (address) ) -> A" );
       addAsm( str_LDA + "$" + toHex(atoi(stripFirst($3.name).c_str())), 3, false );
       addAsm( str_ASL, 1, false );
@@ -30655,7 +30664,6 @@ arithmetic[MATHOP] expression[OP2]
       int a = getAddressOf($3.name);
       int size_of_instruction = 3;
       if( a < 256 ) size_of_instruction = 2;
-      //addAsm( str_CLC, 1, false );
       addAsm( str_LDA + getNameOf(getAddressOf($3.name)), size_of_instruction, false );
       addAsm( str_ASL ); 
       addAsm( str_BCC + "!+", 2, false );
@@ -30704,7 +30712,6 @@ arithmetic[MATHOP] expression[OP2]
   else if( isA($3.name) )
     {
       addComment( "rol( A ) -> A" );
-      //addAsm( str_CLC );
       addAsm( str_ASL, 1, false );
       addAsm( str_BCC + "!+", 2, false );
       addAsm( str_ORA + "#$01", 2, false );
