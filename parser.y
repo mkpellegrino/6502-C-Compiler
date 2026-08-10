@@ -4379,26 +4379,6 @@
     return;
   }
   
-  void saveReturnAddress()
-  {
-    stack_is_needed = true;
-    addAsm( str_PLA );
-    addAsm( str_JSR + string("PUSH"), 3, false);
-    addAsm( str_PLA );
-    addAsm( str_JSR + string("PUSH"), 3, false);
-    return;
-  }
-
-  void restoreReturnAddress()
-  {
-    stack_is_needed = true;
-    addAsm( str_JSR + string("POP"), 3, false );
-    addAsm( str_PHA );
-    addAsm( str_JSR + string("POP"), 3, false );
-    addAsm( str_PHA );
-    return;
-  }
-    
   void yyerror(const char *s);
   int yylex();
   int yywrap();
@@ -4828,29 +4808,20 @@ parameterlist:
     }
   else if( isFloatID($1.name) )
     {
-      // 2024 06 19 - mkpellegrino - Forced var name instead of address
-      // or (even worse) nothing!
       string OP = getNameOf(getAddressOf($1.name));
       if( OP == "" )
 	{
 	  OP = string("$") + toHex(getAddressOf($1.name));
 	}
-
-      // 2024 04 15 - mkpellegrino
-      addAsm( str_LDA + OP, 3, false );
-
-      addAsm( str_PHA, 1, false );
-      addAsm( str_LDA + OP + " +1", 3, false );
-
-      addAsm( str_PHA, 1, false );
-      addAsm( str_LDA + OP + " +2", 3, false );
-      
+      addAsm( str_LDA + OP + " +4", 3, false );
       addAsm( str_PHA, 1, false );
       addAsm( str_LDA + OP + " +3", 3, false );
-      
       addAsm( str_PHA, 1, false );
-      addAsm( str_LDA + OP + " +4", 3, false );
-      
+      addAsm( str_LDA + OP + " +2", 3, false );
+      addAsm( str_PHA, 1, false );
+      addAsm( str_LDA + OP + " +1", 3, false );
+      addAsm( str_PHA, 1, false );
+      addAsm( str_LDA + OP, 3, false );
       addAsm( str_PHA, 1, false );
     }
   else if( isFAC($1.name) )
@@ -4869,7 +4840,6 @@ parameterlist:
 }
 | parameterlist ',' expression
 {
-  addDebugComment(string("Last Parameter: ") + $3.name );
   if( isUintID($3.name) || isIntID($3.name) )
     {
       // 2024 04 14 - mkpellegrino
@@ -5036,10 +5006,7 @@ function: function function
   if( function_argument_count == 0  )
     {
       deletePreviousAsmUntil( "// MARKED_FOR_DELETION" );
-      //addComment( "Deleted Mnemonics" );
-      //addAsm( commentmarker + "NO ARGUMENTS HERE!" );
       addAsm( string($2.name) + ":", 0, true);
-      //addAsm( string($2.name) + ":", 0, true);
     }
   
 } '{' {} body return '}'
@@ -8369,14 +8336,14 @@ statement:
   strcpy( $$.name, "_NULL" );
 };
 
-// ADD STATEMENTS HERE
-// STATEMENT
 | tMEMCPY '(' expression {} ',' expression {} ',' expression {} ')'
 {
   // TODO: Implement all the other types of arguments! - mkpellegrino 20230407
   addComment( string("memcpy(") + $3.name + "," + $6.name + "," + $9.name + ");" );
+  
   if( isWordID($3.name) && isWordID($6.name) && isUintIMM($9.name) )
     {
+      addComment( "memcpy(WordID,WordID,UintIMM)" );
       if( arg_safe_loops )
 	{
 	  addComment( "vvv--- to be safe ---vvv" );
@@ -8420,18 +8387,20 @@ statement:
     }
   else if( isWordIMM($3.name) && isWordIMM($6.name) && isUintIMM($9.name) )
     {
+      addComment( "memcpy(WordIMM,WordIMM,UintIMM)" );
       int addr_src = atoi(stripFirst($3.name).c_str());
       int addr_dst = atoi(stripFirst($6.name).c_str());
       int memcpy_size = atoi(stripFirst($9.name).c_str());
-      if( addr_src > 65536 ) addCompilerMessage("memcpy source out of range",3);
-      if( addr_dst > 65536 ) addCompilerMessage("memcpy destination out of range",3);
-      if( memcpy_size > 255 ) addCompilerMessage("memcpy size out of range",3);
+      
+      if( addr_src > 65535 ) addCompilerMessage("memcpy source out of range",3);
+      if( addr_dst > 65535 ) addCompilerMessage("memcpy destination out of range",3);
+      if( memcpy_size > 254 ) addCompilerMessage("memcpy size out of range",3);
       if( memcpy_size == 0 ) addCompilerMessage("memcpy size out of range",3);
+      if( memcpy_size == 1 ) addCompilerMessage("you should consider something simpler than 'memcpy' here", 1 );
       // ----------------------------------
       // TODO: add another check here to see if the two regions overlap
       if( addr_src > addr_dst )
 	{
-	  if( memcpy_size > 255 ) addCompilerMessage("memcpy size out of range",3);
 	  addComment( "memcpy R->L" );
 	  // use the R->L memcpy
 	  addAsm( str_LDY + "#$00", 2, false );
@@ -8443,18 +8412,26 @@ statement:
 	}
       else
 	{
-	  if( memcpy_size > 254 ) addCompilerMessage("memcpy size out of range for L->R copy",3);
 	  addComment( "memcpy L->R" );	  
 	  // use the L->R memcpy
-	  addAsm( str_LDY + "#$" + toHex(memcpy_size-1), 2, false );
+	  addAsm( str_LDY + "#$" + toHex(memcpy_size), 2, false );
 	  addAsm( "!:\t" + str_LDA + "$" + toHex(addr_src) + ",Y", 3, true );
 	  addAsm( str_STA + "$" + toHex(addr_dst) + ",Y", 3, false );
 	  addAsm( str_DEY, 1, false );
-	  addAsm( str_BPL + "!-", 2, false );
+	  addAsm( str_CPY + "#$FF", 2, false );
+	  addAsm( str_BNE + "!-", 2, false );
 	}
     }
   else if( isWordIMM($3.name) && isWordIMM($6.name) && isUintID($9.name) )
     {
+      int dest_addr = atoi(stripFirst($6.name).c_str());
+      int cpy_size = atoi(stripFirst($9.name).c_str());
+      if( cpy_size > 254 )
+	{
+	  addCompilerMessage( "memcpy: max copy size is 254 bytes", 3 );
+	}
+
+      addComment( "memcpy(WordIMM,WordIMM,UintID)" );
       int addr_src = atoi(stripFirst($3.name).c_str());
       int addr_dst = atoi(stripFirst($6.name).c_str());
       int memcpy_size_addr = getAddressOf($9.name);
@@ -8467,28 +8444,38 @@ statement:
       addAsm( "!:\t" + str_LDA + "$" + toHex(addr_src) + ",Y", 3, true );
       addAsm( str_STA + "$" + toHex(addr_dst) + ",Y", 3, false );
       addAsm( str_DEY, 1, false );
-      addAsm( str_BPL + "!-", 2, false );
+      addAsm( str_CPY + "#$FF", 2, false );
+      addAsm( str_BNE + "!-", 2, false );
       
     }
   else if( isXA( $3.name ) && isWordIMM($6.name) && isUintIMM($9.name) )
     {
       int dest_addr = atoi(stripFirst($6.name).c_str());
       int cpy_size = atoi(stripFirst($9.name).c_str());
+      int cycles = 18 + 17 * cpy_size;
+      if( cpy_size > 254 )
+	{
+	  addCompilerMessage( "memcpy: max copy size is 254 bytes", 3 );
+	}
+      addComment( "memcpy(XA,WordIMM,UintIMM)" );
+      addComment( "  size: 23 bytes" );
+      addComment( "cycles: " + itos(cycles) + " cycles" );
 
       
-      addAsm( str_STA + "$02", 2, false );
-      addAsm( str_STX + "$03", 2, false );
-      addAsm( str_LDA + "#$" + toHex(get_word_L(dest_addr)), 3, false );
-      addAsm( str_STA + "$04", 2, false );
-      addAsm( str_LDA + "#$" + toHex(get_word_H(dest_addr)), 3, false );
-      addAsm( str_STA + "$05", 2, false );
+      addAsm( str_STA + "$02" + commentmarker + "3 cycles", 2, false );
+      addAsm( str_STX + "$03" + commentmarker + "3 cycles", 2, false );
+      addAsm( str_LDA + "#$" + toHex(get_word_L(dest_addr)) + commentmarker + "2 cycles", 3, false );
+      addAsm( str_STA + "$04" + commentmarker + "3 cycles", 2, false );
+      addAsm( str_LDA + "#$" + toHex(get_word_H(dest_addr)) + commentmarker + "2 cycles", 3, false );
+      addAsm( str_STA + "$05" + commentmarker + "3 cycles", 2, false );
+      addAsm( str_LDY + "#$" + toHex(cpy_size) + commentmarker + "2 cycles", 2, false ); // ldy size
+      
+      addAsm( "!:\t" + str_LDA + "($02),Y" + commentmarker + "4* cycles", 2, true);
+      addAsm( str_STA + "($04),Y" + commentmarker + "6 cycles", 2, false); 
 
-      addAsm( str_LDY + "#$" + toHex(atoi(stripFirst($9.name).c_str())), 2, false ); // ldy size
-      addAsm( "!:\t" + str_LDA + "($02),Y", 2, true);
-      addAsm( str_STA + "($04),Y", 2, false); 
-
-      addAsm( str_DEY );
-      addAsm( str_BPL + "!-", 2, false );
+      addAsm( str_DEY + commentmarker + "2 cycles", 1, false );
+      addAsm( str_CPY + "#$FF" + commentmarker + "2 cycles", 2, false );
+      addAsm( str_BNE + "!-" + commentmarker + "2 cycles", 2, false );
     }
   else
     {
@@ -34356,24 +34343,12 @@ int main(int argc, char *argv[])
       addComment( "Get the bitmap mem location from the vic II" );
       addComment( "OPTIMIZE: This address can be hardcoded later" );
       addAsm( "_bmpmem:\t\t", 0, true);
-      //  saveReturnAddress();
-      //addAsm( str_PLA );
-      //addAsm( str_TAX );
-      //addAsm( str_PLA );
-      //addAsm( str_TAY );
       // =================================================================================
       addAsm( str_LDA + "$D018", 3, false );
       addAsm( str_AND + "#$08", 2, false );
-      //addAsm( str_CLC );
       addAsm( str_ASL );
       addAsm( str_ASL );
-      //addAsm( str_PHA );
       // =================================================================================
-      //restoreReturnAddress();
-      //addAsm( str_TYA );
-      //addAsm( str_PHA );
-      //addAsm( str_TXA );
-      //addAsm( str_PHA );
       addAsm( str_RTS );
     }
 
@@ -34383,7 +34358,6 @@ int main(int argc, char *argv[])
       addComment( "OPTIMIZE: This address can be hardcoded later" );
 
       addAsm( "CHRMEM:\t\t", 0, true );
-      //saveReturnAddress();
       addAsm( str_PLA );
       addAsm( str_TAX );
       addAsm( str_PLA );
@@ -34392,12 +34366,10 @@ int main(int argc, char *argv[])
       // =================================================================================
       addAsm( str_LDA + "$D018", 3, false );
       addAsm( str_AND + "#$0E", 2, false );
-      //addAsm( str_CLC );
       addAsm( str_ASL );
       addAsm( str_ASL );
       addAsm( str_PHA );
       // =================================================================================
-      //restoreReturnAddress();
       addAsm( str_TYA );
       addAsm( str_PHA );
       addAsm( str_TXA );
@@ -34408,32 +34380,24 @@ int main(int argc, char *argv[])
 
   if( scrmem_is_needed )
     {
-      //stack_is_needed = true;
       addComment( "Get the screen mem location from the vic II" );
       addComment( "OPTIMIZE: This address can be hardcoded later" );
       addAsm( string("_scrmem:"), 0, true );
-      
-
-      //saveReturnAddress();
       addAsm( str_PLA );
       addAsm( str_TAX );
       addAsm( str_PLA );
       addAsm( str_TAY );
-
       // =================================================================================
       addAsm( str_LDA + "$D018", 3, false );
       addAsm( str_AND + "#$F0", 2, false );
-      //addAsm( str_CLC );
       addAsm( str_LSR );
       addAsm( str_LSR );
       addAsm( str_PHA );
       // =================================================================================
-      //      restoreReturnAddress();
       addAsm( str_TYA );
       addAsm( str_PHA );
       addAsm( str_TXA );
       addAsm( str_PHA );
-
       addAsm( str_RTS );
     }
   if( bnkmem_is_needed )
@@ -34441,17 +34405,14 @@ int main(int argc, char *argv[])
       addComment( "Get the bank memory from the vic II" );
       addComment( "OPTIMIZE: This address can be hardcoded later" );
       addAsm( string("_bnkmem:"), 0, true );
-      //saveReturnAddress();
       addAsm( str_PLA );
       addAsm( str_TAX );
       addAsm( str_PLA );
       addAsm( str_TAY );
-
       // =================================================================================
       addAsm( str_LDA + "$DD00", 3, false );
       addAsm( str_EOR + "#$FF", 2, false );
       addAsm( str_AND + "#$03", 2, false );
-      //addAsm( str_CLC );
       addAsm( str_ASL );
       addAsm( str_ASL );
       addAsm( str_ASL );
@@ -34460,31 +34421,19 @@ int main(int argc, char *argv[])
       addAsm( str_ASL );
       addAsm( str_PHA );
       // =================================================================================
-      //      restoreReturnAddress();
       addAsm( str_TYA );
       addAsm( str_PHA );
       addAsm( str_TXA );
       addAsm( str_PHA );
-
-
-
       addAsm( str_RTS );
     }
     
   if( byte2hex_is_needed )
     {
-      //addComment( "save return address" );
-      //addAsm( "!rx:\t" + str_BYTE + "$00", 1, true );
-      //addAsm( "!ry:\t" + str_BYTE + "$00", 1, true );
       addComment( "Display a Hexadecimal Byte" );
       addAsm( "_byte2hex:", 0, true );
-      //addAsm( str_PLA, 1, false );
-      //addAsm( str_STA + "!rx-", 3, false );
-      //addAsm( str_PLA, 1, false );
-      //addAsm( str_STA + "!ry-", 3, false );
       // =================================================================================
       addAsm( str_CLD );
-      //addAsm( str_PLA );
       addAsm( str_TAX );
       addComment( string("\t") + str_AND + "#$F0" );
       addComment( string("\t") + str_LSR );
@@ -34515,19 +34464,8 @@ int main(int argc, char *argv[])
       addAsm( str_ADC + "#$07", 2, false );
       addAsm( "!:\t" + str_ADC + "#$30", 2, true);
       addAsm( str_JSR + "$FFD2", 3, false );
-
       // =================================================================================
-      //restoreReturnAddress();
-      
-      //addComment( "Restore return address" );
-      //addAsm( str_LDA + "!ry-", 3, false );
-      //addAsm( str_PHA, 1, false );
-      //addAsm( str_LDA + "!rx-", 3, false );
-      //addAsm( str_PHA, 1, false );
-
-      
-      addAsm( str_RTS );
-      
+      addAsm( str_RTS );      
     }
   if( byt2str_is_needed  )
     {
@@ -34600,12 +34538,20 @@ int main(int argc, char *argv[])
     }
   if( decimal_digit_is_needed )
     {
-      // TODO: Fix the "saveReturnAddress" thing
-      addComment( "Turn number on stack into a decimal" );
+      addAsm( "!rx:\t" + str_BYTE + "$00, $00", 2, false );
+      addAsm( "!ry:\t" + str_BYTE + "$00, $00", 2, false );
+      addComment( "Turn number on stack into a decimal" );      
       addAsm( string("_decimal_digit:\t\t"), 0, true );
 
+      // TODO:
+      // this should be modified to:
+      // 1) Not use the stack
+      // 2) Just use A for the return value
       // put return address on the stack
-      saveReturnAddress();
+      addAsm( str_PLA, 1, false );
+      addAsm( str_STA + "!rx-", 3, false );
+      addAsm( str_PLA, 1, false );
+      addAsm( str_STA + "!ry-", 3, false );
       //==================================================================================
       addAsm( str_PLA );
       addAsm( str_TAX );
@@ -34621,23 +34567,16 @@ int main(int argc, char *argv[])
       addAsm( str_PLP );
       addAsm( "!:\t" + str_PHA, 1, true);
       //==================================================================================
-      restoreReturnAddress();
+      addAsm( str_LDA + "!ry-", 3, false );
+      addAsm( str_PHA, 1, false );
+      addAsm( str_LDA + "!rx-", 3, false );
+      addAsm( str_PHA, 1, false );
       addAsm( str_RTS );
     }
   if( div10_is_needed )
     {
       // DIVIDE BY 10 ROUTINE
       addAsm( "_div10:\t" + commentmarker + "Divide value in A by 10", 0, true );
-
-      //addAsm( str_PLA, 1, false );
-      //addAsm( str_TAX, 1, false );
-      //addAsm( str_STA + "!rx-", 3, false );
-      //addAsm( str_PLA, 1, false );
-      //addAsm( str_TAY, 1, false );
-      //addAsm( str_STA + "!ry-", 3, false );
-      //==================================================================================
-      
-      //addAsm( str_PLA );
       if( !arg_unsafe_math)
 	{
 	  addComment( "preserve $2A" );
@@ -34663,14 +34602,6 @@ int main(int argc, char *argv[])
 	  addComment( "restore $2A" );
 	  addAsm( str_STY + "$2A", 2, false );
 	}
-      //addAsm( str_PHA ); // put result on processor stack
-      //==================================================================================
-      //addAsm( str_LDA + "!ry-", 3, false );
-      //addAsm( str_TYA, 1, false );
-      //addAsm( str_PHA, 1, false );
-      //addAsm( str_LDA + "!rx-", 3, false );
-      //addAsm( str_TXA, 1, false );
-      //addAsm( str_PHA, 1, false );
       addAsm( str_RTS );
     }
   if( cls_is_needed )
@@ -34703,39 +34634,14 @@ int main(int argc, char *argv[])
     }
   if( twos_complement_is_needed )
     {
-      //return_addresses_needed = true;
-
       addAsm( string("_twos:\t\t") + commentmarker + string("Two's Complement Function"), 0, true );
-      
-      // get the return address and status flag from the stack
-      // save return address
-
-      //saveReturnAddress();
-      addAsm( str_PLA, 1, false );
-      addAsm( str_TAX, 1, false );
-      //addAsm( str_STA + "!rx-", 3, false );
-      addAsm( str_PLA, 1, false );
-      addAsm( str_TAY, 1, false );
-      //addAsm( str_STA + "!ry-", 3, false );
-   
-      //==================================================================================
-
       addComment( "The argument is pulled off of the stack here" );
       addAsm( str_PLA );
       addAsm( str_EOR + "#$FF", 2, false );
       addAsm( str_CLC );
       addAsm( str_ADC + "#$01", 2, false );
-      addComment( "The return value is pushed onto the stack here" );
-      addAsm( str_PHA );
-      //==================================================================================
-      addAsm( str_TYA, 1, false );
-      addAsm( str_PHA, 1, false );
-      //addAsm( str_LDA + "!rx-", 3, false );
-      addAsm( str_TXA, 1, false );
-      addAsm( str_PHA, 1, false );
-      //restoreReturnAddress();  
+      addComment( "The return value is in A" );
       addAsm( str_RTS );
-
     }
 
   if( new_formatted_printf_is_needed )
@@ -35012,9 +34918,6 @@ int main(int argc, char *argv[])
       addComment( "consistent with the rest of the code." );
       addAsm( str_LDA + "#>_acceptable_text", 2, false );
       addAsm( str_LDX + "#<_acceptable_text", 2, false );
-      //addAsm( str_LDY + "#$26", 2, false );
-      //addComment( "FINPUT");
-      //addAsm( str_STY + "_scanfmaxchars", 3, false );
       addAsm( str_STX + "!++ +1", 3, false ); 
       addAsm( str_STA + "!++ +2", 3, false );
 
@@ -35046,8 +34949,6 @@ int main(int argc, char *argv[])
       addAsm( str_INC + "_inputy" + commentmarker + "Next character", 3, false );
       addAsm( str_LDA + "_inputy", 3, false );
       addAsm( str_CMP + "_scanfmaxchars", 3, false );
-      //addAsm( str_BEQ + "!+", 2, false );
-      //addAsm( str_JMP + "!---", 3, false );
       addAsm( str_BNE + "!---", 3, false );
       addComment("INPUTDONE");
       addAsm("!:\t" + str_LDY + "_inputy", 3, true );
@@ -35063,8 +34964,6 @@ int main(int argc, char *argv[])
       
       addComment("DELETE");
       addAsm( "!:\t" + str_LDA + "_inputy", 3, true );
-      //addAsm( str_BNE + "!+", 2, false );
-      //addAsm( str_JMP + "!-----", 3, false );
       addAsm( str_BEQ + "!-----", 3, false );
       addComment("DELETEOK");
       addAsm( "!:\t" + str_DEC + "_inputy", 3, true );
@@ -35074,8 +34973,6 @@ int main(int argc, char *argv[])
       addAsm( str_LDA + "#$14", 2, false );
       addAsm( str_JSR + "$FFD2", 3, false );
       addAsm( str_JMP + "!------", 3, false );
-
-
       addAsm("_acceptable_text:", 0, true );
       // these are the acceptable characters for scanf
       addComment( "acceptable PETSCII characters for input" );
@@ -35139,16 +35036,7 @@ int main(int argc, char *argv[])
       // puts a keypress on the stack
       addAsm( "_getkey:", 0, true );
       addAsm( str_JSR + "$FFE4", 3, false );
-
-      // 2023 06 07 - maybe take out the following line ??
       addAsm( str_BEQ + "_getkey", 2, false );
-      
-      /* this memory loc could be anywhere */
-      /* I chose $CFDF because it's right */
-      /* before the input buffer for "scanf" */
-
-      // it's in A so this isn't needed
-      //addAsm( str_STA + "$CFDF", 3, false );
       addAsm( str_RTS );
     }
   if(sqrrt8_is_needed)
