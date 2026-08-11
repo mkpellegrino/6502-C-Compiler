@@ -8339,52 +8339,44 @@ statement:
 | tMEMCPY '(' expression {} ',' expression {} ',' expression {} ')'
 {
   // TODO: Implement all the other types of arguments! - mkpellegrino 20230407
-  addComment( string("memcpy(") + $3.name + "," + $6.name + "," + $9.name + ");" );
+  addDebugComment( string("memcpy(") + $3.name + "," + $6.name + "," + $9.name + ");" );
   
   if( isWordID($3.name) && isWordID($6.name) && isUintIMM($9.name) )
     {
       addComment( "memcpy(WordID,WordID,UintIMM)" );
-      if( arg_safe_loops )
-	{
-	  addComment( "vvv--- to be safe ---vvv" );
-	  addAsm( str_LDA + "$02", 2, false );
-	  addAsm( str_PHA );
-	  addAsm( str_LDA + "$03", 2, false );
-	  addAsm( str_PHA );
-	  addAsm( str_LDA + "$FB", 2, false );
-	  addAsm( str_PHA );
-	  addAsm( str_LDA + "$FC", 2, false );
-	  addAsm( str_PHA );
-	  addComment( "^^^------------------^^^" );
-	}
-      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
-      addAsm( str_STA + "$02", 2, false );
-      addAsm( str_LDA + getNameOf(getAddressOf($3.name))+" +1", 3, false );
-      addAsm( str_STA + "$03", 2, false );
-      addAsm( str_LDA + getNameOf(getAddressOf($6.name)), 3, false );
-      addAsm( str_STA + "$FB", 2, false );
-      addAsm( str_LDA + getNameOf(getAddressOf($6.name))+" +1", 3, false );
-      addAsm( str_STA + "$FC", 2, false );
-
       addAsm( str_LDY + "#$" + toHex(atoi(stripFirst($9.name).c_str())), 2, false );
-      addAsm( "!:\t" + str_LDA + "($02),Y", 2, true);
-      addAsm( str_STA + "($FB),Y", 2, false); 
-      addAsm( str_DEY );
-      addAsm( str_BPL + "!-", 2, false );
-      if( arg_safe_loops )
-	{
-	  addComment( "vvv--- to be safe ---vvv" );
-	  addAsm( str_PLA );
-	  addAsm( str_STA + "$FC", 2, false );
-	  addAsm( str_PLA );
-	  addAsm( str_STA + "$FB", 2, false );
-	  addAsm( str_PLA );
-	  addAsm( str_STA + "$03", 2, false );
-	  addAsm( str_PLA );
-	  addAsm( str_STA + "$02", 2, false );
-	  addComment( "^^^------------------^^^" );
-	}
+      addAsm( "!:\t" + str_LDA + getNameOf(getAddressOf($3.name))+ ",Y", 3, true );
+      addAsm( str_STA + getNameOf(getAddressOf($6.name)) + ",Y", 3, false );      
+      addAsm( str_DEY, 1, false );
+      addAsm( str_CPY + "#$FF", 2, false );
+      addAsm( str_BNE + "!-", 2, false );
     }
+  else if( isWordIMM($3.name) && isWordID($6.name) && isUintIMM($9.name) )
+    {
+      addComment( "memcpy(WordIMM,WordID,UintIMM)" );
+      int addr_src = atoi(stripFirst($3.name).c_str());
+      int memcpy_size = atoi(stripFirst($9.name).c_str());
+      
+      if( addr_src > 65535 ) addCompilerMessage("memcpy source out of range",3);
+      if( memcpy_size > 254 ) addCompilerMessage("memcpy size out of range",3);
+      if( memcpy_size == 0 ) addCompilerMessage("memcpy size out of range",3);
+      if( memcpy_size == 1 ) addCompilerMessage("you should consider something simpler than 'memcpy' here", 1 );
+      addAsm( str_LDA + getNameOf(getAddressOf($6.name)), 3, false );
+      addAsm( str_STA + "!++", 3, false );
+      addAsm( str_LDA + getNameOf(getAddressOf($6.name)) + " +1", 3, false );
+      addAsm( str_STA + "!+++", 3, false );
+      
+      addAsm( str_LDY + "#$" + toHex(memcpy_size), 2, false );
+      addAsm( "!:\t" + str_LDA + "$" + toHex(addr_src) + ",Y", 3, true );
+      addAsm( str_BYTE + "$99" + commentmarker + "STA abs,Y\t5 cycles", 1, true );
+      addAsm( "!:\t" + str_BYTE + "$00", 1, true );
+      addAsm( "!:\t" + str_BYTE + "$00", 1, true );
+
+      addAsm( str_DEY, 1, false );
+      addAsm( str_CPY + "#$FF", 2, false );
+      addAsm( str_BNE + "!---", 2, false );
+    }
+
   else if( isWordIMM($3.name) && isWordIMM($6.name) && isUintIMM($9.name) )
     {
       addComment( "memcpy(WordIMM,WordIMM,UintIMM)" );
@@ -8452,30 +8444,24 @@ statement:
     {
       int dest_addr = atoi(stripFirst($6.name).c_str());
       int cpy_size = atoi(stripFirst($9.name).c_str());
-      int cycles = 18 + 17 * cpy_size;
+      int cycles = 10 + 16 * cpy_size;
       if( cpy_size > 254 )
 	{
 	  addCompilerMessage( "memcpy: max copy size is 254 bytes", 3 );
 	}
       addComment( "memcpy(XA,WordIMM,UintIMM)" );
-      addComment( "  size: 23 bytes" );
+      addComment( "  size: 19 bytes" );
       addComment( "cycles: " + itos(cycles) + " cycles" );
-
-      
-      addAsm( str_STA + "$02" + commentmarker + "3 cycles", 2, false );
-      addAsm( str_STX + "$03" + commentmarker + "3 cycles", 2, false );
-      addAsm( str_LDA + "#$" + toHex(get_word_L(dest_addr)) + commentmarker + "2 cycles", 3, false );
-      addAsm( str_STA + "$04" + commentmarker + "3 cycles", 2, false );
-      addAsm( str_LDA + "#$" + toHex(get_word_H(dest_addr)) + commentmarker + "2 cycles", 3, false );
-      addAsm( str_STA + "$05" + commentmarker + "3 cycles", 2, false );
+      addAsm( str_STA + "!++" + commentmarker + "4 cycles", 2, false );
+      addAsm( str_STX + "!+++" + commentmarker + "4 cycles", 2, false );
       addAsm( str_LDY + "#$" + toHex(cpy_size) + commentmarker + "2 cycles", 2, false ); // ldy size
-      
-      addAsm( "!:\t" + str_LDA + "($02),Y" + commentmarker + "4* cycles", 2, true);
-      addAsm( str_STA + "($04),Y" + commentmarker + "6 cycles", 2, false); 
-
+      addAsm( "!:\t" + str_BYTE + "$B9" + commentmarker + "LDA abs,Y\t5 cycles", 1, true );
+      addAsm( "!:\t" + str_BYTE + "$00", 1, true );
+      addAsm( "!:\t" + str_BYTE + "$00", 1, true );
+      addAsm( str_STA + "$" + toHex(dest_addr) + ",Y" + commentmarker + "5 cycles", 3, false );
       addAsm( str_DEY + commentmarker + "2 cycles", 1, false );
       addAsm( str_CPY + "#$FF" + commentmarker + "2 cycles", 2, false );
-      addAsm( str_BNE + "!-" + commentmarker + "2 cycles", 2, false );
+      addAsm( str_BNE + "!---" + commentmarker + "2 cycles", 2, false );
     }
   else
     {
