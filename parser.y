@@ -13967,8 +13967,9 @@ spritexy(UintID, XA, WordID)
 {
   if(isXA($3.name))
     {
-      deletePreviousAsm();
-      addCompilerMessage( "spritexy(): dropping high byte of Sprite Number (the X)", 1 );
+      addComment( "OPTIMIZE" );
+      //deletePreviousAsm();
+      //addCompilerMessage( "spritexy(): dropping high byte of Sprite Number (the X)", 1 );
 
     }
   if(isA($3.name)||isXA($3.name))
@@ -25209,17 +25210,20 @@ arithmetic[MATHOP] expression[OP2]
 		int tmp_int = atoi(stripFirst($1.name).c_str());
 		if( tmp_int == 0 )
 		  {
+		    addComment( "UintIMM * UintID --> XA" );
 		    addComment( "Special Case: 0 * UintID -> XA" );
 		    addAsm( str_LAX + "#$00", 2, false );
 		  }	  
 		else if( tmp_int == 1 )
 		  {
+		    addComment( "UintIMM * UintID --> XA" );
 		    addComment( "Special Case: 1 * UintID -> XA" );
 		    addAsm( str_LDX + "#$00", 2, false );
 		    addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false );
 		  }	  
 		else if( tmp_int == 2 )
 		  {
+		    addComment( "UintIMM * UintID --> XA" );
 		    // tested for 0 - 254
 		    addComment( "Special Case: 2 * UintID -> XA" );
 		    addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false );
@@ -25232,6 +25236,7 @@ arithmetic[MATHOP] expression[OP2]
 		  }
 		else if( tmp_int == 4 )
 		  {
+		    addComment( "UintIMM * UintID --> XA" );
 		    addComment( "Special Case: 4 * UintID -> XA" );
 		    addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false );
 		    addAsm( str_ASL, 1, false );
@@ -25249,6 +25254,7 @@ arithmetic[MATHOP] expression[OP2]
 		  }
 		else if( tmp_int == 8 )
 		  {
+		    addComment( "UintIMM * UintID --> XA" );
 		    addComment( "Special Case: 8 * UintID -> XA" );
 		    addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false );
 		    addAsm( str_ASL, 1, false );
@@ -25272,6 +25278,7 @@ arithmetic[MATHOP] expression[OP2]
 		  }
 		else if( tmp_int == 16 )
 		  {
+		    addComment( "UintIMM * UintID --> XA" );
 		    addComment( "Special Case: 16 * UintID -> XA" );
 		    addAsm( str_LDX + "#$00", 2, false );
 		    addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false );
@@ -25287,6 +25294,7 @@ arithmetic[MATHOP] expression[OP2]
 		  }
 		else if( tmp_int == 32 )
 		  {
+		    addComment( "UintIMM * UintID --> XA" );
 		    // TODO: I think this could be optimized for both size and speed
 		    addComment( "Special Case: 32 * UintID -> XA" );
 		    addAsm( str_LDX + "#$00" + commentmarker + "(2 clock cycles)", 2, false );
@@ -25311,6 +25319,7 @@ arithmetic[MATHOP] expression[OP2]
 		  }
 		else if( tmp_int == 64 )
 		  {
+		    addComment( "UintIMM * UintID --> XA" );
 		    // TODO: I think this could be optimized for both size and speed
 		    addComment( "Special Case: 64 * UintID -> XA" );
 		    addAsm( str_LDX + "#$00" + commentmarker + "(2 clock cycles)", 2, false );
@@ -25339,6 +25348,7 @@ arithmetic[MATHOP] expression[OP2]
 		  {
 		    // TODO: I think this could be optimized for both size and speed
 		    // maybe AND #$01, the ROR, ROR
+		    addComment( "UintIMM * UintID --> XA" );
 		    addComment( "Special Case: 128 * UintID -> XA (24 bytes - 43 clock cycles)" );
 		    addAsm( str_LDX + "#$00" + commentmarker + "(2 clock cycles)", 2, false );
 		    addAsm( str_LDA + getNameOf(getAddressOf($4.name)) + commentmarker + "(4)", 3, false );
@@ -27284,8 +27294,6 @@ arithmetic[MATHOP] expression[OP2]
 		addAsm( str_LDA + "#$" + toHex(get_word_H(op2)), 2, false  );      
 		addAsm( str_STA + "_DIV16_FE", 3, false );
 		addAsm( str_JSR + "DIV16", 3, false );
-		//addAsm( str_LDA + "_DIV16_FB", 3, false );
-		//addAsm( str_LDX + "_DIV16_FC", 3, false );
 		strcpy($$.name, "_XA" );
 	      }
 	    else if( op == string("*") )
@@ -28188,10 +28196,56 @@ arithmetic[MATHOP] expression[OP2]
 		switch( tmp_int )
 		  {
 		  case 0:
+		    addComment( "Special Case: 0x0000 * UintID" );
 		    addAsm( str_LAX + "#$00", 2, false );
 		    strcpy($$.name, "_XA" );
 		    break;
+		  case 1:
+		    addComment( "Special Case: 0x0001 * UintID" );
+		    addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false);
+		    addAsm( str_LDX + "#$00", 2, false );		    
+		    strcpy($$.name, "_XA" );
+		    break;
 		  case 256:
+		    addComment( "Special Case: 0x0100 * UintID" );
+		    addAsm( str_LDX + getNameOf(getAddressOf($4.name)), 3, false);
+		    addAsm( str_LDA + "#$00", 2, false );
+		    strcpy($$.name, "_XA" );
+		    break;
+		  case 512:
+		    addComment( "Special Case: 0x0200 * UintID" );
+		    addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false);
+		    addAsm( str_ASL, 1, false );
+		    addAsm( str_TAX, 1, false );
+		    addAsm( str_LDA + "#$00", 2, false );
+		    strcpy($$.name, "_XA" );
+		    break;
+		  case 1024:
+		    addComment( "Special Case: 0x0400 * UintID" );
+		    addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false);
+		    addAsm( str_ASL, 1, false );
+		    addAsm( str_ASL, 1, false );
+		    addAsm( str_TAX, 1, false );
+		    addAsm( str_LDA + "#$00", 2, false );
+		    strcpy($$.name, "_XA" );
+		    break;
+		  case 2048:
+		    addComment( "Special Case: 0x0400 * UintID" );
+		    addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false);
+		    addAsm( str_ASL, 1, false );
+		    addAsm( str_ASL, 1, false );
+		    addAsm( str_ASL, 1, false );
+		    addAsm( str_TAX, 1, false );
+		    addAsm( str_LDA + "#$00", 2, false );
+		    strcpy($$.name, "_XA" );
+		    break;
+		  case 4096:
+		    addComment( "Special Case: 0x0400 * UintID" );
+		    addAsm( str_LDA + getNameOf(getAddressOf($4.name)), 3, false);
+		    addAsm( str_ASL, 1, false );
+		    addAsm( str_ASL, 1, false );
+		    addAsm( str_ASL, 1, false );
+		    addAsm( str_ASL, 1, false );
 		    addAsm( str_TAX, 1, false );
 		    addAsm( str_LDA + "#$00", 2, false );
 		    strcpy($$.name, "_XA" );
@@ -28207,8 +28261,6 @@ arithmetic[MATHOP] expression[OP2]
 		    addAsm( str_STA + "_MUL16_FD", 3, false);
 		    addAsm( str_STX + "_MUL16_FE", 3, false);
 		    addAsm( str_JSR + "MUL16", 3, false );
-		    //addAsm( str_LDA + "MUL16R", 3, false );
-		    //addAsm( str_LDX + "MUL16R +1", 3, false );
 		    strcpy($$.name, "_XA" );
 		  }
 	      }
@@ -28225,8 +28277,6 @@ arithmetic[MATHOP] expression[OP2]
 		addAsm( str_STA + "_DIV16_FD", 3, false);
 		addAsm( str_STX + "_DIV16_FE", 3, false);
 		addAsm( str_JSR + "DIV16", 3, false );
-		//addAsm( str_LDA + "_DIV16_FB", 3, false );
-		//addAsm( str_LDX + "_DIV16_FC", 3, false );
 		strcpy($$.name, "_XA" );
 	      }
 	    else if( op == string( "**" ) )
@@ -28535,8 +28585,6 @@ arithmetic[MATHOP] expression[OP2]
 		    addAsm( str_STA + "_MUL16_FD", 3, false);
 		    addAsm( str_STX + "_MUL16_FE", 3, false);
 		    addAsm( str_JSR + "MUL16", 3, false );
-		    //addAsm( str_LDA + "MUL16R", 3, false );
-		    //addAsm( str_LDX + "MUL16R +1", 3, false );
 		  }
 		strcpy($$.name, "_XA" );
 	      }
@@ -28553,8 +28601,6 @@ arithmetic[MATHOP] expression[OP2]
 		addAsm( str_STA + "_DIV16_FD", 3, false);
 		addAsm( str_STX + "_DIV16_FE", 3, false);
 		addAsm( str_JSR + "DIV16", 3, false );
-		//addAsm( str_LDA + "_DIV16_FB", 3, false );
-		//addAsm( str_LDX + "_DIV16_FC", 3, false );
 		strcpy($$.name, "_XA" );
 	      }
 	    else if( op == string( "**" ) )
