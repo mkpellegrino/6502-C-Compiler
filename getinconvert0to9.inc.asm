@@ -1,3 +1,4 @@
+
 	// converts the keypresses (digits 0-9)
 	// into values in A
 	// the starting value of A should contain:
@@ -5,6 +6,9 @@
 	// which correspond to the getin value of
 	// when the following keys are pressed:
 	//  1,  2,  3,  4,  5,  6,  7,  8,  9,  0
+	//
+	// 35 Cycles plus 12 for JSR and RTS
+	// 24 Bytes plus 4 for JSR and RTS
 getinConvert0to9:
 	clc
 	lsr
