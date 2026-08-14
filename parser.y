@@ -930,13 +930,6 @@
     if( l == 1 || l == 3) return_value = string("0") + return_value;
     return return_value;
   }
-
-  //  string character2value( char a )
-  //{
-  // 
-  //
-  //
-  //}
   
   string ascii2petscii( int a )
   {
@@ -8440,17 +8433,20 @@ statement:
     }
   strcpy( $$.name, "_NULL" );
 };
-
-
-| tPOKE '(' expression {addAsm("// MARKED_FOR_DELETION", 0, true);addComment( "mid-rule action");if(isXA($3.name)){stack_is_needed=true;addAsm(str_JSR+"PUSH",3,false);addAsm(str_TXA); addAsm(str_JSR+"PUSH",3,false);}} ',' expression {} ')'
+//| tPOKE '(' expression {addAsm("// MARKED_FOR_DELETION", 0, true);addComment( "mid-rule action");if(isXA($3.name)){addAsm(str_JSR+"PUSH",3,false);addAsm(str_TXA); addAsm(str_JSR+"PUSH",3,false);}} ',' expression {} ')'
+| tPOKE '(' expression {addAsm("// MARKED_FOR_DELETION", 0, true);addComment( "mid-rule action");if(isXA($3.name)){addAsm(str_PHA,1,false);addAsm(str_TXA); addAsm(str_PHA,1,false);}} ',' expression {} ')'
 {
   // this makes it easier to change the number of sub-parameters
   string param1 = string($3.name);
   string param2 = string($6.name);
 
   // TODO: Split this out into 2 different sections
-  addDebugComment( "poke( expresion, expression );" );
-  if( isWordID(param1) && (isUintID(param2) || isIntID(param2)) )
+  if( isIntIMM(param2) )
+    {
+      addCompilerMessage( "poke: invalid value [0-255]", 3 );
+    }
+  
+  else if( isWordID(param1) && (isUintID(param2) || isIntID(param2)) )
     {
       // TODO: this seems to be broken
       addComment( "poke( WordID, UintID );" );
@@ -8481,12 +8477,12 @@ statement:
     }
   else if( isXA(param1) && isA(param2))
     {
-      addComment( "poke( XA, A );" );
-      addAsm( str_TAY ); 
-      addAsm( str_JSR + "POP", 3, false );
-      addAsm( str_STA + "!++", 3, false ); // X
-      addAsm( str_JSR + "POP", 3, false );
-      addAsm( str_STA + "!+", 3, false ); // A      
+      addComment( "poke( XA, A ): new version without software stack" );
+      addAsm( str_TAY, 1, false );
+      addAsm( str_PLA, 1, false );      
+      addAsm( str_STA + "!++", 3, false );
+      addAsm( str_PLA, 1, false );
+      addAsm( str_STA + "!+", 3, false );
       addAsm( str_BYTE + "$8C" + commentmarker + "<-- STY abs", 1, false );
       addAsm( "!:\t" + str_BYTE + "$00", 1, true );
       addAsm( "!:\t" + str_BYTE + "$00", 1, true );
@@ -8497,7 +8493,7 @@ statement:
       addComment( "deleted previous 3 instructions" );
       //addCompilerMessage( "Deleted Mnemonics", 0 );
 
-      addComment( "poke( XA, UIntID )" );
+      addComment( "poke( XA, UintID )" );
       
       int valu_addr = getAddressOf(param2);
       string value_name = getNameOf(valu_addr);
@@ -8511,7 +8507,7 @@ statement:
       addAsm( "!:\t" + str_BYTE + "$00", 1, true );
       addAsm( "!:\t" + str_BYTE + "$00", 1, true );
     }
-  else if( isXA(param1) && (isUintIMM(param2) || isIntIMM(param2)) )
+  else if( isXA(param1) && isUintIMM(param2) )
     {
       deletePreviousAsmUntil( "// MARKED_FOR_DELETION");
       addComment( "^^^--- deleted instructions ---^^^" );
@@ -8525,7 +8521,7 @@ statement:
       addAsm( "!:\t" + str_BYTE + "$00", 1, true );
       addAsm( "!:\t" + str_BYTE + "$00", 1, true );
     }
-  else if( isWordID(param1) && (isUintIMM(param2) || isIntIMM(param2)) )
+  else if( isWordID(param1) && isUintIMM(param2) )
     {
       addComment( "poke(WordID, UintIMM);" );
 
@@ -8554,7 +8550,7 @@ statement:
       addAsm( "!:\t" + str_BYTE + "$00", 1, true );
       addAsm( "!:\t" + str_BYTE + "$00", 1, true );
     }
-  else if( isUintID(param1) && (isUintIMM(param2) || isIntIMM(param2)) )
+  else if( isUintID(param1) && isUintIMM(param2) )
     {
       addComment( "poke(UintID, UintIMM);" );
 
@@ -8584,9 +8580,9 @@ statement:
       if( addr < 256 ) instr_size = 2;
       addAsm( str_STA + "$" + toHex( addr ), instr_size, false );
     }
-  else if( isWordIMM(param1) && (isUintIMM(param2) || isIntIMM(param2)) )
+  else if( isWordIMM(param1) && isUintIMM(param2) )
     {
-      addComment("poke(WordIMM, UIntIMM);");
+      addComment("poke(WordIMM, UintIMM);");
       int addr = atoi( stripFirst(param1).c_str() );
       if( addr < 0 || addr > 65536 ) addCompilerMessage( "address out of range [0,65535]", 3 );
 
@@ -8650,10 +8646,6 @@ statement:
   else if(isIntIMM(param1))
     {
       addCompilerMessage( "poke address out of range (it's negative)", 3 );
-    }
-  else if(isIntIMM(param2))
-    {
-      addCompilerMessage( "poke argument out of range (it's negative)", 3 );
     }
   else if(isFloatIMM(param1)||isFAC(param1)||isFloatID(param1))
     {
@@ -16892,7 +16884,14 @@ spritexy(UintID, XA, WordID)
   addParserComment( "RULE: statement: ID init" );
 
   // TODO: add more variable initalisations with different types
-  if( isWordID(_id) && isA(_init) )
+  if( isWordID(_id) && isString(_init) )
+    {
+      addComment( "WordID = STR" );
+      addAsm( str_STA + getNameOf(getAddressOf($1.name)), 3, false );
+      addAsm( str_STX + getNameOf(getAddressOf($1.name)) + " +1", 3, false );
+      
+    }
+  else if( isWordID(_id) && isA(_init) )
     {
       addComment("WordID = A" );
       int addr = getAddressOf(_id);
@@ -16994,8 +16993,7 @@ spritexy(UintID, XA, WordID)
       //addCompilerMessage( stripFirst(_init).c_str(), 3 );
       int tmp = atoi( stripFirst(_init).c_str() ) ;
       addAsm( str_LDA + "#$" + toHex(twos_complement(tmp)), 2, false );
-      addAsm( str_STA + getNameOf(getAddressOf(_id)), 3, false );
-      
+      addAsm( str_STA + getNameOf(getAddressOf(_id)), 3, false );      
     }
   else if( isUintID(_id) && isA(_init) )
     {
@@ -17578,7 +17576,6 @@ init: '=' expression
     }
   else if( isString($2.name) )
     {
-      
       strcpy($$.name, $2.name );
     }
   else
@@ -31403,26 +31400,18 @@ arithmetic[MATHOP] expression[OP2]
 {
   string arg0 = string($3.name);
   string arg1 = string($6.name);
-  stack_is_needed = true;
   addComment( "Save $02, $03, $5C, and $5D" );
 
-  if( isA( arg1.c_str() ))
-    {
-      addAsm( str_TAY );
-    }
-  addAsm( str_LDA + "$02", 2, false );
-  addAsm( str_JSR + "PUSH", 3, false );
-  addAsm( str_LDA + "$03", 2, false );
-  addAsm( str_JSR + "PUSH", 3, false );
-  addAsm( str_LDA + "$5C", 2, false );
-  addAsm( str_JSR + "PUSH", 3, false );
-  addAsm( str_LDA + "$5D", 2, false );
-  addAsm( str_JSR + "PUSH", 3, false );
 
-  if( isA($6.name) )
-    {
-      addAsm( str_TYA );
-    }
+  addAsm( str_LDX + "$02", 2, false );
+  addAsm( str_STX + "!+ +1", 3, false );
+  addAsm( str_LDX + "$03", 2, false );
+  addAsm( str_STX + "!++ +1", 3, false );
+  addAsm( str_LDX + "$5C", 2, false );
+  addAsm( str_STX + "!+++ +1", 3, false );
+  addAsm( str_LDX + "$5D", 2, false );
+  addAsm( str_STX + "!++++ +1", 3, false );
+  
   
   if(isWordID($3.name) && (isUintID($6.name)||isIntID($6.name)) )
     {
@@ -31485,20 +31474,19 @@ arithmetic[MATHOP] expression[OP2]
   addAsm( str_LDA + "($02),Y", 2, false );
   getplot_is_needed = true;
 
-  // 2024 05 22 - mkpellegrino
-  addAsm( str_TAY );
-  //addAsm( str_PHA );
-  addAsm( str_JSR + "POP", 3, false );
-  addAsm( str_STA + "$5D", 2, false );
-  addAsm( str_JSR + "POP", 3, false );
-  addAsm( str_STA + "$5C", 2, false );
-  addAsm( str_JSR + "POP", 3, false );
-  addAsm( str_STA + "$03", 2, false );
-  addAsm( str_JSR + "POP", 3, false );
-  addAsm( str_STA + "$02", 2, false );
 
-  //addAsm( str_PLA );
-  addAsm( str_TYA );
+  addAsm( "!:\t" + str_LDX + "#$00" + commentmarker + "will be overwritten", 2, true );
+  addAsm( str_STX + "$02", 2, false );
+
+  addAsm( "!:\t" + str_LDX + "#$00" + commentmarker + "will be overwritten", 2, true );
+  addAsm( str_STX + "$03", 2, false );
+
+  addAsm( "!:\t" + str_LDX + "#$00" + commentmarker + "will be overwritten", 2, true );
+  addAsm( str_STX + "$5C", 2, false );
+
+  addAsm( "!:\t" + str_LDX + "#$00" + commentmarker + "will be overwritten", 2, true );
+  addAsm( str_STX + "$5D", 2, false );
+
   strcpy( $$.name, "_A" );  
 }
 | tGETBANK '(' ')'
