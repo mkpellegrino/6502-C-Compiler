@@ -316,6 +316,10 @@
   bool sqrrt8_is_needed = false;
   //bool function_return_value=false;
   int if_depth = 0;
+  int for_depth = 0;
+  int while_depth = 0;
+  
+  int cond_depth = 0;
   
   bool processing_includes = false;
   
@@ -326,11 +330,14 @@
   int label_major=0;
 
   // command line arguments
+  bool arg_unsafe_loops=true;
   bool arg_safe_loops=false;
   bool arg_show_opt=true;
   bool arg_memory_locations=false;
   bool arg_unsafe_ifs=false;
+  bool arg_safe_ifs=true;
   bool arg_unsafe_math=false;
+  bool arg_safe_math=true;
   bool arg_show_labels=true;
   bool arg_asm_comments=true;
   bool arg_show_cycles=false;
@@ -896,6 +903,7 @@
   {
     return string(s).substr(1,string(s).length()-2);
   }
+  
   // converts an integer into a string (in Hexadecimal)
   // (the hard way)
   string toHex( int i )
@@ -2179,10 +2187,9 @@
 		asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+1);
 	      }
 	  }
-
       }
 
-    if( asm_instr.size() > 2 && 1 )
+    if( asm_instr.size() > 2 && true )
       {
 	for( int j = 0; j < 3; j++ )
 	  {
@@ -2196,6 +2203,91 @@
 	      }
 	  }
       }
+  }
+
+
+  int fixAdditions()
+  {
+    if( asm_instr.size() > 10 && true )
+      {
+	addOptimizationMessage( "checking for extra stack manipulations in WORD additions", 0, -1);
+	for( int i=0; i<asm_instr.size()-1; i++ )
+	  {
+	    if(
+	       
+	       (cmpstr(asm_instr[i+0]->getString(), string( "!:\t") + str_ADC ) &&
+	       cmpstr(asm_instr[i+1]->getString(), str_TAY) &&	       
+	       cmpstr(asm_instr[i+2]->getString(), str_TXA) &&
+	       cmpstr(asm_instr[i+3]->getString(), str_ADC) &&
+	       cmpstr(asm_instr[i+4]->getString(), str_TAX) &&
+	       cmpstr(asm_instr[i+5]->getString(), str_TYA) &&
+	       cmpstr(asm_instr[i+6]->getString(), str_STA) &&
+		cmpstr(asm_instr[i+7]->getString(), str_STX) ) ||
+
+	       (cmpstr(asm_instr[i+0]->getString(), str_ADC ) &&
+	       cmpstr(asm_instr[i+1]->getString(), str_TAY) &&	       
+	       cmpstr(asm_instr[i+2]->getString(), str_TXA) &&
+	       cmpstr(asm_instr[i+3]->getString(), str_ADC) &&
+	       cmpstr(asm_instr[i+4]->getString(), str_TAX) &&
+	       cmpstr(asm_instr[i+5]->getString(), str_TYA) &&
+	       cmpstr(asm_instr[i+6]->getString(), str_STA) &&
+		cmpstr(asm_instr[i+7]->getString(), str_STX) )
+	       
+	       )
+	      {
+		addOptimizationMessage( "Found a WORD addition... squeezing it.", i, 1);
+		asm_instr[i+1]->setString( asm_instr[i+6]->getString() );
+		asm_instr[i+1]->setSize(3);
+		
+		string tmp_string = asm_instr[i+7]->getString();
+
+		tmp_string.replace(0, 4, str_STA);	       
+		asm_instr[i+4]->setString( tmp_string );
+
+		asm_instr[i+4]->setSize(3);
+
+		asm_instr.erase(asm_instr.begin()+i+5,asm_instr.begin()+i+8);
+	      }
+	  }
+
+
+
+	addOptimizationMessage( "checking for extra stack manipulations in UINT additions", 0, -1);
+	for( int i=0; i<asm_instr.size()-1; i++ )
+	  {
+	    if(
+	       
+	       (cmpstr(asm_instr[i+0]->getString(), "!:\t" + str_ADC ) &&
+	       cmpstr(asm_instr[i+1]->getString(), str_TAY) &&	       
+	       cmpstr(asm_instr[i+2]->getString(), str_LDA + "#$00") &&
+	       cmpstr(asm_instr[i+3]->getString(), str_ADC + "#$00") &&
+	       cmpstr(asm_instr[i+4]->getString(), str_TAX) &&
+	       cmpstr(asm_instr[i+5]->getString(), str_TYA) &&
+	       cmpstr(asm_instr[i+6]->getString(), str_STA) &&
+		!cmpstr(asm_instr[i+7]->getString(), str_STX) ) ||
+
+	       
+	       (cmpstr(asm_instr[i+0]->getString(), str_ADC ) &&
+	       cmpstr(asm_instr[i+1]->getString(), str_TAY) &&	       
+	       cmpstr(asm_instr[i+2]->getString(), str_LDA + "#$00") &&
+	       cmpstr(asm_instr[i+3]->getString(), str_ADC + "#$00") &&
+	       cmpstr(asm_instr[i+4]->getString(), str_TAX) &&
+	       cmpstr(asm_instr[i+5]->getString(), str_TYA) &&
+	       cmpstr(asm_instr[i+6]->getString(), str_STA) &&
+		!cmpstr(asm_instr[i+7]->getString(), str_STX) )
+	       
+	       )
+	      {
+		addOptimizationMessage( "Found a UINT addition... squeezing it.", i, 1);
+		asm_instr[i+1]->setString( asm_instr[i+6]->getString() );
+		asm_instr[i+1]->setSize(3);
+		
+		asm_instr.erase(asm_instr.begin()+i+2,asm_instr.begin()+i+7);
+	      }
+	  }
+      }
+
+    
 
   }
   
@@ -2230,13 +2322,13 @@
     string sand = string("and");
     string lda = string("lda");
 
-    string body = string("!body:");
-    string else1 = string("!else1:");
-    string else2 = string("!else2:");
-    string else3 = string("!else3:");
-    string else4 = string("!else4:");
-    string else5 = string("!else5:");
-    string else6 = string("!else6:");
+    string body = string("!if_body");
+    string else1 = string("!else1");
+    string else2 = string("!else2");
+    string else3 = string("!else3");
+    string else4 = string("!else4");
+    string else5 = string("!else5");
+    string else6 = string("!else6");
 
     string cmpZero = string("cmp #$00");
     string adc = string("adc");
@@ -2244,7 +2336,11 @@
   
     string cmt = string("// ");
 
-    if( asm_instr.size() > 10 && 1 )
+
+    
+    fixAdditions();
+    
+    if( asm_instr.size() > 10 && true )
       {
 	addOptimizationMessage( "checking for: WordID * 0x0004 -> mem", 0, -1);
 	for( int i=0; i<asm_instr.size()-1; i++ )
@@ -2260,7 +2356,7 @@
 	       cmpstr(asm_instr[i+7]->getString(), str_STX) 
 	       )
 	      {
-		addOptimizationMessage( "removing extra register manipulations from WordID * 0x0004 -> mem", i, 1);
+		addOptimizationMessage( "removing extra stack manipulations from WordID * 0x0004 -> mem", i, 1);
 		//asm_instr[i]->setString(asm_instr[i]->getString() );
 		asm_instr[i+1]->setString( asm_instr[i+6]->getString() );
 		asm_instr[i+1]->setSize(3);
@@ -2277,7 +2373,7 @@
       }
 
     
-    if( asm_instr.size() > 10 && 1 )
+    if( asm_instr.size() > 10 && true )
       {
 	addOptimizationMessage( "checking for: WordID * 0x0002 -> mem", 0, -1);
 	for( int i=0; i<asm_instr.size()-1; i++ )
@@ -2295,7 +2391,6 @@
 	       )
 	      {
 		addOptimizationMessage( "removing extra register manipulations from WordID * 0x0002 -> mem", i, 1);
-		//asm_instr[i]->setString(asm_instr[i]->getString() );
 		asm_instr[i+2]->setString( asm_instr[i+7]->getString() );
 		asm_instr[i+2]->setSize(3);
 
@@ -2312,7 +2407,7 @@
 
 
     
-    if( asm_instr.size() > 10 && 1 )
+    if( asm_instr.size() > 10 && true )
       {
 	addOptimizationMessage( "checking for: WordID + A -> mem", 0, -1);
 	for( int i=0; i<asm_instr.size()-1; i++ )
@@ -2347,7 +2442,7 @@
       }
 
     
-    if( asm_instr.size() > 10 && 1 )
+    if( asm_instr.size() > 10 && true )
       {
 	addOptimizationMessage( "checking for: adc -> mem", 0, -1);
 	for( int i=0; i<asm_instr.size()-1; i++ )
@@ -2381,7 +2476,7 @@
 	  }
       }
 
-    if( asm_instr.size() > 10 && 1 )
+    if( asm_instr.size() > 10 && true )
       {
 	addOptimizationMessage( "checking for: adc -> mem", 0, -1);
 	for( int i=0; i<asm_instr.size()-1; i++ )
@@ -2416,7 +2511,7 @@
       }
 
 
-    if( asm_instr.size() > 4 && 1 )
+    if( asm_instr.size() > 4 && true )
       {
 	addOptimizationMessage( "checking for: bcs/clc pairing", 0, -1);
 	for( int i=0; i<asm_instr.size()-3; i++ )
@@ -2435,7 +2530,7 @@
 
     
 
-    if( asm_instr.size() > 10 && 1 )
+    if( asm_instr.size() > 10 && true )
       {
 	addOptimizationMessage( "checking for: XA + XA -> mem", 0, -1);
 	for( int i=0; i<asm_instr.size()-1; i++ )
@@ -2469,7 +2564,7 @@
       }
 
     
-    if( asm_instr.size() > 10 && 1 )
+    if( asm_instr.size() > 10 && true )
       {
 	addOptimizationMessage( "checking for: adc -> mem (split by comments)", 0, -1);
 	for( int i=0; i<asm_instr.size()-1; i++ )
@@ -2505,7 +2600,7 @@
 	  }
       }
 
-    if( asm_instr.size() > 13 && 1 )
+    if( asm_instr.size() > 13 && true )
       {
 	addOptimizationMessage( "checking for: WordIMM + WordID -> mem", 0, -1);
 	for( int i=0; i<asm_instr.size()-1; i++ )
@@ -2543,7 +2638,7 @@
 
 
     
-    if( asm_instr.size() > 10 && 1 )
+    if( asm_instr.size() > 10 && true )
       {
 	addOptimizationMessage( "checking for: adc -> mem (split by comments)", 0, -1);
 	for( int i=0; i<asm_instr.size()-1; i++ )
@@ -2579,7 +2674,7 @@
 	  }
       }
     // ================  SEC & SBC vvv
-    if( asm_instr.size() > 10 && 1 )
+    if( asm_instr.size() > 10 && true )
       {
 	addOptimizationMessage( "checking for: sbc -> mem", 0, -1);
 	for( int i=0; i<asm_instr.size()-1; i++ )
@@ -2612,7 +2707,7 @@
 	      }
 	  }
       }
-    if( asm_instr.size() > 10 && 1 )
+    if( asm_instr.size() > 10 && true )
       {
 	addOptimizationMessage( "checking for: sbc -> mem", 0, -1);
 	for( int i=0; i<asm_instr.size()-1; i++ )
@@ -2645,7 +2740,7 @@
 	      }
 	  }
       }
-    if( asm_instr.size() > 10 && 1 )
+    if( asm_instr.size() > 10 && true )
       {
 	addOptimizationMessage( "checking for: sbc -> mem (split by comments)", 0, -1);
 	for( int i=0; i<asm_instr.size()-1; i++ )
@@ -2680,7 +2775,7 @@
 	      }
 	  }
       }
-    if( asm_instr.size() > 10 && 1 )
+    if( asm_instr.size() > 10 && true )
       {
 	addOptimizationMessage( "checking for: sbc -> mem (split by comments)", 0, -1);
 	for( int i=0; i<asm_instr.size()-1; i++ )
@@ -2718,7 +2813,7 @@
 
     
     //==================    
-    if( asm_instr.size() > 2 && 1 )
+    if( asm_instr.size() > 2 && true )
       {
 	addOptimizationMessage( "checking for: adc/cmp 0, sbc/cmp 0", 0, -1);
 	for( int i=0; i<asm_instr.size()-1; i++ )
@@ -2733,7 +2828,7 @@
 	  }
       }
 
-    if( asm_instr.size() > 4 && 1 )
+    if( asm_instr.size() > 4 && true )
       {
 	addOptimizationMessage( "checking for: pha/txa/tax/pla, pha/tax/txa/pla", 0, -1);
 	for( int j = 0; j < 3; j++ )
@@ -2790,9 +2885,9 @@
 	  }
 
       }
-    if( asm_instr.size() > 2 && 1 )
+    if( asm_instr.size() > 2 && true )
       {
-	addOptimizationMessage( "checking for: !body: doubles, double !else#:", 0, -1);
+	addOptimizationMessage( "checking for: !if_body: doubles, double !else#:", 0, -1);
 	for( int i=0; i<asm_instr.size()-1; i++ )
 	  {
 	    if(
@@ -2813,7 +2908,7 @@
       }
 
     
-    if( asm_instr.size() > 2 && 1 )
+    if( asm_instr.size() > 2 && true )
       {
 	addOptimizationMessage( "checking for: txa/and", 0, -1);
 	for( int i=0; i<asm_instr.size()-1; i++ )
@@ -2828,7 +2923,7 @@
 	  }
       }
 
-    if( asm_instr.size() > 2 && 1 )
+    if( asm_instr.size() > 2 && true )
       {
 	
 	addOptimizationMessage( "checking for: plp/php", 0, -1);
@@ -2844,7 +2939,7 @@
 	  }
       }
 
-    if( asm_instr.size() > 4 && 1 )
+    if( asm_instr.size() > 4 && true )
       {
 	
 	addOptimizationMessage( "checking for: cmt/plp/cmt/php", 0, -1);
@@ -2864,7 +2959,7 @@
 
 
     
-    if( asm_instr.size() > 10 && 1 )
+    if( asm_instr.size() > 10 && true )
       {
 	addOptimizationMessage( "checking for: pops/pushes (ifif)", 0, -1);
 	for( int i=0; i<asm_instr.size()-9; i++ )
@@ -2890,7 +2985,7 @@
       }
 
 	
-    if( asm_instr.size() > 4 && 1 )
+    if( asm_instr.size() > 4 && true )
       {
 	addOptimizationMessage( "checking for: pop/push $03", 0, -1);
 	for( int i=0; i<asm_instr.size()-3; i++ )
@@ -2909,7 +3004,7 @@
       }
 
 
-    if( asm_instr.size() > 4 && 1 )
+    if( asm_instr.size() > 4 && true )
       {
 		
 	addOptimizationMessage( "checking for: pop/push $02", 0, -1);
@@ -2929,7 +3024,7 @@
       }
 
 
-    if( asm_instr.size() > 4 && 1 )
+    if( asm_instr.size() > 4 && true )
       {
 	
 	addOptimizationMessage( "checking for: push/pop $02", 0, -1);
@@ -2949,7 +3044,7 @@
       }
 
 
-    if( asm_instr.size() > 4 && 1 )
+    if( asm_instr.size() > 4 && true )
       {
 		
 	addOptimizationMessage( "checking for: push/pop $03", 0, -1);
@@ -2969,7 +3064,7 @@
 
       }
 
-    if( asm_instr.size() > 9 && 1 )
+    if( asm_instr.size() > 9 && true )
       {
 	
 	addOptimizationMessage( "checking for: cmt/pha/txa/pha/cmt/platax/pla/cmt... please don't ask why", 0, -1);
@@ -2993,7 +3088,7 @@
 
 
 	
-    if( asm_instr.size() > 4 && 1 )
+    if( asm_instr.size() > 4 && true )
       {
 
 	addOptimizationMessage( "checking for: cmt/pha/cmt/pla", 0, -1);
@@ -3010,7 +3105,7 @@
 	  }
       }
     
-    if( asm_instr.size() > 2 && 1 )
+    if( asm_instr.size() > 2 && true )
       {
 	
 	addOptimizationMessage( "checking for: ldy #$00/lda #$00", 0, -1);
@@ -3027,7 +3122,7 @@
       }
 
 
-    if( asm_instr.size() > 2 && 1 )
+    if( asm_instr.size() > 2 && true )
       {
 	
 	addOptimizationMessage( "checking for: lda #$00/ldy #$00", 0, -1);    
@@ -3044,7 +3139,7 @@
       }
 
 
-    if( asm_instr.size() > 3 && 1 )
+    if( asm_instr.size() > 3 && true )
       {
 	addOptimizationMessage( "checking for: clc/lbl/clc", 0, -1);
 	for( int i=0; i<asm_instr.size(); i++ )
@@ -3061,7 +3156,7 @@
 
 
     
-    if( asm_instr.size() > 3 && 1 )
+    if( asm_instr.size() > 3 && true )
       {
 	addOptimizationMessage( "checking for: clc/lbl/sec", 0, -1);
 	for( int i=0; i<asm_instr.size()-2; i++ )
@@ -3078,7 +3173,7 @@
     
 
 
-    if( asm_instr.size() > 3 && 1 )
+    if( asm_instr.size() > 3 && true )
       {
 	addOptimizationMessage( "checking for: rts/cmt/rts", 0, -1);
 	for( int i=0; i<asm_instr.size()-2; i++ )
@@ -3096,7 +3191,7 @@
 
 
 
-    if( asm_instr.size() > 2 && 1 )
+    if( asm_instr.size() > 2 && true )
       {
 
 	addOptimizationMessage( "checking for: clc/sec", 0, -1);
@@ -3113,7 +3208,7 @@
 
 
 
-    if( asm_instr.size() > 2 && 1 )
+    if( asm_instr.size() > 2 && true )
       {
 
 	addOptimizationMessage( "checking for: sec/clc", 0, -1);
@@ -3128,7 +3223,7 @@
 	  }
       }
 
-    if( asm_instr.size() > 2 && 1 )
+    if( asm_instr.size() > 2 && true )
       {
 	
 	addOptimizationMessage( "checking for: jmp/rts", 0, -1);
@@ -3143,7 +3238,7 @@
 	  }
       }
 
-    if( asm_instr.size() > 2 && 1 )
+    if( asm_instr.size() > 2 && true )
       {
 
 	addOptimizationMessage( "checking for: cli/sei", 0, -1);
@@ -3159,7 +3254,7 @@
 	  }
       }
 
-    if( asm_instr.size() > 2 && 1 )
+    if( asm_instr.size() > 2 && true )
       {
 	addOptimizationMessage( "checking for: tay/tya", 0, -1);
 	for( int i=0; i<asm_instr.size()-1; i++ )
@@ -3174,7 +3269,7 @@
       }
 
 
-    if( asm_instr.size() > 2 && 1 )
+    if( asm_instr.size() > 2 && true )
       {
 
 	addOptimizationMessage( "checking for: tya/tay", 0, -1);
@@ -3191,7 +3286,7 @@
 
 
 	
-    if( asm_instr.size() > 2 && 1 )
+    if( asm_instr.size() > 2 && true )
       {
 	addOptimizationMessage( "checking for: sei/cli", 0, -1);
 	for( int i=0; i<asm_instr.size()-1; i++ )
@@ -3206,7 +3301,7 @@
       }
 
 	
-    if( asm_instr.size() > 2 && 1 )
+    if( asm_instr.size() > 2 && true )
       {
 	addOptimizationMessage( "checking for: more pop/pushes ", 0, -1);
 	for( int j = 0; j < 10; j++ )
@@ -3225,7 +3320,7 @@
 
 
 	
-    if( asm_instr.size() > 2 && 1 )
+    if( asm_instr.size() > 2 && true )
       {
 	addOptimizationMessage( "checking for: store/load $02", 0, -1);
 	for( int i=0; i<asm_instr.size()-1; i++ )
@@ -3240,7 +3335,7 @@
       }
 
 
-    if( asm_instr.size() > 2 && 1 )
+    if( asm_instr.size() > 2 && true )
       {
 	
 	addOptimizationMessage( "checking for: store/load $03", 0, -1);
@@ -3258,7 +3353,7 @@
 
 	
     // remove redundant labels
-    if( asm_instr.size() > 3 && 1 )
+    if( asm_instr.size() > 3 && true )
       {
 	addOptimizationMessage( "checking for: more doubled up !else1: labels", 0, -1);
 	for( int j=0; j<3; j++ )
@@ -3291,7 +3386,7 @@
 
 
   
-    if( asm_instr.size() > 3 && 1 )
+    if( asm_instr.size() > 3 && true )
       {
 	// remove Store-Loads & Load-Stores
 	addOptimizationMessage( "checking for: store/loads and load/stores", 0, -1);
@@ -3368,7 +3463,7 @@
 	  }
       }
     
-    if( asm_instr.size() > 2 && 1 )
+    if( asm_instr.size() > 2 && true )
       {
 	addOptimizationMessage( "checking for: doubled clc's", 0, -1);
 	for( int i=0; i<asm_instr.size()-1; i++ )
@@ -3384,7 +3479,7 @@
 
 
 	
-    if( asm_instr.size() > 3 && 1 )
+    if( asm_instr.size() > 3 && true )
       {
 	addOptimizationMessage( "checking for: redundant lda #$00's", 0, -1);
 	for( int i=0; i<asm_instr.size()-2; i++ )
@@ -3403,7 +3498,7 @@
 
 
 	
-    if( asm_instr.size() > 4 && 1 )
+    if( asm_instr.size() > 4 && true )
       {
 	for( int i=0; i<asm_instr.size()-3; i++ )
 	  {
@@ -3421,7 +3516,7 @@
       }
 
 	
-    if( asm_instr.size() > 5 && 1 )
+    if( asm_instr.size() > 5 && true )
       {
 	for( int i=0; i<asm_instr.size()-4; i++ )
 	  {
@@ -3439,7 +3534,7 @@
 	  }
       }
 
-    if( asm_instr.size() > 6 && 1 )
+    if( asm_instr.size() > 6 && true )
       {
 
 	for( int i=0; i<asm_instr.size()-5; i++ )
@@ -3460,7 +3555,7 @@
       }
 
 	
-    if( asm_instr.size() > 2 && 1 )
+    if( asm_instr.size() > 2 && true )
       {
 	// round 2
 	addOptimizationMessage( "checking for: more pop/pushes", 0, -1);
@@ -3475,7 +3570,7 @@
 	  }
       }
 
-    if( asm_instr.size() > 2 && 1 )
+    if( asm_instr.size() > 2 && true )
       {
 
 	addOptimizationMessage( "checking for: push/pops", 0, -1);
@@ -3491,7 +3586,7 @@
       }
 
 
-    if( asm_instr.size() > 6 && 1 )
+    if( asm_instr.size() > 6 && true )
       {
 	
 	addOptimizationMessage( "checking for: wasteful and impolite stack manipulations", 0, -1);
@@ -3514,7 +3609,7 @@
 
       }
 
-    if( asm_instr.size() > 2 && 1 )
+    if( asm_instr.size() > 2 && true )
       {
 	// remove Store-Loads & Load-Stores
 	addOptimizationMessage( "checking for: store/loads and load/stores", 0, -1);
@@ -3556,7 +3651,7 @@
       }
 
 
-    if( asm_instr.size() > 4 && 1 )
+    if( asm_instr.size() > 4 && true )
       {
 	addOptimizationMessage( "checking for: pha/txa/tax/pla, pha/tax/txa/pla", 0, -1);
 	for( int j = 0; j < 4; j++ )
@@ -3587,7 +3682,7 @@
 
       }
 
-    if( asm_instr.size() > 2 && 1 )
+    if( asm_instr.size() > 2 && true )
       {
 	// round 2
 	addOptimizationMessage( "checking for: more pop/pushes", 0, -1);
@@ -3946,25 +4041,192 @@
     pluses = p.length();
     return pluses;
   }
+
+  int optimizeBranchType1( string InstA, string A, string InstB, string B )
+  {
+    int number_of_optimizations = 0;
+    for( int i=asm_instr.size()-1; i>1; i-- )
+      {
+	for( int j = 0; j < 50; j++ )
+	  {
+	    if( 
+	       cmpstr( asm_instr[i-1]->getString(), InstA + A + to_string(j) + "+" ) &&
+	       cmpstr( asm_instr[i]->getString(), InstB + B + to_string(j) + "+" ) &&
+	       cmpstr( asm_instr[i+1]->getString(), A + to_string(j)+":" )
+	       )
+	      {
+		string label = asm_instr[i]->getString().substr(4,asm_instr[i]->getString().length());
+		string actual_label = label;
+		size_t found = label.find(' ');	    
+		if (found != std::string::npos)
+		  {
+		    label = label.substr(0, found);
+		  } 
+		found = label.find('+');	    
+		if (found != std::string::npos)
+		  {
+		    label = label.substr(found, label.length());
+		  } 	    
+		int d = distanceFrom(i, B + to_string(j) + ":", label.length());
+		if( d < 128 && d > -127 && d != 0 )
+		  {
+		    string C;
+		    if( InstA == str_BEQ )
+		      {
+			C = str_BNE;
+		      }
+		    else if( InstA == str_BNE )
+		      {
+			C = str_BEQ;
+		      }
+		    else if( InstA == str_BCS )
+		      {
+			C = str_BCC;
+		      }
+		    else if( InstA == str_BCC )
+		      {
+			C = str_BCS;
+		      }
+		    else
+		      {
+			addCompilerMessage("Optimization Crash: Processing Branches", 3 );
+		      }
+
+		    
+		    asm_instr[i]->setString( C + actual_label + commentmarker + "[" + to_string(d) + "] (OPTIMIZED)" );
+		    asm_instr[i]->setSize(2);
+		    asm_instr.erase(asm_instr.begin()+i-1,asm_instr.begin()+i);
+		    //asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+1);
+		    number_of_optimizations++;
+		  }
+		else
+		  {
+		    asm_instr[i]->setString(asm_instr[i]->getString() + commentmarker + "[" + to_string(d) + "] (CANNOT BE OPTIMIZED)" );
+		  }
+	      }
+	  }
+      }
+
+    return number_of_optimizations;
+  }
+
+  // regular old skip-a-roo
+  int optimizeBranchType2( string InstA, string A, string InstB, string B )
+  {
+    int number_of_optimizations = 0;
+    for( int i=asm_instr.size()-1; i>1; i-- )
+      {
+	for( int j = 0; j < 50; j++ )
+	  {
+	    if( 
+	       cmpstr( asm_instr[i-1]->getString(), InstA + A +  "+" ) &&
+	       cmpstr( asm_instr[i]->getString(), InstB + B + to_string(j) + "+" ) &&
+	       cmpstr( asm_instr[i+1]->getString(), A + ":" )
+	       )
+	      {
+		string label = asm_instr[i]->getString().substr(4,asm_instr[i]->getString().length());
+		string actual_label = label;
+		size_t found = label.find(' ');	    
+		if (found != std::string::npos)
+		  {
+		    label = label.substr(0, found);
+		  } 
+		found = label.find('+');	    
+		if (found != std::string::npos)
+		  {
+		    label = label.substr(found, label.length());
+		  } 	    
+		int d = distanceFrom(i, B + to_string(j) + ":", label.length());
+		if( d < 128 && d > -127 && d != 0 )
+		  {
+		    string C;
+		    if( InstA == str_BEQ )
+		      {
+			C = str_BNE;
+		      }
+		    else if( InstA == str_BNE )
+		      {
+			C = str_BEQ;
+		      }
+		    else if( InstA == str_BCS )
+		      {
+			C = str_BCC;
+		      }
+		    else if( InstA == str_BCC )
+		      {
+			C = str_BCS;
+		      }
+		    else
+		      {
+			addCompilerMessage("Optimization Crash: Processing Branches", 3 );
+		      }
+		    
+		    asm_instr[i]->setString( C + actual_label + commentmarker + "[" + to_string(d) + "] (OPTIMIZED)" );
+		    asm_instr[i]->setSize(2);
+		    asm_instr.erase(asm_instr.begin()+i-1,asm_instr.begin()+i);
+		    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+1);
+
+		    number_of_optimizations++;
+		  }
+		else
+		  {
+		    asm_instr[i]->setString(asm_instr[i]->getString() + commentmarker + "[" + to_string(d) + "] (CANNOT BE OPTIMIZED)" );
+		  }
+	      }
+	  }
+      }
+
+    return number_of_optimizations;
+  }
+
   
   void ProcessBranches()
   {
-    //for( int i = 0; i < 5; i++ )
-    //  {
-    //	cerr << *asm_instr[i];
-    //}
-    
     if( asm_instr.size() <= 20 ) return;
     cerr << " Processing Branches [" << asm_instr.size() << "]" << endl;
 
-
+    int x = 0;
+    
+    x += optimizeBranchType2( str_BCS, "!_skip", str_JMP, "!for_body" );
+    x += optimizeBranchType2( str_BNE, "!_skip", str_JMP, "!for_body" );
+    x += optimizeBranchType2( str_BCS, "!_skip", str_JMP, "!while_body" );
+    x += optimizeBranchType2( str_BNE, "!_skip", str_JMP, "!while_body" );
+    x += optimizeBranchType2( str_BEQ, "!_skip", str_JMP, "!while_out" );
+    x += optimizeBranchType2( str_BEQ, "!_skip", str_JMP, "!for_out" );
+    x += optimizeBranchType2( str_BNE, "!_skip", str_JMP, "!while_out" );
+    x += optimizeBranchType2( str_BNE, "!_skip", str_JMP, "!for_out" );
+    x += optimizeBranchType2( str_BCS, "!_skip", str_JMP, "!while_out" );
+    x += optimizeBranchType2( str_BCS, "!_skip", str_JMP, "!for_out" );
+    x += optimizeBranchType2( str_BCS, "!_skip", str_JMP, "!else" );    
+    x += optimizeBranchType2( str_BCC, "!_skip", str_JMP, "!while_out" );
+    x += optimizeBranchType2( str_BCC, "!_skip", str_JMP, "!for_out" );
+    
+    x += optimizeBranchType1( str_BEQ, "!if_body", str_JMP, "!else" );
+    x += optimizeBranchType1( str_BNE, "!if_body", str_JMP, "!else" );
+    x += optimizeBranchType1( str_BCC, "!if_body", str_JMP, "!else" );
+    x += optimizeBranchType1( str_BCS, "!if_body", str_JMP, "!else" );
+    
+    x += optimizeBranchType2( str_BEQ, "!_skip", str_JMP, "!for_body" );
+    x += optimizeBranchType2( str_BCC, "!_skip", str_JMP, "!for_body" );
+    
+    x += optimizeBranchType1( str_BNE, "!for_body", str_JMP, "!for_out" );
+    x += optimizeBranchType1( str_BCS, "!for_body", str_JMP, "!for_out" );
+    x += optimizeBranchType1( str_BCC, "!for_body", str_JMP, "!for_out" );
+    
+    if( x > 0 )
+      {
+	addCompilerMessage( "Optimized " + toString(x) + "IF-WHILE-FORs", 0 );
+      }
+    
     for( int i=asm_instr.size()-1; i>20; i-- )
       {
 	for( int j = 0; j < 50; j++ )
 	  {
+	    //====================================
+	    
 	    if(
 	       cmpstr( asm_instr[i]->getString(), str_JMP + "!else" + to_string(j)  ) &&
-	       cmpstr( asm_instr[i-1]->getString(), str_BEQ + "!body+" ) && 1 &&
+	       cmpstr( asm_instr[i-1]->getString(), str_BEQ + "!if_body+" ) &&
 	       !cmpstr( asm_instr[i+1]->getString(), "!else" + to_string(j)+":	// (||)" ) &&
 	       !cmpstr( asm_instr[i+1]->getString(), "!else" + to_string(j)+":	// (&&)" )
 	       )
@@ -3986,6 +4248,7 @@
 		if( d < 128 && d > -127 && d != 0 )
 		  {
 		    asm_instr[i-1]->setString( commentmarker + asm_instr[i-1]->getString() );
+		    asm_instr[i-1]->setSize(0);
 		    asm_instr[i]->setString( str_BNE + actual_label + commentmarker + "[" + to_string(d) + "] (OPTIMIZED)" );
 		    asm_instr[i]->setSize(2);
 		  }
@@ -4003,7 +4266,7 @@
 	  {
 	    if(
 	       cmpstr( asm_instr[i]->getString(), str_JMP + "!else"+to_string(j)+"+" ) &&
-	       cmpstr( asm_instr[i-1]->getString(), str_BCC + "!body+" ) && 1 &&
+	       cmpstr( asm_instr[i-1]->getString(), str_BCC + "!if_body+" ) &&
 	       !cmpstr( asm_instr[i+1]->getString(), "!else"+to_string(j)+":	// (||)" ) &&
 	       !cmpstr( asm_instr[i+1]->getString(), "!else"+to_string(j)+":	// (&&)" )
 
@@ -4013,13 +4276,14 @@
 		if( d < 128 && d > -127 && d != 0 )
 		  {
 		    asm_instr[i-1]->setString( commentmarker + asm_instr[i-1]->getString() );
+		    asm_instr[i-1]->setSize(0);
 		    asm_instr[i]->setString( str_BCS + "!else"+to_string(j)+"+" + commentmarker + "(OPTIMIZED)" );
 		    asm_instr[i]->setSize(2);
 		  }
 	      }
 	    else if(
 		    cmpstr( asm_instr[i]->getString(), str_JMP + "!else"+to_string(j)+"+" ) &&
-		    cmpstr( asm_instr[i-1]->getString(), str_BNE + "!body+" ) && 1 &&
+		    cmpstr( asm_instr[i-1]->getString(), str_BNE + "!if_body+" ) &&
 		    !cmpstr( asm_instr[i+1]->getString(), "!else"+to_string(j)+":	// (||)" ) &&
 		    !cmpstr( asm_instr[i+1]->getString(), "!else"+to_string(j)+":	// (&&)" )
 		    
@@ -4029,13 +4293,14 @@
 		if( d < 128 && d > -127 && d != 0 )
 		  {
 		    asm_instr[i-1]->setString( commentmarker + asm_instr[i-1]->getString() );
+		    asm_instr[i-1]->setSize(0);
 		    asm_instr[i]->setString( str_BEQ + "!else"+to_string(j)+"+" + commentmarker + "(OPTIMIZED)" );
 		    asm_instr[i]->setSize(2);
 		  }
 	      }
 	    else if(
 		    cmpstr( asm_instr[i]->getString(), str_JMP + "!else"+to_string(j)+"+" ) &&
-		    cmpstr( asm_instr[i-1]->getString(), str_BEQ + "!body+" ) && 1 &&
+		    cmpstr( asm_instr[i-1]->getString(), str_BEQ + "!if_body+" ) &&
 		    !cmpstr( asm_instr[i+1]->getString(), "!else"+to_string(j)+":	// (||)" ) &&
 		    !cmpstr( asm_instr[i+1]->getString(), "!else"+to_string(j)+":	// (&&)" )
 		    
@@ -4045,13 +4310,14 @@
 		if( d < 128 && d > -127 && d != 0 )
 		  {
 		    asm_instr[i-1]->setString( commentmarker + asm_instr[i-1]->getString() );
+		    asm_instr[i-1]->setSize(0);
 		    asm_instr[i]->setString( str_BNE + "!else"+to_string(j)+"+" + commentmarker + "(OPTIMIZED)" );
 		    asm_instr[i]->setSize(2);
 		  }
 	      }
 	    else if(
 		    cmpstr( asm_instr[i]->getString(), str_JMP + "!else"+to_string(j)+"+" ) &&
-		    cmpstr( asm_instr[i-1]->getString(), str_BCS + "!body+" ) && 1 &&
+		    cmpstr( asm_instr[i-1]->getString(), str_BCS + "!if_body+" ) &&
 		    !cmpstr( asm_instr[i+1]->getString(), "!else"+to_string(j)+":	// (||)" ) &&
 		    !cmpstr( asm_instr[i+1]->getString(), "!else"+to_string(j)+":	// (&&)" )
 		    
@@ -4061,6 +4327,7 @@
 		if( d < 128 && d > -127 && d != 0 )
 		  {
 		    asm_instr[i-1]->setString( commentmarker + asm_instr[i-1]->getString() );
+		    asm_instr[i-1]->setSize(0);
 		    asm_instr[i]->setString( str_BCC + "!else"+to_string(j)+"+" + commentmarker + "(OPTIMIZED)" );
 		    asm_instr[i]->setSize(2);
 		  }
@@ -4149,15 +4416,15 @@
 	  {
 	    asm_instr.erase(asm_instr.begin()+i-1,asm_instr.begin()+i);
 	  }
-	else if( cmpstr( asm_instr[i-1]->getString(), commentmarker + str_BEQ + "!body+" ) )
+	else if( cmpstr( asm_instr[i-1]->getString(), commentmarker + str_BEQ + "!if_body" ) )
 	  {
 	    asm_instr.erase(asm_instr.begin()+i-1,asm_instr.begin()+i);
 	  }
-	else if( cmpstr( asm_instr[i-1]->getString(), commentmarker + str_BNE + "!body+" ) )
+	else if( cmpstr( asm_instr[i-1]->getString(), commentmarker + str_BNE + "!if_body" ) )
 	  {
 	    asm_instr.erase(asm_instr.begin()+i-1,asm_instr.begin()+i);
 	  }
-	else if( cmpstr( asm_instr[i-1]->getString(), commentmarker + str_BCS + "!body+" ) )
+	else if( cmpstr( asm_instr[i-1]->getString(), commentmarker + str_BCS + "!if_body" ) )
 	  {
 	    asm_instr.erase(asm_instr.begin()+i-1,asm_instr.begin()+i);
 	  }
@@ -4449,7 +4716,7 @@
 %token <nd_obj> /*tREF*/ CHAR tFCLOSE tFOPEN tFCLRCHN tFCHROUT tFCHRIN tFREADST tFCHKOUT tFCHKIN tSETLFS tSETNAM tIMPORT tCOMMENT tDATA tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD /*tBYTE*/ /*tDOUBLE*/ tUINT tPOINTER tLN tABS tSIN tCOS tTAN tSIDIRQ tSIDOFF tSTRTOFLOAT tSTRTOWORD tTOFLOAT tINTTOWORD tTOUINT tTOWORD tTOBIT tDEC tINC tROL tROR tLSR tGETPC tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJUMP tSETSCR tJSR tIRQ tROMOUT tROMIN tLDA tASL tSPRITECLR tSPRITESET tSPRITEREG tSPRITEOFF tRND tXXX tINLINE tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tPEEK tPOKE CHARACTER tPRINTS PRINTFF SCANFF tSTRLEN tWORDSTRLEN INT FLOAT WHILE FOR IF ELSE /* TRUE FALSE */  NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE EXPONENT tSQRT INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL tSCREEN tNULL tMEMCPY tSEED tNEEDS tPI tPHI tE tBL tBS
 %type <nd_obj> headers main body return function datatype statement arithmetic relop program else 
    %type <nd_obj2> init value expression /*charlist*/ numberlist parameterlist argumentlist
-      %type <nd_obj3> condition
+      %type <nd_obj3>  condition
       %%
       program: headers main '(' ')' '{' body return '}' function {};
 
@@ -4972,7 +5239,6 @@ function: function function
   addAsm( "// MARKED_FOR_DELETION", 0, true );  
   addAsm( string($2.name) + ":", 0, true);
 
-  //addCompilerMessage( "Adding function of type: " + string($1.name), 2 );
   addFunction( string($2.name), getLabel( label_vector[label_major]-1 ), getDataTypeValue($1.name));
 
   //addAsm( "// MARKED_FOR_DELETION", 0, true );
@@ -5056,16 +5322,17 @@ body:
   
   pushScope("WHILE");
   addCommentSection( "WHILE LOOP" );
-  addAsm( generateNewLabel(), 0, true );
 }
 '(' condition
 {
-  addAsm( generateNewLabel(), 0, true );
+  addAsm( string("!while_body") + toString(while_depth) + ":", 0, true );
+  //addAsm( generateNewLabel(), 0, true );
 }
 ')' '{' body
 {
-  addAsm(str_JMP + getLabel( label_vector[label_major]-2, false) + commentmarker + "jump to top of WHILE loop", 3, false );
-  addAsm( generateNewLabel(), 0, true );
+  addAsm( str_JMP + "!while_top" + toString(while_depth) + "-", 3, false );
+  addAsm( string("!while_out") + toString(while_depth) + ":", 0, true );
+  while_depth--;
   popScope();
   
   // 2023 06 27
@@ -5091,13 +5358,9 @@ body:
       preserve0203();
     }
   pushScope("FOR");
-  addAsm( generateNewLabel(), 0, true );
 }
 '(' statement { addCommentBreak(); }
-';' condition { addCommentBreak(); }
-{
-  addAsm( generateNewLabel(), 0, true );
-}
+';' condition { addCommentBreak(); } {}
 ';' {addAsm("[iterator]",0,true);} statement
 {
   addAsm( "[jump to top of for]",0,true);
@@ -5116,7 +5379,7 @@ body:
 
   
 } ')'
-{  addAsm( generateNewLabel(), 0, true ); }
+{  addAsm( "!for_body" + toString(for_depth) + ":", 0, true );/* addAsm( generateNewLabel(), 0, true );*/ }
 '{' body '}'
 {
 
@@ -5132,15 +5395,12 @@ body:
       if( arg_show_opt ) addCompilerMessage( s2, 0 );
       iterator_stack.pop();
     }
-  // delete the TAG
   deletePreviousAsm();
-  //addCompilerMessage( "Deleted Mnemonics", 0 );
-
   addDebugComment( "// ^ ^ ^ ^ ^ ^ ^ moved iterator to here from above");
-  
-  addAsm( str_JMP + getLabel( ((int)label_vector[label_major]-3), false ), 3, false );
-  
-  addAsm( generateNewLabel(), 0, true );
+
+  addAsm( str_JMP + "!for_top" + toString(for_depth) + "-", 3, false );
+  addAsm( string("!for_out") + toString(for_depth) + ":", 0, true );
+  for_depth--;
 
   if( scope_stack.top() != string("FOR") )
     {
@@ -5160,7 +5420,6 @@ body:
 	  restore0203();
 	  addDebugComment( string( "^^^^---- Paired with: " ) + s );
 	}
-
     }
 };
 | IF
@@ -5179,21 +5438,17 @@ body:
 {
   jump_start = byte_count;
   addComment( "Body of If" );
-  addAsm( "!body:", 0, true );
+  addAsm( string("!if_body")+ toString(if_depth) + ":", 0, true );
 }
 '{' body '}'
 {
   addAsm( "// MARKED_FOR_DELETION" );
-  addAsm( str_JMP + "!else" + toString(if_depth) + "++", 3, false);
+  addAsm( str_JMP + "!if_out" + toString(if_depth) + "+", 3, false);
   addAsm( "!else" + toString(if_depth) + ":", 0, true );
 }
- else
-   {
-     addAsm( "!else" + toString(if_depth) + ":", 0, true);
-     addParserComment( "post-process the ELSE" );
-   }
+ else { }
 {
-  if_depth--;  
+  //if_depth--;  
   if( scope_stack.top() != string("IF") )
     {
       addCompilerMessage( "Scope out of Sync", 3 );
@@ -5212,6 +5467,7 @@ body:
 	  addComment( string( "^^^^---- Paired with: " ) + s );
 	}      
     }
+  if_depth--;  
 };
 | statement ';'
 {
@@ -5245,15 +5501,18 @@ body:
 
  else: ELSE {} '{' body '}'
  {
-   //addAsm( "!body:",0,true );
+   addAsm( string("!if_out") + toString(if_depth) + ":",0,true );
    $$.nd = mknode(NULL, $4.nd, $1.name);
    strcpy( $$.name, $4.name);
- }
+ };
 |
-{  
+{
+
+  //addAsm( string("!else") + toString(if_depth) + ":",0,true );
+  addAsm( string("!if_out") + toString(if_depth) + ":",0,true );
   byte_count -= asm_instr[asm_instr.size()-2]->getSize();
-  asm_instr.erase( asm_instr.end()-2 );  
-  addComment( "(OPTIMIZED) Removed unnecessary 'jmp'" );	       
+  asm_instr.erase( asm_instr.end()-3 );  
+  addCompilerMessage( "(OPTIMIZED) Removed unnecessary 'jmp'", 1);	       
   $$.nd = NULL;
   strcpy( $$.name, "_NULL" );
 }
@@ -5266,11 +5525,229 @@ body:
 // which would make $2.name -> $3.name and $3.name -> $4.name
 // then, when comparing anything with an A as OP1, it will need to be
 // popped off of the processor stack
+
 condition:
-'(' condition ')'
+
+// tOR
+condition
+{
+  if( strcmp($1.name, "exp != exp sb" )==0 )
+    {
+      deletePreviousAsm();
+      addAsm( str_BNE + "!if_body" + toString(if_depth) + "+", 2, false );
+      addAsm( "!cond:\t// (||)", 0, true );
+      cond_depth++;
+    }
+  else if( strcmp($1.name, "exp < exp sb" )==0 )
+    {
+      deletePreviousAsm();
+      addAsm( str_BCC + "!if_body" + toString(if_depth) + "+", 2, false );
+      addAsm( "!cond:\t// (||)", 0, true );
+      cond_depth++;
+    }
+  else if( strcmp($1.name, "exp <= exp sb" )==0 )
+    {
+      deletePreviousAsm();
+      deletePreviousAsm();
+      addAsm( str_BCC + "!if_body" + toString(if_depth) + "+", 2, false );
+      addAsm( str_BEQ + "!if_body" + toString(if_depth) + "+", 2, false );
+      addAsm( "!cond:\t// (||)", 0, true );
+      cond_depth++;
+    }
+  else if( strcmp($1.name, "exp == exp sb" )==0 )
+    {
+      deletePreviousAsm();
+      addAsm( str_BEQ + "!if_body" + toString(if_depth) + "+", 2, false );
+      addAsm( "!cond:\t// (||)", 0, true );
+      cond_depth++;
+    }
+  else if( strcmp($1.name, "exp > exp sb" )==0 )
+    {
+      deletePreviousAsm();
+      deletePreviousAsm();
+      addAsm( str_BEQ + "!if_body" + toString(if_depth) + "+", 2, false );
+      addAsm( str_BCS + "!if_body" + toString(if_depth) + "+", 2, false );
+      addAsm( "!cond:\t// (||)", 0, true );
+      cond_depth++;
+    }
+  else if( strcmp($1.name, "exp >= exp sb" )==0 )
+    {
+      deletePreviousAsm();
+      addAsm( str_BCS + "!if_body" + toString(if_depth) + "+", 2, false );
+      addAsm( "!cond:\t// (||)", 0, true );
+      cond_depth++;
+    }
+  else if( strcmp($1.name, "exp != exp lb" )==0 )
+    {
+      deletePreviousAsm();
+      addAsm( "!cond:\t// (||)", 0, true );
+      cond_depth++;
+    }
+  else if( strcmp($1.name, "exp < exp lb" )==0 )
+    {
+      deletePreviousAsm();
+      addAsm( "!cond:\t// (||)", 0, true );
+      cond_depth++;
+    }
+  else if( strcmp($1.name, "exp <= exp lb" )==0 )
+    {
+      deletePreviousAsm();
+      addAsm( "!cond:\t// (||)", 0, true );
+      cond_depth++;
+    }
+  else if( strcmp($1.name, "exp == exp lb" )==0 )
+    {
+      deletePreviousAsm();
+      addAsm( "!cond:\t// (||)", 0, true );
+      cond_depth++;
+    }
+  else if( strcmp($1.name, "exp > exp lb" )==0 )
+    {
+      deletePreviousAsm();
+      addAsm( "!cond:\t// (||)", 0, true );
+      cond_depth++;
+    }
+  else if( strcmp($1.name, "exp >= exp lb" )==0 )
+    {
+      deletePreviousAsm();
+      addAsm( "!cond:\t// (||)", 0, true );
+      cond_depth++;
+    }
+  else
+    {
+      cond_depth = 0;
+      addAsm( string( "// " ) + string( $1.name ), 0, false );
+      //addAsm( "!else" + toString(if_depth) + ":\t// (||) -- last one", 0, true );
+    }
+
+
+  if( cond_depth >= 14 && !long_branches)
+    {
+      addCompilerMessage( "Nearing, At, or Exceeding the maximum number of compound conditionals for short-branching", 2 );
+    }
+}
+tOR {} condition
+{
+  strcpy($$.name, $5.name );
+}
+
+// tAND
+| condition
+{
+  if( strcmp($1.name, "exp != exp sb" )==0 )
+    {
+      addAsm( "!cond:\t// (&&)", 0, true );
+      cond_depth++;
+    }
+  else if( strcmp($1.name, "exp <= exp sb" )==0 )
+    {
+      deletePreviousAsm();
+      deletePreviousAsm();
+      addAsm( str_BCS + "!else" + toString(if_depth) + "+", 2, false );
+      addAsm( str_BNE + "!else" + toString(if_depth) + "+", 2, false );
+      addAsm( "!cond:\t// (&&)", 0, true );
+      cond_depth++;
+    }
+  else if( strcmp($1.name, "exp < exp sb" )==0 )
+    {
+      addAsm( "!cond:\t// (&&)", 0, true );      
+      cond_depth++;
+    }
+  else if( strcmp($1.name, "exp == exp sb" )==0 )
+    {
+      addAsm( "!cond:\t// (&&)", 0, true );      
+      cond_depth++;
+    }
+  else if( strcmp($1.name, "exp > exp sb" )==0 )
+    {
+      addAsm( "!cond:\t// (&&)", 0, true );      
+      cond_depth++;
+    }
+  else if( strcmp($1.name, "exp >= exp sb" )==0 )
+    {
+      addAsm( "!cond:\t// (&&)", 0, true );      
+      cond_depth++;
+    }
+  else if( strcmp($1.name, "exp != exp lb" )==0 )
+    {
+      deletePreviousAsm();
+      deletePreviousAsm();
+      addAsm( str_BNE + "!cond+", 2, false );
+      addAsm( str_JMP + "!else" + toString(if_depth) + "+", 3, false );
+      addAsm( "!cond:\t// (&&)", 0, true );
+      cond_depth++;
+    }
+  else if( strcmp($1.name, "exp <= exp lb" )==0 )
+    {
+      deletePreviousAsm();
+      deletePreviousAsm();
+      deletePreviousAsm();
+      addAsm( str_BCS + "!cond" + "+", 2, false );
+      addAsm( str_BNE + "!cond" + "+", 2, false );
+      addAsm( str_JMP + "!else" + toString(if_depth) + "+", 3, false );
+      addAsm( "!cond:\t// (&&)", 0, true );
+      cond_depth++;
+    }
+  else if( strcmp($1.name, "exp < exp lb" )==0 )
+    {
+      deletePreviousAsm();
+      deletePreviousAsm();
+      addAsm( str_BCC + "!cond+", 2, false );
+      addAsm( str_JMP + "!else" + toString(if_depth) + "+", 3, false );
+      addAsm( "!cond:\t// (&&)", 0, true );      
+      cond_depth++;
+    }
+  else if( strcmp($1.name, "exp == exp lb" )==0 )
+    {
+      deletePreviousAsm();
+      deletePreviousAsm();
+      addAsm( str_BEQ + "!cond+", 2, false );
+      addAsm( str_JMP + "!else" + toString(if_depth) + "+", 3, false );
+      addAsm( "!cond:\t// (&&)", 0, true );      
+      cond_depth++;
+    }
+    else if( strcmp($1.name, "exp > exp lb" )==0 )
+    {
+      deletePreviousAsm();
+      deletePreviousAsm();
+      addAsm( str_BNE + "!cond+", 2, false );
+      addAsm( str_JMP + "!else" + toString(if_depth) + "+", 3, false );
+      addAsm( "!cond:\t// (&&)", 0, true );      
+      cond_depth++;
+    }
+  else if( strcmp($1.name, "exp >= exp lb" )==0 )
+    {
+      deletePreviousAsm();
+      deletePreviousAsm();
+      addAsm( str_BCS + "!cond+", 2, false );
+      addAsm( str_JMP + "!else" + toString(if_depth) + "+", 3, false );
+      addAsm( "!cond:\t// (&&)", 0, true );      
+      cond_depth++;
+    }
+
+  else
+    {
+      cond_depth = 0;
+      addAsm( "!cond:\t// (&&) - last one", 0, true );
+    }
+
+  if( cond_depth >= 14 && !long_branches)
+    {
+      addCompilerMessage( "Nearing, At, or Exceeding the maximum number of compound conditionals for short-branching", 2 );
+    }
+} tAND {} condition
+{
+  strcpy($$.name, $5.name );
+}
+
+// internal condition
+| '(' condition ')'
 {
   strcpy( $$.name, $2.name );
 };
+
+
+
 | expression[LHS]
 {
   // TODO:
@@ -5348,8 +5825,18 @@ condition:
       tc+=string(getNameOf(getAddressOf($RHS.name)));
     }
   
-  if( scope_stack.top() == "FOR" ) addAsm( generateNewLabel() + commentmarker + "Top of FOR Loop", 0, true );  
-  if( scope_stack.top() == "WHILE" ) addAsm( generateNewLabel() + commentmarker + "Top of WHILE Loop", 0, true );
+  if( scope_stack.top() == "FOR" )
+    {
+      for_depth++;
+      addAsm( string("!for_top") + toString(for_depth) + ":", 0, true );       
+      //addAsm( generateNewLabel() + commentmarker + "Top of FOR Loop", 0, true );
+    }
+  if( scope_stack.top() == "WHILE" )
+    {
+      while_depth++;
+      addAsm( string("!while_top") + toString(while_depth) + ":", 0, true ); 
+      //addAsm( generateNewLabel() + commentmarker + "Top of WHILE Loop", 0, true );
+    }
   
   
   // at this point, we need to look at the type of the variable that is located
@@ -7586,19 +8073,21 @@ condition:
 	  if( !long_branches )
 	    {
 	      addComment( "short branch" );
-	      addAsm( str_BCC + getLabel( label_vector[label_major]+1, false) + commentmarker + "if c==0 jump to BODY", 2, false );
-	      addAsm( str_BNE + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR", 2, false );
+	      addAsm( str_BCC + "!for_body" + toString(for_depth) + "+", 2, false );
+	      addAsm( str_BNE + "!for_out" + toString(for_depth) + "+", 2, false );
 	    }
 	  else
 	    {
 	      addComment( "long branch" );
 	      addAsm( str_BCS + "!_skip+", 2,  false );
-	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if c==0 jump to BODY", 3, false );
+	      addAsm( str_JMP + "!for_body" + toString(for_depth) + "+", 3, false );
+
 	      addAsm( "!_skip:", 0, true );
 	      addAsm( str_BNE + "!_skip+", 2, false );
-	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==1 jump to BODY", 3, false );
+	      addAsm( str_JMP + "!for_body" + toString(for_depth) + "+", 3, false );
+
 	      addAsm( "!_skip:", 0, true );
-	      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR", 3, false );
+	      addAsm( str_JMP + "!for_out" + toString(for_depth) + "+", 3, false );
 	    }
 	}
       else if( string($OP.name) == string( "==" ) )
@@ -7606,14 +8095,14 @@ condition:
 	  if( !long_branches )
 	    {
 	      addComment( "short branch" );
-	      addAsm( str_BEQ + getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==1 jump to BODY", 2, false );
-	      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR", 3, false );
+	      addAsm( str_BEQ + "!for_body" + toString(for_depth) + "+", 2, false );
+	      addAsm( str_JMP + "!for_out" + toString(for_depth) + "+", 3, false );
 	    }
 	  else
 	    {
 	      addComment( "long branch" );
 	      addAsm( str_BEQ + "!_skip+", 2, false );
-	      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR", 3, false );
+	      addAsm( str_JMP + "!for_out" + toString(for_depth) + "+", 3, false );
 	      addAsm( "!_skip:", 0, true );
 	    }
 	}
@@ -7622,17 +8111,17 @@ condition:
 	  if( !long_branches )
 	    {
 	      addComment( "short branch" );
-	      addAsm( str_BEQ + getLabel( label_vector[label_major]+2, false) + commentmarker + "if z==1 jump out of FOR", 2, false );
-	      addAsm( str_BCC + getLabel( label_vector[label_major]+2, false) + commentmarker + "if c==0 jump out of FOR", 2, false );
+	      addAsm( str_BEQ + "!for_out" + toString(for_depth) + "+", 2, false );
+	      addAsm( str_BCC + "!for_out" + toString(for_depth) + "+", 2, false );
 	    }
 	  else
 	    {
 	      addComment( "long branch" );
 	      addAsm( str_BNE + "!_skip+", 2, false );
-	      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "if z==1 jump out of FOR", 3, false );
+	      addAsm( str_JMP + "!for_out" + toString(for_depth) + "+", 3, false );
 	      addAsm( "!_skip:", 0, true );
 	      addAsm( str_BCS + "!_skip+", 2, false );
-	      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "if c==0 jump out of FOR", 3, false );
+	      addAsm( str_JMP + "!for_out" + toString(for_depth) + "+", 3, false );
 	      addAsm( "!_skip:", 0, true );
 	    }
 	}
@@ -7641,15 +8130,15 @@ condition:
 	  if( !long_branches )
 	    {
 	      addComment( "short branch" );
-	      addAsm(str_BCS + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR", 2, false );
+	      addAsm( str_BCS + "!for_out" + toString(for_depth) + "+", 2, false );
 	    }
 	  else
 	    {
 	      addComment( "long branch" );
 	      addAsm( str_BCS + "!_skip+", 2, false );
-	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if c==0 jump to BODY", 3, false );
+	      addAsm( str_JMP + "!for_body" + toString(for_depth) + "+", 3, false );
 	      addAsm( "!_skip:", 0, true );
-	      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR (OPTIMIZE)" , 3, false );
+	      addAsm( str_JMP + "!for_out" + toString(for_depth) + "+", 3, false );
 	    }
 	}
       else if( string($OP.name) == string( ">=" ) )
@@ -7657,32 +8146,36 @@ condition:
 	  if( !long_branches )
 	    {
 	      addComment( "short branch" );
-	      addAsm( str_BCC + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR", 2, false );
+	      addAsm( str_BCC + "!for_out" + toString(for_depth) + "+", 2, false );
 	    }
 	  else
 	    {
 	      addComment( "long branch" );
 	      addAsm( str_BCC + "!_skip+", 2, false );
-	      addAsm( str_JMP  + getLabel( label_vector[label_major]+1, false) + commentmarker + "if c==1 jump to BODY", 3, false );
+	      addAsm( str_JMP + "!for_body" + toString(for_depth) + "+", 3, false );
 	      addAsm( "!_skip:", 0, true );
-	      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR", 3, false );
+	      addAsm( str_JMP + "!for_out" + toString(for_depth) + "+", 3, false );
 	    }
 	}
-      else /* != ... NOT EQUAL TO */
+      else if( string($OP.name) == string( "!=" ) )
 	{
 	  if( !long_branches )
 	    {
 	      addComment( "short branch" );
-	      addAsm( str_BEQ + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR", 2, false );
+	      addAsm( str_BEQ + "!for_out" + toString(for_depth) + "+", 2, false );
 	    }
 	  else
 	    {
 	      addComment( "long branch" );
 	      addAsm( str_BEQ + "!_skip+", 2, false );
-	      addAsm( str_JMP +  getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==0 jump to BODY", 3, false );
+	      addAsm( str_JMP + "!for_body" + toString(for_depth) + "+", 3, false );
 	      addAsm( "!_skip:", 0, true );
-	      addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "jump out of FOR (OPTIMIZE)", 3, false  );
+	      addAsm( str_JMP + "!for_out" + toString(for_depth) + "+", 3, false );
 	    }
+	}
+      else
+	{
+	  addCompilerMessage( "unknown relative operator... use one of the following: !=,==,<,<=,>,>=", 3 );
 	}
     }
   else if( scope_stack.top() == "WHILE" )
@@ -7692,20 +8185,20 @@ condition:
 	  if( !long_branches )
 	    {
 	      addComment( "short branch" );
-	      addAsm( str_BCC + getLabel( label_vector[label_major], false) + commentmarker + "if c==0 jump to BODY", 2, false );
-	      addAsm( str_BNE + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE", 2, false );
+	      addAsm( str_BCC + "!while_body" + toString(while_depth) + "+", 2, false );
+	      addAsm( str_BNE + "!while_out" + toString(while_depth) + "+", 2, false );
 	      strcpy($$.name, "exp <= exp sb" );
 	    }
 	  else
 	    {
 	      addComment( "long branch" );
 	      addAsm( str_BCS + "!_skip+", 2, false ); // BCS +3
-	      addAsm( str_JMP + getLabel( label_vector[label_major], false) + commentmarker + "if c==0 jump to BODY", 3, false );
+	      addAsm( str_JMP + "!while_body" + toString(while_depth) + "+", 3, false );
 	      addAsm( "!_skip:", 0, true );
 	      addAsm( str_BNE + "!_skip+", 2, false ); // BNE +3
-	      addAsm( str_JMP + getLabel( label_vector[label_major], false) + commentmarker + "if z==1 jump to BODY", 3, false );
+	      addAsm( str_JMP + "!while_body" + toString(while_depth) + "+", 3, false );
 	      addAsm( "!_skip:", 0, true );
-	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE", 3, false );
+	      addAsm( str_JMP + "!while_out" + toString(while_depth) + "+", 3, false );
 	      strcpy($$.name, "exp <= exp lb" );
 	    }
 	}   
@@ -7714,14 +8207,14 @@ condition:
 	  if( !long_branches )
 	    {
 	      addComment( "short branch" );
-	      addAsm( str_BNE + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE", 2, false );
+	      addAsm( str_BNE + "!while_out" + toString(while_depth) + "+", 2, false );
 	      strcpy($$.name, "exp == exp sb" );
 	    }
 	  else
 	    {
 	      addComment( "long branch" );
 	      addAsm( str_BEQ + "!_skip+", 2, false );
-	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE", 3, false );
+	      addAsm( str_JMP + "!while_out" + toString(while_depth) + "+", 3, false );
 	      addAsm( "!_skip:", 0, true );
 	      strcpy($$.name, "exp == exp lb" );
 	    }
@@ -7731,18 +8224,18 @@ condition:
 	  if( !long_branches )
 	    {
 	      addComment( "short branch" );
-	      addAsm( str_BCC + getLabel( label_vector[label_major]+1, false) + commentmarker + "if c==0 jump to ELSE", 2, false );
-	      addAsm( str_BEQ + getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==1 jump to ELSE", 2, false );
+	      addAsm( str_BCC + "!while_out" + toString(while_depth) + "+", 2, false );
+	      addAsm( str_BEQ + "!while_out" + toString(while_depth) + "+", 2, false );
 	      strcpy($$.name, "exp > exp sb" ); // shortbranches
 	    }
 	  else
 	    {
 	      addComment( "long branch" );
 	      addAsm( str_BCS + "!_skip+", 2, false );
-	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if c==0 jump to ELSE" , 3, false );
+	      addAsm( str_JMP + "!while_out" + toString(while_depth) + "+", 3, false );
 	      addAsm( "!_skip:", 0, true );	      
 	      addAsm( str_BNE + "!_skip+", 2, false );
-	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==1 jump to ELSE" , 3, false );
+	      addAsm( str_JMP + "!while_out" + toString(while_depth) + "+", 3, false );
 	      addAsm( "!_skip:", 0, true );
 	      strcpy($$.name, "exp > exp lb" ); // longbranches
 	    }
@@ -7752,14 +8245,14 @@ condition:
 	  if( !long_branches )
 	    {
 	      addComment( "short branch" );
-	      addAsm( str_BCS + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE", 2, false );
+	      addAsm( str_BCS + "!while_out" + toString(while_depth) + "+", 2, false );
 	      strcpy($$.name, "exp < exp sb" ); // shortbranches
 	    }
 	  else
 	    {
 	      addComment( "long branch" );
 	      addAsm( str_BCC + "!_skip+", 2, false );
-	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "jump to ELSE", 3, false );
+	      addAsm( str_JMP + "!while_out" + toString(while_depth) + "+", 3, false );
 	      addAsm( "!_skip:", 0, true );
 	      strcpy($$.name, "exp < exp lb" ); // longbranches
 	    }
@@ -7769,34 +8262,38 @@ condition:
 	  if( !long_branches )
 	    {
 	      addComment( "short branch" );
-	      addAsm( str_BCC + getLabel( label_vector[label_major]+1, false) + commentmarker + "if c==1 jump to ELSE", 2, false );
+	      addAsm( str_BCC + "!while_out" + toString(while_depth) + "+", 2, false );
 	      strcpy($$.name, "exp >= exp sb" ); // shortbranches
 	    }
 	  else
 	    {
 	      addComment( "long branch" );
 	      addAsm( str_BCS + "!_skip+", 2, false );
-	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if c==1 jump to ELSE", 3, false );
+	      addAsm( str_JMP + "!while_out" + toString(while_depth) + "+", 3, false );
 	      addAsm( "!_skip:", 0, true );
 	      strcpy($$.name, "exp >= exp lb" ); // longbranches
 	    }
 	}
-      else /* != ... NOT EQUAL TO */
+      else if( string($OP.name) == string( "!=" ) )
 	{
 	  if( !long_branches )
 	    {
 	      addComment( "short branch" );
-	      addAsm( str_BEQ  + getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==1 jump to ELSE", 2, false );
+	      addAsm( str_BEQ + "!while_out" + toString(while_depth) + "+", 2, false );
 	      strcpy($$.name, "exp != exp sb" ); // shortbranches
 	    }
 	  else
 	    {
 	      addComment( "long branch" );
 	      addAsm( str_BNE + "!_skip+", 2, false ); // BNE +3
-	      addAsm( str_JMP + getLabel( label_vector[label_major]+1, false) + commentmarker + "if z==1 jump to ELSE", 3, false );
+	      addAsm( str_JMP + "!while_out" + toString(while_depth) + "+", 3, false );
 	      addAsm( "!_skip:", 0, true );
 	      strcpy($$.name, "exp != exp lb" ); // longbranches
 	    }
+	}
+      else
+	{
+	  addCompilerMessage( "unknown relative operator... use one of the following: !=,==,<,<=,>,>=", 3 );
 	}
     }
   else if( scope_stack.top() == "IF" )
@@ -7806,17 +8303,17 @@ condition:
 	{
 	  if( !long_branches )
 	    {
-	      addComment( "short branch" );
-	      addAsm( str_BCC + "!body+" + commentmarker + "if c==0 jump to BODY", 2, false );
-	      addAsm( str_BNE + "!else" + toString(if_depth) + "+" + commentmarker + "jump to ELSE", 2, false );
+	      addComment( "short branch <=" );
+	      addAsm( str_BCC + "!if_body" + toString(if_depth) + "+", 2, false );
+	      addAsm( str_BNE + "!else" + toString(if_depth) + "+", 2, false );
 	      strcpy($$.name, "exp <= exp sb" );
 	    }
 	  else
 	    {
-	      addComment( "long branch" );
-	      addAsm( str_BCC + "!body+" + commentmarker + "if c==0 jump to BODY", 2, false );
-	      addAsm( str_BEQ + "!body+" + commentmarker + "if z==1 jump to BODY", 2, false );
-	      addAsm( str_JMP + "!else" + toString(if_depth) + "+" + commentmarker + "jump to ELSE (OPTIMIZE)", 3, false );
+	      addComment( "long branch <=" );
+	      addAsm( str_BCC + "!if_body" + toString(if_depth) + "+", 2, false );
+	      addAsm( str_BEQ + "!if_body" + toString(if_depth) + "+", 2, false );
+	      addAsm( str_JMP + "!else" + toString(if_depth) + "+", 3, false );
 	      strcpy($$.name, "exp <= exp lb" );
 	    }
 	}   
@@ -7824,16 +8321,16 @@ condition:
 	{
 	  if( !long_branches )
 	    {
-	      addComment( "short branch" );
-	      addAsm( str_BNE + "!else" + toString(if_depth) + "+" + commentmarker + "jump to ELSE", 2, false );
+	      addComment( "short branch ==" );
+	      addAsm( str_BNE + "!else" + toString(if_depth) + "+", 2, false );
 	      strcpy($$.name, "exp == exp sb" );
 	    }
 	  else
 	    {
 	      // 2026 05 10
-	      addComment( "long branch" );
-	      addAsm( str_BEQ + "!body+", 2, false );
-	      addAsm( str_JMP + "!else" + toString(if_depth) + "+" + commentmarker + "jump to ELSE", 3, false );
+	      addComment( "long branch ==" );
+	      addAsm( str_BEQ + "!if_body" + toString(if_depth) + "+", 2, false );
+	      addAsm( str_JMP + "!else" + toString(if_depth) + "+", 3, false );
 	      strcpy($$.name, "exp == exp lb" );
 	    }
 	}
@@ -7841,19 +8338,19 @@ condition:
 	{
 	  if( !long_branches )
 	    {
-	      addComment( "short branch" );
-	      addAsm( str_BCC + "!else" + toString(if_depth) + "+" + commentmarker + "if c==0 jump to ELSE", 2, false );
-	      addAsm( str_BEQ + "!else" + toString(if_depth) + "+" + commentmarker + "if z==1 jump to ELSE", 2, false );
+	      addComment( "short branch >" );
+	      addAsm( str_BCC + "!else" + toString(if_depth) + "+", 2, false );
+	      addAsm( str_BEQ + "!else" + toString(if_depth) + "+", 2, false );
 	      strcpy($$.name, "exp > exp sb" ); // shortbranches
 	    }
 	  else
 	    {
-	      addComment( "long branch" );
+	      addComment( "long branch >" );
 	      addAsm( str_BCS + "!_skip+", 2, false );
-	      addAsm( str_JMP + "!else" + toString(if_depth) + "+" + commentmarker + "if c==0 jump to ELSE" , 3, false );
+	      addAsm( str_JMP + "!else" + toString(if_depth) + "+", 3, false );
 	      addAsm( "!_skip:", 0, true );	      
-	      addAsm( str_BNE + "!body+", 2, false );
-	      addAsm( str_JMP + "!else" + toString(if_depth) + "+" + commentmarker + "if z==1 jump to ELSE" , 3, false );
+	      addAsm( str_BNE + "!if_body" + toString(if_depth) + "+", 2, false );
+	      addAsm( str_JMP + "!else" + toString(if_depth) + "+", 3, false );
 
 	      strcpy($$.name, "exp > exp lb" ); // longbranches
 	    }
@@ -7862,15 +8359,15 @@ condition:
 	{
 	  if( !long_branches )
 	    {
-	      addComment( "short branch" );
-	      addAsm( str_BCS + "!else" + toString(if_depth) + "+" + commentmarker + "jump to ELSE", 2, false );
+	      addComment( "short branch <" );
+	      addAsm( str_BCS + "!else" + toString(if_depth) + "+", 2, false );
 	      strcpy($$.name, "exp < exp sb" ); // shortbranches
 	    }
 	  else
 	    {
-	      addComment( "long branch" );
-	      addAsm( str_BCC + "!body+", 2, false );
-	      addAsm( str_JMP + "!else" + toString(if_depth) + "+" + commentmarker + "jump to ELSE (OPTIMIZE)", 3, false );
+	      addComment( "long branch <" );
+	      addAsm( str_BCC + "!if_body" + toString(if_depth) + "+", 2, false );
+	      addAsm( str_JMP + "!else" + toString(if_depth) + "+", 3, false );
 	      strcpy($$.name, "exp < exp lb" ); // longbranches
 	    }
 	}
@@ -7878,166 +8375,48 @@ condition:
 	{
 	  if( !long_branches )
 	    {
-	      addComment( "short branch" );
-	      addAsm( str_BCC + "!else" + toString(if_depth) + "+" + commentmarker + "if c==1 jump to ELSE", 2, false );	      
+	      addComment( "short branch >=" );
+	      addAsm( str_BCC + "!else" + toString(if_depth) + "+", 2, false );	      
 	      strcpy($$.name, "exp >= exp sb" ); // shortbranches
 	    }
 	  else
 	    {
-	      addComment( "long branch" );
-	      addAsm( str_BCS + "!body+", 2, false );
-	      addAsm( str_JMP + "!else" + toString(if_depth) + "+" + commentmarker + "if c==1 jump to ELSE (OPTIMIZE)", 3, false );
+	      addComment( "long branch >=" );
+	      addAsm( str_BCS + "!if_body" + toString(if_depth) + "+", 2, false );
+	      addAsm( str_JMP + "!else" + toString(if_depth) + "+", 3, false );
 	      strcpy($$.name, "exp >= exp lb" ); // longbranches
 	    }
 	}
-      else /* != ... NOT EQUAL TO */
+      else if( string($OP.name) == string( "!=" ) )
 	{
 	  if( !long_branches )
 	    {
-	      addComment( "short branch" );
-	      addAsm( str_BEQ  + "!else" + toString(if_depth) + "+" + commentmarker + "if z==1 jump to ELSE", 2, false );
+	      addComment( "short branch !=" );
+	      addAsm( str_BEQ  + "!else" + toString(if_depth) + "+", 2, false );
 	      strcpy($$.name, "exp != exp sb" ); // shortbranches
 	    }
 	  else
 	    {
 	      // 2026 05 10
-	      addComment( "long branch" );
-	      addAsm( str_BNE + "!body+", 2, false ); //jump to body
-	      addAsm( str_JMP + "!else" + toString(if_depth) + "+" + commentmarker + "if z==1 jump to ELSE ", 3, false );
+	      addComment( "long branch !=" );
+	      addAsm( str_BNE + "!if_body" + toString(if_depth) + "+", 2, false ); //jump to body
+	      addAsm( str_JMP + "!else" + toString(if_depth) + "+", 3, false );
 	      strcpy($$.name, "exp != exp lb" ); // longbranches
 	    }
+	}
+      else
+	{
+	  addCompilerMessage( "unknown relative operator", 3 );
 	}
       popScope();
     }
   else
     {
-      addComment( "Unknown Conditional" );
+      addComment( "Unknown relative operator" );
     }
-
-  addComment( "=========================================================");        
-}
-| condition
-{
-  addAsm( "!else" + toString(if_depth) + ":\t// (||)", 0, true );
-  string _tmpCond = $1.name;
-
-} tOR {} condition {}
-{
-  addComment( "condition tOR condition" );
-}
-| condition
-{
-  addAsm( "!body:\t// (&&)", 0, true );
-  string _tmpCond = $1.name;
-  if( 0 )
-    {
-      if( _tmpCond == "exp == exp" )
-	{
-	  // TODO CHECK THIS ONE (there may be a comment in there that it's deleting w/o checking to see if comments are on
-	  if( arg_asm_comments )
-	    {
-	      deletePreviousAsm();
-	    }
-	  deletePreviousAsm();
-	  deletePreviousAsm();
-	  addAsm( str_JMP + getLabel( label_vector[label_major]+2, false), 3, false);
-	  addAsm( "!_skip:", 0, true );
-	}
-      else if( _tmpCond == "exp > exp lb" )
-	{
-	  if( arg_asm_comments )
-	    {
-	      deletePreviousAsm();
-	    }
-	  deletePreviousAsm();
-	  deletePreviousAsm();
-	  deletePreviousAsm();
-	  deletePreviousAsm();
-	  deletePreviousAsm();
-	  addComment( "deleted previous 5 instructions" );
-	  addAsm( str_JMP + getLabel( label_vector[label_major]+2, false), 3, false);
-	  addAsm( "!_skip:", 0, true );
-	  addAsm( str_BNE + "!_skip+", 2, false );
-	  addAsm( str_JMP + getLabel( label_vector[label_major]+2, false), 3, false);
-	  addAsm( "!_skip:", 0, true ); 
-	}
-      else if( _tmpCond == "exp <= exp lb" )
-	{
-	  if( arg_asm_comments )
-	    {
-	      deletePreviousAsm();
-	    }
-      
-	  deletePreviousAsm();
-	  deletePreviousAsm();
-	  deletePreviousAsm();
-	  deletePreviousAsm();
-	  deletePreviousAsm();
-	  deletePreviousAsm();
-	  //addCompilerMessage( "Deleted Mnemonics", 0 );
-	  addComment( "deleted previous 5 instructions" );
-
-	  addAsm( str_JMP + getLabel( label_vector[label_major], false), 3, false);
-	  addAsm( "!_skip:", 0, true );
-	  addAsm( str_BNE + "!_skip+", 2, false );
-	  addAsm( str_JMP + getLabel( label_vector[label_major], false), 3, false);
-	  addAsm( "!_skip:", 0, true );
-	  addAsm( str_JMP + getLabel( label_vector[label_major]+2, false), 3, false);
-      
-	}
-      else if( _tmpCond == "exp >= exp lb" )
-	{
-	  if( arg_asm_comments )
-	    {
-	      deletePreviousAsm();
-	    }
-	  
-	  deletePreviousAsm();
-	  deletePreviousAsm();
-	  addComment( "deleted previous 2 instructions" );
- 
-	  addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "JMP to else", 3, false);
-	  addAsm( "!_skip:", 0, true );
-	}
-      else if( _tmpCond == "exp < exp lb" )
-	{
-	  if( arg_asm_comments )
-	    {
-	      deletePreviousAsm();
-	    }
-	  
-	  deletePreviousAsm();
-	  deletePreviousAsm();
-	  addComment( "deleted previous 2 instructions" );
-      
-	  addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "JMP to else", 3, false);
-	  addAsm( "!_skip:", 0, true );
-	}
-      else if( _tmpCond == "exp != exp lb" )
-	{
-	  if( arg_asm_comments )
-	    {
-	      deletePreviousAsm();
-	    }
-	  deletePreviousAsm();
-	  deletePreviousAsm();
-	  addComment( "deleted previous 2 instructions" );
-	  addAsm( str_JMP + getLabel( label_vector[label_major]+2, false) + commentmarker + "JMP to else", 3, false);
-	  addAsm( "!_skip:", 0, true );
-	}
-
-      // TODO: Implement the rest of these to coincide with all of the exp relop exp's
-    }
-  
-} tAND {} condition {}
-{
-  addComment( "condition tAND condition" );
+  addComment( "=========================================================");
 };
 
-//| TRUE { add('K'); $$.nd = NULL; }
-//| FALSE { add('K'); $$.nd = NULL; }
-//| { $$.nd = NULL; }
-//;
 
 // START OF STATEMENTS
 statement:
@@ -11442,7 +11821,7 @@ statement:
   string a_name = getNameOf( a );
   int size_of_instruction = 3;
   if( a < 256 ) size_of_instruction = 2;
-  if( isWordID($3.name ) )
+  if(isWordID($3.name))
     {
       addComment( "inc(WordID) - updated 2026 07 07" );
       addAsm( str_INC + a_name, size_of_instruction, false );
@@ -11455,7 +11834,7 @@ statement:
       addComment( "inc(UintID/IntID)" );
       addAsm( str_INC + getNameOf(a), size_of_instruction, false );
     }
-  else if( isWordIMM($3.name) )
+  else if(isWordIMM($3.name))
     {
       addComment( "inc(WordIMM) - address");
       addCompilerMessage( "inc(" + toHex(atoi(stripFirst($3.name).c_str())) + ") increments the byte at the specified memory address.", 1);
@@ -14963,68 +15342,6 @@ spritexy(UintID, XA, WordID)
       addAsm( str_TYA, 1, false );
       addAsm( str_STA + "$D001,X", 3, false );
     }
-
-  //else if( isIMM($3.name) && isUintIMM($6.name) && isIMM($9.name))
-  //{
-  //  addComment( "spritexy(IMM, UintIMM, IMM): testing" );
-  //  if( atoi( stripFirst($3.name).c_str()) > 8 )
-  //	{
-  //	  addCompilerMessage( "spritexy: sprite number out of range", 3 );
-  //	}
-  //
-  //  if( atoi( stripFirst($9.name).c_str()) > 255 )
-  //	{
-  //	  addCompilerMessage( "spritexy: y value out of range", 3 );
-  //	}
-  //  else if( atoi( stripFirst($9.name).c_str()) < 9 || atoi( stripFirst($9.name).c_str()) > 248 )
-  //	{
-  //	   addCompilerMessage( "spritexy: y value outside the screen borders", 1 );
-  //	}
-  //  addComment( "spritexy( " + string($3.name) + " " + string($6.name) + " " + string($9.name) + ");");
-  //  sprite_address = atoi( stripFirst($3.name).c_str() );
-  //  sprite_address*=2;
-  //  sprite_address+=base_address;
-  //  
-  //  x_coord = atoi( stripFirst($6.name).c_str() );
-  //  addAsm( str_LDA + "#$" + toHex( x_coord) , 2, false );
-  //  addAsm( str_STA + "$" + toHex( sprite_address ), 3, false );
-  //  y_coord = atoi( stripFirst($9.name).c_str() );
-  //  addAsm( str_LDA + "#$" + toHex( y_coord) , 2, false );
-  //  addAsm( str_STA + "$" + toHex( sprite_address+1 ), 3, false );
-  //
-  //  int sprite_number = atoi( stripFirst($3.name).c_str());
-  //  switch( sprite_number )
-  //	{
-  //	case 0:
-  //	  addAsm( str_LDA + "#$FE", 2, false );
-  //	  break;
-  //	case 1:
-  //	  addAsm( str_LDA + "#$FD", 2, false );
-  //	  break;
-  //	case 2:
-  //	  addAsm( str_LDA + "#$FB", 2, false );
-  //	  break;
-  //	case 3:
-  //	  addAsm( str_LDA + "#$F7", 2, false );
-  //	  break;
-  //	case 4:
-  //	  addAsm( str_LDA + "#$EF", 2, false );
-  //	  break;
-  //	case 5:
-  //	  addAsm( str_LDA + "#$DF", 2, false );
-  //	  break;
-  //	case 6:
-  //	  addAsm( str_LDA + "#$BF", 2, false );
-  //	  break;
-  //	case 7:
-  //	  addAsm( str_LDA + "#$7F", 2, false );
-  //	  break;
-  //	default:
-  //	  addCompilerMessage( "invalid sprite number", 2 );
-  //	}
-  //  addAsm( str_AND + "$D010", 3, false ); 
-  //  addAsm( str_STA + "$D010", 3, false );
-  //}
   else if( isIMM($3.name) && isWordID($6.name) && isIMM($9.name) )
     {
       addComment( "spritexy(IMM, WordID, IMM): testing" );
@@ -16313,6 +16630,7 @@ spritexy(UintID, XA, WordID)
   string arg2 = string($9.name);
 
   addAsm( "#if SAFEMCPLOT", 0, true);
+  stack_is_needed = true;
   addAsm( str_LDA + "$02", 2, false );
   addAsm( str_JSR + "PUSH", 3, false );
   addAsm( str_LDA + "$03", 2, false );
@@ -26463,7 +26781,7 @@ arithmetic[MATHOP] expression[OP2]
 		addAsm( str_ADC + getNameOf(a-1) + " +1", size_of_instruction, false );
 		addAsm( str_TAX );
 		addAsm( str_TYA );
-		strcpy($$.name, "_XA" );
+	     	strcpy($$.name, "_XA" );
 	      }
 	    else if( op == string( "-" ) )
 	      {
@@ -33266,7 +33584,10 @@ int main(int argc, char *argv[])
       if( a == "--no-optimize" ) arg_optimize = false;
       if( a == "--optimize" ) arg_optimize = true;
       if( a == "--show-cycles" ) arg_show_cycles = true;
-      if( a == "--no-asm-comments" ) arg_asm_comments = false;
+      if( a == "--no-asm-comments" )
+	{
+	  arg_asm_comments = false;
+	}
       if( a == "--asm-comments" ) arg_asm_comments = true;
       if( a == "--parser-comments" ) arg_parser_comments = true;
       //if( a == "--symbol-table" ) symbol_table_is_needed = true;
@@ -33278,8 +33599,16 @@ int main(int argc, char *argv[])
       if( a == "--hide-opt" ) arg_show_opt = false; 
       if( a == "--debug" ) { debug_flag_is_on = true; arg_debug_comments = true; }
       if( a == "--basic" || a == "--basicupstart" ) basic_upstart = true;
-      if( a == "--safe-loops" ) arg_safe_loops = true;
-      if( a == "--unsafe-loops" ) arg_safe_loops = false;
+      if( a == "--safe-loops" )
+	{
+	  arg_unsafe_loops = false;
+	  arg_safe_loops = true;
+	}
+      if( a == "--unsafe-loops" )
+	{
+	  arg_unsafe_loops = true;
+	  arg_safe_loops = false;
+	}
       if( a == "--scanf-buffer-size" )
 	{
 	  scanf_buffer_size = atoi( argv[i+1] );
@@ -33299,6 +33628,7 @@ int main(int argc, char *argv[])
       if( a == "--unsafe-ifs" )
 	{
 	  arg_unsafe_ifs = true;
+	  arg_safe_ifs = false;
 	}
       if( a == "--experimental-math" )
 	{
@@ -33307,13 +33637,16 @@ int main(int argc, char *argv[])
       if( a == "--safe-ifs" )
 	{
 	  arg_unsafe_ifs = false;
+	  arg_safe_ifs = true;
 	}
       if( a == "--safe-math" )
 	{
+	  arg_safe_math = true;
 	  arg_unsafe_math = false;
 	}
       if( a == "--unsafe-math" )
 	{
+	  arg_safe_math = false;
 	  arg_unsafe_math = true;
 	}
       if( a == "--kick" )
@@ -33347,7 +33680,6 @@ int main(int argc, char *argv[])
 	  cerr << "\n\nusage:" << endl << argv[0] << " <options> inputfile.c outputfile.asm\n\n"
 	       << "\t--memory-locations\twill show the memory addresses of the assembler instructions\n" 
 	       << "\t--unsafe-math\tcompile with math operations that are potentially destructive to ZP\n" 
-	    // << "\t--no-labels\t\twill supress the labels (and turn them into memory addresses)\n" 
 	       << "\t--no-asm-comments\twill supress most comments pertaining to flow of control\n" 
 	       << "\t--no-optimize\twill generate code with no post-compilation optimizations\n" 
 	       << "\t--parser-comments\twill show the comments intended to help debug the parser\n"
@@ -33677,7 +34009,7 @@ int main(int argc, char *argv[])
       addAsm( str_RTS );
 
     }
-  if( multicolour_plot_is_needed && 1 )
+  if( multicolour_plot_is_needed && true )
     {
       addComment( "vvv------------------------------------vvv" );
       addComment( "vvv from p164 of Advanced Machine Code vvv" );
@@ -34967,9 +35299,10 @@ int main(int argc, char *argv[])
   //ProcessMemoryLocationsOfCode();
   ProcessStrings();
   ProcessReturnValues();
+  
   ProcessBranches();
   ProcessBranches();
-  //ProcessMobs();
+
   current_code_location = code_start;  // reset the memory counter
   
   ProcessMemoryLocationsOfCode();
