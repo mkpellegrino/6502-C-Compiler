@@ -10,8 +10,6 @@ digit [0-9]
 frmt  [{\t}|{\n}]
 
 %%
-"#longbranches"     { strcpy(yylval.nd_obj.name,(yytext)); return tBL; }
-"#shortbranches"     { strcpy(yylval.nd_obj.name,(yytext)); return tBS; }
 "#needs"     { strcpy(yylval.nd_obj.name,(yytext)); return tNEEDS; }
 "inline"     { strcpy(yylval.nd_obj.name,(yytext)); return tINLINE; }
 "Math.PI"       {strcpy(yylval.nd_obj.name,(yytext)); return tPI; }

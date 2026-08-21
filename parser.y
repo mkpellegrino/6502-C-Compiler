@@ -2216,21 +2216,21 @@
 	    if(
 	       
 	       (cmpstr(asm_instr[i+0]->getString(), string( "!:\t") + str_ADC ) &&
-	       cmpstr(asm_instr[i+1]->getString(), str_TAY) &&	       
-	       cmpstr(asm_instr[i+2]->getString(), str_TXA) &&
-	       cmpstr(asm_instr[i+3]->getString(), str_ADC) &&
-	       cmpstr(asm_instr[i+4]->getString(), str_TAX) &&
-	       cmpstr(asm_instr[i+5]->getString(), str_TYA) &&
-	       cmpstr(asm_instr[i+6]->getString(), str_STA) &&
+		cmpstr(asm_instr[i+1]->getString(), str_TAY) &&	       
+		cmpstr(asm_instr[i+2]->getString(), str_TXA) &&
+		cmpstr(asm_instr[i+3]->getString(), str_ADC) &&
+		cmpstr(asm_instr[i+4]->getString(), str_TAX) &&
+		cmpstr(asm_instr[i+5]->getString(), str_TYA) &&
+		cmpstr(asm_instr[i+6]->getString(), str_STA) &&
 		cmpstr(asm_instr[i+7]->getString(), str_STX) ) ||
 
 	       (cmpstr(asm_instr[i+0]->getString(), str_ADC ) &&
-	       cmpstr(asm_instr[i+1]->getString(), str_TAY) &&	       
-	       cmpstr(asm_instr[i+2]->getString(), str_TXA) &&
-	       cmpstr(asm_instr[i+3]->getString(), str_ADC) &&
-	       cmpstr(asm_instr[i+4]->getString(), str_TAX) &&
-	       cmpstr(asm_instr[i+5]->getString(), str_TYA) &&
-	       cmpstr(asm_instr[i+6]->getString(), str_STA) &&
+		cmpstr(asm_instr[i+1]->getString(), str_TAY) &&	       
+		cmpstr(asm_instr[i+2]->getString(), str_TXA) &&
+		cmpstr(asm_instr[i+3]->getString(), str_ADC) &&
+		cmpstr(asm_instr[i+4]->getString(), str_TAX) &&
+		cmpstr(asm_instr[i+5]->getString(), str_TYA) &&
+		cmpstr(asm_instr[i+6]->getString(), str_STA) &&
 		cmpstr(asm_instr[i+7]->getString(), str_STX) )
 	       
 	       )
@@ -2258,22 +2258,22 @@
 	    if(
 	       
 	       (cmpstr(asm_instr[i+0]->getString(), "!:\t" + str_ADC ) &&
-	       cmpstr(asm_instr[i+1]->getString(), str_TAY) &&	       
-	       cmpstr(asm_instr[i+2]->getString(), str_LDA + "#$00") &&
-	       cmpstr(asm_instr[i+3]->getString(), str_ADC + "#$00") &&
-	       cmpstr(asm_instr[i+4]->getString(), str_TAX) &&
-	       cmpstr(asm_instr[i+5]->getString(), str_TYA) &&
-	       cmpstr(asm_instr[i+6]->getString(), str_STA) &&
+		cmpstr(asm_instr[i+1]->getString(), str_TAY) &&	       
+		cmpstr(asm_instr[i+2]->getString(), str_LDA + "#$00") &&
+		cmpstr(asm_instr[i+3]->getString(), str_ADC + "#$00") &&
+		cmpstr(asm_instr[i+4]->getString(), str_TAX) &&
+		cmpstr(asm_instr[i+5]->getString(), str_TYA) &&
+		cmpstr(asm_instr[i+6]->getString(), str_STA) &&
 		!cmpstr(asm_instr[i+7]->getString(), str_STX) ) ||
 
 	       
 	       (cmpstr(asm_instr[i+0]->getString(), str_ADC ) &&
-	       cmpstr(asm_instr[i+1]->getString(), str_TAY) &&	       
-	       cmpstr(asm_instr[i+2]->getString(), str_LDA + "#$00") &&
-	       cmpstr(asm_instr[i+3]->getString(), str_ADC + "#$00") &&
-	       cmpstr(asm_instr[i+4]->getString(), str_TAX) &&
-	       cmpstr(asm_instr[i+5]->getString(), str_TYA) &&
-	       cmpstr(asm_instr[i+6]->getString(), str_STA) &&
+		cmpstr(asm_instr[i+1]->getString(), str_TAY) &&	       
+		cmpstr(asm_instr[i+2]->getString(), str_LDA + "#$00") &&
+		cmpstr(asm_instr[i+3]->getString(), str_ADC + "#$00") &&
+		cmpstr(asm_instr[i+4]->getString(), str_TAX) &&
+		cmpstr(asm_instr[i+5]->getString(), str_TYA) &&
+		cmpstr(asm_instr[i+6]->getString(), str_STA) &&
 		!cmpstr(asm_instr[i+7]->getString(), str_STX) )
 	       
 	       )
@@ -4053,7 +4053,7 @@
 	       cmpstr( asm_instr[i-1]->getString(), InstA + A + to_string(j) + "+" ) &&
 	       cmpstr( asm_instr[i]->getString(), InstB + B + to_string(j) + "+" ) &&
 	       cmpstr( asm_instr[i+1]->getString(), A + to_string(j)+":" )
-	       )
+		)
 	      {
 		string label = asm_instr[i]->getString().substr(4,asm_instr[i]->getString().length());
 		string actual_label = label;
@@ -4122,7 +4122,7 @@
 	       cmpstr( asm_instr[i-1]->getString(), InstA + A +  "+" ) &&
 	       cmpstr( asm_instr[i]->getString(), InstB + B + to_string(j) + "+" ) &&
 	       cmpstr( asm_instr[i+1]->getString(), A + ":" )
-	       )
+		)
 	      {
 		string label = asm_instr[i]->getString().substr(4,asm_instr[i]->getString().length());
 		string actual_label = label;
@@ -4137,6 +4137,146 @@
 		    label = label.substr(found, label.length());
 		  } 	    
 		int d = distanceFrom(i, B + to_string(j) + ":", label.length());
+		if( d < 128 && d > -127 && d != 0 )
+		  {
+		    string C;
+		    if( InstA == str_BEQ )
+		      {
+			C = str_BNE;
+		      }
+		    else if( InstA == str_BNE )
+		      {
+			C = str_BEQ;
+		      }
+		    else if( InstA == str_BCS )
+		      {
+			C = str_BCC;
+		      }
+		    else if( InstA == str_BCC )
+		      {
+			C = str_BCS;
+		      }
+		    else
+		      {
+			addCompilerMessage("Optimization Crash: Processing Branches", 3 );
+		      }
+		    
+		    asm_instr[i]->setString( C + actual_label + commentmarker + "[" + to_string(d) + "] (OPTIMIZED)" );
+		    asm_instr[i]->setSize(2);
+		    asm_instr.erase(asm_instr.begin()+i-1,asm_instr.begin()+i);
+		    asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+1);
+
+		    number_of_optimizations++;
+		  }
+		else
+		  {
+		    asm_instr[i]->setString(asm_instr[i]->getString() + commentmarker + "[" + to_string(d) + "] (CANNOT BE OPTIMIZED)" );
+		  }
+	      }
+	  }
+      }
+
+    return number_of_optimizations;
+  }
+
+
+  // regular old skip-a-roo
+  int optimizeConditionalType1( string InstA, string A, string InstB, string B )
+  {
+    int number_of_optimizations = 0;
+    for( int i=asm_instr.size()-1; i>1; i-- )
+      {
+	for( int j = 0; j < 50; j++ )
+	  {
+	    if( 
+	       cmpstr( asm_instr[i-1]->getString(), InstA + A +  "+" ) &&
+	       cmpstr( asm_instr[i]->getString(), InstB + B + to_string(j) + "+" ) &&
+	       cmpstr( asm_instr[i+1]->getString(), A + ":" )
+		)
+	      {
+		string label = asm_instr[i]->getString().substr(4,asm_instr[i]->getString().length());
+		string actual_label = label;
+		size_t found = label.find(' ');	    
+		if (found != std::string::npos)
+		  {
+		    label = label.substr(0, found);
+		  } 
+		found = label.find('+');	    
+		if (found != std::string::npos)
+		  {
+		    label = label.substr(found, label.length());
+		  } 	    
+		int d = distanceFrom(i, B + to_string(j) + ":", label.length());
+		if( d < 128 && d > -127 && d != 0 )
+		  {
+		    string C;
+		    if( InstA == str_BEQ )
+		      {
+			C = str_BNE;
+		      }
+		    else if( InstA == str_BNE )
+		      {
+			C = str_BEQ;
+		      }
+		    else if( InstA == str_BCS )
+		      {
+			C = str_BCC;
+		      }
+		    else if( InstA == str_BCC )
+		      {
+			C = str_BCS;
+		      }
+		    else
+		      {
+			addCompilerMessage("Optimization Crash: Processing Branches", 3 );
+		      }
+		    
+		    asm_instr[i]->setString( C + actual_label + commentmarker + "[" + to_string(d) + "] (OPTIMIZED)" );
+		    asm_instr[i]->setSize(2);
+		    asm_instr.erase(asm_instr.begin()+i-1,asm_instr.begin()+i);
+		    // asm_instr.erase(asm_instr.begin()+i,asm_instr.begin()+i+1);
+
+		    number_of_optimizations++;
+		  }
+		else
+		  {
+		    asm_instr[i]->setString(asm_instr[i]->getString() + commentmarker + "[" + to_string(d) + "] (CANNOT BE OPTIMIZED)" );
+		  }
+	      }
+	  }
+      }
+
+    return number_of_optimizations;
+  }
+
+
+
+  int optimizeConditionalType2( string InstA, string A, string InstB, string B )
+  {
+    int number_of_optimizations = 0;
+    for( int i=asm_instr.size()-1; i>1; i-- )
+      {
+	for( int j = 0; j < 50; j++ )
+	  {
+	    if( 
+	       cmpstr( asm_instr[i-1]->getString(), InstA + A +  "+" ) &&
+	       cmpstr( asm_instr[i]->getString(), InstB + B + "+" ) &&
+	       cmpstr( asm_instr[i+1]->getString(), A + ":" )
+		)
+	      {
+		string label = asm_instr[i]->getString().substr(4,asm_instr[i]->getString().length());
+		string actual_label = label;
+		size_t found = label.find(' ');	    
+		if (found != std::string::npos)
+		  {
+		    label = label.substr(0, found);
+		  } 
+		found = label.find('+');	    
+		if (found != std::string::npos)
+		  {
+		    label = label.substr(found, label.length());
+		  } 	    
+		int d = distanceFrom(i, B + ":", label.length());
 		if( d < 128 && d > -127 && d != 0 )
 		  {
 		    string C;
@@ -4209,9 +4349,33 @@
     x += optimizeBranchType2( str_BEQ, "!_skip", str_JMP, "!for_body" );
     x += optimizeBranchType2( str_BCC, "!_skip", str_JMP, "!for_body" );
     
+    x += optimizeBranchType1( str_BEQ, "!for_body", str_JMP, "!for_out" );
     x += optimizeBranchType1( str_BNE, "!for_body", str_JMP, "!for_out" );
     x += optimizeBranchType1( str_BCS, "!for_body", str_JMP, "!for_out" );
     x += optimizeBranchType1( str_BCC, "!for_body", str_JMP, "!for_out" );
+
+    x += optimizeConditionalType1( str_BEQ, "!cond", str_JMP, "!while_out" );
+
+    x += optimizeConditionalType1( str_BNE, "!cond", str_JMP, "!while_out" );
+
+    x += optimizeConditionalType1( str_BCC, "!cond", str_JMP, "!while_out" );
+
+    x += optimizeConditionalType1( str_BCS, "!cond", str_JMP, "!while_out" );
+
+    x += optimizeConditionalType1( str_BNE, "!cond", str_JMP, "!else" );
+
+    x += optimizeConditionalType1( str_BEQ, "!cond", str_JMP, "!else" );
+
+    x += optimizeConditionalType1( str_BCC, "!cond", str_JMP, "!else" );
+
+    x += optimizeConditionalType1( str_BCS, "!cond", str_JMP, "!else" );
+
+
+    x += optimizeConditionalType2( str_BEQ, "!_skip", str_JMP, "!cond_group_end" );
+    x += optimizeConditionalType2( str_BNE, "!_skip", str_JMP, "!cond_group_end" );
+    x += optimizeConditionalType2( str_BCC, "!_skip", str_JMP, "!cond_group_end" );
+    x += optimizeConditionalType2( str_BCS, "!_skip", str_JMP, "!cond_group_end" );
+
     
     if( x > 0 )
       {
@@ -4713,7 +4877,7 @@
 
 //%parse-param { FILE* fp }
 %token VOID 
-%token <nd_obj> /*tREF*/ CHAR tFCLOSE tFOPEN tFCLRCHN tFCHROUT tFCHRIN tFREADST tFCHKOUT tFCHKIN tSETLFS tSETNAM tIMPORT tCOMMENT tDATA tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD /*tBYTE*/ /*tDOUBLE*/ tUINT tPOINTER tLN tABS tSIN tCOS tTAN tSIDIRQ tSIDOFF tSTRTOFLOAT tSTRTOWORD tTOFLOAT tINTTOWORD tTOUINT tTOWORD tTOBIT tDEC tINC tROL tROR tLSR tGETPC tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJUMP tSETSCR tJSR tIRQ tROMOUT tROMIN tLDA tASL tSPRITECLR tSPRITESET tSPRITEREG tSPRITEOFF tRND tXXX tINLINE tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tPEEK tPOKE CHARACTER tPRINTS PRINTFF SCANFF tSTRLEN tWORDSTRLEN INT FLOAT WHILE FOR IF ELSE /* TRUE FALSE */  NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE EXPONENT tSQRT INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL tSCREEN tNULL tMEMCPY tSEED tNEEDS tPI tPHI tE tBL tBS
+%token <nd_obj> /*tREF*/ CHAR tFCLOSE tFOPEN tFCLRCHN tFCHROUT tFCHRIN tFREADST tFCHKOUT tFCHKIN tSETLFS tSETNAM tIMPORT tCOMMENT tDATA tBANK tPLUSPLUS tMINUSMINUS tSPRITECOLLISION tGETIN tGETCHAR tSPRITEXY tSPRITEX tSPRITEY tSPRITECOLOUR tSPRITEON tWORD /*tBYTE*/ /*tDOUBLE*/ tUINT tPOINTER tLN tABS tSIN tCOS tTAN tSIDIRQ tSIDOFF tSTRTOFLOAT tSTRTOWORD tTOFLOAT tINTTOWORD tTOUINT tTOWORD tTOBIT tDEC tINC tROL tROR tLSR tGETPC tGETBANK tGETBMP tGETSCR tGETADDR tGETXY tPLOT tJUMP tSETSCR tJSR tIRQ tROMOUT tROMIN tLDA tASL tSPRITECLR tSPRITESET tSPRITEREG tSPRITEOFF tRND tXXX tINLINE tJMP tCURSORXY tNOP tCLS tBYTE2HEX tTWOS tPEEK tPOKE CHARACTER tPRINTS PRINTFF SCANFF tSTRLEN tWORDSTRLEN INT FLOAT WHILE FOR IF ELSE /* TRUE FALSE */  NUMBER HEX_NUM FLOAT_NUM ID LE GE EQ NE GT LT tbwNOT tbwAND tbwOR tAND tOR STR ADD SUBTRACT MULTIPLY DIVIDE EXPONENT tSQRT INCLUDE RETURN tMOBBKGCOLLISION tGETH tGETL tSCREEN tNULL tMEMCPY tSEED tNEEDS tPI tPHI tE
 %type <nd_obj> headers main body return function datatype statement arithmetic relop program else 
    %type <nd_obj2> init value expression /*charlist*/ numberlist parameterlist argumentlist
       %type <nd_obj3>  condition
@@ -5311,6 +5475,9 @@ body:
 | WHILE
 {
   // 2023 06 27
+  while_depth++;
+  addAsm( string("!while_top") + toString(while_depth) + ":", 0, true );
+  
   string s = gen_random_str(10);
   rnd_str_vector.push(s);
   
@@ -5351,6 +5518,8 @@ body:
 {
   string s = gen_random_str(10);
   rnd_str_vector.push(s);
+  for_depth++;
+  addAsm( string("!for_init") + toString(for_depth) + ":", 0, true );       
 
   if( arg_safe_loops )
     {
@@ -5359,7 +5528,7 @@ body:
     }
   pushScope("FOR");
 }
-'(' statement { addCommentBreak(); }
+'(' statement { addAsm( string("!for_top") + toString(for_depth) + ":", 0, true );  }
 ';' condition { addCommentBreak(); } {}
 ';' {addAsm("[iterator]",0,true);} statement
 {
@@ -5482,23 +5651,6 @@ body:
   $$.nd = mknode($1.nd, $2.nd, "statements");
 };
 
-// NOT STATEMENTS
-// DIRECTIVES
-| tBL
-{
-  addCompilerMessage( "switched to long branches", 0 );
-  addComment( "switched to long branches" );
-  long_branches = true;
-};
-// DIRECTIVES
-| tBS
-{
-  addCompilerMessage( "switched to short branches", 0 );
-  addComment( "switched to short branches" );
-  long_branches = false;
-};
-// STATEMENT
-
  else: ELSE {} '{' body '}'
  {
    addAsm( string("!if_out") + toString(if_depth) + ":",0,true );
@@ -5531,198 +5683,451 @@ condition:
 // tOR
 condition
 {
-  if( strcmp($1.name, "exp != exp sb" )==0 )
+  if( strcmp($1.name, "exp != exp lb" )==0 )
     {
-      deletePreviousAsm();
-      addAsm( str_BNE + "!if_body" + toString(if_depth) + "+", 2, false );
+      if( scope_stack.top() == "IF" )
+	{
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  addAsm( str_BEQ + "!_skip+", 2, false );
+	  addAsm( str_JMP + "!cond_group_end+", 3, false );
+	  addAsm( "!_skip:", 0, true );		  
+	}
+      else if( scope_stack.top() == "WHILE" )
+	{
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  addAsm( str_BEQ + "!_skip+", 2, false );
+	  addAsm( str_JMP + "!cond_group_end+", 3, false );
+	  addAsm( "!_skip:", 0, true );		  
+	}
+      else if( scope_stack.top() == "FOR" )
+	{
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  addAsm( str_BEQ + "!_skip+", 2, false );
+	  addAsm( str_JMP + "!cond_group_end+", 3, false );
+	  addAsm( "!_skip:", 0, true );		  
+	}
       addAsm( "!cond:\t// (||)", 0, true );
-      cond_depth++;
-    }
-  else if( strcmp($1.name, "exp < exp sb" )==0 )
-    {
-      deletePreviousAsm();
-      addAsm( str_BCC + "!if_body" + toString(if_depth) + "+", 2, false );
-      addAsm( "!cond:\t// (||)", 0, true );
-      cond_depth++;
-    }
-  else if( strcmp($1.name, "exp <= exp sb" )==0 )
-    {
-      deletePreviousAsm();
-      deletePreviousAsm();
-      addAsm( str_BCC + "!if_body" + toString(if_depth) + "+", 2, false );
-      addAsm( str_BEQ + "!if_body" + toString(if_depth) + "+", 2, false );
-      addAsm( "!cond:\t// (||)", 0, true );
-      cond_depth++;
-    }
-  else if( strcmp($1.name, "exp == exp sb" )==0 )
-    {
-      deletePreviousAsm();
-      addAsm( str_BEQ + "!if_body" + toString(if_depth) + "+", 2, false );
-      addAsm( "!cond:\t// (||)", 0, true );
-      cond_depth++;
-    }
-  else if( strcmp($1.name, "exp > exp sb" )==0 )
-    {
-      deletePreviousAsm();
-      deletePreviousAsm();
-      addAsm( str_BEQ + "!if_body" + toString(if_depth) + "+", 2, false );
-      addAsm( str_BCS + "!if_body" + toString(if_depth) + "+", 2, false );
-      addAsm( "!cond:\t// (||)", 0, true );
-      cond_depth++;
-    }
-  else if( strcmp($1.name, "exp >= exp sb" )==0 )
-    {
-      deletePreviousAsm();
-      addAsm( str_BCS + "!if_body" + toString(if_depth) + "+", 2, false );
-      addAsm( "!cond:\t// (||)", 0, true );
-      cond_depth++;
-    }
-  else if( strcmp($1.name, "exp != exp lb" )==0 )
-    {
-      deletePreviousAsm();
-      addAsm( "!cond:\t// (||)", 0, true );
-      cond_depth++;
     }
   else if( strcmp($1.name, "exp < exp lb" )==0 )
     {
-      deletePreviousAsm();
+
+      if( scope_stack.top() == "IF" )
+	{
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  addAsm( str_BCS + "!_skip+", 2, false );
+	  addAsm( str_JMP + "!cond_group_end+", 3, false );
+	  addAsm( "!_skip:", 0, true );		  
+	}
+      else if( scope_stack.top() == "WHILE" )
+	{
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  addAsm( str_BCS + "!_skip+", 2, false );
+	  addAsm( str_JMP + "!cond_group_end+", 3, false );
+	  addAsm( "!_skip:", 0, true );		  
+	}
+      else if( scope_stack.top() == "FOR" )
+	{
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  addAsm( str_BCS + "!_skip+", 2, false );
+	  addAsm( str_JMP + "!cond_group_end+", 3, false );
+	  addAsm( "!_skip:", 0, true );		  
+	}
       addAsm( "!cond:\t// (||)", 0, true );
-      cond_depth++;
     }
   else if( strcmp($1.name, "exp <= exp lb" )==0 )
     {
-      deletePreviousAsm();
+      if( scope_stack.top() == "IF" )
+	{
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  addAsm( str_BCS + "!_skip+", 2, false );
+	  addAsm( str_JMP + "!cond_group_end+", 3, false );
+	  addAsm( "!_skip:", 0, true );		  
+	  addAsm( str_BNE + "!_skip+", 2, false );
+	  addAsm( str_JMP + "!cond_group_end+", 3, false );
+	  addAsm( "!_skip:", 0, true );		  
+	}
+      else if( scope_stack.top() == "WHILE" )
+	{
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  addAsm( str_BCS + "!_skip+", 2, false );
+	  addAsm( str_JMP + "!cond_group_end+", 3, false );
+	  addAsm( "!_skip:", 0, true );		  
+	  addAsm( str_BNE + "!_skip+", 2, false );
+	  addAsm( str_JMP + "!cond_group_end+", 3, false );
+	  addAsm( "!_skip:", 0, true );		  
+	}
+      else if( scope_stack.top() == "FOR" )
+	{
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  addAsm( str_BCS + "!_skip+", 2, false );
+	  addAsm( str_JMP + "!cond_group_end+", 3, false );
+	  addAsm( "!_skip:", 0, true );		  
+	  addAsm( str_BNE + "!_skip+", 2, false );
+	  addAsm( str_JMP + "!cond_group_end+", 3, false );
+	  addAsm( "!_skip:", 0, true );		  
+	}
       addAsm( "!cond:\t// (||)", 0, true );
-      cond_depth++;
     }
   else if( strcmp($1.name, "exp == exp lb" )==0 )
     {
-      deletePreviousAsm();
+      if( scope_stack.top() == "IF" )
+	{
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  addAsm( str_BNE + "!_skip+", 2, false );
+	  addAsm( str_JMP + "!cond_group_end+", 3, false );
+	  addAsm( "!_skip:", 0, true );		  
+	}
+      else if( scope_stack.top() == "WHILE" )
+	{
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  addAsm( str_BNE + "!_skip+", 2, false );
+	  addAsm( str_JMP + "!cond_group_end+", 3, false );
+	  addAsm( "!_skip:", 0, true );		  
+	}
+      else if( scope_stack.top() == "FOR" )
+	{
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  addAsm( str_BNE + "!_skip+", 2, false );
+	  addAsm( str_JMP + "!cond_group_end+", 3, false );
+	  addAsm( "!_skip:", 0, true );		  
+	}
+
+      
       addAsm( "!cond:\t// (||)", 0, true );
-      cond_depth++;
     }
   else if( strcmp($1.name, "exp > exp lb" )==0 )
     {
-      deletePreviousAsm();
+      if( scope_stack.top() == "IF" )
+	{
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  addAsm( str_BNE + "!_skip+", 2, false );
+	  addAsm( str_JMP + "!cond_group_end+", 3, false );
+	  addAsm( "!_skip:",0,true );
+	  addAsm( str_BCS + "!_skip+", 2, false );
+	  addAsm( str_JMP + "!cond_group_end+", 3, false );
+	  addAsm( "!_skip:",0,true );
+	}
+      else if( scope_stack.top() == "WHILE" )
+	{
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+
+	  addAsm( str_BNE + "!_skip+", 2, false );
+	  addAsm( str_JMP + "!cond_group_end+", 3, false );
+	  addAsm( "!_skip:",0,true );
+	  addAsm( str_BCS + "!_skip+", 2, false );
+	  addAsm( str_JMP + "!cond_group_end+", 3, false );
+	  addAsm( "!_skip:",0,true );
+	}
+      else if( scope_stack.top() == "FOR" )
+	{
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  addAsm( str_BNE + "!_skip+", 2, false );
+	  addAsm( str_JMP + "!cond_group_end+", 3, false );
+	  addAsm( "!_skip:",0,true );
+	  addAsm( str_BCS + "!_skip+", 2, false );
+	  addAsm( str_JMP + "!cond_group_end+", 3, false );
+	  addAsm( "!_skip:",0,true );
+	}
       addAsm( "!cond:\t// (||)", 0, true );
-      cond_depth++;
     }
   else if( strcmp($1.name, "exp >= exp lb" )==0 )
     {
-      deletePreviousAsm();
+      if( scope_stack.top() == "IF" )
+	{
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  //addAsm( "//--------------",0,true );
+	  addAsm( str_BCC + "!_skip+", 2, false );
+	  addAsm( str_JMP + "!cond_group_end+", 3, false );
+	  addAsm( "!_skip:", 0, true );
+	}
+      else if( scope_stack.top() == "WHILE" )
+	{
+
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  //addAsm( "//--------------",0,true );
+	  addAsm( str_BCC + "!_skip+", 2, false );
+	  addAsm( str_JMP + "!cond_group_end+", 3, false );
+	  addAsm( "!_skip:", 0, true );
+	}
+      else if( scope_stack.top() == "FOR" )
+	{
+
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  //addAsm( "//--------------",0,true );
+	  addAsm( str_BCC + "!_skip+", 2, false );
+	  addAsm( str_JMP + "!cond_group_end+", 3, false );
+	  addAsm( "!_skip:", 0, true );
+	}
+
+      
       addAsm( "!cond:\t// (||)", 0, true );
-      cond_depth++;
     }
   else
-    {
-      cond_depth = 0;
+    {      
       addAsm( string( "// " ) + string( $1.name ), 0, false );
+      
       //addAsm( "!else" + toString(if_depth) + ":\t// (||) -- last one", 0, true );
     }
-
-
-  if( cond_depth >= 14 && !long_branches)
-    {
-      addCompilerMessage( "Nearing, At, or Exceeding the maximum number of compound conditionals for short-branching", 2 );
-    }
+    
 }
 tOR {} condition
 {
+  addAsm( "!cond_group_end:", 0, true );
+  //addAsm( str_JMP + "!else" + toString(if_depth) + "+", 3, false );
   strcpy($$.name, $5.name );
 }
 
 // tAND
 | condition
 {
-  if( strcmp($1.name, "exp != exp sb" )==0 )
+  if( strcmp($1.name, "exp != exp lb" )==0 )
     {
+      if( scope_stack.top() == "WHILE" )
+	{
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  addAsm( str_BNE + "!cond+", 2, false );
+	  addAsm( str_JMP + "!while_out" + toString(while_depth) + "+", 3, false );
+	}
+      else if( scope_stack.top() == "FOR" )
+	{
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  addAsm( str_BNE + "!cond+", 2, false );
+	  addAsm( str_JMP + "!for_out" + toString(for_depth) + "+", 3, false );
+	}
+      else if( scope_stack.top() == "IF" )
+	{
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  addAsm( str_BNE + "!cond+", 2, false );
+	  addAsm( str_JMP + "!else" + toString(if_depth) + "+", 3, false );
+	}
       addAsm( "!cond:\t// (&&)", 0, true );
-      cond_depth++;
-    }
-  else if( strcmp($1.name, "exp <= exp sb" )==0 )
-    {
-      deletePreviousAsm();
-      deletePreviousAsm();
-      addAsm( str_BCS + "!else" + toString(if_depth) + "+", 2, false );
-      addAsm( str_BNE + "!else" + toString(if_depth) + "+", 2, false );
-      addAsm( "!cond:\t// (&&)", 0, true );
-      cond_depth++;
-    }
-  else if( strcmp($1.name, "exp < exp sb" )==0 )
-    {
-      addAsm( "!cond:\t// (&&)", 0, true );      
-      cond_depth++;
-    }
-  else if( strcmp($1.name, "exp == exp sb" )==0 )
-    {
-      addAsm( "!cond:\t// (&&)", 0, true );      
-      cond_depth++;
-    }
-  else if( strcmp($1.name, "exp > exp sb" )==0 )
-    {
-      addAsm( "!cond:\t// (&&)", 0, true );      
-      cond_depth++;
-    }
-  else if( strcmp($1.name, "exp >= exp sb" )==0 )
-    {
-      addAsm( "!cond:\t// (&&)", 0, true );      
-      cond_depth++;
-    }
-  else if( strcmp($1.name, "exp != exp lb" )==0 )
-    {
-      deletePreviousAsm();
-      deletePreviousAsm();
-      addAsm( str_BNE + "!cond+", 2, false );
-      addAsm( str_JMP + "!else" + toString(if_depth) + "+", 3, false );
-      addAsm( "!cond:\t// (&&)", 0, true );
-      cond_depth++;
     }
   else if( strcmp($1.name, "exp <= exp lb" )==0 )
     {
-      deletePreviousAsm();
-      deletePreviousAsm();
-      deletePreviousAsm();
-      addAsm( str_BCS + "!cond" + "+", 2, false );
-      addAsm( str_BNE + "!cond" + "+", 2, false );
-      addAsm( str_JMP + "!else" + toString(if_depth) + "+", 3, false );
+      if( scope_stack.top() == "WHILE" )
+	{
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  addAsm( str_BCC + "!cond+", 2, false );
+	  addAsm( str_BEQ + "!cond+", 2, false );
+	  addAsm( str_JMP + "!while_out" + toString(while_depth) + "+", 3, false );
+	}
+      else if( scope_stack.top() == "FOR" )
+	{
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  
+
+	  addAsm( str_BCC + "!cond+", 2, false );
+	  addAsm( str_BEQ + "!cond+", 2, false );
+	  addAsm( str_JMP + "!for_out" + toString(for_depth) + "+", 3, false );
+	}
+      else if( scope_stack.top() == "IF" )
+	{
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  addAsm( str_BCC + "!cond+", 2, false );
+	  addAsm( str_BEQ + "!cond+", 2, false );
+	  addAsm( str_JMP + "!else" + toString(if_depth) + "+", 3, false );
+	}
       addAsm( "!cond:\t// (&&)", 0, true );
-      cond_depth++;
     }
   else if( strcmp($1.name, "exp < exp lb" )==0 )
     {
-      deletePreviousAsm();
-      deletePreviousAsm();
-      addAsm( str_BCC + "!cond+", 2, false );
-      addAsm( str_JMP + "!else" + toString(if_depth) + "+", 3, false );
+      if( scope_stack.top() == "WHILE" )
+	{
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  addAsm( str_BCC + "!cond+", 2, false );
+	  addAsm( str_JMP + "!while_out" + toString(while_depth) + "+", 3, false );
+	}
+      else if( scope_stack.top() == "FOR" )
+	{
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  addAsm( str_BCC + "!cond+", 2, false );
+	  addAsm( str_JMP + "!for_out" + toString(for_depth) + "+", 3, false );
+	}
+      else if( scope_stack.top() == "IF" )
+	{
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  addAsm( str_BCC + "!cond+", 2, false );
+	  addAsm( str_JMP + "!else" + toString(if_depth) + "+", 3, false );
+	}
       addAsm( "!cond:\t// (&&)", 0, true );      
-      cond_depth++;
     }
   else if( strcmp($1.name, "exp == exp lb" )==0 )
     {
-      deletePreviousAsm();
-      deletePreviousAsm();
-      addAsm( str_BEQ + "!cond+", 2, false );
-      addAsm( str_JMP + "!else" + toString(if_depth) + "+", 3, false );
+      if( scope_stack.top() == "WHILE" )
+	{
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  addAsm( str_BEQ + "!cond+", 2, false );
+	  addAsm( str_JMP + "!while_out" + toString(while_depth) + "+", 3, false );
+	}
+      else if( scope_stack.top() == "FOR" )
+	{
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  //addAsm( "//----------------------", 0, true );
+	  addAsm( str_BEQ + "!cond+", 2, false );
+	  addAsm( str_JMP + "!for_out" + toString(for_depth) + "+", 3, false );
+	}
+      else if( scope_stack.top() == "IF" )
+	{
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  addAsm( str_BEQ + "!cond+", 2, false );
+	  addAsm( str_JMP + "!else" + toString(if_depth) + "+", 3, false );
+	}
       addAsm( "!cond:\t// (&&)", 0, true );      
-      cond_depth++;
     }
-    else if( strcmp($1.name, "exp > exp lb" )==0 )
+  else if( strcmp($1.name, "exp > exp lb" )==0 )
     {
-      deletePreviousAsm();
-      deletePreviousAsm();
-      addAsm( str_BNE + "!cond+", 2, false );
-      addAsm( str_JMP + "!else" + toString(if_depth) + "+", 3, false );
+      if( scope_stack.top() == "WHILE" )
+	{
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  //addAsm( "//-----------------", 0, true );
+	  addAsm( str_BNE + "!_skip+", 2, false );
+	  addAsm( str_JMP + "!while_out" + toString(while_depth) + "+", 3, false );
+	  addAsm( "!_skip:", 0, true );
+	  addAsm( str_BCS + "!_skip+", 2, false );
+	  addAsm( str_JMP + "!while_out" + toString(while_depth) + "+", 3, false );
+	  addAsm( "!_skip:", 0, true );
+	}
+      else if( scope_stack.top() == "FOR" )
+	{
+	  // Nothing to do here
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  addAsm( str_BNE + "!_skip+", 2, false );
+	  addAsm( str_JMP + "!for_out" + toString(for_depth) + "+", 3, false );
+	  addAsm( "!_skip:", 0, true );
+	  addAsm( str_BCS + "!_skip+", 2, false );
+	  addAsm( str_JMP + "!for_out" + toString(for_depth) + "+", 3, false );
+	  addAsm( "!_skip:", 0, true );
+	}
+      else if( scope_stack.top() == "IF" )
+	{
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  addAsm( str_BNE + "!_skip+", 2, false );
+	  addAsm( str_JMP + "!else" + toString(if_depth) + "+", 3, false );
+	  addAsm( "!_skip:", 0, true );
+	  addAsm( str_BCS + "!_skip+", 2, false );
+	  addAsm( str_JMP + "!else" + toString(if_depth) + "+", 3, false );
+	  addAsm( "!_skip:", 0, true );
+	}
+
       addAsm( "!cond:\t// (&&)", 0, true );      
-      cond_depth++;
     }
   else if( strcmp($1.name, "exp >= exp lb" )==0 )
     {
-      deletePreviousAsm();
-      deletePreviousAsm();
-      addAsm( str_BCS + "!cond+", 2, false );
-      addAsm( str_JMP + "!else" + toString(if_depth) + "+", 3, false );
+      if( scope_stack.top() == "WHILE" )
+	{
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  addAsm( str_BCS + "!_skip+", 2, false );
+	  addAsm( str_JMP + "!while_out" + toString(while_depth) + "+", 3, false );
+	  addAsm( "!_skip:", 0, true );
+
+	}
+      else if( scope_stack.top() == "FOR" )
+	{
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  addAsm( str_BCS + "!_skip+", 2, false );
+	  addAsm( str_JMP + "!for_out" + toString(for_depth) + "+", 3, false );
+	  addAsm( "!_skip:", 0, true );
+	}
+      else if( scope_stack.top() == "IF" )
+	{
+	  deletePreviousAsm();
+	  deletePreviousAsm();
+	  addAsm( str_BCS + "!_skip+", 2, false );
+	  addAsm( str_JMP + "!if_out" + toString(if_depth) + "+", 3, false );
+	  addAsm( "!_skip:", 0, true );
+	}
       addAsm( "!cond:\t// (&&)", 0, true );      
-      cond_depth++;
     }
 
   else
@@ -5731,10 +6136,6 @@ tOR {} condition
       addAsm( "!cond:\t// (&&) - last one", 0, true );
     }
 
-  if( cond_depth >= 14 && !long_branches)
-    {
-      addCompilerMessage( "Nearing, At, or Exceeding the maximum number of compound conditionals for short-branching", 2 );
-    }
 } tAND {} condition
 {
   strcpy($$.name, $5.name );
@@ -5827,14 +6228,14 @@ tOR {} condition
   
   if( scope_stack.top() == "FOR" )
     {
-      for_depth++;
-      addAsm( string("!for_top") + toString(for_depth) + ":", 0, true );       
+      //for_depth++;
+      //addAsm( string("!for_top") + toString(for_depth) + ":", 0, true );       
       //addAsm( generateNewLabel() + commentmarker + "Top of FOR Loop", 0, true );
     }
   if( scope_stack.top() == "WHILE" )
     {
-      while_depth++;
-      addAsm( string("!while_top") + toString(while_depth) + ":", 0, true ); 
+      //while_depth++;
+      //addAsm( string("!while_top") + toString(while_depth) + ":", 0, true ); 
       //addAsm( generateNewLabel() + commentmarker + "Top of WHILE Loop", 0, true );
     }
   
@@ -6221,6 +6622,7 @@ tOR {} condition
   else if( isFAC($LHS.name) && isUintIMM($RHS.name) )
     {
       addComment( "FAC relop UintIMM: TOC" );
+      addCompilerMessage( "switchy-switchy", 1 );
       // switchy switchy!
       if( string($OP.name) == string("<") )
 	{
@@ -6267,6 +6669,7 @@ tOR {} condition
   else if( isFAC($LHS.name) && isWordIMM($RHS.name) )
     {
       addComment( "FAC relop WordIMM: TOC" );
+      addCompilerMessage( "switchy-switchy", 1 );
 
       // switchy switchy
       if( string($OP.name) == string("<") )
@@ -6615,6 +7018,7 @@ tOR {} condition
     }
   else if( isIntID($LHS.name) && isA($RHS.name) )
     {
+      addCompilerMessage( "switchy-switchy", 1 );
       // switchy switchy
       if( string($OP.name) == string("<") )
 	{
@@ -6646,6 +7050,7 @@ tOR {} condition
   else if( isIntID($LHS.name) && isFAC($RHS.name) )
     {
       addComment( "IntID relop FAC: TOC" );
+      addCompilerMessage( "switchy-switchy", 1 );
       // switchy switchy
       if( string($OP.name) == string("<") )
 	{
@@ -6680,6 +7085,7 @@ tOR {} condition
     {
       addComment( "IntID relop FloatID: TOC" );
       // switchy switchy
+      addCompilerMessage( "switchy-switchy", 1 );
       if( string($OP.name) == string("<") )
 	{
 	  addCompilerMessage( "IntID relop FloatID: Relative Operator Manipulation", 0 );
@@ -6713,6 +7119,7 @@ tOR {} condition
     {
       addComment( "IntID relop FloatIMM: TOC" );
       // switchy switchy
+      addCompilerMessage( "switchy-switchy", 1 );
       if( string($OP.name) == string("<") )
 	{
 	  addCompilerMessage( "IntID relop FloatIMM: Relative Operator Manipulation", 0 );
@@ -6829,6 +7236,7 @@ tOR {} condition
     {
       addComment( "IntID relop XA: TOC" );
       // switchy switchy
+      addCompilerMessage( "switchy-switchy", 1 );
       if( string($OP.name) == string("<") )
 	{
 	  addCompilerMessage( "IntID relop XA: Relative Operator Manipulation", 0 );
@@ -6883,6 +7291,7 @@ tOR {} condition
     {
       addComment( "IntIMM relop FloatID: TOC" );
       // switchy switchy
+      addCompilerMessage( "switchy-switchy", 1 );
       if( string($OP.name) == string("<") )
 	{
 	  addCompilerMessage( "IntIMM relop FloatID: Relative Operator Manipulation", 0 );
@@ -7041,6 +7450,7 @@ tOR {} condition
     {
       addComment( "UintID relop A: TOC" );
       // switchy switchy
+      addCompilerMessage( "switchy-switchy", 1 );
       if( string($OP.name) == string("<") )
 	{
 	  addCompilerMessage( "UintID relop A: Relative Operator Manipulation", 0 );
@@ -7067,6 +7477,7 @@ tOR {} condition
     {
       addComment( "UintID relop FAC: TOC" );
       // switchy switchy
+      addCompilerMessage( "switchy-switchy", 1 );
       if( string($OP.name) == string("<") )
 	{
 	  addCompilerMessage( "UintID relop FAC: Relative Operator Manipulation", 0 );
@@ -7098,6 +7509,7 @@ tOR {} condition
     {
       addCompilerMessage( "UintID relop FloatID: testing", 1 );
       // switchy switchy
+      addCompilerMessage( "switchy-switchy", 1 );
       if( string($OP.name) == string("<") )
 	{
 	  addCompilerMessage( "UintID relop FloatID: Relative Operator Manipulation", 0 );
@@ -7132,6 +7544,7 @@ tOR {} condition
     {
       addComment( "UintID relop FloatIMM: TOC" );
       // switchy switchy
+      addCompilerMessage( "switchy-switchy", 1 );
       if( string($OP.name) == string("<") )
 	{
 	  addCompilerMessage( "UintID relop FloatIMM: Relative Operator Manipulation", 0 );
@@ -7251,6 +7664,7 @@ tOR {} condition
   else if( isUintIMM($LHS.name) && isA($RHS.name) )
     {
       // switchy switchy
+      addCompilerMessage( "switchy-switchy", 1 );
       if( string($OP.name) == string("<") )
 	{
 	  addCompilerMessage( "UintIMM relop A: Relative Operator Manipulation", 0 );
@@ -7289,6 +7703,7 @@ tOR {} condition
   else if( isUintIMM($LHS.name) && isFloatID($RHS.name) )
     {
       // switchy switchy
+      addCompilerMessage( "switchy-switchy", 1 );
       if( string($OP.name) == string("<") )
 	{
 	  addCompilerMessage( "UintIMM relop FloatID: Relative Operator Manipulation", 0 );
@@ -7471,6 +7886,7 @@ tOR {} condition
     {
       addComment( "WordID relop FAC: TOC" );
       // switchy switchy
+      addCompilerMessage( "switchy-switchy", 1 );
 
       if( string($OP.name) == string("<") )
 	{
@@ -7504,6 +7920,7 @@ tOR {} condition
     {
       addComment( "WordID relop FloatID: TOC" );
       // switchy switchy
+      addCompilerMessage( "switchy-switchy", 1 );
       if( string($OP.name) == string("<") )
 	{
 	  addCompilerMessage( "WordID relop FloatID: Relative Operator Manipulation", 0 );
@@ -7533,6 +7950,7 @@ tOR {} condition
     {
       addComment( "WordID relop FloatIMM: TOC" );
       // switchy switchy
+      addCompilerMessage( "switchy-switchy", 1 );
       if( string($OP.name) == string("<") )
 	{
 	  addCompilerMessage( "WordID relop FloatIMM: Relative Operator Manipulation", 0 );
@@ -7679,6 +8097,7 @@ tOR {} condition
     {
       addComment( "WordIMM relop FloatID: TOC" );
       // switchy switchy
+      addCompilerMessage( "switchy-switchy", 1 );
       if( string($OP.name) == string("<") )
 	{
 	  addCompilerMessage( "WordIMM relop FloatID: Relative Operator Manipulation", 0 );
@@ -7845,6 +8264,7 @@ tOR {} condition
     {
       addComment( "WordIMM relop XA: TOC" );
       // switchy switchy
+      addCompilerMessage( "switchy-switchy", 1 );
       if( string($OP.name) == string("<") )
 	{
 	  addCompilerMessage( "WordIMM relop XA: Relative Operator Manipulation", 0 );
@@ -7893,6 +8313,7 @@ tOR {} condition
     {
       addComment( "XA relop FAC: TOC" );
       // switchy switchy
+      addCompilerMessage( "switchy-switchy", 1 );
 
       if( string($OP.name) == string("<") )
 	{
@@ -7925,6 +8346,7 @@ tOR {} condition
     {
       addComment( "XA relop FloatID: TOC" );
       // switchy switchy
+      addCompilerMessage( "switchy-switchy", 1 );
       if( string($OP.name) == string("<") )
 	{
 	  addCompilerMessage( "XA relop FloatID: Relative Operator Manipulation", 0 );
@@ -7954,6 +8376,7 @@ tOR {} condition
     {
       addComment( "XA relop FloatIMM: TOC" );
       // switchy switchy
+      addCompilerMessage( "switchy-switchy", 1 );
       if( string($OP.name) == string("<") )
 	{
 	  addCompilerMessage( "XA relop FloatIMM: Relative Operator Manipulation", 0 );
@@ -8070,108 +8493,50 @@ tOR {} condition
     {
       if( string($OP.name) == string( "<=" ) )
 	{
-	  if( !long_branches )
-	    {
-	      addComment( "short branch" );
-	      addAsm( str_BCC + "!for_body" + toString(for_depth) + "+", 2, false );
-	      addAsm( str_BNE + "!for_out" + toString(for_depth) + "+", 2, false );
-	    }
-	  else
-	    {
-	      addComment( "long branch" );
-	      addAsm( str_BCS + "!_skip+", 2,  false );
-	      addAsm( str_JMP + "!for_body" + toString(for_depth) + "+", 3, false );
-
-	      addAsm( "!_skip:", 0, true );
-	      addAsm( str_BNE + "!_skip+", 2, false );
-	      addAsm( str_JMP + "!for_body" + toString(for_depth) + "+", 3, false );
-
-	      addAsm( "!_skip:", 0, true );
-	      addAsm( str_JMP + "!for_out" + toString(for_depth) + "+", 3, false );
-	    }
+	  addAsm( str_BCC + "!for_body" + toString(for_depth) + "+", 2, false );
+	  addAsm( str_BEQ + "!for_body" + toString(for_depth) + "+", 2, false );
+	  addAsm( str_JMP + "!for_out" + toString(for_depth) + "+", 3, false );
+	  strcpy($$.name, "exp <= exp lb" );
 	}
       else if( string($OP.name) == string( "==" ) )
 	{
-	  if( !long_branches )
-	    {
-	      addComment( "short branch" );
-	      addAsm( str_BEQ + "!for_body" + toString(for_depth) + "+", 2, false );
-	      addAsm( str_JMP + "!for_out" + toString(for_depth) + "+", 3, false );
-	    }
-	  else
-	    {
-	      addComment( "long branch" );
-	      addAsm( str_BEQ + "!_skip+", 2, false );
-	      addAsm( str_JMP + "!for_out" + toString(for_depth) + "+", 3, false );
-	      addAsm( "!_skip:", 0, true );
-	    }
+	  addAsm( str_BEQ + "!for_body" + toString(for_depth) + "+", 2, false );
+	  addAsm( str_JMP + "!for_out" + toString(for_depth) + "+", 3, false );
+	  strcpy($$.name, "exp == exp lb" );
 	}
       else if( string($OP.name) == string( ">" ) )
 	{
-	  if( !long_branches )
-	    {
-	      addComment( "short branch" );
-	      addAsm( str_BEQ + "!for_out" + toString(for_depth) + "+", 2, false );
-	      addAsm( str_BCC + "!for_out" + toString(for_depth) + "+", 2, false );
-	    }
-	  else
-	    {
-	      addComment( "long branch" );
-	      addAsm( str_BNE + "!_skip+", 2, false );
-	      addAsm( str_JMP + "!for_out" + toString(for_depth) + "+", 3, false );
-	      addAsm( "!_skip:", 0, true );
-	      addAsm( str_BCS + "!_skip+", 2, false );
-	      addAsm( str_JMP + "!for_out" + toString(for_depth) + "+", 3, false );
-	      addAsm( "!_skip:", 0, true );
-	    }
+	  addAsm( str_BNE + "!_skip+", 2, false );
+	  addAsm( str_JMP + "!for_out" + toString(for_depth) + "+", 3, false );
+	  addAsm( "!_skip:", 0, true );
+	  addAsm( str_BCS + "!_skip+", 2, false );
+	  addAsm( str_JMP + "!for_out" + toString(for_depth) + "+", 3, false );
+	  addAsm( "!_skip:", 0, true );
+	  strcpy($$.name, "exp > exp lb" );
 	}
       else if( string($OP.name) == string( "<" ) )
 	{
-	  if( !long_branches )
-	    {
-	      addComment( "short branch" );
-	      addAsm( str_BCS + "!for_out" + toString(for_depth) + "+", 2, false );
-	    }
-	  else
-	    {
-	      addComment( "long branch" );
-	      addAsm( str_BCS + "!_skip+", 2, false );
-	      addAsm( str_JMP + "!for_body" + toString(for_depth) + "+", 3, false );
-	      addAsm( "!_skip:", 0, true );
-	      addAsm( str_JMP + "!for_out" + toString(for_depth) + "+", 3, false );
-	    }
+	  addAsm( str_BCS + "!_skip+", 2, false );
+	  addAsm( str_JMP + "!for_body" + toString(for_depth) + "+", 3, false );
+	  addAsm( "!_skip:", 0, true );
+	  addAsm( str_JMP + "!for_out" + toString(for_depth) + "+", 3, false );
+	  strcpy($$.name, "exp < exp lb" );
 	}
       else if( string($OP.name) == string( ">=" ) )
 	{
-	  if( !long_branches )
-	    {
-	      addComment( "short branch" );
-	      addAsm( str_BCC + "!for_out" + toString(for_depth) + "+", 2, false );
-	    }
-	  else
-	    {
-	      addComment( "long branch" );
-	      addAsm( str_BCC + "!_skip+", 2, false );
-	      addAsm( str_JMP + "!for_body" + toString(for_depth) + "+", 3, false );
-	      addAsm( "!_skip:", 0, true );
-	      addAsm( str_JMP + "!for_out" + toString(for_depth) + "+", 3, false );
-	    }
+	  addAsm( str_BCC + "!_skip+", 2, false );
+	  addAsm( str_JMP + "!for_body" + toString(for_depth) + "+", 3, false );
+	  addAsm( "!_skip:", 0, true );
+	  addAsm( str_JMP + "!for_out" + toString(for_depth) + "+", 3, false );
+	  strcpy($$.name, "exp >= exp lb" );
 	}
       else if( string($OP.name) == string( "!=" ) )
 	{
-	  if( !long_branches )
-	    {
-	      addComment( "short branch" );
-	      addAsm( str_BEQ + "!for_out" + toString(for_depth) + "+", 2, false );
-	    }
-	  else
-	    {
-	      addComment( "long branch" );
-	      addAsm( str_BEQ + "!_skip+", 2, false );
-	      addAsm( str_JMP + "!for_body" + toString(for_depth) + "+", 3, false );
-	      addAsm( "!_skip:", 0, true );
-	      addAsm( str_JMP + "!for_out" + toString(for_depth) + "+", 3, false );
-	    }
+	  addAsm( str_BEQ + "!_skip+", 2, false );
+	  addAsm( str_JMP + "!for_body" + toString(for_depth) + "+", 3, false );
+	  addAsm( "!_skip:", 0, true );
+	  addAsm( str_JMP + "!for_out" + toString(for_depth) + "+", 3, false );
+	  strcpy($$.name, "exp != exp lb" );
 	}
       else
 	{
@@ -8182,114 +8547,52 @@ tOR {} condition
     {
       if( string($OP.name) == string( "<=" ) )
 	{
-	  if( !long_branches )
-	    {
-	      addComment( "short branch" );
-	      addAsm( str_BCC + "!while_body" + toString(while_depth) + "+", 2, false );
-	      addAsm( str_BNE + "!while_out" + toString(while_depth) + "+", 2, false );
-	      strcpy($$.name, "exp <= exp sb" );
-	    }
-	  else
-	    {
-	      addComment( "long branch" );
-	      addAsm( str_BCS + "!_skip+", 2, false ); // BCS +3
-	      addAsm( str_JMP + "!while_body" + toString(while_depth) + "+", 3, false );
-	      addAsm( "!_skip:", 0, true );
-	      addAsm( str_BNE + "!_skip+", 2, false ); // BNE +3
-	      addAsm( str_JMP + "!while_body" + toString(while_depth) + "+", 3, false );
-	      addAsm( "!_skip:", 0, true );
-	      addAsm( str_JMP + "!while_out" + toString(while_depth) + "+", 3, false );
-	      strcpy($$.name, "exp <= exp lb" );
-	    }
+	  addAsm( str_BCS + "!_skip+", 2, false ); // BCS +3
+	  addAsm( str_JMP + "!while_body" + toString(while_depth) + "+", 3, false );
+	  addAsm( "!_skip:", 0, true );
+	  addAsm( str_BNE + "!_skip+", 2, false ); // BNE +3
+	  addAsm( str_JMP + "!while_body" + toString(while_depth) + "+", 3, false );
+	  addAsm( "!_skip:", 0, true );
+	  addAsm( str_JMP + "!while_out" + toString(while_depth) + "+", 3, false );
+	  strcpy($$.name, "exp <= exp lb" );
 	}   
       else if( string($OP.name) == string( "==" ) )
 	{
-	  if( !long_branches )
-	    {
-	      addComment( "short branch" );
-	      addAsm( str_BNE + "!while_out" + toString(while_depth) + "+", 2, false );
-	      strcpy($$.name, "exp == exp sb" );
-	    }
-	  else
-	    {
-	      addComment( "long branch" );
-	      addAsm( str_BEQ + "!_skip+", 2, false );
-	      addAsm( str_JMP + "!while_out" + toString(while_depth) + "+", 3, false );
-	      addAsm( "!_skip:", 0, true );
-	      strcpy($$.name, "exp == exp lb" );
-	    }
+	  addAsm( str_BEQ + "!_skip+", 2, false );
+	  addAsm( str_JMP + "!while_out" + toString(while_depth) + "+", 3, false );
+	  addAsm( "!_skip:", 0, true );
+	  strcpy($$.name, "exp == exp lb" );
 	}
       else if( string($OP.name) == string( ">" ) )
 	{
-	  if( !long_branches )
-	    {
-	      addComment( "short branch" );
-	      addAsm( str_BCC + "!while_out" + toString(while_depth) + "+", 2, false );
-	      addAsm( str_BEQ + "!while_out" + toString(while_depth) + "+", 2, false );
-	      strcpy($$.name, "exp > exp sb" ); // shortbranches
-	    }
-	  else
-	    {
-	      addComment( "long branch" );
-	      addAsm( str_BCS + "!_skip+", 2, false );
-	      addAsm( str_JMP + "!while_out" + toString(while_depth) + "+", 3, false );
-	      addAsm( "!_skip:", 0, true );	      
-	      addAsm( str_BNE + "!_skip+", 2, false );
-	      addAsm( str_JMP + "!while_out" + toString(while_depth) + "+", 3, false );
-	      addAsm( "!_skip:", 0, true );
-	      strcpy($$.name, "exp > exp lb" ); // longbranches
-	    }
+	  addAsm( str_BCS + "!_skip+", 2, false );
+	  addAsm( str_JMP + "!while_out" + toString(while_depth) + "+", 3, false );
+	  addAsm( "!_skip:", 0, true );	      
+	  addAsm( str_BNE + "!_skip+", 2, false );
+	  addAsm( str_JMP + "!while_out" + toString(while_depth) + "+", 3, false );
+	  addAsm( "!_skip:", 0, true );
+	  strcpy($$.name, "exp > exp lb" );
 	}
       else if( string($OP.name) == string( "<" ) )
 	{
-	  if( !long_branches )
-	    {
-	      addComment( "short branch" );
-	      addAsm( str_BCS + "!while_out" + toString(while_depth) + "+", 2, false );
-	      strcpy($$.name, "exp < exp sb" ); // shortbranches
-	    }
-	  else
-	    {
-	      addComment( "long branch" );
-	      addAsm( str_BCC + "!_skip+", 2, false );
-	      addAsm( str_JMP + "!while_out" + toString(while_depth) + "+", 3, false );
-	      addAsm( "!_skip:", 0, true );
-	      strcpy($$.name, "exp < exp lb" ); // longbranches
-	    }
+	  addAsm( str_BCC + "!_skip+", 2, false );
+	  addAsm( str_JMP + "!while_out" + toString(while_depth) + "+", 3, false );
+	  addAsm( "!_skip:", 0, true );
+	  strcpy($$.name, "exp < exp lb" );
 	}
       else if( string($OP.name) == string( ">=" ) )
 	{
-	  if( !long_branches )
-	    {
-	      addComment( "short branch" );
-	      addAsm( str_BCC + "!while_out" + toString(while_depth) + "+", 2, false );
-	      strcpy($$.name, "exp >= exp sb" ); // shortbranches
-	    }
-	  else
-	    {
-	      addComment( "long branch" );
-	      addAsm( str_BCS + "!_skip+", 2, false );
-	      addAsm( str_JMP + "!while_out" + toString(while_depth) + "+", 3, false );
-	      addAsm( "!_skip:", 0, true );
-	      strcpy($$.name, "exp >= exp lb" ); // longbranches
-	    }
+	  addAsm( str_BCS + "!_skip+", 2, false );
+	  addAsm( str_JMP + "!while_out" + toString(while_depth) + "+", 3, false );
+	  addAsm( "!_skip:", 0, true );
+	  strcpy($$.name, "exp >= exp lb" );
 	}
       else if( string($OP.name) == string( "!=" ) )
 	{
-	  if( !long_branches )
-	    {
-	      addComment( "short branch" );
-	      addAsm( str_BEQ + "!while_out" + toString(while_depth) + "+", 2, false );
-	      strcpy($$.name, "exp != exp sb" ); // shortbranches
-	    }
-	  else
-	    {
-	      addComment( "long branch" );
-	      addAsm( str_BNE + "!_skip+", 2, false ); // BNE +3
-	      addAsm( str_JMP + "!while_out" + toString(while_depth) + "+", 3, false );
-	      addAsm( "!_skip:", 0, true );
-	      strcpy($$.name, "exp != exp lb" ); // longbranches
-	    }
+	  addAsm( str_BNE + "!_skip+", 2, false ); // BNE +3
+	  addAsm( str_JMP + "!while_out" + toString(while_depth) + "+", 3, false );
+	  addAsm( "!_skip:", 0, true );
+	  strcpy($$.name, "exp != exp lb" );
 	}
       else
 	{
@@ -8301,108 +8604,45 @@ tOR {} condition
       pushScope("IF");
       if( string($OP.name) == string( "<=" ) )
 	{
-	  if( !long_branches )
-	    {
-	      addComment( "short branch <=" );
-	      addAsm( str_BCC + "!if_body" + toString(if_depth) + "+", 2, false );
-	      addAsm( str_BNE + "!else" + toString(if_depth) + "+", 2, false );
-	      strcpy($$.name, "exp <= exp sb" );
-	    }
-	  else
-	    {
-	      addComment( "long branch <=" );
-	      addAsm( str_BCC + "!if_body" + toString(if_depth) + "+", 2, false );
-	      addAsm( str_BEQ + "!if_body" + toString(if_depth) + "+", 2, false );
-	      addAsm( str_JMP + "!else" + toString(if_depth) + "+", 3, false );
-	      strcpy($$.name, "exp <= exp lb" );
-	    }
+	  addAsm( str_BCC + "!if_body" + toString(if_depth) + "+", 2, false );
+	  addAsm( str_BEQ + "!if_body" + toString(if_depth) + "+", 2, false );
+	  addAsm( str_JMP + "!else" + toString(if_depth) + "+", 3, false );
+	  strcpy($$.name, "exp <= exp lb" );
 	}   
       else if( string($OP.name) == string( "==" ) )
 	{
-	  if( !long_branches )
-	    {
-	      addComment( "short branch ==" );
-	      addAsm( str_BNE + "!else" + toString(if_depth) + "+", 2, false );
-	      strcpy($$.name, "exp == exp sb" );
-	    }
-	  else
-	    {
-	      // 2026 05 10
-	      addComment( "long branch ==" );
-	      addAsm( str_BEQ + "!if_body" + toString(if_depth) + "+", 2, false );
-	      addAsm( str_JMP + "!else" + toString(if_depth) + "+", 3, false );
-	      strcpy($$.name, "exp == exp lb" );
-	    }
+	  // 2026 05 10
+	  addAsm( str_BEQ + "!if_body" + toString(if_depth) + "+", 2, false );
+	  addAsm( str_JMP + "!else" + toString(if_depth) + "+", 3, false );
+	  strcpy($$.name, "exp == exp lb" );
 	}
       else if( string($OP.name) == string( ">" ) )
 	{
-	  if( !long_branches )
-	    {
-	      addComment( "short branch >" );
-	      addAsm( str_BCC + "!else" + toString(if_depth) + "+", 2, false );
-	      addAsm( str_BEQ + "!else" + toString(if_depth) + "+", 2, false );
-	      strcpy($$.name, "exp > exp sb" ); // shortbranches
-	    }
-	  else
-	    {
-	      addComment( "long branch >" );
-	      addAsm( str_BCS + "!_skip+", 2, false );
-	      addAsm( str_JMP + "!else" + toString(if_depth) + "+", 3, false );
-	      addAsm( "!_skip:", 0, true );	      
-	      addAsm( str_BNE + "!if_body" + toString(if_depth) + "+", 2, false );
-	      addAsm( str_JMP + "!else" + toString(if_depth) + "+", 3, false );
+	  addAsm( str_BCS + "!_skip+", 2, false );
+	  addAsm( str_JMP + "!else" + toString(if_depth) + "+", 3, false );
+	  addAsm( "!_skip:", 0, true );	      
+	  addAsm( str_BNE + "!if_body" + toString(if_depth) + "+", 2, false );
+	  addAsm( str_JMP + "!else" + toString(if_depth) + "+", 3, false );
 
-	      strcpy($$.name, "exp > exp lb" ); // longbranches
-	    }
+	  strcpy($$.name, "exp > exp lb" );
 	}
       else if( string($OP.name) == string( "<" ) )
 	{
-	  if( !long_branches )
-	    {
-	      addComment( "short branch <" );
-	      addAsm( str_BCS + "!else" + toString(if_depth) + "+", 2, false );
-	      strcpy($$.name, "exp < exp sb" ); // shortbranches
-	    }
-	  else
-	    {
-	      addComment( "long branch <" );
-	      addAsm( str_BCC + "!if_body" + toString(if_depth) + "+", 2, false );
-	      addAsm( str_JMP + "!else" + toString(if_depth) + "+", 3, false );
-	      strcpy($$.name, "exp < exp lb" ); // longbranches
-	    }
+	  addAsm( str_BCC + "!if_body" + toString(if_depth) + "+", 2, false );
+	  addAsm( str_JMP + "!else" + toString(if_depth) + "+", 3, false );
+	  strcpy($$.name, "exp < exp lb" );
 	}
       else if( string($OP.name) == string( ">=" ) )
 	{
-	  if( !long_branches )
-	    {
-	      addComment( "short branch >=" );
-	      addAsm( str_BCC + "!else" + toString(if_depth) + "+", 2, false );	      
-	      strcpy($$.name, "exp >= exp sb" ); // shortbranches
-	    }
-	  else
-	    {
-	      addComment( "long branch >=" );
-	      addAsm( str_BCS + "!if_body" + toString(if_depth) + "+", 2, false );
-	      addAsm( str_JMP + "!else" + toString(if_depth) + "+", 3, false );
-	      strcpy($$.name, "exp >= exp lb" ); // longbranches
-	    }
+	  addAsm( str_BCS + "!if_body" + toString(if_depth) + "+", 2, false );
+	  addAsm( str_JMP + "!else" + toString(if_depth) + "+", 3, false );
+	  strcpy($$.name, "exp >= exp lb" );
 	}
       else if( string($OP.name) == string( "!=" ) )
 	{
-	  if( !long_branches )
-	    {
-	      addComment( "short branch !=" );
-	      addAsm( str_BEQ  + "!else" + toString(if_depth) + "+", 2, false );
-	      strcpy($$.name, "exp != exp sb" ); // shortbranches
-	    }
-	  else
-	    {
-	      // 2026 05 10
-	      addComment( "long branch !=" );
-	      addAsm( str_BNE + "!if_body" + toString(if_depth) + "+", 2, false ); //jump to body
-	      addAsm( str_JMP + "!else" + toString(if_depth) + "+", 3, false );
-	      strcpy($$.name, "exp != exp lb" ); // longbranches
-	    }
+	  addAsm( str_BNE + "!if_body" + toString(if_depth) + "+", 2, false ); //jump to body
+	  addAsm( str_JMP + "!else" + toString(if_depth) + "+", 3, false );
+	  strcpy($$.name, "exp != exp lb" );
 	}
       else
 	{
@@ -12732,7 +12972,7 @@ statement:
       addAsm(str_PHA + commentmarker + "dropped the X", 1, false );
     }
 }
-  ',' expression
+',' expression
 {
   if( (isA($3.name)||isXA($3.name)) && (!isA($6.name)&&!isXA($6.name)))
     {
@@ -14286,22 +14526,22 @@ statement:
 
 
 /*
-   MISSING STILL:
+  MISSING STILL:
    
 
-UintIMM, UintID, A/XA
-UintIMM, UintID, UintIMM
-UintIMM, UintID, UintID
+  UintIMM, UintID, A/XA
+  UintIMM, UintID, UintIMM
+  UintIMM, UintID, UintID
 
-UintIMM, A, A/XA
-UintIMM, A, UintIMM
-UintIMM, A, UintID
+  UintIMM, A, A/XA
+  UintIMM, A, UintIMM
+  UintIMM, A, UintID
 
-UintIMM, WordIMM,
+  UintIMM, WordIMM,
 
-spritexy(A/XA, XA, WordID)
-spritexy(UintIMM, XA, WordID)
-spritexy(UintID, XA, WordID)
+  spritexy(A/XA, XA, WordID)
+  spritexy(UintIMM, XA, WordID)
+  spritexy(UintID, XA, WordID)
 
 
 */
@@ -14406,7 +14646,7 @@ spritexy(UintID, XA, WordID)
 	}
       else if( y_coord < 9 || y_coord > 248 )
 	{
-	   addCompilerMessage( "spritexy: y-value outside the screen borders", 1 );
+	  addCompilerMessage( "spritexy: y-value outside the screen borders", 1 );
 	}
       // clear the high bit
       addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false);
@@ -14500,11 +14740,11 @@ spritexy(UintID, XA, WordID)
       int y_coord = atoi( stripFirst($9.name).c_str());
       if( y_coord > 255 )
 	{
-	   addCompilerMessage( "spritexy: y value out of range", 3 );
+	  addCompilerMessage( "spritexy: y value out of range", 3 );
 	}
       else if( y_coord < 9 || y_coord > 248 )
 	{
-	   addCompilerMessage( "spritexy: y value outside the screen borders", 1 );
+	  addCompilerMessage( "spritexy: y value outside the screen borders", 1 );
 	}
 
       int sprite_address = (sprite_number * 2) + 53248;
@@ -14598,11 +14838,11 @@ spritexy(UintID, XA, WordID)
       int y_coord = atoi(stripFirst($9.name).c_str());
       if( y_coord > 255 )
 	{
-	   addCompilerMessage( "spritexy: y value out of range", 3 );
+	  addCompilerMessage( "spritexy: y value out of range", 3 );
 	}
       else if( y_coord < 9 || y_coord > 248 )
 	{
-	   addCompilerMessage( "spritexy: y value outside the screen borders", 1 );
+	  addCompilerMessage( "spritexy: y value outside the screen borders", 1 );
 	}
 
       addAsm( "!N:\t" + str_LDA + "#$00", 2, true );
@@ -14668,7 +14908,7 @@ spritexy(UintID, XA, WordID)
 	}
       else if( atoi( stripFirst($9.name).c_str()) < 9 || atoi( stripFirst($9.name).c_str()) > 248 )
 	{
-	   addCompilerMessage( "spritexy: y value outside the screen borders", 1 );
+	  addCompilerMessage( "spritexy: y value outside the screen borders", 1 );
 	}
 
       int x_coordL = get_word_L(atoi( stripFirst($6.name).c_str()));
@@ -14775,7 +15015,7 @@ spritexy(UintID, XA, WordID)
 	}
       else if( atoi( stripFirst($9.name).c_str()) < 9 || atoi( stripFirst($9.name).c_str()) > 248 )
 	{
-	   addCompilerMessage( "spritexy: y value outside the screen borders", 1 );
+	  addCompilerMessage( "spritexy: y value outside the screen borders", 1 );
 	}
       addAsm( "!N:\t" + str_LDA + "#$00", 2, true );
       bin2bit_is_needed = true;
@@ -14863,7 +15103,7 @@ spritexy(UintID, XA, WordID)
 	}
       else if( atoi( stripFirst($9.name).c_str()) < 9 || atoi( stripFirst($9.name).c_str()) > 248 )
 	{
-	   addCompilerMessage( "spritexy: y value outside the screen borders", 1 );
+	  addCompilerMessage( "spritexy: y value outside the screen borders", 1 );
 	}
       addAsm( "!N:\t" + str_LDA + "#$00", 2, true );
       bin2bit_is_needed = true;
@@ -14937,7 +15177,7 @@ spritexy(UintID, XA, WordID)
 	}
       else if( y_coord < 9 || y_coord > 248 )
 	{
-	   addCompilerMessage( "spritexy: y value outside the screen borders", 1 );
+	  addCompilerMessage( "spritexy: y value outside the screen borders", 1 );
 	}
 
       
@@ -15177,7 +15417,7 @@ spritexy(UintID, XA, WordID)
 	}
       else if( y_coord < 9 || y_coord > 248 )
 	{
-	   addCompilerMessage( "spritexy: y-value outside the screen borders", 1 );
+	  addCompilerMessage( "spritexy: y-value outside the screen borders", 1 );
 	}
       addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
 
@@ -15357,7 +15597,7 @@ spritexy(UintID, XA, WordID)
 	}
       else if( atoi( stripFirst($9.name).c_str()) < 9 || atoi( stripFirst($9.name).c_str()) > 248 )
 	{
-	   addCompilerMessage( "spritexy: y value outside the screen borders", 1 );
+	  addCompilerMessage( "spritexy: y value outside the screen borders", 1 );
 	}
 
       sprite_address = atoi( stripFirst($3.name).c_str() );
@@ -15564,7 +15804,7 @@ spritexy(UintID, XA, WordID)
 	}
       else if( y_coord < 9 || y_coord > 248 )
 	{
-	   addCompilerMessage( "spritexy: y-value outside the screen borders", 1 );
+	  addCompilerMessage( "spritexy: y-value outside the screen borders", 1 );
 	}
 
       int sprite_offset = (2 * sprite_number) + 53248;
@@ -15996,7 +16236,7 @@ spritexy(UintID, XA, WordID)
 	}
       else if( atoi( stripFirst($9.name).c_str()) < 9 || atoi( stripFirst($9.name).c_str()) > 248 )
 	{
-	   addCompilerMessage( "spritexy: y value outside the screen borders", 1 );
+	  addCompilerMessage( "spritexy: y value outside the screen borders", 1 );
 	}
 
       sprite_address = atoi( stripFirst($3.name).c_str() );
@@ -16074,7 +16314,7 @@ spritexy(UintID, XA, WordID)
 	}
       else if( y_coord < 9 || y_coord > 248 )
 	{
-	   addCompilerMessage( "spritexy: y-value outside the screen borders", 1 );
+	  addCompilerMessage( "spritexy: y-value outside the screen borders", 1 );
 	}
 
       addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
@@ -16157,7 +16397,7 @@ spritexy(UintID, XA, WordID)
 	}
       else if( y_coord < 9 || y_coord > 248 )
 	{
-	   addCompilerMessage( "spritexy: y-value outside the screen borders", 1 );
+	  addCompilerMessage( "spritexy: y-value outside the screen borders", 1 );
 	}
 
       addAsm( str_LDA + getNameOf(hexToDecimal($3.name)) + commentmarker + "sprite number", 3, false );
@@ -16226,7 +16466,7 @@ spritexy(UintID, XA, WordID)
 	}
       else if( atoi( stripFirst($9.name).c_str()) < 9 || atoi( stripFirst($9.name).c_str()) > 248 )
 	{
-	   addCompilerMessage( "spritexy: y value outside the screen borders", 1 );
+	  addCompilerMessage( "spritexy: y value outside the screen borders", 1 );
 	}
       addAsm( str_LDA + getNameOf(hexToDecimal($3.name)), 3, false );
       addAsm( str_TAY, 1, false );
@@ -16330,7 +16570,7 @@ spritexy(UintID, XA, WordID)
 	}
       else if( atoi( stripFirst($9.name).c_str()) < 9 || atoi( stripFirst($9.name).c_str()) > 248 )
 	{
-	   addCompilerMessage( "spritexy: y value outside the screen borders", 1 );
+	  addCompilerMessage( "spritexy: y value outside the screen borders", 1 );
 	}
       addAsm( str_LDA + "#$" + toHex(atoi(stripFirst($3.name).c_str())), 2, false );
       addAsm( str_ASL, 1, false ); // 2x
@@ -24295,11 +24535,10 @@ arithmetic[MATHOP] expression[OP2]
 		  {
 		    addComment( "UintID * UintIMM --> XA special case: * 2" );
 		    addAsm( str_LDA + O1, sizeOP1A, false);
-		    addAsm( str_LDX + "#$00", 2, false );
 
 		    addAsm( str_ASL, 1, false );
 		    addAsm( str_TAY, 1, false );
-		    addAsm( str_TXA, 1, false );
+		    addAsm( str_LDA + "#$00", 2, false );
 		    addAsm( str_ROL, 1, false );
 		    addAsm( str_TAX, 1, false );
 		    addAsm( str_TYA, 1, false );
@@ -24308,11 +24547,12 @@ arithmetic[MATHOP] expression[OP2]
 		  {
 		    addComment( "UintID * UintIMM --> XA special case: * 4" );
 		    addAsm( str_LDA + O1, sizeOP1A, false);
-		    addAsm( str_LDX + "#$00", 2, false );
 
 		    addAsm( str_ASL, 1, false );
 		    addAsm( str_TAY, 1, false );
-		    addAsm( str_TXA, 1, false );
+		    addAsm( str_LDA + "#$00", 2, false );
+		    
+
 		    addAsm( str_ROL, 1, false );
 		    addAsm( str_TAX, 1, false );
 		    addAsm( str_TYA, 1, false );
@@ -35300,8 +35540,8 @@ int main(int argc, char *argv[])
   ProcessStrings();
   ProcessReturnValues();
   
-  ProcessBranches();
-  ProcessBranches();
+  if( arg_optimize ) ProcessBranches();
+  if( arg_optimize ) ProcessBranches();
 
   current_code_location = code_start;  // reset the memory counter
   
