@@ -6138,6 +6138,7 @@ tOR {} condition
 
 } tAND {} condition
 {
+  addAsm( "!cond_group_end:", 0, true );
   strcpy($$.name, $5.name );
 }
 
