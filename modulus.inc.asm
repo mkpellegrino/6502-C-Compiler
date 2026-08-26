@@ -27,7 +27,7 @@ modulus:
 	sta $02
 	lda !lv_y-
 	sta $03
-	jsr UMUL
+	jsr _umul
 	ldx $03
 	stx !lv_tmp1-
 	
