@@ -12085,6 +12085,16 @@ statement:
   if( isWordID($3.name ) )
     {
       addComment( "dec(WordID)");
+      addAsm( str_LDA + getNameOf(getAddressOf($3.name)), 3, false );
+      addAsm( str_BNE + "!_skip+", 2, false );
+      addAsm( str_DEC + getNameOf(getAddressOf($3.name)) + " +1", 3, false );
+      addAsm( "!_skip:\t" + str_DEC + getNameOf(getAddressOf($3.name)), 3, true );
+      
+    }
+  else if( isWordID($3.name ) )
+    {
+      // possibly not needed
+      addComment( "dec(WordID)");
       addAsm( str_LDA + "#$FF", 2, false );
       illegal_operations_are_needed = true;
       
@@ -18108,7 +18118,9 @@ init: '=' expression
       if( get_word_L(tmp_int) == get_word_H(tmp_int) )
 	{
 	  addComment( "undocumented instruction" );
-	  addAsm( str_LAX + "#$" + toHex( get_word_L(tmp_int)), 2, false );
+	  //addAsm( str_LAX + "#$" + toHex( get_word_L(tmp_int)), 2, false );
+	  addAsm( str_LDA + "#$" + toHex( get_word_L(tmp_int)), 2, false );
+	  addAsm( str_TAX, 1, false );
 	}
       else
 	{
@@ -22710,22 +22722,26 @@ arithmetic[MATHOP] expression[OP2]
 		addAsm( str_LDA + O2 + " +1", sizeOP2A, false );	  
 		addAsm( str_STA + "_DIV16_FE", 3, false );
 		addAsm( str_JSR + "DIV16", 3, false );
-
 		addAsm( str_PLP, 1, false );
 		addAsm( str_BPL + "!+", 2, false );
+		
 
-		addAsm( str_LDA + "_DIV16_FB", 3, false );
+		//addAsm( str_LDA + "_DIV16_FB", 3, false );
 		addAsm( str_EOR + "#$FF", 2, false );
 		addAsm( str_CLC, 1, false );
 		addAsm( str_ADC + "#$01", 2, false );
-		addAsm( str_STA + "_DIV16_FB", 3, false );
-		addAsm( str_LDA + "_DIV16_FC", 3, false );
+		addAsm( str_TAY, 1, false );
+		//addAsm( str_STA + "_DIV16_FB", 3, false );
+		//addAsm( str_LDA + "_DIV16_FC", 3, false );
+		addAsm( str_TXA, 1, false );
 		addAsm( str_EOR + "#$FF", 2, false );
 		addAsm( str_ADC + "#$00", 2, false );
-		addAsm( str_STA + "_DIV16_FC", 3, false );
-
-		addAsm( "!:\t" + str_LDA + "_DIV16_FB", 3, true );
-		addAsm( str_LDX + "_DIV16_FC", 3, false );
+		addAsm( str_TAX, 1, false );
+		addAsm( str_TYA, 1, false );
+		//addAsm( str_STA + "_DIV16_FC", 3, false );
+		addAsm( "!:", 0, true );
+		//addAsm( "!:\t" + str_LDA + "_DIV16_FB", 3, true );
+		//addAsm( str_LDX + "_DIV16_FC", 3, false );
 		strcpy($$.name, "_XA");
 	      }
 	    else if( op == string( "**" ) )
@@ -22842,18 +22858,23 @@ arithmetic[MATHOP] expression[OP2]
 		addAsm( str_PLP, 1, false );
 		addAsm( str_BPL + "!+", 2, false );
 
-		addAsm( str_LDA + "_DIV16_FB", 3, false );
+		//addAsm( str_LDA + "_DIV16_FB", 3, false );
 		addAsm( str_EOR + "#$FF", 2, false );
 		addAsm( str_CLC, 1, false );
 		addAsm( str_ADC + "#$01", 2, false );
-		addAsm( str_STA + "_DIV16_FB", 3, false );
-		addAsm( str_LDA + "_DIV16_FC", 3, false );
+		addAsm( str_TAY, 1, false );
+		//addAsm( str_STA + "_DIV16_FB", 3, false );
+		addAsm( str_TXA, 1, false );
+		//addAsm( str_LDA + "_DIV16_FC", 3, false );
 		addAsm( str_EOR + "#$FF", 2, false );
 		addAsm( str_ADC + "#$00", 2, false );
-		addAsm( str_STA + "_DIV16_FC", 3, false );
+		//addAsm( str_STA + "_DIV16_FC", 3, false );
 
-		addAsm( "!:\t" + str_LDA + "_DIV16_FB", 3, true );
-		addAsm( str_LDX + "_DIV16_FC", 3, false );
+		addAsm( str_TAX, 1, false );
+		addAsm( str_TYA, 1, false );
+		addAsm( "!:", 0, true );
+		//addAsm( "!:\t" + str_LDA + "_DIV16_FB", 3, true );
+		//addAsm( str_LDX + "_DIV16_FC", 3, false );
 		strcpy($$.name, "_XA");
 	      }
 	    else if( op == string( "**" ) )
