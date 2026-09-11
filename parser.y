@@ -2335,6 +2335,24 @@
 
     
     fixAdditions();
+
+    if( asm_instr.size() > 10 && true )
+      {
+	addOptimizationMessage( "checking for: multiple conditional group ends", 0, -1);
+	for( int i=0; i<asm_instr.size()-1; i++ )
+	  {
+	    if(
+	       cmpstr(asm_instr[i+0]->getString(), "!cond_group_end:") &&
+	       cmpstr(asm_instr[i+1]->getString(), "!cond_group_end:") )
+	      {
+		addOptimizationMessage( "removing extra conditional group ends", i, 1);
+		//asm_instr[i]->setString(asm_instr[i]->getString() );
+		asm_instr.erase(asm_instr.begin()+i+0,asm_instr.begin()+i+1);
+	      }
+	  }
+      }
+
+
     
     if( asm_instr.size() > 10 && true )
       {
@@ -5392,6 +5410,7 @@ function: function function
 
   // TODO: we could determine if this has a return value the same way as in
   // ProcessReturnValues() and then Optimize this from there.
+  addAsm( "\n\n", 0, true );
   addComment( "return address (OPTIMIZE)" );
   // this will make recursion (almost) impossible
   addAsm( "!rx:\t" + str_BYTE + "$00", 1, true );
