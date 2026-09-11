@@ -329,6 +329,14 @@
   int label=0;
   int label_major=0;
 
+  string _mcplotFA = "$FA";
+  string _mcplotFB = "$FB";
+  string _mcplotFC = "$FC";
+  string _mcplotFD = "$FD";
+  string _mcplotFE = "$FE";
+  string _mcplotFF = "$FF";
+
+  
   // command line arguments
   bool arg_unsafe_loops=true;
   bool arg_safe_loops=false;
@@ -12503,7 +12511,8 @@ statement:
 | tSPRITEON '(' expression ')'
 {
   addComment( "spriteon( exp );" );
-
+  addCompilerMessage( "Sprite On Dude!", 0 );
+		      
   if( isIntIMM($3.name) )
     {
       addCompilerMessage( "Um... what is it (exactly) that you're trying to do here?", 3 );
@@ -16874,15 +16883,15 @@ statement:
   addAsm( str_JSR + "PUSH", 3, false );
   addAsm( str_LDA + "$03", 2, false );
   addAsm( str_JSR + "PUSH", 3, false );
-  addAsm( str_LDA + "$FA", 2, false );
+  addAsm( str_LDA + _mcplotFA, 2, false );
   addAsm( str_JSR + "PUSH", 3, false );
-  addAsm( str_LDA + "$FC", 2, false );
+  addAsm( str_LDA + _mcplotFC, 2, false );
   addAsm( str_JSR + "PUSH", 3, false );
-  addAsm( str_LDA + "$FD", 2, false );
+  addAsm( str_LDA + _mcplotFD, 2, false );
   addAsm( str_JSR + "PUSH", 3, false );
-  addAsm( str_LDA + "$FE", 2, false );
+  addAsm( str_LDA + _mcplotFE, 2, false );
   addAsm( str_JSR + "PUSH", 3, false );
-  addAsm( str_LDA + "$FF", 2, false );
+  addAsm( str_LDA + _mcplotFF, 2, false );
   addAsm( str_JSR + "PUSH", 3, false );
   addAsm( str_LDA + "$22", 2, false );
   addAsm( str_JSR + "PUSH", 3, false );
@@ -16900,15 +16909,15 @@ statement:
       
       // X Low - because this is Multicolour - the X coordinate fits into 1 byte
       addAsm( str_LDA + getNameOf(x_addr), 3, false );
-      addAsm( str_STA + "$FA", 2, false );
+      addAsm( str_STA + _mcplotFA, 2, false );
       
       // Y
       addAsm( str_LDA + getNameOf(y_addr), 3, false );
-      addAsm( str_STA + "$FC", 2, false );
+      addAsm( str_STA + _mcplotFC, 2, false );
 
       // colour
       addAsm( str_LDA + getNameOf(c_addr), 3, false );
-      addAsm( str_STA + "$FD", 2, false );
+      addAsm( str_STA + _mcplotFD, 2, false );
 
       addAsm( str_JSR + "_mcplot", 3, false );
       
@@ -16922,16 +16931,16 @@ statement:
       
       // X Low - because this is Multicolour - the X coordinate fits into 1 byte
       addAsm( str_LDA + getNameOf(x_addr), 3, false );
-      addAsm( str_STA + "$FA", 2, false );
+      addAsm( str_STA + _mcplotFA, 2, false );
       
       // Y
       addAsm( str_LDA + getNameOf(y_addr), 3, false );
-      addAsm( str_STA + "$FC", 2, false );
+      addAsm( str_STA + _mcplotFC, 2, false );
       //addAsm( str_JSR + "_mcplot", 3, false );
 
       int c = atoi(stripFirst($9.name).c_str());
       addAsm( str_LDA + "#$" + toHex(c), 2, false );
-      addAsm( str_STA + "$FD", 2, false );
+      addAsm( str_STA + _mcplotFD, 2, false );
 
       addAsm( str_JSR + "_mcplot", 3, false );
 
@@ -16943,13 +16952,13 @@ statement:
       int y = atoi(stripFirst($6.name).c_str());
       int c = atoi(stripFirst($9.name).c_str());
       //addAsm( str_ );
-      addAsm( str_STY + "$FD" + commentmarker + "Colour", 2, false );
+      addAsm( str_STY + _mcplotFD + commentmarker + "Colour", 2, false );
 
       addAsm( str_PLA );
-      addAsm( str_STA + "$FC" + commentmarker + "Y", 2, false );
+      addAsm( str_STA + _mcplotFC + commentmarker + "Y", 2, false );
 
       addAsm( str_PLA );
-      addAsm( str_STA + "$FA" + commentmarker + "X", 2, false );
+      addAsm( str_STA + _mcplotFA + commentmarker + "X", 2, false );
       
       addAsm( str_JSR + "_mcplot", 3, false );
     }
@@ -16962,16 +16971,16 @@ statement:
 
       // X Low - because this is Multicolour - the X coordinate fits into 1 byte
       addAsm( str_LDA + getNameOf(x_addr), 3, false );
-      addAsm( str_STA + "$FA", 2, false );
+      addAsm( str_STA + _mcplotFA, 2, false );
       
       // Y
       addAsm( str_LDA + getNameOf(y_addr), 3, false );
-      addAsm( str_STA + "$FC", 2, false );
+      addAsm( str_STA + _mcplotFC, 2, false );
       //addAsm( str_JSR + "_mcplot", 3, false );
 
       // colour
       addAsm( str_LDA + getNameOf(c_addr), 3, false );
-      addAsm( str_STA + "$FD", 2, false );
+      addAsm( str_STA + _mcplotFD, 2, false );
 
       addAsm( str_JSR + "_mcplot", 3, false );
     }
@@ -16984,16 +16993,16 @@ statement:
 
       // X Low - because this is Multicolour - the X coordinate fits into 1 byte
       addAsm( str_LDA + getNameOf(x_addr), 3, false );
-      addAsm( str_STA + "$FA", 2, false );
+      addAsm( str_STA + _mcplotFA, 2, false );
       
       // Y
       addAsm( str_LDA + getNameOf(y_addr), 3, false );
-      addAsm( str_STA + "$FC", 2, false );
+      addAsm( str_STA + _mcplotFC, 2, false );
       //addAsm( str_JSR + "_mcplot", 3, false );
 
       // colour
       addAsm( str_LDA + "#$" + toHex(c_value), 2, false );
-      addAsm( str_STA + "$FD", 2, false );
+      addAsm( str_STA + _mcplotFD, 2, false );
 
       addAsm( str_JSR + "_mcplot", 3, false );
 
@@ -17008,11 +17017,11 @@ statement:
       
       // X Low - because this is Multicolour - the X coordinate fits into 1 byte
       addAsm( str_LDA + getNameOf(x_addr), 3, false );
-      addAsm( str_STA + "$FA", 2, false );
+      addAsm( str_STA + _mcplotFA, 2, false );
       
       // Y
       addAsm( str_LDA + getNameOf(y_addr), 3, false );
-      addAsm( str_STA + "$FC", 2, false );
+      addAsm( str_STA + _mcplotFC, 2, false );
 
       // colour
       //addAsm( str_PLA );
@@ -17021,7 +17030,7 @@ statement:
       //addAsm( str_LDA + "#$22" );
       // ^^ debug
       
-      addAsm( str_STY + "$FD", 2, false );
+      addAsm( str_STY + _mcplotFD, 2, false );
 
 
       // ZP $02 was getting destroyed, so we need to save it
@@ -17045,11 +17054,11 @@ statement:
       int y = atoi(stripFirst($6.name).c_str());
       int c = atoi(stripFirst($9.name).c_str());
       addAsm( str_LDA + "#$" + toHex(x), 2, false );
-      addAsm( str_STA + "$FA", 2, false );
+      addAsm( str_STA + _mcplotFA, 2, false );
       addAsm( str_LDA + "#$" + toHex(y), 2, false );
-      addAsm( str_STA + "$FC", 2, false );
+      addAsm( str_STA + _mcplotFC, 2, false );
       addAsm( str_LDA + "#$" + toHex(c), 2, false );
-      addAsm( str_STA + "$FD", 2, false );
+      addAsm( str_STA + _mcplotFD, 2, false );
       addAsm( str_JSR + "_mcplot", 3, false );
     }
   else if( (isWordID($3.name)||isUintID($3.name)) && (isUintIMM($6.name)||isIntIMM($6.name)) && (isUintIMM($9.name)||isIntIMM($9.name)) )
@@ -17063,12 +17072,12 @@ statement:
 
       // X Low - because this is Multicolour - the X coordinate fites into 1 byte
       addAsm( str_LDA + getNameOf(x_addr), 3, false );
-      addAsm( str_STA + "$FA", 2, false );
+      addAsm( str_STA + _mcplotFA, 2, false );
 
       addAsm( str_LDA + "#$" + toHex(y), 2, false );
-      addAsm( str_STA + "$FC", 2, false );
+      addAsm( str_STA + _mcplotFC, 2, false );
       addAsm( str_LDA + "#$" + toHex(c), 2, false );
-      addAsm( str_STA + "$FD", 2, false );
+      addAsm( str_STA + _mcplotFD, 2, false );
       addAsm( str_JSR + "_mcplot", 3, false );
     }
   else
@@ -17081,15 +17090,15 @@ statement:
   addAsm( str_JSR + "POP", 3, false );
   addAsm( str_STA + "$22", 2, false );
   addAsm( str_JSR + "POP", 3, false );
-  addAsm( str_STA + "$FF", 2, false );
+  addAsm( str_STA + _mcplotFF, 2, false );
   addAsm( str_JSR + "POP", 3, false );
-  addAsm( str_STA + "$FE", 2, false );
+  addAsm( str_STA + _mcplotFE, 2, false );
   addAsm( str_JSR + "POP", 3, false );
-  addAsm( str_STA + "$FD", 2, false );
+  addAsm( str_STA + _mcplotFD, 2, false );
   addAsm( str_JSR + "POP", 3, false );
-  addAsm( str_STA + "$FC", 2, false );
+  addAsm( str_STA + _mcplotFC, 2, false );
   addAsm( str_JSR + "POP", 3, false );
-  addAsm( str_STA + "$FA", 2, false );
+  addAsm( str_STA + _mcplotFA, 2, false );
   addAsm( str_JSR + "POP", 3, false );
   addAsm( str_STA + "$03", 2, false );
   addAsm( str_JSR + "POP", 3, false );
@@ -18118,7 +18127,6 @@ init: '=' expression
       if( get_word_L(tmp_int) == get_word_H(tmp_int) )
 	{
 	  addComment( "undocumented instruction" );
-	  //addAsm( str_LAX + "#$" + toHex( get_word_L(tmp_int)), 2, false );
 	  addAsm( str_LDA + "#$" + toHex( get_word_L(tmp_int)), 2, false );
 	  addAsm( str_TAX, 1, false );
 	}
@@ -18728,7 +18736,8 @@ arithmetic[MATHOP] expression[OP2]
 		addComment( "A * IntID --> XA" );
 		mul16_is_needed = true;
 		addAsm( str_STA + "_MUL16_FB", 3, false );
-		addAsm( str_LAX + "#$00", 2, false );
+		addAsm( str_LDA + "#$00", 2, false );
+		addAsm( str_TAX, 1, false );
 		addAsm( str_STA + "_MUL16_FC", 3, false );
 		addAsm( str_LDA + O2, instr_size, false );
 		addAsm( str_BPL + "!+", 2, false );
@@ -18792,7 +18801,8 @@ arithmetic[MATHOP] expression[OP2]
 		addAsm( str_PLA, 1, false );
 		addAsm( str_JMP + "!++", 3, false );
 		addAsm( "!:\t" + str_PLA, 1, true );
-		addAsm( str_LAX + "#$00", 2, false );
+		addAsm( str_LDA + "#$00", 2, false );
+		addAsm( str_TAX, 1, false );
 		addAsm( "!:", 0, true );
 		strcpy($$.name, "_XA" );
 	      }
@@ -19332,7 +19342,8 @@ arithmetic[MATHOP] expression[OP2]
 		  {
 		  case 0:
 		    addComment( "A * WordIMM --> XA (special case: 0x0000)" );
-		    addAsm( str_LAX + "#$00", 2, false );
+		    addAsm( str_LDA + "#$00", 2, false );
+		    addAsm( str_TAX, 1, false );
 		    break;
 		  case 1:
 		    addComment( "A * WordIMM --> XA (special case: 0x0001)" );
@@ -19462,7 +19473,8 @@ arithmetic[MATHOP] expression[OP2]
 		  }
 		else if( tmp_v > 15)
 		  {
-		    addAsm( str_LAX + "#$FF", 2, false );
+		    addAsm( str_LDA + "#$FF", 2, false );
+		    addAsm( str_TAX, 1, false );
 		  }
 		else
 		  {	      
@@ -22181,7 +22193,8 @@ arithmetic[MATHOP] expression[OP2]
 	  
 		addAsm( str_LDA + O2, 3, false );
 		addAsm( str_BPL + "!+", 2, false );
-		addAsm( str_LAX + "#$00", 2, false );
+		addAsm( str_LDA + "#$00", 2, false );
+		addAsm( str_TAX, 1, false );
 		addAsm( str_JMP + "!++++", 3, false );
 		addAsm( "!:\t" + str_LDA + "#$00", 2, true );
 		addAsm( str_STA + "!++", 3, false );
@@ -23452,12 +23465,14 @@ arithmetic[MATHOP] expression[OP2]
 		int op1 = atoi(stripFirst($1.name).c_str());
 		addAsm( str_LDA + O2, 3, false );
 		addAsm( str_BNE + "!+", 2, false );
-		addAsm( str_LAX + "#$01", 2, false );
+		addAsm( str_LDA + "#$01", 2, false );
+		addAsm( str_TAX, 1, false );
 		addAsm( str_DEX, 1, false );
 		addAsm( str_JMP + "!+++", 3, false );
 		addAsm( "!:", 0, true );
 		addAsm( str_BPL + "!+", 2, false );
-		addAsm( str_LAX + "#$00", 2, false );
+		addAsm( str_LDA + "#$00", 2, false );
+		addAsm( str_TAX, 1, false );
 		addAsm( str_BEQ + "!++", 2, false );
 		addAsm( "!:", 0, true );
 		pow16_is_needed = true;
@@ -24278,7 +24293,8 @@ arithmetic[MATHOP] expression[OP2]
 		mul16_is_needed = true;
 		pow16_is_needed = true;
 		addComment( "UintID ** IntID --> XA" );
-		addAsm( str_LAX + "#$00", 2, false );
+		addAsm( str_LDA + "#$00", 2, false );
+		addAsm( str_TAX, 1, false );
 		addAsm( str_LDY + getNameOf(getAddressOf($4.name)), 3, false );
 		addAsm( str_BMI + "!+", 2, false );
 
@@ -24335,7 +24351,8 @@ arithmetic[MATHOP] expression[OP2]
 		switch( op2 )
 		  {
 		  case 0:
-		    addAsm( str_LAX + "#$00", 2, false );
+		    addAsm( str_LDA + "#$00", 2, false );
+		    addAsm( str_TAX, 1, false );
 		    strcpy( $$.name, "_XA" );
 		    break;
 		  case -1:
@@ -24546,8 +24563,9 @@ arithmetic[MATHOP] expression[OP2]
 		if( tmp_v == 0 )
 		  {
 		    addAsm( commentmarker + str_LDA + "#$00", 0, false );
-		    addAsm( commentmarker + str_TAX, 0, false );	      
-		    addAsm( str_LAX + "#$00", 2, false );
+		    addAsm( commentmarker + str_TAX, 0, false );
+		    addAsm( str_LDA + "#$00", 2, false );
+		    addAsm( str_TAX, 1, false );
 		  }
 		else if( tmp_v == 1 )
 		  {
@@ -24842,7 +24860,8 @@ arithmetic[MATHOP] expression[OP2]
 		else if( op2 == 256 )
 		  {
 		    addComment( "Special Case UintID / 256" );
-		    addAsm( str_LAX + "#$00", 2, false );
+		    addAsm( str_LDA + "#$00", 2, false );
+		    addAsm( str_TAX, 1, false );
 		  }
 		else
 		  {
@@ -25006,7 +25025,8 @@ arithmetic[MATHOP] expression[OP2]
 		  {
 		  case 0:
 		    addComment( "Special Case: UintID * 0x0000 --> XA" );
-		    addAsm( str_LAX + "#$00", 1, false );
+		    addAsm( str_LDA + "#$00", 2, false );
+		    addAsm( str_TAX, 1, false );
 		    break;
 		  case 256:
 		    addComment( "Special Case: UintID * 0x0100 --> XA" );
@@ -25132,7 +25152,8 @@ arithmetic[MATHOP] expression[OP2]
 		    addAsm( str_LDX + "#$00", 2, false );
 		    break;
 		  case 256:
-		    addAsm( str_LAX + "#$00", 2, false );
+		    addAsm( str_LDA + "#$00", 2, false );
+		    addAsm( str_TAX, 1, false );
 		    break;
 		  default:
 		    addComment( "UintID / WordIMM --> XA" );
@@ -25291,7 +25312,8 @@ arithmetic[MATHOP] expression[OP2]
 		if( tmp_i == 0 )
 		  {
 		    addComment( "multiply 0 by A" );
-		    addAsm( str_LAX + "#$00", 2, false );
+		    addAsm( str_LDA + "#$00", 2, false );
+		    addAsm( str_TAX, 1, false );
 		    strcpy($$.name, "_XA" );
 		  }
 		else if( tmp_i == 1 )
@@ -25701,7 +25723,8 @@ arithmetic[MATHOP] expression[OP2]
 		addComment( "UintIMM ** IntID --> XA" );
 		mul16_is_needed = true;
 		pow16_is_needed = true;
-		addAsm( str_LAX + "#$00", 2, false );
+		addAsm( str_LDA + "#$00", 2, false );
+		addAsm( str_TAX, 1, false );
 		addAsm( str_LDY + getNameOf(getAddressOf($4.name)), 3, false );
 		addAsm( str_BMI + "!+", 2, false );
 	  
@@ -25766,7 +25789,8 @@ arithmetic[MATHOP] expression[OP2]
 		  {
 		    addComment( "UintIMM * UintID --> XA" );
 		    addComment( "Special Case: 0 * UintID -> XA" );
-		    addAsm( str_LAX + "#$00", 2, false );
+		    addAsm( str_LDA + "#$00", 2, false );
+		    addAsm( str_TAX, 1, false );
 		  }	  
 		else if( tmp_int == 1 )
 		  {
@@ -25963,7 +25987,8 @@ arithmetic[MATHOP] expression[OP2]
 
 		if( tmp_int == 0 )
 		  {
-		    addAsm( str_LAX + "#$00", 2, false );
+		    addAsm( str_LDA + "#$00", 2, false );
+		    addAsm( str_TAX, 1, false );
 		  }
 		else
 		  {
@@ -26159,7 +26184,8 @@ arithmetic[MATHOP] expression[OP2]
 		else if( tmp_int == 0 )
 		  {
 		    addComment("Special Case: 0x00 * WordID --> XA" );
-		    addAsm( str_LAX + "#$00", 2, false );
+		    addAsm( str_LDA + "#$00", 2, false );
+		    addAsm( str_TAX, 1, false );
 		    strcpy($$.name, "_XA" );
 
 		  }
@@ -26308,7 +26334,8 @@ arithmetic[MATHOP] expression[OP2]
 		if( tmp_int == 0 )
 		  {
 		    addComment("Special Case: 0x00 / WordID --> XA" );
-		    addAsm( str_LAX + "#$00", 2, false );
+		    addAsm( str_LDA + "#$00", 2, false );
+		    addAsm( str_TAX, 1, false );
 		  }
 		else
 		  {
@@ -26894,7 +26921,8 @@ arithmetic[MATHOP] expression[OP2]
 		addCompilerMessage( "WordID ** IntID cant't have OP2 > 0x000F, the result is > 0xFFFF", 0 );
 		pow16_is_needed = true;
 
-		addAsm( str_LAX + "#$00", 2, false );
+		addAsm( str_LDA + "#$00", 2, false );
+		addAsm( str_TAX, 1, false );
 		addAsm( str_LDY + O2, 3, false );
 		addAsm( str_BMI + "!+", 2, false );
 	  
@@ -27190,7 +27218,8 @@ arithmetic[MATHOP] expression[OP2]
 		else if( IMMvalue == 0 )
 		  {
 		    addComment("Special Case: WordID * 0x00 --> XA" );
-		    addAsm( str_LAX + "#$00", 2, false );
+		    addAsm( str_LDA + "#$00", 2, false );
+		    addAsm( str_TAX, 1, false );
 		    strcpy($$.name, "_XA" );
 
 		  }
@@ -27701,7 +27730,8 @@ arithmetic[MATHOP] expression[OP2]
 	      {
 		addCompilerMessage( "WordID ** IntIMM: always returns zero", 1 );
 		addComment( "WordID ** IntIMM --> XA" );
-		addAsm( str_LAX + "#$00", 2, false );
+		addAsm( str_LDA + "#$00", 2, false );
+		addAsm( str_TAX, 1, false );
 		strcpy($$.name, "_XA" );
 	      }
 	    else 
@@ -27859,7 +27889,8 @@ arithmetic[MATHOP] expression[OP2]
 		if( op2 == 0 )
 		  {
 		    addComment( "Special Case: WordID * 0x0000 --> XA" );
-		    addAsm( str_LAX + "#$00", 2, false );
+		    addAsm( str_LDA + "#$00", 2, false );
+		    addAsm( str_TAX, 1, false );
 		  }
 		else if( op2 == 1 )
 		  {
@@ -28447,7 +28478,8 @@ arithmetic[MATHOP] expression[OP2]
 		tmp_int3 = tmp_int1 + tmp_int2;
 		if( get_word_L(tmp_int3) == get_word_H(tmp_int3) )
 		  {
-		    addAsm( str_LAX + "#$" + toHex( get_word_L(tmp_int3)  ), 2, false );
+		    addAsm( str_LDA + "#$" + toHex( get_word_L(tmp_int3)  ), 2, false );
+		    addAsm( str_TAX, 1, false );
 		  }
 		else
 		  {
@@ -28462,7 +28494,8 @@ arithmetic[MATHOP] expression[OP2]
 		tmp_int3 = tmp_int1 - tmp_int2;
 		if( get_word_L(tmp_int3) == get_word_H(tmp_int3) )
 		  {
-		    addAsm( str_LAX + "#$" + toHex( get_word_L(tmp_int3)  ), 2, false );
+		    addAsm( str_LDA + "#$" + toHex( get_word_L(tmp_int3)  ), 2, false );
+		    addAsm( str_TAX, 1, false );
 		  }
 		else
 		  {
@@ -28477,7 +28510,8 @@ arithmetic[MATHOP] expression[OP2]
 		tmp_int3 = tmp_int1 * tmp_int2;
 		if( get_word_L(tmp_int3) == get_word_H(tmp_int3) )
 		  {
-		    addAsm( str_LAX + "#$" + toHex( get_word_L(tmp_int3)  ), 2, false );
+		    addAsm( str_LDA + "#$" + toHex( get_word_L(tmp_int3)  ), 2, false );
+		    addAsm( str_TAX, 1, false );
 		  }
 		else
 		  {
@@ -28492,7 +28526,8 @@ arithmetic[MATHOP] expression[OP2]
 		tmp_int3 = tmp_int1 /tmp_int2;
 		if( get_word_L(tmp_int3) == get_word_H(tmp_int3) )
 		  {
-		    addAsm( str_LAX + "#$" + toHex( get_word_L(tmp_int3)  ), 2, false );
+		    addAsm( str_LDA + "#$" + toHex( get_word_L(tmp_int3)  ), 2, false );
+		    addAsm( str_TAX, 1, false );
 		  }
 		else
 		  {
@@ -28511,7 +28546,8 @@ arithmetic[MATHOP] expression[OP2]
 		tmp_int3 = pow(tmp_int1,tmp_int2);
 		if( get_word_L(tmp_int3) == get_word_H(tmp_int3) )
 		  {
-		    addAsm( str_LAX + "#$" + toHex( get_word_L(tmp_int3)  ), 2, false );
+		    addAsm( str_LDA + "#$" + toHex( get_word_L(tmp_int3)  ), 2, false );
+		    addAsm( str_TAX, 1, false );
 		  }
 		else
 		  {
@@ -28622,7 +28658,8 @@ arithmetic[MATHOP] expression[OP2]
 	      {
 		addComment( "WordIMM ** IntID --> XA" );
 		pow16_is_needed = true;
-		addAsm( str_LAX + "#$00", 2, false );
+		addAsm( str_LDA + "#$00", 2, false );
+		addAsm( str_TAX, 1, false );
 		addAsm( str_LDY + getNameOf(getAddressOf($4.name)), 3, false );
 		addAsm( str_BMI + "!+", 2, false );
 		addAsm( str_LDA + "#$" + toHex(get_word_L(tmp_int)), 2, false );
@@ -28751,7 +28788,8 @@ arithmetic[MATHOP] expression[OP2]
 		  {
 		  case 0:
 		    addComment( "Special Case: 0x0000 * UintID" );
-		    addAsm( str_LAX + "#$00", 2, false );
+		    addAsm( str_LDA + "#$00", 2, false );
+		    addAsm( str_TAX, 1, false );
 		    strcpy($$.name, "_XA" );
 		    break;
 		  case 1:
@@ -28942,7 +28980,8 @@ arithmetic[MATHOP] expression[OP2]
 		  {
 		  case 0:
 		    addComment( "Special Case: 0x0000 * WordID --> XA" );
-		    addAsm( str_LAX + "#$00", 2, false );
+		    addAsm( str_LDA + "#$00", 2, false );
+		    addAsm( str_TAX, 1, false );
 		    break;
 		  case 1:
 		    addComment( "Special Case: 0x0001 * WordID --> XA" );
@@ -29295,7 +29334,8 @@ arithmetic[MATHOP] expression[OP2]
 		switch( OP1 )
 		  {
 		  case 0:
-		    addAsm( str_LAX + "#$00", 2, false );		    
+		    addAsm( str_LDA + "#$00", 2, false );
+		    addAsm( str_TAX, 1, false );
 		  case 1:
 		    // no nothing
 		    strcpy($$.name, "_XA" );
@@ -29702,7 +29742,8 @@ arithmetic[MATHOP] expression[OP2]
 	  
 		addAsm( str_PLA, 1, false );
 		addAsm( str_PLA, 1, false );
-		addAsm( str_LAX + "#$00", 2, false );
+		addAsm( str_LDA + "#$00", 2, false );
+		addAsm( str_TAX, 1, false );
 		addAsm( str_JMP + "!++", 3, false );
 
 		addAsm( "!:\t" + str_PHA, 1, true );
@@ -29793,7 +29834,8 @@ arithmetic[MATHOP] expression[OP2]
 	    else if( op == string( "**" ) )
 	      {
 		addComment( "XA / IntIMM --> XA (always will be zero)" );
-		addAsm( str_LAX + "#$00", 2, false );
+		addAsm( str_LDA + "#$00", 2, false );
+		addAsm( str_TAX, 1, false );
 		strcpy($$.name, "_XA" );
 	      }
 	    else
@@ -29915,7 +29957,8 @@ arithmetic[MATHOP] expression[OP2]
 		  {
 		  case 0:
 		    addComment( "XA * 0 --> XA" );
-		    addAsm( str_LAX + "#$00", 2, false );
+		    addAsm( str_LDA + "#$00", 2, false );
+		    addAsm( str_TAX, 1, false );
 		    strcpy($$.name, "_XA");
 		    break;
 		  case 1:
@@ -31925,7 +31968,7 @@ arithmetic[MATHOP] expression[OP2]
   addAsm( str_ASL );
   addAsm( str_ASL );      
   
-  addAsm( str_STA + "$FF", 2, false );
+  addAsm( str_STA + _mcplotFF, 2, false );
 
   // get BNK
   addAsm( str_LDA + "$DD00", 3, false );
@@ -31939,7 +31982,7 @@ arithmetic[MATHOP] expression[OP2]
   addAsm( str_ASL );
   addAsm( str_ASL );
   
-  addAsm( str_ADC + "$FF", 2, false );
+  addAsm( str_ADC + _mcplotFF, 2, false );
   addAsm( str_TAX );
   addAsm( str_LDA + "#$00", 2, false );
   addAsm( str_CLI );
@@ -31957,7 +32000,7 @@ arithmetic[MATHOP] expression[OP2]
   
   // X Low
   addAsm( str_LDA + "$" + toHex(x_addr), 3, false );
-  addAsm( str_STA + "$FA", 2, false );
+  addAsm( str_STA + _mcplotFA, 2, false );
 
   if( isWordID( $3.name ) )
     {
@@ -31968,11 +32011,11 @@ arithmetic[MATHOP] expression[OP2]
     {
       addAsm( str_LDA + "#$00", 2, false );
     }
-  addAsm( str_STA + "$FB", 2, false );
+  addAsm( str_STA + _mcplotFB, 2, false );
 
   // Y
   addAsm( str_LDA + "$" + toHex(y_addr), 3, false );
-  addAsm( str_STA + "$FC", 2, false );
+  addAsm( str_STA + _mcplotFC, 2, false );
   addAsm( str_JSR + "GETPLOT", 3, false );
   addAsm( str_LDA + "$02", 2, false );
   addAsm( str_LDX + "$03", 2, false );
@@ -32000,51 +32043,51 @@ arithmetic[MATHOP] expression[OP2]
       int x_addr = getAddressOf($3.name);
       int y_addr = getAddressOf($6.name);
       addAsm( str_LDA + getNameOf(x_addr), 3, false );
-      addAsm( str_STA + "$FA", 2, false );
+      addAsm( str_STA + _mcplotFA, 2, false );
       addAsm( str_LDA + getNameOf(x_addr) + " +1", 3, false );
-      addAsm( str_STA + "$FB", 2, false );
+      addAsm( str_STA + _mcplotFB, 2, false );
       addAsm( str_LDA + getNameOf(y_addr), 3, false );
-      addAsm( str_STA + "$FC", 2, false );
+      addAsm( str_STA + _mcplotFC, 2, false );
     }
   else if(isUintID($3.name) && (isUintID($6.name)||isIntID($6.name)) )
     {
       int x_addr = getAddressOf($3.name);
       int y_addr = getAddressOf($6.name);
       addAsm( str_LDA + getNameOf(x_addr), 3, false );
-      addAsm( str_STA + "$FA", 2, false );
+      addAsm( str_STA + _mcplotFA, 2, false );
       addAsm( str_LDA + "#$00", 2, false );
-      addAsm( str_STA + "$FB", 2, false );
+      addAsm( str_STA + _mcplotFB, 2, false );
       addAsm( str_LDA + getNameOf(y_addr), 3, false );
-      addAsm( str_STA + "$FC", 2, false );
+      addAsm( str_STA + _mcplotFC, 2, false );
     }
   else if(isUintID($3.name) && isA($6.name))
     {
-      addAsm( str_STA + "$FC", 2, false );
+      addAsm( str_STA + _mcplotFC, 2, false );
       int x_addr = getAddressOf($3.name);
       int y_addr = getAddressOf($6.name);
       addAsm( str_LDA + getNameOf(x_addr), 3, false );
-      addAsm( str_STA + "$FA", 2, false );
+      addAsm( str_STA + _mcplotFA, 2, false );
       addAsm( str_LDA + "#$00", 2, false );
-      addAsm( str_STA + "$FB", 2, false );
+      addAsm( str_STA + _mcplotFB, 2, false );
     }
   else if(isWordID($3.name) && isA($6.name))
     {
-      addAsm( str_STA + "$FC", 2, false );
+      addAsm( str_STA + _mcplotFC, 2, false );
       int x_addr = getAddressOf($3.name);
       int y_addr = getAddressOf($6.name);
       addAsm( str_LDA + getNameOf(x_addr), 3, false );
-      addAsm( str_STA + "$FA", 2, false );
+      addAsm( str_STA + _mcplotFA, 2, false );
       addAsm( str_LDA + getNameOf(x_addr) + " +1", 3, false );
-      addAsm( str_STA + "$FB", 2, false );
+      addAsm( str_STA + _mcplotFB, 2, false );
     }
   else if( isXA($3.name) && isA($6.name) )
     {
       addComment("getxy(XA, A);");
-      addAsm( str_STA + "$FC", 2, false );
+      addAsm( str_STA + _mcplotFC, 2, false );
       addAsm( str_PLA ); // this is the High Byte
-      addAsm( str_STA + "$FB", 2, false );
+      addAsm( str_STA + _mcplotFB, 2, false );
       addAsm( str_PLA ); // this is the High Byte
-      addAsm( str_STA + "$FA", 2, false );
+      addAsm( str_STA + _mcplotFA, 2, false );
     }
   else
     {
@@ -33319,7 +33362,6 @@ arithmetic[MATHOP] expression[OP2]
     }
   else if( isA( $3.name ) )
     {
-
       if( arg_experimental_math )
 	{
 	  addComment( "sqrt(A) optimized for size, not speed") ;
@@ -33354,11 +33396,11 @@ arithmetic[MATHOP] expression[OP2]
 	  addAsm( str_TAX, 1, false );
 	  addAsm( str_LDA + "_sqrrt8,X", 3, false );
 	  strcpy($$.name, "_A");
-	}
-      
+	}      
     }
   else if( isWordID( $3.name ) )
     {
+      // TODO: implement this
       addCompilerMessage( "NYI: sqrt(WordID)", 3 );
       strcpy($$.name, "_XA");
     }
@@ -33373,6 +33415,7 @@ arithmetic[MATHOP] expression[OP2]
     }
   else if( isXA( $3.name ) )
     {
+      // TODO: implement this
       addCompilerMessage( "NYI: sqrt(XA)", 3 );
     }
   else
@@ -33848,10 +33891,7 @@ int main(int argc, char *argv[])
       if( a == "--no-optimize" ) arg_optimize = false;
       if( a == "--optimize" ) arg_optimize = true;
       if( a == "--show-cycles" ) arg_show_cycles = true;
-      if( a == "--no-asm-comments" )
-	{
-	  arg_asm_comments = false;
-	}
+      if( a == "--no-asm-comments" ) arg_asm_comments = false;
       if( a == "--asm-comments" ) arg_asm_comments = true;
       if( a == "--parser-comments" ) arg_parser_comments = true;
       //if( a == "--symbol-table" ) symbol_table_is_needed = true;
@@ -33936,6 +33976,15 @@ int main(int argc, char *argv[])
 	  i++;
 	}
 
+      if( a == "--alt-mcplot-memory" )
+	{
+	  _mcplotFA = "$61";
+	  _mcplotFB = "$62";
+	  _mcplotFC = "$63";
+	  _mcplotFD = "$64";
+	  _mcplotFE = "$65";
+	  _mcplotFF = "$66";
+	}
 
 
       
@@ -34061,7 +34110,7 @@ int main(int argc, char *argv[])
   if( sidirq_is_needed )
     {
       //music_play_addr = atoi( stripFirst( $5.name ).c_str() );
-
+      addAsm( "\n", 0, true );
       addComment( "This is the SID Player Interrupt Routine" );
       addAsm( "SIDIRQ:", 0, true );
       addAsm( str_ASL + "$D019", 3, false );
@@ -34078,6 +34127,7 @@ int main(int argc, char *argv[])
     }
   if( bin2bit_is_needed )
     {
+      addAsm( "\n", 0, true );
       addAsm( "!mem0:\t" + str_BYTE + "$01, $02, $04, $08, $10, $20, $40, $80", 8, true );
       addAsm( "_bin_to_bit:\t"+ commentmarker + "Convert an integer in A to the Ath bit", 0, true );
       addAsm( str_TAX, 1, false );
@@ -34087,6 +34137,7 @@ int main(int argc, char *argv[])
 
   if( signed_comparison_is_needed )
     {
+      addAsm( "\n", 0, true );
       addCompilerMessage( "new signed comparison destroys $02/$03", 1 );
       addComment( "Destroys $02/$03 - 26/31 cycles" );
       addAsm( "_signed_comparison:", 0, true );
@@ -34105,6 +34156,7 @@ int main(int argc, char *argv[])
   
   if( word2dec_is_needed )
     {
+      addAsm( "\n", 0, true );
       addComment( "-----------------------------------" );
       addComment( "string of PETSCII bytes tmp storage" );      
       addAsm( "!mem0:\t" + str_BYTE + "$00, $00, $00, $00, $00, $00, $00", 7, true );
@@ -34214,12 +34266,14 @@ int main(int argc, char *argv[])
 
   if( float_swap_space_is_needed )
     {
+      addAsm( "\n", 0, true );
       addComment( "Floating Point Swap Space" );
       addAsm( "!fp0:\t" + str_BYTE + "$00, $00, $00, $00, $00, $00", 6, true );
       addAsm( "!fp1:\t" + str_BYTE + "$00, $00, $00, $00, $00, $00", 6, true );
     }
   if( div16_is_needed )
     {
+      addAsm( "\n", 0, true );
       // 16-bit division
       // NUM1  / NUM2  = RESULT + REMAINDER 
       // FC/FB / FE/FD = FC/FB     03/02
@@ -34275,6 +34329,7 @@ int main(int argc, char *argv[])
     }
   if( multicolour_plot_is_needed && true )
     {
+      addAsm( "\n", 0, true );
       addComment( "vvv------------------------------------vvv" );
       addComment( "vvv from p164 of Advanced Machine Code vvv" );
       addComment( "vvv  Programming for the Commodore 64  vvv" );
@@ -34286,23 +34341,23 @@ int main(int argc, char *argv[])
       addComment( "LOC is at $02(l), $03(h)" );
       
       addAsm( "_mcplot:", 0, true );
-      addAsm( str_LDA + "$FD" + commentmarker + "colcode (11/01/10/00)", 2, false );
+      addAsm( str_LDA + _mcplotFD + commentmarker + "colcode (11/01/10/00)", 2, false );
       addAsm( str_ASL, 1, false );
       addAsm( str_ASL, 1, false );
-      addAsm( str_ORA + "$FA" + commentmarker + "xcoord", 2, false );
+      addAsm( str_ORA + _mcplotFA + commentmarker + "xcoord", 2, false );
       addAsm( str_AND + "#$0F", 2, false );
       addAsm( str_TAY, 1, false );
       addAsm( str_LDA + "_mcplotMasks,Y", 3, false );
       addAsm( str_STA + "$50" + commentmarker + "mask", 2, false );
       addAsm( str_LDA + "#$00" , 2, false );
       addAsm( str_STA + "$02" + commentmarker + "loc", 2, false );
-      addAsm( str_STA + "$FF" + commentmarker + "store +1", 2, false );
-      addAsm( str_LDA + "$FA" + commentmarker + "xcoord", 2, false );
+      addAsm( str_STA + _mcplotFF + commentmarker + "store +1", 2, false );
+      addAsm( str_LDA + _mcplotFA + commentmarker + "xcoord", 2, false );
       addAsm( str_AND + "#$FC", 2, false );
       addAsm( str_ASL, 1, false );
-      addAsm( str_ROL + "$FF" + commentmarker + "store +1", 2, false );
-      addAsm( str_STA + "$FE" + commentmarker + "store", 2, false );
-      addAsm( str_LDA + "$FC" + commentmarker + "ycoord", 2, false );
+      addAsm( str_ROL + _mcplotFF + commentmarker + "store +1", 2, false );
+      addAsm( str_STA + _mcplotFE + commentmarker + "store", 2, false );
+      addAsm( str_LDA + _mcplotFC + commentmarker + "ycoord", 2, false );
       addAsm( str_LSR, 1, false );
       addAsm( str_LSR, 1, false );
       addAsm( str_LSR, 1, false );
@@ -34314,13 +34369,13 @@ int main(int argc, char *argv[])
       addAsm( str_CLC, 1, false );
       addAsm( str_ADC + "$03" + commentmarker + "loc +1", 2, false );
       addAsm( str_STA + "$03" + commentmarker + "loc +1", 2, false );
-      addAsm( str_LDA + "$FC" + commentmarker + "ycoord", 2, false );
+      addAsm( str_LDA + _mcplotFC + commentmarker + "ycoord", 2, false );
       addAsm( str_AND + "#$07", 2, false );
       addAsm( str_ADC + "$02" + commentmarker + "loc", 2, false );
-      addAsm( str_ADC + "$FE" + commentmarker + "store", 2, false );
+      addAsm( str_ADC + _mcplotFE + commentmarker + "store", 2, false );
       addAsm( str_STA + "$02" + commentmarker + "loc", 2, false );
       addAsm( str_LDA + "$03" + commentmarker + "loc +1", 2, false );
-      addAsm( str_ADC + "$FF" + commentmarker + "store +1", 2, false );
+      addAsm( str_ADC + _mcplotFF + commentmarker + "store +1", 2, false );
       addAsm( str_CLC, 1, false );
       addAsm( str_ADC + "#$A0" + commentmarker + "bitmap page", 2, false );
       addAsm( str_STA + "$03" + commentmarker + "loc +1", 2, false );
@@ -34333,122 +34388,9 @@ int main(int argc, char *argv[])
       addAsm( str_BYTE + "$00, $00, $00, $00, $40, $10, $04, $01, $80, $20, $08, $02, $C0, $30, $0C, $03", 16, false );
       addComment( "^^^------------------------------------^^^" );
     }
-  if( multicolour_plot_is_needed && 0 )
-    {
-      // from p164 of Advanced Machine Code Programming for the Commodore 64
-      addComment( "vvv------------------------------------vvv" );
-      addComment( "vvv from p164 of Advanced Machine Code vvv" );
-      addComment( "vvv  Programming for the Commodore 64  vvv" );
-      addComment( "vvv w/ some changes to deal with banks vvv" );
-      addComment( "vvv------------------------------------vvv" );
-      addComment( "x = $FA, y = $FC, colour = $FD" );
-      addComment( "STORE is at $FE(l), $FF(h)" );
-      addComment( "LOC is at $02(l), $03(h)" );
-      
-      
-      addAsm( "_mcplot:", 0, true );
-      //addAsm( "#if SAFEMCPLOT", 0, true );
-      //addAsm( str_SEI );
-      //addAsm( "#endif", 0, true );
-
-      // -------------------------------------------------
-      // LDX #$03  - 2 cycles
-      // LDA $FA   - 3 cycles
-      // SAX $FE   - 3 cycles - 2 bytes
-      //
-      //                  OR
-      //
-      addAsm( str_LDA + "$FA" + commentmarker + "xcoord", 2, false );  // 3 cycles
-      addAsm( str_AND + "#$03", 2, false );  // 2 cycles
-      addAsm( str_STA + "$FE" + commentmarker + "store", 2, false ); // 3 cycles
-      addAsm( str_LDA + string("#$00"), 2, false );
-      addAsm( str_STA + "$02" + commentmarker + "loc", 2, false );
-      addAsm( str_STA + "$FF" + commentmarker + "store + 1", 2, false );
-      addAsm( str_LDA + "$FD" + commentmarker + "colcode", 2, false );
-      addAsm( str_CLC );
-      addAsm( str_ROR );
-      // loop here
-      addAsm( "!:\t" + str_ROR, 1, true );
-      addAsm( str_ROR );
-      addAsm( str_DEC + "$FE" + commentmarker + "store", 2, false );
-      addAsm( str_BPL + "!-", 2, false );
-      addAsm( str_STA + "$50" + commentmarker + "mask", 2, false );
-      addAsm( str_LDA + "$FA" + commentmarker + "xcoord", 2, false );  // 3 cycles
-      addAsm( str_AND + "#$FC", 2, false );
-      addAsm( str_ASL );
-      addAsm( str_ROL + "$FF" + commentmarker + "store + 1", 2, false );
-      addAsm( str_STA + "$FE" + commentmarker + "store", 2, false );
-      addAsm( str_LDA + "$FC" + commentmarker + "ycoord", 2, false );  // 3 cycles
-      addAsm( str_LSR );
-      addAsm( str_LSR );
-      addAsm( str_LSR );
-      addAsm( str_STA + "$03" + commentmarker + "loc + 1", 2, false );
-      addAsm( str_LSR );
-      addAsm( str_ROR + "$02" + commentmarker + "loc", 2, false );
-      addAsm( str_LSR );
-      addAsm( str_ROR + "$02" + commentmarker + "loc", 2, false );
-
-      addAsm( str_CLC );
-      addAsm( str_ADC + "$03" + commentmarker + "loc + 1", 2, false );
-      addAsm( str_STA + "$03" + commentmarker + "loc + 1", 2, false );
-      
-      addAsm( str_LDA + "$FC" + commentmarker + "ycoord", 2, false );  // 3 cycles
-      addAsm( str_AND + "#$07", 2, false );
-      addAsm( str_ADC + "$02" + commentmarker + "loc", 2, false );
-      addAsm( str_ADC + "$FE" + commentmarker + "store ", 2, false );
-      addAsm( str_STA + "$02" + commentmarker + "loc", 2, false );
-
-      addAsm( str_LDA + "$03" + commentmarker + "loc+1", 2, false );  // 3 cycles
-
-      //addAsm( str_LDA + "$03; loc + 1", 2, false );
-      addAsm( str_ADC + "$FF" + commentmarker + "store + 1", 2, false );
-      
-
-      addAsm( str_STA + "$22" + commentmarker + "tmpstore", 2, false );
-      //addAsm( commentmarker + string(" These subroutines I added to calculate the addresses based on VICII settings"), 0, true );
-      bnkmem_is_needed=true;
-      addComment( "this can be hardcoded for speed" );
-      addComment( str_LDA + "#$80" + commentmarker + "maybe?" );
-      addAsm( str_JSR + "_bnkmem", 3, false );
-      addAsm( str_PLA ); // <<- A should now be #$00, #$40, #$80, #$C0 based on Bank #
-      
-      addAsm( str_CLC );
-      addAsm( str_ADC + "$22", 2, false );
-      addAsm( str_STA + "$22" + commentmarker + "tmpstore", 2, false );
-      bmpmem_is_needed = true;
-      addComment( "this can be hardcoded for speed" );
-      addAsm( str_JSR + "_bmpmem", 3, false );
-      addComment( "A should now be #$00 or a #$20" );
-      //addAsm( str_PLA ); // <<- A should now be #$00 or a #$20
-      addComment( str_LDA + "#$00" + commentmarker + "or #$20 maybe?" );      
-      addAsm( str_CLC );
-      addAsm( str_ADC + "$22" + commentmarker + "tmpstore", 2, false );
-      //addAsm( str_ADC + "$03; loc + 1", 2, false );
-      //addAsm( "; =========================", 0, true );
-
-
-      addAsm( str_STA + "$03" + commentmarker + "loc + 1", 2, false );
-      
-      addAsm( str_LDY + "#$00", 2, false );
-      addAsm( str_LDA + "($02),Y", 2, false );
-      //addAsm( str_LDA + "($02),Y", 2, false );
-      addAsm( str_ORA + "$50" + commentmarker + "mask", 2, false );
-      addAsm( str_STA + "($02),Y" + commentmarker + "what is @ $50?", 2, false );
-
-      addAsm( "#if SAFEMCPLOT", 0, true );
-      addAsm( str_CLI );
-      addAsm( "#endif", 0, true );
-
-      addAsm( str_RTS );
-      addComment( "^^^------------------------------------^^^" );
-      addComment( "^^^ from p164 of Advanced Machine Code ^^^" );
-      addComment( "^^^  Programming for the Commodore 64  ^^^" );
-      addComment( "^^^ w/ some changes to deal with banks ^^^" );
-      addComment( "^^^------------------------------------^^^" );
-
-    }
   if( getplot_is_needed )
     {
+      addAsm( "\n", 0, true );
       // from p164 of Advanced Machine Code Programming for the Commodore 64 
       addComment( "vvv------------------------------------vvv" );
       addComment( "vvv from p164 of Advanced Machine Code vvv" );
@@ -34462,7 +34404,7 @@ int main(int argc, char *argv[])
 
 
       addAsm( str_SEI );
-      addAsm( str_LDA + "$FA", 2, false ); 
+      addAsm( str_LDA + _mcplotFA, 2, false ); 
 
       //addAsm( str_LDA + "$FA", 2, false );
       addAsm( str_AND + "#$03", 2, false );
@@ -34473,7 +34415,7 @@ int main(int argc, char *argv[])
       //addAsm( str_LDA + "#$00", 2, false );
       addAsm( str_STA + "$02", 2, false );
       addAsm( str_STA + "$5D", 2, false );
-      addAsm( str_LDA + "$FD", 2, false ); 
+      addAsm( str_LDA + _mcplotFD, 2, false ); 
 
       //addAsm( str_LDA + "$FD", 2, false );
       addAsm( str_CLC );
@@ -34486,13 +34428,13 @@ int main(int argc, char *argv[])
       //addAsm( str_BYTE + "$10, $FA", 2, false );  // BPL "loop here"
 
       addAsm( str_STA + "$50", 2, false );
-      addAsm( str_LDA + "$FA", 2, false ); 
+      addAsm( str_LDA + _mcplotFA, 2, false ); 
       //addAsm( str_LDA + "$FA", 2, false );
       addAsm( str_AND + "#$FC", 2, false );
       addAsm( str_ASL );
       addAsm( str_ROL + "$5D", 2, false );
       addAsm( str_STA + "$5C", 2, false );
-      addAsm( str_LDA + "$FC", 2, false ); 
+      addAsm( str_LDA + _mcplotFC, 2, false ); 
       //addAsm( str_LDA + "$FC", 2, false );
       
       addAsm( str_LSR );
@@ -34507,7 +34449,7 @@ int main(int argc, char *argv[])
       
       addAsm( str_ADC + "$03", 2, false );
       addAsm( str_STA + "$03", 2, false );
-      addAsm( str_LDA + "$FC", 2, false ); 
+      addAsm( str_LDA + _mcplotFC, 2, false ); 
 
       addAsm( str_AND + "#$07", 2, false );
       addAsm( str_ADC + "$02", 2, false );
@@ -34550,6 +34492,7 @@ int main(int argc, char *argv[])
 
   if( pow16_is_needed )
     {
+      addAsm( "\n", 0, true );
       mul16_is_needed = true;
       addAsm( "!lv_arg0:\t" + str_BYTE + "$00, $00", 2, true );
       addAsm( "!lv_arg1:\t" + str_BYTE + "$00, $00", 2, true );
@@ -34641,6 +34584,7 @@ int main(int argc, char *argv[])
     }
   if( pow8_is_needed )
     {
+      addAsm( "\n", 0, true );
       umul_is_needed = true;
       addAsm( "!lv_arg0:\t" + str_BYTE + "$00", 1, false );
       addAsm( "!lv_mem0:\t" + str_BYTE + "$00", 1, false );
@@ -34717,6 +34661,7 @@ int main(int argc, char *argv[])
     }
   if( mul16_is_needed )
     {
+      addAsm( "\n", 0, true );
       // 16-bit multiplication
       // NUM1  * NUM2  = RESULT
       // L  H    L  H    L  H
@@ -34775,6 +34720,7 @@ int main(int argc, char *argv[])
     }
   if( umul_is_needed )
     {
+      addAsm( "\n", 0, true );
       // unsigned int multiplication
       // =================================================================================
       addAsm( "_umul:", 0, true );
@@ -34795,6 +34741,7 @@ int main(int argc, char *argv[])
     }
   if( sidrnd_is_needed )
     {
+      addAsm( "\n", 0, true );
       addAsm( "SIDRND:", 0, true );
       addAsm( str_PHA );
       addAsm( str_LDA + "#$FF", 2, false );
@@ -34807,6 +34754,7 @@ int main(int argc, char *argv[])
     }
   if( bmpmem_is_needed )
     {
+      addAsm( "\n", 0, true );
       addComment( "Get the bitmap mem location from the vic II" );
       addComment( "OPTIMIZE: This address can be hardcoded later" );
       addAsm( "_bmpmem:\t\t", 0, true);
@@ -34821,6 +34769,7 @@ int main(int argc, char *argv[])
 
   if( chrmem_is_needed )
     {
+      addAsm( "\n", 0, true );
       addComment( "Get the character mem location from the vic II" );
       addComment( "OPTIMIZE: This address can be hardcoded later" );
 
@@ -34847,6 +34796,7 @@ int main(int argc, char *argv[])
 
   if( scrmem_is_needed )
     {
+      addAsm( "\n", 0, true );
       addComment( "Get the screen mem location from the vic II" );
       addComment( "OPTIMIZE: This address can be hardcoded later" );
       addAsm( string("_scrmem:"), 0, true );
@@ -34869,6 +34819,7 @@ int main(int argc, char *argv[])
     }
   if( bnkmem_is_needed )
     {
+      addAsm( "\n", 0, true );
       addComment( "Get the bank memory from the vic II" );
       addComment( "OPTIMIZE: This address can be hardcoded later" );
       addAsm( string("_bnkmem:"), 0, true );
@@ -34897,6 +34848,7 @@ int main(int argc, char *argv[])
     
   if( byte2hex_is_needed )
     {
+      addAsm( "\n", 0, true );
       addComment( "Display a Hexadecimal Byte" );
       addAsm( "_byte2hex:", 0, true );
       // =================================================================================
@@ -34936,6 +34888,7 @@ int main(int argc, char *argv[])
     }
   if( byt2str_is_needed  )
     {
+      addAsm( "\n", 0, true );
       addComment( "Turns a 1 byte value in A into 3 PETSCII chars in A, Y, and X" );
       addComment( "Destroys $61 & $62 in ZP" );
       addAsm( "_byte_to_string:", 0, true );
@@ -34984,6 +34937,7 @@ int main(int argc, char *argv[])
     }
   if( split_byte_is_needed )
     {
+      addAsm( "\n", 0, true );
       addComment( "turns a byte in A into Hi and Lo PETSCII in X & Y" );
       addAsm( "_split_byte:\t\t" + commentmarker + "S1 -> S1=Hi Bits\tS0=Lo Bits", 0, true );
       addComment( "Destroys $52 in ZP" );
@@ -35005,6 +34959,7 @@ int main(int argc, char *argv[])
     }
   if( decimal_digit_is_needed )
     {
+      addAsm( "\n", 0, true );
       addAsm( "!rx:\t" + str_BYTE + "$00, $00", 2, false );
       addAsm( "!ry:\t" + str_BYTE + "$00, $00", 2, false );
       addComment( "Turn number on stack into a decimal" );      
@@ -35042,6 +34997,7 @@ int main(int argc, char *argv[])
     }
   if( div10_is_needed )
     {
+      addAsm( "\n", 0, true );
       // DIVIDE BY 10 ROUTINE
       addAsm( "_div10:\t" + commentmarker + "Divide value in A by 10", 0, true );
       if( !arg_unsafe_math)
@@ -35073,6 +35029,7 @@ int main(int argc, char *argv[])
     }
   if( cls_is_needed )
     {
+      addAsm( "\n", 0, true );
       addAsm( string("_cls:\t\t") + commentmarker + "Clear Screen Routine", 0, true );
       addAsm( str_LDA + "#$20", 2, false ); // space
       addAsm( str_LDX + "#$00", 2, false ); // (essentially 256)
@@ -35101,6 +35058,7 @@ int main(int argc, char *argv[])
     }
   if( twos_complement_is_needed )
     {
+      addAsm( "\n", 0, true );
       addAsm( string("_twos:\t\t") + commentmarker + string("Two's Complement Function"), 0, true );
       addComment( "The argument is pulled off of the stack here" );
       addAsm( str_PLA );
@@ -35113,6 +35071,7 @@ int main(int argc, char *argv[])
 
   if( new_formatted_printf_is_needed )
     {
+      addAsm( "\n", 0, true );
       // A = type to be printed
       // YX = address of string
 
@@ -35304,6 +35263,7 @@ int main(int argc, char *argv[])
 
   if( strlen_is_needed )
     {
+      addAsm( "\n", 0, true );
       addAsm( "_strlen:", 0, true );
       addAsm( str_STA + "!++", 3, false );
       addAsm( str_STX + "!+++", 3, false );
@@ -35319,6 +35279,7 @@ int main(int argc, char *argv[])
     }
   if( word_strlen_is_needed )
     {
+      addAsm( "\n", 0, true );
       // start at XA and loop until a zero is found.
       // return XA (the number of iterations)
       //addAsm( "!mem0:\t" + str_BYTE + "$00, $00", 2, true );
@@ -35364,6 +35325,7 @@ int main(int argc, char *argv[])
   
   if( printf_is_needed )
     {
+      addAsm( "\n", 0, true );
       /* a Simple printf for strings */   
       addAsm( "_prn:", 0, true );
       addAsm( str_LDY + "#$00", 2, false);
@@ -35377,6 +35339,7 @@ int main(int argc, char *argv[])
   
   if( scanf_is_needed )
     {
+      addAsm( "\n", 0, true );
       addComment( "Robust Scanf" );
       addAsm( "_scanf:", 0, true );
       addComment( "Taken from: https://codebase64.org/doku.php?id=base:robust_string_input" );
@@ -35500,6 +35463,7 @@ int main(int argc, char *argv[])
     }
   if( getkey_is_needed )
     {
+      addAsm( "\n", 0, true );
       // puts a keypress on the stack
       addAsm( "_getkey:", 0, true );
       addAsm( str_JSR + "$FFE4", 3, false );
@@ -35508,10 +35472,12 @@ int main(int argc, char *argv[])
     }
   if(sqrrt8_is_needed)
     {
+      addAsm( "\n", 0, true );
       addAsm( "_sqrrt8:\t" + str_BYTE + " $00, $01, $01, $02, $02, $02, $02, $03, $03, $03, $03, $03, $03, $04, $04, $04, $04, $04, $04, $04, $04, $05, $05, $05, $05, $05, $05, $05, $05, $05, $05, $06, $06, $06, $06, $06, $06, $06, $06, $06, $06, $06, $06, $07, $07, $07, $07, $07, $07, $07, $07, $07, $07, $07, $07, $07, $07, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0A, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0B, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0C, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0D, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0E, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $0F, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10", 255, true );
     }
   if( stack_is_needed )
     {
+      addAsm( "\n", 0, true );
       addComment( "software stack" );
       addDebugComment( "my rendition of a software stack at $CF00" );
       addDebugComment( "Y is not destroyed" );
